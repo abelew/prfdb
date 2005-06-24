@@ -77,7 +77,6 @@ sub Search {
   my %args = shift;
   my @information = split(//, $args{sequence});
   my $end_trim = 30;
-  my @information = split(//, $sequence);
   my @slipsites = ();
 
   for my $c (0 .. ($#information - $end_trim)) {  ## Don't bother with the last $end_trim nucleotides
