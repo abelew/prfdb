@@ -60,7 +60,7 @@ sub Explore {
   my $info = $dbh->selectall_arrayref($statement);
   my $sequence = $info->[3];
   my $stemsearch = new Stem_Search;
-  my $slipsites = $stemsearch->Search(sequence => $sequence, length => $config->{max_stem_length});
+  my $slipsites = $stemsearch->Search({sequence => $sequence, length => $config->{max_stem_length}});
 
   my $vars = { startform => $fun->startform(-action => "$base/dig"),
 			   slipsites => @{$slipsites},
