@@ -73,9 +73,13 @@ sub new {
 }
 
 sub Search {
-  my $me = shift;
-  my %args = shift;
-  my @information = split(//, $args{sequence});
+    my $me = shift;
+    my $sequence = shift;
+    my $length = shift;
+  print "TEST: $me and $length and $sequence\n";
+    $sequence =~ s/A+$//g;
+  print "TEST: $me and $length and $sequence\n";
+  my @information = split(//, $sequence);
   my $end_trim = 30;
   my @slipsites = ();
 
