@@ -27,7 +27,7 @@ my $dbh = DBI->connect($dsn, $config->{user}, $config->{pass});
 
 my $fun = new CGI;
 print $fun->header;
-my $base = "https://" . $ENV{HTTP_HOST} . $ENV{SCRIPT_NAME};
+my $base = "http://" . $ENV{HTTP_HOST} . $ENV{SCRIPT_NAME};
 my $template = new Template($config);
 
 if ($fun->path_info() eq '/start' || $fun->path_info() eq '') {
