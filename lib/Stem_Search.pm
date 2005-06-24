@@ -1,6 +1,5 @@
 package Stem_Search;
 use strict;
-use Input;
 
 my @slippery_sites = (	  'A AAA AAA',
 					  'A AAA AAC',
@@ -90,6 +89,7 @@ sub Search {
 	  }
 	}
   }
+  return(\@slipsites);
 }
 
 ## Given a sequence array and position, search the n nucleotides downstream from
