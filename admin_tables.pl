@@ -29,6 +29,12 @@ if ($config->{action} =~ /^create/) {
   if ($object eq 'data') {
 	Create_Data($adjective1, $adjective2);
   }
+  elsif ($object eq 'rnamotif') {
+	Create_Rnamotif($adjective1, $adjective2);
+  }
+  elsif ($object eq 'fasta') {
+	Create_Fasta();
+  }
   else {
 	Create_Table();
   }
@@ -38,7 +44,9 @@ elsif ($config->{action} eq 'load') {
 }
 else {
   die("I do not know what to do.  The action should be in the form of something like:
-create_data_homo_sapiens or create_table_homo_sapiens");
+create_data_homo_sapiens
+create_table_homo_sapiens
+create_rnamotif_homo_sapiens");
 }
 
 
@@ -46,6 +54,12 @@ sub Create_Table {
   my $statement = "CREATE table $config->{species}  (accession varchar(10) not null, version int not null, comment blob not null, sequence blob not null, primary key (accession))";
   print "Statement: $statement\n";
   my $sth = $dbh->prepare("$statement");
+  $sth->execute;
+}
+
+sub Create_Fasta {
+  my $statement = "CREATE table fasta (id int not null auto_increment, species varchar(80), start int, comment varchar(80), sequence blob, primary key (id))";
+  my $sth = $dbh->prepare($statement);
   $sth->execute;
 }
 
@@ -58,6 +72,14 @@ sub Create_Data {
   $sth->execute;
 }
 
+sub Create_Rnamotif {
+  my $genus = shift;
+  my $species = shift;
+  my $tablename = "rnamotif_" . $genus . '_' . $species;
+  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, total int, permissable int, data blob, output blob, primary key (id))";
+  my $sth = $dbh->prepare("$statement");
+  $sth->execute;
+}
 
 sub Load_Table {
   if ($config->{input} =~ /gz$/) {
