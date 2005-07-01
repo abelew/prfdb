@@ -1,0 +1,80 @@
+parms
+  wc += gu;
+
+descr
+  # Slippery site
+  ss(tag='SlipSite1', seq="^n\{3\}$") 
+  ss(tag='SlipSite2', seq="^w\{3\}$")
+  ss(tag='SlipSite3', seq="^h$") 
+  # Post slippery site spacer
+  ss( tag='Spacer', minlen=5, maxlen=9 )
+
+  # Pseudoknot
+  # Stem 1 between 4 and 20 bases in length, allowing bulges
+  h5( tag='h1', minlen=4, maxlen=20, pairfrac=0.80 )
+  
+  # Follow with a short single stranded region
+  ss( tag='l1', minlen=1, maxlen=3 )
+  
+  # Then the second stem
+  h5( tag='h2', minlen=4, maxlen=20, pairfrac=0.80 )
+  
+  # And its spacer
+  ss( tag='l2', minlen=0, maxlen=3 )
+  
+  # Then close the first stem
+  h3( tag='h1' )
+  
+  # Spacer
+  ss( tag='l3', minlen=0, maxlen=100 )
+  
+  # Close the second stem
+  h3( tag='h2')
+
+
+score
+  {
+  SCORE= 0.0;
+  gcnt = 0;
+
+  if (ss(tag='SlipSite1') == 'aaa')
+   SCORE += 0.6;
+  else if (ss(tag='SlipSite1') == 'uuu')
+   SCORE += 0.6;
+  else if (ss(tag='SlipSite1') == 'ttt')
+   SCORE += 0.6;
+  else if (ss(tag='SlipSite1') == 'ccc')
+   SCORE += 0.5;
+  else if (ss(tag='SlipSite1') == 'ggg')
+   SCORE += 0.5;
+
+  if (ss(tag='SlipSite2') == 'aaa')
+   SCORE += 0.6;
+  else if (ss(tag='SlipSite2') == 'uuu')
+   SCORE += 0.6;
+  else if (ss(tag='SlipSite2') == 'ttt')
+   SCORE += 0.6;
+
+  if( SCORE < 1.0 ){ REJECT; }
+
+
+  len15 = length( h5['h1'] );
+
+  lenLoop3 = length( ss['l3'] );
+  if( (len15 / 2 ) > lenLoop3 ){ REJECT; }
+
+  for( i = 1; i <= len15; i++ ){
+    b = h5['h1',i,1];
+      if( b == "c" ){ gcnt++; }
+    }
+
+  len13 = length( h3['h1'] );		
+  for( i = 1; i <= len13; i++ ){
+    b = h3['h1',i,1];
+    if( b == "c" ){ gcnt++; }
+  }
+		
+  # require GC in stem 1! This is a bit of a bootstrap becuase since we have pairfrac=.80 for each stem it's possible that a C will get counted even if it is mispaired with a non-G. But it's close enough... :)
+  SCORE = 1.0 * gcnt / len15;	
+  if( SCORE < .25 ){ REJECT; }
+}
