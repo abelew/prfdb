@@ -23,6 +23,7 @@ sub Nupack {
   chdir $tmp_dir;
   print "TEST1: $input<br>\n";
 #  my $command = "$tmp_dir/Nupack $input";
+  chdir("/home/trey/dinman/code/browser/work");
   my $command = "/home/trey/dinman/code/browser/work/Nupack $input";
   open(NU, "$command |-") or die "Nupack failed $!.";
   if (!defined($child_pid)) {
