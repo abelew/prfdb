@@ -61,10 +61,11 @@ sub Search {
 	  ## Check for a slippery site from this position
 	  my $slipsite = Slip_p($next_seven);
 	  if ($slipsite) {  ## Then check that a slippery site is in the correct frame
+		my $work_dir = `pwd` . '/work';
 		my $start = $c;
 		my $end = $c + $me->{max_stem_length};
-		my $fh = new File::Temp(DIR => '/tmp',
-								TEMPLATE => 'slipXXXXX',
+		my $fh = new File::Temp(DIR => $work_dir,,
+								TEMPLATE => 'slip_XXXXX',
 								UNLINK => 0,
 								SUFFIX => '.fasta');
 		my $filename = $fh->filename;

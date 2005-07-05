@@ -121,6 +121,7 @@ sub Dig {
 	print "TMP: $tmp<br>\n";
 	if ($p =~ /^\d+$/) { $filename = $fun->param(-name => $p); }
   }
-  
+  my $fold = new RNAFolders(file => $filename);
+  $fold->Nupack();
   print "TEST: $filename<br>\n";
 }
