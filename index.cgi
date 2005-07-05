@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use lib "lib/";
+use lib "lib";
 use CGI qw/:standard :html3/;
 use CGI::Carp qw(fatalsToBrowser carpout);
 use strict;
@@ -115,12 +115,13 @@ sub Explore {
 sub Dig {
   my $filename = '';
   my @params = $fun->param();
-  foreach my $p (@params) {
-	print "TEST: $p<br>\n";
-	my $tmp = $fun->param(-name => $p);
-	print "TMP: $tmp<br>\n";
-	if ($p =~ /^\d+$/) { $filename = $fun->param(-name => $p); }
-  }
+#  foreach my $p (@params) {
+#	print "TEST: $p<br>\n";
+#	my $tmp = $fun->param(-name => $p);
+#	print "TMP: $tmp<br>\n";
+#	if ($p =~ /^\d+$/) { $filename = $fun->param(-name => $p); }
+#  }
+  my $filename = $fun->param('filename');
   my $fold = new RNAFolders(file => $filename);
   $fold->Nupack();
   print "TEST: $filename<br>\n";

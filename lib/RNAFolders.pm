@@ -17,15 +17,19 @@ sub Nupack {
   my $return = {};
   my $child_pid;
   open (WRITER, ">nupack.out") or die "Could not open the nupack output file.<br>\n";
+  my $tmp_dir = `pwd`;
+  chomp $tmp_dir;
+  $tmp_dir .= '/work';
+  chdir $tmp_dir;
+  print "TEST1: $input<br>\n";
+  my $command = "$tmp_dir/Nupack $input";
+  print "TEST: $command<br>\n";
+  open(NU, "$command |-") or die "Nupack failed $!.";
   if (!defined($child_pid)) {
 	die "Could not fork a child process for nupack. $!<br>\n";
   }
   else {
 	## The child process does its work here.
-	my $tmp_dir = `pwd` . '/work';
-	chdir $tmp_dir;
-	my $command = "./Nupack $input";
-	open(NU, "$command |") or die "Nupack failed.";
 	while (my $line = <NU>) {
 	  chomp $line;
 	  print WRITER "$line<br>\n";
