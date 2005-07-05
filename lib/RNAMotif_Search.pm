@@ -61,7 +61,9 @@ sub Search {
 	  ## Check for a slippery site from this position
 	  my $slipsite = Slip_p($next_seven);
 	  if ($slipsite) {  ## Then check that a slippery site is in the correct frame
-		my $work_dir = `pwd` . '/work';
+		my $work_dir = `pwd`;
+		chomp $work_dir;
+		$work_dir .= '/work';
 		my $start = $c;
 		my $end = $c + $me->{max_stem_length};
 		my $fh = new File::Temp(DIR => $work_dir,,

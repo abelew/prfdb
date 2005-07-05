@@ -73,7 +73,7 @@ sub Explore {
   ## Check to see if this has already been generated.
   my $db = new PRFdb;
   my $slipsites_data = $db->Get_RNAmotif($species, $accession);
-  if (!defined($slipsites_data)) {
+  unless ($slipsites_data) {
 	my $stemsearch = new RNAMotif_Search;
 	$slipsites_data = $stemsearch->Search($sequence, $config->{max_stem_length});
 	$db->Put_RNAmotif($species, $accession, $slipsites_data);

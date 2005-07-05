@@ -1,7 +1,7 @@
 package RNAFolders;
 use strict;
 use IO::Handle;
-use Posix 'setsid';
+use POSIX 'setsid';
 
 sub new {
   my ($class, %arg) = @_;
@@ -16,7 +16,7 @@ sub Nupack {
   my $input = $me->{file};
   my $return = {};
   my $child_pid;
-  open (WRITER ">nupack.out") or die "Could not open the nupack output file.<br>\n";
+  open (WRITER, ">nupack.out") or die "Could not open the nupack output file.<br>\n";
   if (!defined($child_pid)) {
 	die "Could not fork a child process for nupack. $!<br>\n";
   }

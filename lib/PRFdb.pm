@@ -24,7 +24,9 @@ sub Get_RNAmotif {
   my $statement = "SELECT total, permissable, data, output FROM $table WHERE accession = '$accession'";
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_arrayref($statement);
-  return(undef) if (scalar(@{$info}) == 0);
+#  return(0) if (scalar(@{$info}) == 0);
+  return(0) unless(defined($info));
+  return(0) if (scalar(@{$info}) == 0);
   foreach my $start (@{$info}) {
 	$return->{$start}{total} = $info->[$start]->[0];
 	$return->{$start}{permissable} = $info->[$start]->[1];
@@ -52,7 +54,6 @@ sub Put_RNAmotif {
   }
   $me->{dbh}->commit;
 }
-
 
 1;
 
