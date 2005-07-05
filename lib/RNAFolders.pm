@@ -22,8 +22,8 @@ sub Nupack {
   $tmp_dir .= '/work';
   chdir $tmp_dir;
   print "TEST1: $input<br>\n";
-  my $command = "$tmp_dir/Nupack $input";
-  print "TEST: $command<br>\n";
+#  my $command = "$tmp_dir/Nupack $input";
+  my $command = "/home/trey/dinman/code/browser/work/Nupack $input";
   open(NU, "$command |-") or die "Nupack failed $!.";
   if (!defined($child_pid)) {
 	die "Could not fork a child process for nupack. $!<br>\n";
