@@ -49,7 +49,7 @@ sub Search {
   my $sequence = shift;
   my $length = shift;
   my $db = new PRFdb();
-  my %return = ();
+ my %return = ();
   $sequence =~ s/A+$//g;
   my @information = split(//, $sequence);
   my $end_trim = 70;
@@ -57,9 +57,9 @@ sub Search {
 #  for my $c (0 .. ($#information - $end_trim)) {  ## Recurse over every nucleotide
   for my $c (0 .. $#information) {  ## Recurse over every nucleotide
 	if ((($c + 1) % 3) == 0) {  ## Check for correct reading frame
-	  my $next_seven = "$information[$c] " . $information[$c + 1] . $information[$c + 2] . "$information[$c + 3] " . $information[$c + 4] . $information[$c + 5] . $information[$c + 6];
+	  my $next_seven = "$information[$c] " . $information[$c + 1] . $information[$c + 2] . "$information[$c + 3] " . $information[$c + 4] . $information[$c + 5] . $information[$c + 6] if (defined($information[$c + 6]));
 	  ## Check for a slippery site from this position
-	  my $slipsite = Slip_p($next_seven);
+	  my $slipsite = Slip_p($next_seven) if (defined($next_seven));
 	  if ($slipsite) {  ## Then check that a slippery site is in the correct frame
 		my $work_dir = `pwd`;
 		chomp $work_dir;
@@ -77,9 +77,9 @@ sub Search {
 		### Move start up 7 nucleotides in the case of a description file which does not specify a slippery site
 #		foreach my $c (($start + 7) .. $end) {
 		foreach my $c ($start .. $end) {
-		  $string .= $information[$c];
+		  $string .= $information[$c] if (defined($information[$c]));
 		}
-		$string =~ tr/ATGCU/atgcu/;
+		$string =~ tr/ATGCU/atgcu/ if (defined($string));
 		$string =~ tr/t/u/;
 		my $data = ">$slipsite $start $end
 $string
@@ -112,11 +112,6 @@ $string
 		  $total++;
 #		  print "$line<br>\n";
 		}  ## End the while loop
-#		if ($total == 0) {
-#		  print "rnamotif discovered no potential structures for $start to $end<br>\n";
-#		}
-#		else {
-#		  print "rnamotif discovered $total potential structures for the region from $start to $end.  Of these, $permissable are permissable pseudoknots.<br>\n";
 		$return{$start}{total} = $total;
 		$return{$start}{filename} = $filename;
 		$return{$start}{output} = $rnamotif_output;

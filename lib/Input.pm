@@ -45,4 +45,8 @@ sub Read_Fasta {
   return($return);
 }
 
+sub Db_to_Fasta {
+  my $me = shift;
+  return(0);
+}
 1;

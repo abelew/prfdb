@@ -35,8 +35,11 @@ if ($config->{action} =~ /^create/) {
   elsif ($object eq 'fasta') {
 	Create_Fasta();
   }
+  elsif ($object eq 'nupack') {
+	Create_Nupack($adjective1, $adjective2);
+  }
   else {
-	Create_Table();
+	Create_Genome();
   }
 }
 elsif ($config->{action} eq 'load') {
@@ -50,8 +53,9 @@ create_rnamotif_homo_sapiens");
 }
 
 
-sub Create_Table {
-  my $statement = "CREATE table $config->{species}  (accession varchar(10) not null, version int not null, comment blob not null, sequence blob not null, primary key (accession))";
+sub Create_Genome {
+  my $table = 'genome_' . $config->{species};
+  my $statement = "CREATE table $table  (accession varchar(10) not null, version int not null, comment blob not null, sequence blob not null, primary key (accession))";
   print "Statement: $statement\n";
   my $sth = $dbh->prepare("$statement");
   $sth->execute;
@@ -68,6 +72,15 @@ sub Create_Data {
   my $species = shift;
   my $tablename = "data_" . $genus . '_' . $species;
   my $statement = "CREATE table $tablename (id int not null auto_increment, process varchar(80), start int, length int, struct_start int, logodds float, mfe float, cor_mfe float, pairs int, pseudop tinyint, slipsite varchar(80), spacer varchar(80), sequence blob, structure blob, parsed blob, primary key (id))";
+  my $sth = $dbh->prepare("$statement");
+  $sth->execute;
+}
+
+sub Create_Nupack {
+  my $genus = shift;
+  my $species = shift;
+  my $tablename = "nupack_" . $genus . '_' . $species;
+  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), seqlength int, sequence char(200), paren_output char(200), pairs varchar(600), mfe float, knotp boolean, primary key(id))";
   my $sth = $dbh->prepare("$statement");
   $sth->execute;
 }

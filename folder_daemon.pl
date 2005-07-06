@@ -7,6 +7,7 @@ use lib 'lib';
 use PRFdb;
 use RNAMotif_Search;
 use RNAFolders;
+use Input;
 
 my $config = {
 			db => 'atbprfdb',
@@ -19,7 +20,7 @@ $ENV{EFNDATA} = "/usr/local/bin/efndata";
 
 my $directory = '/home/trey/browser';
 my $time_to_die = 0;
-chroot($directory) or die "Could not change directory into $directory: $!\n";
+#chroot($directory) or die "Could not change directory into $directory: $!\n";
 
 my $pid = fork;
 exit if $pid;
@@ -43,10 +44,11 @@ until ($time_to_die) {
 
   ## Check queue file.
   my $datum = Check_Queue();
+  print "About to check $datum->{species}, $datum->{accession}\n";
+  sleep(2);
+
   if (defined($datum->{species})) {
-	print "Line 47\n";
 	my $existsp = Check_Db($datum);
-	print "Line 49\n";
   }
   else {
 	sleep(2);
@@ -57,49 +59,61 @@ sub Check_Queue {
   my $return = {};
   open (FH, "+<queue") or die "can't update queue: $!";
   my $addr= undef;
-  while ( my $line = <FH> ) {
-	if (eof(FH)) {
-	  my ($species, $accession) = split(/\t/, $line);
-	  print "TEST: $species\n";
-	  $return->{species} = $species;
-	  $return->{accession} = $accession;
-	  truncate(FH, $addr) if (defined($addr));
-	}
-	else {
-	  $addr = tell(FH);
-	}
+  my $line_bak;
+  while (my $line = <FH> ) {
+	$addr = tell(FH) unless eof(FH);
+	$line_bak = $line;
   }
-  print "Line 68\n";
+  chomp $line_bak;
+  my ($species, $accession) = split(/\t/, $line_bak);
+  $return->{species} = $species;
+  $return->{accession} = $accession;
+  truncate(FH, $addr);
   return($return);
 }
 
 sub Check_Db {
   my $datum = shift;
-  print "Line 78\n";
   my $db = new PRFdb;
-  print "Line 80\n";
   my $motifs = new RNAMotif_Search;
   ## First see that there is rna motif information
-  print "Line 81\n";
   my $info = $db->Get_RNAmotif($datum->{species}, $datum->{accession});
   if ($info) {  ## If the motif information _does_ exist, check the folding information
 	foreach my $start (keys %{$info}) {
 	  my $folding = $db->Get_RNAfolds($datum->{species}, $datum->{accession}, $start);
 	  if ($folding) {  ## Both have motif and folding
+		print "HAVE FOLDING AND MOTIF!\n";
+		sleep(1);
 		return(1);
 	  }
 	  else {  ## Do have a motif for the sequence, do not have folding information
+		print "HAVE MOTIF, NO FOLDING\n";
+		sleep(1);
 		return(0);
 	  }
 	} ## End recursing over the starts in a given sequence
   }  ## End if there is a motif for this sequence
   else {  ## Do not have motif nor folding
+	print "NO MOTIF, NO FOLDING\n";
 	my $sequence = $db->Get_Sequence($datum->{species}, $datum->{accession});
-	my $slipsites = $motifs->Search($datum->{sequence});
+	my $slipsites = $motifs->Search($sequence);
 	$db->Put_RNAmotif($datum->{species}, $datum->{accession}, $slipsites);
+	foreach my $start (keys %{$slipsites}) {
+	  my $fold_search = new RNAFolders(file => $slipsites->{$start}{filename},
+									   accession => $datum->{accession},
+									   start => $slipsites->{$start}{start},
+									   species => $datum->{species},);
+	  print "About to start nupack with $slipsites->{$start}{filename}\n";
+	  my $nupack_info = $fold_search->Nupack();
+	  foreach my $k (keys %{$nupack_info}) {
+		print "key: $k value: $nupack_info->{$k}\n";
+	  }
+	  $db->Put_Nupack($nupack_info);
+	  unlink($slipsites->{$start}{filename});
+	}  ## End of the foreach slipsite of a given locus
   }
 }
+
 sub signal_handler {
   $time_to_die = 1;
 }
-
