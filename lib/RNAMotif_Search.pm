@@ -35,7 +35,7 @@ my %slippery_sites = (
 sub new {
   my ($class, %arg) = @_;
   my $me = bless {}, $class;
-  $me->{max_stem_length} = 150;
+  $me->{max_stem_length} = 100;
   $me->{stem_length} = 6;
   $me->{max_dist_from_slip} = 15;
 

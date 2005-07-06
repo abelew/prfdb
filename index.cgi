@@ -14,9 +14,9 @@ $ENV{EFNDATA} = "/usr/local/bin/efndata";
 
 my $config = {
 			  db => 'atbprfdb',
-                          host => 'localhost',
-                          user => 'trey',
-                          pass => 'Iactilm2',
+			  host => 'localhost',
+			  user => 'trey',
+			  pass => 'Iactilm2',
 			  max_stem_length => 100,
 			  INCLUDE_PATH => 'html/',  # or list ref
 			  INTERPOLATE  => 1,               # expand "$var" in plain text
@@ -63,15 +63,12 @@ sub Part1 {
 }
 
 sub Explore {
+  my $db = new PRFdb;
   my $species = $fun->param('species');
   $species =~ s/\ /_/g;
   my $accession = $fun->param('accession');
-  my $statement = "SELECT * FROM $species WHERE accession = '$accession'";
-  my $info = $dbh->selectall_arrayref($statement);
-  my $sequence = $info->[0]->[3];
-
+  my $sequence = $db->Get_Sequence($species, $accession);
   ## Check to see if this has already been generated.
-  my $db = new PRFdb;
   my $slipsites_data = $db->Get_RNAmotif($species, $accession);
   unless ($slipsites_data) {
 	my $stemsearch = new RNAMotif_Search;

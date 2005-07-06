@@ -13,6 +13,22 @@ sub new {
   my $dsn = "DBI:mysql:database=$me->{db};host=$me->{host}";
   $me->{dbh} = DBI->connect($dsn, $me->{user}, $me->{pass});
   return ($me);
+  print "Here\n";
+}
+
+sub Get_Sequence {
+  my $me = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $statement = "SELECT * FROM $species WHERE accession = '$accession'";
+  my $info = $me->{dbh}->selectall_arrayref($statement);
+  my $sequence = $info->[0]->[0];
+  if ($sequence) {
+	return($sequence);
+  }
+  else {
+	return(undef);
+  }
 }
 
 sub Get_RNAmotif {
@@ -56,4 +72,3 @@ sub Put_RNAmotif {
 }
 
 1;
-
