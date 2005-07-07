@@ -45,13 +45,20 @@ if ($config->{action} =~ /^create/) {
 elsif ($action eq 'load' and $object eq 'genome') {
   Load_Genome_Table($adjective1, $adjective2);
 }
+elsif ($action eq 'start') {
+  Create_Rnamotif($adjective1, $adjective2);
+  Create_Nupack($adjective1, $adjective2);
+  Create_Genome();
+  Load_Genome_Table($adjective1, $adjective2);
+}
 else {
   die("I do not know what to do. Known actions are:
-create_genome_genus_species
-create_nupack_genus_species
-create_rnamotif_genus_species
-create_pknots_genus_species
-load_genome_genus_species
+--action create_genome_genus_species
+--action create_nupack_genus_species
+--action create_rnamotif_genus_species
+--action create_pknots_genus_species
+--action load_genome_genus_species --input input_file
+--action start_genus_species --input input_file
 ");
 }
 
