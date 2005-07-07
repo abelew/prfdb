@@ -23,9 +23,9 @@ GetOptions(
 
 my $dsn = "DBI:mysql:database=$config->{db};host=$config->{host}";
 my $dbh = DBI->connect($dsn, $config->{user}, $config->{pass});
+my ($action, $object, $adjective1, $adjective2) = split(/_/, $config->{action});
 
 if ($config->{action} =~ /^create/) {
-  my ($action, $object, $adjective1, $adjective2) = split(/_/, $config->{action});
   if ($object eq 'data') {
 	Create_Data($adjective1, $adjective2);
   }
@@ -42,14 +42,17 @@ if ($config->{action} =~ /^create/) {
 	Create_Genome();
   }
 }
-elsif ($config->{action} eq 'load') {
-  Load_Table();
+elsif ($action eq 'load' and $object eq 'genome') {
+  Load_Genome_Table($adjective1, $adjective2);
 }
 else {
-  die("I do not know what to do.  The action should be in the form of something like:
-create_data_homo_sapiens
-create_table_homo_sapiens
-create_rnamotif_homo_sapiens");
+  die("I do not know what to do. Known actions are:
+create_genome_genus_species
+create_nupack_genus_species
+create_rnamotif_genus_species
+create_pknots_genus_species
+load_genome_genus_species
+");
 }
 
 
@@ -80,7 +83,7 @@ sub Create_Nupack {
   my $genus = shift;
   my $species = shift;
   my $tablename = "nupack_" . $genus . '_' . $species;
-  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), seqlength int, sequence char(200), paren_output char(200), pairs varchar(600), mfe float, knotp boolean, primary key(id))";
+  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), seqlength int, sequence char(200), paren_output char(200), pairs blob, mfe float, knotp bool, primary key(id))";
   my $sth = $dbh->prepare("$statement");
   $sth->execute;
 }
@@ -94,7 +97,7 @@ sub Create_Rnamotif {
   $sth->execute;
 }
 
-sub Load_Table {
+sub Load_Genome_Table {
   if ($config->{input} =~ /gz$/) {
 	open(IN, "zcat $config->{input} |") or die "Could not open the fasta file\n $!\n";
   }
@@ -106,7 +109,7 @@ sub Load_Table {
 	chomp $line;
 	if ($line =~ /^\>/) {
 	  if (defined($datum{accession})) {
-		Insert_Entry(\%datum);
+		Insert_Genome_Entry(\%datum);
 	  }
 	  my ($gi, $id, $gb, $accession_version, $comment) = split(/\|/, $line);
 	  my ($accession, $version) = split(/\./, $accession_version);
@@ -120,16 +123,17 @@ sub Load_Table {
 	  $datum{sequence} .= $line;
 	}
   }
-  Insert_Entry(\%datum);
+  Insert_Genome_Entry(\%datum);
 }
 
-sub Insert_Entry {
+sub Insert_Genome_Entry {
   my $datum = shift;
   my $qa = $dbh->quote($datum->{accession});
   my $qv = $dbh->quote($datum->{version});
   my $qc = $dbh->quote($datum->{comment});
   my $qs = $dbh->quote($datum->{sequence});
-  my $statement = "INSERT into $config->{species} values($qa, $qv, $qc, $qs)";
+  my $table = "genome_" . $config->{species};
+  my $statement = "INSERT into $table values($qa, $qv, $qc, $qs)";
   $datum->{sequence} = undef;
 #  print "TEST: $statement\n";
   my $sth = $dbh->prepare($statement);

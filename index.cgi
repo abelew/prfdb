@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use lib "lib";
+use PRFConfig;
 use CGI qw/:standard :html3/;
 use CGI::Carp qw(fatalsToBrowser carpout);
 use strict;
@@ -10,24 +11,10 @@ use RNAMotif_Search;
 use PRFdb;
 use RNAFolders;
 use DBI;
-$ENV{EFNDATA} = "/usr/local/bin/efndata";
 
-my $config = {
-			  db => 'atbprfdb',
-			  host => 'localhost',
-			  user => 'trey',
-			  pass => 'Iactilm2',
-			  max_stem_length => 100,
-			  INCLUDE_PATH => 'html/',  # or list ref
-			  INTERPOLATE  => 1,               # expand "$var" in plain text
-			  POST_CHOMP   => 1,               # cleanup whitespace
-			  PRE_PROCESS  => 'header',        # prefix each template
-			  POST_PROCESS => 'footer',        # append the footer
-			  EVAL_PERL    => 1,               # evaluate Perl code blocks
-             };
+my $config = $PRFConfig::config;
 
-my $dsn = "DBI:mysql:database=$config->{db};host=$config->{host}";
-my $dbh = DBI->connect($dsn, $config->{user}, $config->{pass});
+my $dbh = DBI->connect($config->{dsn}, $config->{user}, $config->{pass});
 
 my $fun = new CGI;
 print $fun->header;

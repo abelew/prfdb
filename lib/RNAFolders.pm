@@ -2,15 +2,18 @@ package RNAFolders;
 use strict;
 use IO::Handle;
 use POSIX 'setsid';
+use lib 'lib';
+use PRFConfig;
 
 sub new {
   my ($class, %arg) = @_;
   my $me = bless {
-				  file => $arg{file},
-				  accession => $arg{accession},
-				  start => $arg{start},
-				  species => $arg{species},
-				 }, $class;
+                  file => $arg{file},
+                  accession => $arg{accession},
+                  start => $arg{start},
+                  slippery => $arg{slippery},
+                  species => $arg{species},
+                 }, $class;
   return ($me);
 }
 
@@ -20,14 +23,17 @@ sub Nupack {
   my $accession = $me->{accession};
   my $start = $me->{start};
   my $species = $me->{species};
+  my $slippery = $me->{slippery};
+  my $config = $PRFConfig::config;
   my $return = { accession => $accession,
-				 start => $start,
-				 species => $species,
-			   };
+                 start => $start,
+                 slippery => $slippery,
+                 species => $species,
+               };
   my $child_pid;
-  chdir("/home/trey/dinman/code/browser/work");
-  my $command = "/home/trey/dinman/code/browser/work/Fold.out $input";
-  open(NU, "$command $input |") or die "Nupack failed $!.";
+  chdir($config->{tmpdir});
+  my $command = "$config->{nupack} $input";
+  open(NU, "$command $input 2>nupack.err |") or die "Nupack failed $!.";
   my $count = 0;
   while (my $line = <NU>) {
 	$count++;
@@ -35,7 +41,6 @@ sub Nupack {
 	next unless($count > 14);
 	chomp $line;
 	if ($count == 15) {
-	  print "TEST: $line\n";
 	  my ($crap, $len) = split(/\ \=\ /, $line);
 	  $return->{seqlength} = $len;
 	}
@@ -69,7 +74,7 @@ sub Nupack {
   close(PAIRS);
   unlink("out.pair");
   $return->{pairs} = $pairs;
-  chdir("/home/trey/dinman/code/browser");
+  chdir($config->{basedir});
   return($return);
 }
 
