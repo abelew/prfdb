@@ -66,7 +66,7 @@ sub Search {
         my $filename = $fh->filename;
         my $string = '';
         ### Move start up 7 nucleotides in the case of a description file which does not specify a slippery site
-#		foreach my $c (($start + 7) .. $end) {
+        #foreach my $c (($start + 7) .. $end) {
         foreach my $c ($start .. $end) {
           $string .= $information[$c] if (defined($information[$c]));
         }

@@ -30,7 +30,6 @@ sub Nupack {
                  slippery => $slippery,
                  species => $species,
                };
-  my $child_pid;
   chdir($config->{tmpdir});
   my $command = "$config->{nupack} $input";
   open(NU, "$command $input 2>nupack.err |") or die "Nupack failed $!.";
@@ -81,6 +80,21 @@ sub Nupack {
 sub Pknots {
   my $me = shift;
   my $input = $me->{file};
+  my $accession = $me->{accession};
+  my $start = $me->{start};
+  my $species = $me->{species};
+  my $slippery = $me->{slippery};
+  my $config = $PRFConfig::config;
+  my $return = { accession => $accession,
+                 start => $start,
+                 slippery => $slippery,
+                 species => $species,
+               };
+  chdir($config->{tmpdir});
+  my $command = "$config->{pknots} -k $input";
+  open(PK, "$command $input 2>nupack.err |") or die "Nupack failed $!.";
+
+
   my $return = {};
   my $command = "pknots $input";
   open(PK, "$command |");
@@ -88,9 +102,52 @@ sub Pknots {
 	chomp $line;
 	print "$line<br>\n";
   }
+
+
+  my $count = 0;
+  while (my $line = <NU>) {
+	$count++;
+	## The first 15 lines of nupack output are worthless.
+	next unless($count > 14);
+	chomp $line;
+	if ($count == 15) {
+	  my ($crap, $len) = split(/\ \=\ /, $line);
+	  $return->{seqlength} = $len;
+	}
+	elsif ($count == 17) {
+	  $return->{sequence} = $line;
+	}
+	elsif ($count == 18) {
+	  $return->{paren_output} = $line;
+	}
+	elsif ($count == 19) {
+	  my $tmp = $line;
+	  $tmp =~ s/^mfe\ \=\ //g;
+	  $tmp =~ s/\ kcal\/mol//g;
+	  $return->{mfe} = $tmp;
+	}
+	elsif ($count == 20) {
+	  if ($line eq 'pseudoknotted!') {
+		$return->{knotp} = 1;
+	  }
+	  else {
+		$return->{knotp} = 0;
+	  }
+	}
+  }  ## End of the line reading the nupack output.
+  open(PAIRS, "<out.pair") or die "Could not open the pairs file: $!";
+  my $pairs = '';
+  while(my $line = <PAIRS>) {
+	chomp $line;
+	$pairs .= $line . ',';
+  }
+  close(PAIRS);
+  unlink("out.pair");
+  $return->{pairs} = $pairs;
+  chdir($config->{basedir});
+  return($return);
 }
 
-
-
+}
 
 1;
