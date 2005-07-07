@@ -1,0 +1,5 @@
+Materials and Methods:
+
+
+Hardware:  Amd64 2200+ with 2gig ram, Apple G4 2gig ram.
+Software:  Perl, mysql, rnamotif, nupack, pknots
