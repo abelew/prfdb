@@ -11,6 +11,10 @@ sub new {
                   dsn => $PRFConfig::config->{dsn},
                  }, $class;
   $me->{dbh} = DBI->connect($me->{dsn}, $PRFConfig::config->{user}, $PRFConfig::config->{pass});
+  unless ($PRFConfig::config->{dboutput} eq 'dbi') {
+	open(DBOUT, ">>$PRFConfig::config->{dboutput}");
+  }
+
   return ($me);
 }
 
@@ -119,9 +123,28 @@ sub Put_Nupack {
   my $me = shift;
   my $data = shift;
   my $table = 'nupack_' . $data->{species};
-  my $statement = "INSERT INTO $table (id, accession, start, slipsite, seqlength, sequence, paren_output, pairs, mfe, knotp) VALUES (?,?,?,?,?,?,?,?,?,?)";
-  my $sth = $me->{dbh}->prepare($statement);
-  $sth->execute(undef, $data->{accession}, $data->{start}, $data->{slippery}, $data->{seqlength}, $data->{sequence}, $data->{paren_output}, $data->{pairs}, $data->{mfe}, $data->{knotp});
+  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, seqlength, sequence, paren_output, pairs, mfe, knotp) VALUES (undef, $data->{accession}, $data->{start}, $data->{slippery}, $data->{seqlength}, $data->{sequence}, $data->{paren_output}, $data->{pairs}, $data->{mfe}, $data->{knotp}));
+  if ($PRFConfig::config->{dboutput} eq 'dbi') {
+	my $sth = $me->{dbh}->prepare($statement);
+	$sth->execute()
+  }
+  else {
+	print DBOUT "$statement\n";
+  }
+}
+
+sub Put_Pknots {
+  my $me = shift;
+  my $data = shift;
+  my $table = 'pknots_' . $data->{species};
+  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, logodds, mfe, pairs, output, parsed) VALUES (undef, $data->{accession}, $data->{start}, $data->{slippery}, $data->{logodds}, $data->{mfe}, $data->{pairs}, $data->{pkout}, $data->{parsed}));
+  if ($PRFConfig::config->{dboutput} eq 'dbi') {
+	my $sth = $me->{dbh}->prepare($statement);
+	$sth->execute()
+  }
+  else {
+	print DBOUT "$statement\n";
+  }
 }
 
 sub Put_RNAmotif {
@@ -130,15 +153,20 @@ sub Put_RNAmotif {
   my $accession = shift;
   my $slipsites_data = shift;
   my $table = "rnamotif_" . $species;
-  my $statement = "INSERT INTO $table (id, accession, start, total, permissable, data, output) VALUES (?,?,?,?,?,?,?)";
-  my $sth = $me->{dbh}->prepare($statement);
   foreach my $start (keys %{$slipsites_data}) {
     my $total = $slipsites_data->{$start}{total};
     my $permissable = $slipsites_data->{$start}{permissable};
     my $filename = $slipsites_data->{$start}{filename};
     my $filedata = $slipsites_data->{$start}{filedata};
     my $output = $slipsites_data->{$start}{output};
-    $sth->execute(undef, $accession, $start, $total, $permissable, $filedata, $output);
+    my $statement = qq(INSERT INTO $table (id, accession, start, total, permissable, data, output) VALUES (undef, $accession, $start, $total, $permissable, $filedata, $output));
+	if ($PRFConfig::config->{dboutput} eq 'dbi') {
+	  my $sth = $me->{dbh}->prepare($statement);
+	  $sth->execute(undef, $accession, $start, $total, $permissable, $filedata, $output);
+	}
+	else {
+	  print DBOUT "$statement\n";
+	}
   }
 }
 

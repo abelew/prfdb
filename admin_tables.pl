@@ -19,31 +19,47 @@ GetOptions(
 
 my $dbh = DBI->connect($PRFConfig::config->{dsn}, $PRFConfig::config->{user}, $PRFConfig::config->{pass});
 my ($action, $object, $adjective1, $adjective2) = split(/_/, $config->{action});
-if ($config->{action} =~ /^create/) {
+if ($config->{action} =~ /^remove/) {
+  $config->{species} = $object . '_' . $adjective1;
+  Clean_Table('genome');
+  Clean_Table('nupack');
+  Clean_Table('rnamotif');
+  Clean_Table('pknots');
+  Drop_Table('genome');
+  Drop_Table('nupack');
+  Drop_Table('rnamotif');
+  Drop_Table('pknots');
+}
+elsif ($config->{action} =~ /^clean/) {
+  $config->{species} = $adjective1 . '_' . $adjective2;
+  Clean_Table($object, $adjective1, $adjective2);
+}
+elsif ($config->{action} =~ /^create/) {
+  $config->{species} = $adjective1 . '_' . $adjective2;
   if ($object eq 'data') {
 	Create_Data($adjective1, $adjective2);
   }
   elsif ($object eq 'rnamotif') {
 	Create_Rnamotif($adjective1, $adjective2);
   }
-  elsif ($object eq 'fasta') {
-	Create_Fasta();
-  }
   elsif ($object eq 'nupack') {
 	Create_Nupack($adjective1, $adjective2);
   }
-  else {
-	Create_Genome();
+  elsif ($object eq 'genome') {
+	Create_Genome($adjective1, $adjective2);
   }
 }
 elsif ($action eq 'load' and $object eq 'genome') {
+  $config->{species} = $adjective1 . '_' . $adjective2;
   Load_Genome_Table($adjective1, $adjective2);
 }
 elsif ($action eq 'start') {
-  Create_Rnamotif($object, $adjective1);
-  Create_Nupack($object, $adjective1);
+  $config->{species} = $object . '_' . $adjective1;
+  Create_Rnamotif();
+  Create_Nupack();
   Create_Genome();
-  Load_Genome_Table($object, $adjective1);
+  Create_Pknots();
+  Load_Genome_Table();
 }
 else {
   Error("Incorrect usage of admin_tables.pl ARGV: @ARGV");
@@ -54,46 +70,52 @@ else {
 --action create_pknots_genus_species
 --action load_genome_genus_species --input input_file
 --action start_genus_species --input input_file
+--action clean_genus_species
+--action remove_genus_species
+--action drop_genus_species
 ");
 }
 
+sub Clean_Table {
+  my $type = shift;
+  my $table = $type . '_' . $config->{species};
+  my $statement = "DELETE from $table";
+  my $sth = $dbh->prepare("$statement");
+  $sth->execute or Error("Could not execute statement: $statement in Create_Genome");
+}
+
+sub Drop_Table {
+  my $type = shift;
+  my $table = $type . '_' . $config->{species};
+  my $statement = "DROP table $table";
+  my $sth = $dbh->prepare("$statement");
+  $sth->execute or Error("Could not execute statement: $statement in Create_Genome");
+}
 
 sub Create_Genome {
   my $table = 'genome_' . $config->{species};
   my $statement = "CREATE table $table  (accession varchar(10) not null, version int not null, comment blob not null, sequence blob not null, primary key (accession))";
   print "Statement: $statement\n";
   my $sth = $dbh->prepare("$statement");
-  $sth->execute;
+  $sth->execute or die("Could not execute statement: $statement in Create_Genome");
 }
 
-sub Create_Fasta {
-  my $statement = "CREATE table fasta (id int not null auto_increment, species varchar(80), start int, comment varchar(80), sequence blob, primary key (id))";
-  my $sth = $dbh->prepare($statement);
-  $sth->execute;
-}
-
-sub Create_Data {
-  my $genus = shift;
-  my $species = shift;
-  my $tablename = "data_" . $genus . '_' . $species;
+sub Create_Pknots {
+  my $tablename = 'pknots_' . $config->{species};
   my $statement = "CREATE table $tablename (id int not null auto_increment, process varchar(80), start int, length int, struct_start int, logodds float, mfe float, cor_mfe float, pairs int, pseudop tinyint, slipsite varchar(80), spacer varchar(80), sequence blob, structure blob, parsed blob, primary key (id))";
   my $sth = $dbh->prepare("$statement");
   $sth->execute;
 }
 
 sub Create_Nupack {
-  my $genus = shift;
-  my $species = shift;
-  my $tablename = "nupack_" . $genus . '_' . $species;
+  my $tablename = 'nupack_' . $config->{species};
   my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), seqlength int, sequence char(200), paren_output char(200), pairs blob, mfe float, knotp bool, primary key(id))";
   my $sth = $dbh->prepare("$statement");
   $sth->execute;
 }
 
 sub Create_Rnamotif {
-  my $genus = shift;
-  my $species = shift;
-  my $tablename = "rnamotif_" . $genus . '_' . $species;
+  my $tablename = "rnamotif_" . $config->{species};
   my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, total int, permissable int, data blob, output blob, primary key (id))";
   my $sth = $dbh->prepare("$statement");
   $sth->execute;

@@ -21,6 +21,7 @@ $PRFConfig::config = {
                       species => 'homo_sapiens',
                       input => 'inputfile',
                       action => 'die',
+                      dboutput => 'dbi',
 };
 $PRFConfig::config->{dsn} = "DBI:mysql:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host}";
 my $err = $PRFConfig::config->{errorfile};

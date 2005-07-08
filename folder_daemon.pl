@@ -12,9 +12,13 @@ use Input;
 
 my $config = $PRFConfig::config;
 chdir($config->{basedir});
-my $time_to_die = 0;
-#chroot($directory) or die "Could not change directory into $directory: $!\n";
 
+if ($ARGV[0] eq 'split') {
+  Split_Queues($ARGV[1]);
+  exit(0);
+}
+
+my $time_to_die = 0;
 my $pid = fork;
 exit if $pid;
 die "Could not fork: $!\n" unless defined($pid);
@@ -118,6 +122,33 @@ sub Check_Db {
       unlink($slipsites->{$start}{filename});
     } ##End checking slipsites for a locus when have not motif nor folding information
   } ## End no motif nor folding information.
+}
+
+sub Split_Queues {
+  my $num = shift;
+  my $count = 1;
+  for my $c ($count .. $num) {
+	my $priv_handle = "private_$c";
+	open($priv_handle, ">$priv_handle");
+
+	my $pub_handle = "public_$c";
+	open($pub_handle, ">$pub_handle");
+  }
+  open(PRIV_IN, "<private_queue");
+  my $count = 0;
+  while (my $line = <PRIV_IN>) {
+	$count++;
+	my $serial = $count % $num;
+	my $handle = "private_" . $serial;
+	print $handle $line;
+  }
+  my $count = 0;
+  while (my $line = <PUB_IN>) {
+	$count++;
+	my $serial = $count % $num;
+	my $handle = "public_" . $serial;
+	print $handle $line;
+  }
 }
 
 sub signal_handler {
