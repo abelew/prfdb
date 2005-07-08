@@ -2,15 +2,11 @@
 use strict;
 use DBI;
 use Getopt::Long;
+use lib 'lib';
+use PRFConfig;
 
-my $config = {  species => 'homo_sapiens',
-			  input => 'intputfile',
-			  db => 'atbprfdb',
-			  host => 'localhost',
-			  user => 'trey',
-			  pass => 'Iactilm2',
-			  action => 'die',
-			 };
+my $config = $PRFConfig::config;
+
 GetOptions(
 		   'species=s' => \$config->{species},
 		   'input=s' => \$config->{input},
@@ -21,10 +17,8 @@ GetOptions(
 		   'action=s' => \$config->{action},
 		   );
 
-my $dsn = "DBI:mysql:database=$config->{db};host=$config->{host}";
-my $dbh = DBI->connect($dsn, $config->{user}, $config->{pass});
+my $dbh = DBI->connect($PRFConfig::config->{dsn}, $PRFConfig::config->{user}, $PRFConfig::config->{pass});
 my ($action, $object, $adjective1, $adjective2) = split(/_/, $config->{action});
-
 if ($config->{action} =~ /^create/) {
   if ($object eq 'data') {
 	Create_Data($adjective1, $adjective2);
@@ -46,12 +40,13 @@ elsif ($action eq 'load' and $object eq 'genome') {
   Load_Genome_Table($adjective1, $adjective2);
 }
 elsif ($action eq 'start') {
-  Create_Rnamotif($adjective1, $adjective2);
-  Create_Nupack($adjective1, $adjective2);
+  Create_Rnamotif($object, $adjective1);
+  Create_Nupack($object, $adjective1);
   Create_Genome();
-  Load_Genome_Table($adjective1, $adjective2);
+  Load_Genome_Table($object, $adjective1);
 }
 else {
+  Error("Incorrect usage of admin_tables.pl ARGV: @ARGV");
   die("I do not know what to do. Known actions are:
 --action create_genome_genus_species
 --action create_nupack_genus_species

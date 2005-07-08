@@ -79,7 +79,7 @@ $string
         #print $data;
 #		my $command = "/usr/local/bin/rnamotif -descr descr/$slipsite.desc $filename | /usr/local/bin/rmprune";
         my $command = "/usr/local/bin/rnamotif -context -descr descr/trey.desc $filename 2>rnamotif.err | /usr/local/bin/rmprune";
-        open(RNAMOT, "$command |") or die("Unable to run rnamotif. $!");
+        open(RNAMOT, "$command |") or Error("Unable to run rnamotif: $!");
         my $permissable = 0;
         my $nonpermissable = 0;
         my $total = 0;
