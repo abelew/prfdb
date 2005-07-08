@@ -13,7 +13,7 @@ use Input;
 my $config = $PRFConfig::config;
 chdir($config->{basedir});
 
-if ($ARGV[0] eq 'split') {
+if (defined($ARGV[0]) and $ARGV[0] eq 'split') {
   Split_Queues($ARGV[1]);
   exit(0);
 }
@@ -126,7 +126,8 @@ sub Check_Db {
 
 sub Split_Queues {
   my $num = shift;
-  my $count = 1;
+  my $count = 0;
+  no strict 'refs';
   for my $c ($count .. $num) {
 	my $priv_handle = "private_$c";
 	open($priv_handle, ">$priv_handle");
@@ -134,19 +135,24 @@ sub Split_Queues {
 	my $pub_handle = "public_$c";
 	open($pub_handle, ">$pub_handle");
   }
+
   open(PRIV_IN, "<private_queue");
-  my $count = 0;
+  $count = 0;
   while (my $line = <PRIV_IN>) {
 	$count++;
 	my $serial = $count % $num;
 	my $handle = "private_" . $serial;
+    print "Printing $line to $handle\n";
 	print $handle $line;
   }
-  my $count = 0;
+
+  open(PUB_IN, "<public_queue");
+  $count = 0;
   while (my $line = <PUB_IN>) {
 	$count++;
 	my $serial = $count % $num;
 	my $handle = "public_" . $serial;
+    print "Printing $line to $handle\n";
 	print $handle $line;
   }
 }

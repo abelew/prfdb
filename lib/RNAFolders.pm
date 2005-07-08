@@ -85,11 +85,6 @@ sub Pknots {
   my $start = $me->{start};
   my $species = $me->{species};
   my $slippery = $me->{slippery};
-  my $return = { accession => $accession,
-				 start => $start,
-				 slippery => $slippery,
-				 species => $species,
-               };
   my $config = $PRFConfig::config;
   my $return = { accession => $accession,
                  start => $start,

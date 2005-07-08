@@ -106,6 +106,9 @@ $string
         $return{$start}{total} = $total;
         $return{$start}{filename} = $filename;
         $return{$start}{output} = $rnamotif_output;
+        $return{$start}{permissable} = $permissable;
+        $return{$start}{filedata} = $data;
+
 #		}
       } ## End checking for a slippery site
     }  ## End the reading frame check

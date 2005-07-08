@@ -123,7 +123,8 @@ sub Put_Nupack {
   my $me = shift;
   my $data = shift;
   my $table = 'nupack_' . $data->{species};
-  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, seqlength, sequence, paren_output, pairs, mfe, knotp) VALUES (undef, $data->{accession}, $data->{start}, $data->{slippery}, $data->{seqlength}, $data->{sequence}, $data->{paren_output}, $data->{pairs}, $data->{mfe}, $data->{knotp}));
+  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, seqlength, sequence, paren_output, pairs, mfe, knotp) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{seqlength}', '$data->{sequence}', '$data->{paren_output}', '$data->{pairs}', '$data->{mfe}', '$data->{knotp}'));
+#  print "NUPACK: $statement\n";
   if ($PRFConfig::config->{dboutput} eq 'dbi') {
 	my $sth = $me->{dbh}->prepare($statement);
 	$sth->execute()
@@ -137,7 +138,7 @@ sub Put_Pknots {
   my $me = shift;
   my $data = shift;
   my $table = 'pknots_' . $data->{species};
-  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, logodds, mfe, pairs, output, parsed) VALUES (undef, $data->{accession}, $data->{start}, $data->{slippery}, $data->{logodds}, $data->{mfe}, $data->{pairs}, $data->{pkout}, $data->{parsed}));
+  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, logodds, mfe, pairs, output, parsed) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{logodds}', '$data->{mfe}', '$data->{pairs}', '$data->{pkout}', '$data->{parsed}'));
   if ($PRFConfig::config->{dboutput} eq 'dbi') {
 	my $sth = $me->{dbh}->prepare($statement);
 	$sth->execute()
@@ -159,10 +160,11 @@ sub Put_RNAmotif {
     my $filename = $slipsites_data->{$start}{filename};
     my $filedata = $slipsites_data->{$start}{filedata};
     my $output = $slipsites_data->{$start}{output};
-    my $statement = qq(INSERT INTO $table (id, accession, start, total, permissable, data, output) VALUES (undef, $accession, $start, $total, $permissable, $filedata, $output));
+    my $statement = qq(INSERT INTO $table (id, accession, start, total, permissable, data, output) VALUES ('', '$accession', '$start', '$total', '$permissable', '$filedata', '$output'));
+#    print "RNAMOTIF: $statement\n";
 	if ($PRFConfig::config->{dboutput} eq 'dbi') {
 	  my $sth = $me->{dbh}->prepare($statement);
-	  $sth->execute(undef, $accession, $start, $total, $permissable, $filedata, $output);
+	  $sth->execute();
 	}
 	else {
 	  print DBOUT "$statement\n";
