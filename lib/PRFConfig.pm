@@ -24,6 +24,7 @@ $PRFConfig::config = {
 };
 $PRFConfig::config->{dsn} = "DBI:mysql:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host}";
 my $err = $PRFConfig::config->{errorfile};
+`touch $err` unless(-w $err);
 open(ERRFH, ">>$err") or die "Unable to open the log file $err: $!\n";
 my $error_counter = 0;
 

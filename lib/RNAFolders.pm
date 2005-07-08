@@ -4,6 +4,7 @@ use IO::Handle;
 use POSIX 'setsid';
 use lib 'lib';
 use PRFConfig qw(Error);
+use PkParse;
 
 sub new {
   my ($class, %arg) = @_;
@@ -84,6 +85,11 @@ sub Pknots {
   my $start = $me->{start};
   my $species = $me->{species};
   my $slippery = $me->{slippery};
+  my $return = { accession => $accession,
+				 start => $start,
+				 slippery => $slippery,
+				 species => $species,
+               };
   my $config = $PRFConfig::config;
   my $return = { accession => $accession,
                  start => $start,
@@ -93,6 +99,48 @@ sub Pknots {
   chdir($config->{tmpdir});
   my $command = "$config->{pknots} -k $input";
   open(PK, "$command $input 2>pknots.err |") or Error("Failed to run pknots: $!");
+  my $counter = 0;
+  my ($line_to_read, $crap) = undef;
+  my $string = '';
+  my $uninteresting = undef;
+  while (my $line = <PK>) {
+	next if (defined($uninteresting));
+	$counter++;
+	chomp $line;
+	if ($line =~ /^NAM/) {
+	  ($crap, $return->{slippery}) = split(/NAM\s+/, $line);
+	}
+	elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
+	   $line_to_read = $counter + 2;
+	 }
+	elsif (defined($line_to_read) and $line_to_read == $counter) {
+	  print "TEST: $line\n";
+	  $line =~ s/^\s+//g;
+	  $line =~ s/$/ /g;
+	  $string .= $line;
+	}
+	elsif ($line =~ /Log odds/) {
+	  ($crap, $return->{logodds}) = split(/score\:\s+/, $line);
+	}
+	elsif ($line =~ /\/mol\)\:\s+/) {
+	  ($crap, $return->{mfe}) = split(/\/mol\)\:\s+/, $line);
+	}
+	elsif ($line =~ /found\:\s+/) {
+	  ($crap, $return->{pairs}) = split(/found\:\s+/, $line);
+	  $uninteresting = 1;
+	}
+  } ## For every line of pknots
+  $string =~ s/\s+/ /g;
+  $return->{pkout} = $string;
+  my $parser = new PkParse(debug => 0);
+  my @struct_array = split(/ /, $string);
+  my $out = $parser->Unzip(\@struct_array);
+  my $parsed = '';
+  foreach my $char (@{$out}) {
+	$parsed .= $char . ' ';
+  }
+  $return->{parsed} = $parsed;
+  return($return);
 }
 
 1;
