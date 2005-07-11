@@ -5,7 +5,8 @@ $PRFConfig::config = {
                       do_pknots => 0,
                       privqueue => "$prefix/private_queue",
                       pubqueue => "$prefix/public_queue",
-                      errorfile => "$prefix/prfdb.log",
+                      errorfile => "$prefix/prfdb.err",
+                      logfile => "$prefix/prfdb.log",
                       basedir => $prefix,
                       tmpdir => "$prefix/work",
                       nupack_dir => "$prefix/work",
@@ -15,7 +16,7 @@ $PRFConfig::config = {
                       pknots => '/usr/local/bin/pknots',
                       zcat => '/usr/bin/zcat',
                       db => 'atbprfdb',
-                      host => 'localhost',
+                      host => 'prfdb.umd.edu',
                       user => 'trey',
                       pass => 'Iactilm2',
                       max_stem_length => 100,
@@ -34,6 +35,9 @@ $PRFConfig::config->{dsn} = "DBI:mysql:database=$PRFConfig::config->{db};host=$P
 my $err = $PRFConfig::config->{errorfile};
 `touch $err` unless(-w $err);
 open(ERRFH, ">>$err") or die "Unable to open the log file $err: $!\n";
+my $out = $PRFConfig::config->{logfile};
+`touch $out` unless(-w $out);
+open(LOGFH, ">>$out") or die "Unable to open the log file $out: $!\n";
 my $error_counter = 0;
 
 sub Error {

@@ -34,6 +34,20 @@ sub Get_Sequence {
   }
 }
 
+sub Get_RNAfolds {
+  my $me = shift;
+  my $db = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $return = {};
+  my $table = $db . '_' . $species;
+  my $statement = "SELECT count(id) FROM $table WHERE accession = '$accession'";
+  my $dbh = $me->{dbh};
+  my $info = $dbh->selectall_arrayref($statement);
+  my $count = $info->[0]->[0];
+  return($count);
+}
+
 sub Get_RNAmotif {
   my $me = shift;
   my $species = shift;
@@ -44,13 +58,13 @@ sub Get_RNAmotif {
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_arrayref($statement);
 #  return(0) if (scalar(@{$info}) == 0);
-  return(0) unless(defined($info));
   return(0) if (scalar(@{$info}) == 0);
-  foreach my $start (@{$info}) {
-	$return->{$start}{total} = $info->[$start]->[0] if defined($return->{$start}{total});
-	$return->{$start}{permissable} = $info->[$start]->[1] if defined($return->{$start}{permissable});
-	$return->{$start}{filedata} = $info->[$start]->[2] if defined($return->{$start}{filedata});
-	$return->{$start}{output} = $info->[$start]->[3];
+  my @data = @{$info};
+  foreach my $start (0 .. $#data) {
+	$return->{$data[$start]}{total} = $data[$start]->[0] if defined($return->{$data[$start]}{total});
+	$return->{$data[$start]}{permissable} = $data[$start]->[1] if defined($return->{$data[$start]}{permissable});
+	$return->{$data[$start]}{filedata} = $data[$start]->[2] if defined($return->{$data[$start]}{filedata});
+	$return->{$data[$start]}{output} = $data[$start]->[3];
   }
   return($return);
 }

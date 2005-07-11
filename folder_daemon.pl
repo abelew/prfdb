@@ -91,60 +91,78 @@ sub Check_Db {
   if ($PRFConfig::config->{dbinput} ne 'dbi') { $motif_info = 0; }
   else { $motif_info = $db->Get_RNAmotif($datum->{species}, $datum->{accession}); }
   if ($motif_info) {  ## If the motif information _does_ exist, check the folding information
- foreach my $start (keys %{$motif_info}) {  ## For every start site in the sequence
-   my $folding;
-   if ($PRFConfig::config->{dbinput} ne 'dbi') { $folding = 0; }
-   else { $folding = $db->Get_RNAfolds($datum->{species}, $datum->{accession}, $start); }
-      if ($folding) {  ## Both have motif and folding
-        print "HAVE FOLDING AND MOTIF!\n";
-        sleep(1);
-        return(1);
-      }
-      else {  ## Do have a motif for the sequence, do not have folding information
-        print "HAVE MOTIF, NO FOLDING\n";
-        my $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
-        my $slippery = $db->Get_Slippery($db->Get_Sequence($datum->{species}, $datum->{accession}), $start);
-        my $fold_search = new RNAFolders(file => $filename,
-                                       accession => $datum->{accession},
-                                       start => $start,
-                                       slippery => $slippery,
-                                       species => $datum->{species},);
+    foreach my $start (keys %{$motif_info}) {  ## For every start site in the sequence
+      my $folding;
+      if ($PRFConfig::config->{dbinput} ne 'dbi') { $folding = 0; } ##Yeah yeah, bad style.  Except logically it is simpler
+      ## to just drop out if we are not in a dbi environment.
+      else { ## Therefore this is in a DBI environment
+        my $nupack_folding = undef;
+        my $pknots_folding = undef;
 
-		my ($nupack_info, $pknots_info);
-		if ($PRFConfig::config->{do_nupack}) {
-		  $nupack_info = $fold_search->Nupack();
-		  $db->Put_Nupack($nupack_info);
-		}
-		if ($PRFConfig::config->{do_pknots}) {
-		  $pknots_info = $fold_search->Pknots();
-		  $db->Put_Pknots($pknots_info);
-		}
-		unlink($filename);
-      } ## End if you have a motif but no folding information
-    } ## End recursing over the starts in a given sequence
-  }  ## End if there is a motif for this sequence
+        if ($PRFConfig::config->{do_nupack}) {  ## Check the configuration file for nupack
+          $nupack_folding = $db->Get_RNAfolds('nupack', $datum->{species}, $datum->{accession}, $start);
+          if ($nupack_folding eq '0') {  ## Both have motif and folding
+            print LOGFH "HAVE NUPACK FOLDING AND MOTIF for $datum->{species} $datum->{accession}\n";
+            return(1);
+          }
+          else { ## Want nupack, have motif, no folding, so need to make a tmp file for nupack.
+            my $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
+            my $slippery = $db->Get_Slippery($db->Get_Sequence($datum->{species}, $datum->{accession}), $start);
+            my $fold_search = new RNAFolders(file => $filename,
+                                             accession => $datum->{accession},
+                                             start => $start,
+                                             slippery => $slippery,
+                                             species => $datum->{species},);
+            my $nupack_info = $fold_search->Nupack();
+            $db->Put_Nupack($nupack_info);
+          }  ## Else checking for folding and motif information
+        }  ## End do_nupack
+
+        if ($PRFConfig::config->{do_pknots}) {  ## Check to see if pknots should be run
+          $pknots_folding = $db->Get_RNAfolds('pknots', $datum->{species}, $datum->{accession}, $start);
+          if ($pknots_folding eq '0') {  ## Both have motif and folding
+            print LOGFH "HAVE PKNOTS FOLDING AND MOTIF for $datum->{species} $datum->{accession}\n";
+            return(1);
+          }
+          else {  ## Want pknots, have motif, no folding, so make a tempfile
+            my $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
+            my $slippery = $db->Get_Slippery($db->Get_Sequence($datum->{species}, $datum->{accession}), $start);
+            my $fold_search = new RNAFolders(file => $filename,
+                                             accession => $datum->{accession},
+                                             start => $start,
+                                             slippery => $slippery,
+                                             species => $datum->{species},);
+            my $pknots_info = $fold_search->Pknots();
+            $db->Put_Pknots($pknots_info);
+          }  ## End checking for folding and motif information
+        } ## End check for do_pknots
+      }  ## End if we are in a dbi environment
+    }  ## End foreach piece of $motif_info
+  }  ## End if there is motif information
   else { ## No folding information
     my $sequence = $db->Get_Sequence($datum->{species}, $datum->{accession});
     my $slipsites = $motifs->Search($sequence);
     $db->Put_RNAmotif($datum->{species}, $datum->{accession}, $slipsites);
-    print "NO MOTIF, NO FOLDING\n";
+    print LOGFH "NO MOTIF, NO FOLDING for $datum->{species} $datum->{accession}\n";
+    my $success = scalar(%{$slipsites});
+    if ($success == 0) { print LOGFH "$datum->{species} $datum->{accession} has no slippery sites.\n"; }
     foreach my $start (keys %{$slipsites}) {
-      print "STARTING FOLD FOR $start in $datum->{accession}\n";
+      print LOGFH "STARTING FOLD FOR $start in $datum->{accession}\n";
       my $slippery = $db->Get_Slippery($sequence, $start); 
       my $fold_search = new RNAFolders(file => $slipsites->{$start}{filename},
                                        accession => $datum->{accession},
                                        start => $start,
                                        slippery => $slippery,
                                        species => $datum->{species},);
-	  my ($nupack_info, $pknots_info);
-	  if ($PRFConfig::config->{do_nupack}) {
-		$nupack_info = $fold_search->Nupack();
-		$db->Put_Nupack($nupack_info);
-	  }
-	  if ($PRFConfig::config->{do_pknots}) {
-		$pknots_info = $fold_search->Pknots();
-		$db->Put_Pknots($pknots_info);
-	  }
+      my ($nupack_info, $pknots_info);
+      if ($PRFConfig::config->{do_nupack}) {
+        $nupack_info = $fold_search->Nupack();
+        $db->Put_Nupack($nupack_info);
+      }
+      if ($PRFConfig::config->{do_pknots}) {
+        $pknots_info = $fold_search->Pknots();
+        $db->Put_Pknots($pknots_info);
+      }
       unlink($slipsites->{$start}{filename});
     } ##End checking slipsites for a locus when have not motif nor folding information
   } ## End no motif nor folding information.
@@ -162,11 +180,11 @@ sub Split_Queue {
   open(PRIV_IN, "<private_queue");
   $count = 0;
   while (my $line = <PRIV_IN>) {
-	$count++;
-	my $serial = $count % $num;
-	my $handle = "private_" . $serial;
-    print "Printing $line to $handle\n";
-	print $handle $line;
+    $count++;
+    my $serial = $count % $num;
+    my $handle = "private_" . $serial;
+    print LOGFH "Printing $line to $handle\n";
+    print $handle $line;
   }
 }
 
