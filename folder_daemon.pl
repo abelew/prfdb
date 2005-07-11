@@ -19,7 +19,7 @@ if (defined($ARGV[0])) {
 	exit(0);
   }
   elsif ($ARGV[0] eq 'privqueue') {
-	$PRFConfig::config->{provqueue} = $ARGV[1];
+	$PRFConfig::config->{privqueue} = $ARGV[1];
   }
 }
 
@@ -150,7 +150,7 @@ sub Check_Db {
   } ## End no motif nor folding information.
 }
 
-sub Split_Queues {
+sub Split_Queue {
   my $num = shift;
   my $count = 0;
   no strict 'refs';
