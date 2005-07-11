@@ -84,6 +84,17 @@ sub Clean_Table {
   $sth->execute or Error("Could not execute statement: $statement in Create_Genome");
 }
 
+sub Drop_All {
+  my $genus_species = shift;
+  my @tables = ('genome_', 'rnamotif_', 'pknots_', 'nupack_');
+  foreach my $tab (@tables) {
+	my $t_name = $tab . $genus_species;
+	my $statement = "DROP table $t_name";
+	my $sth = $dbh->prepare("$statement");
+	$sth->execute or Error("Could not execute Statement: $statement in Drop_All");
+  }
+}
+
 sub Drop_Table {
   my $type = shift;
   my $table = $type . '_' . $config->{species};
@@ -94,7 +105,7 @@ sub Drop_Table {
 
 sub Create_Genome {
   my $table = 'genome_' . $config->{species};
-  my $statement = "CREATE table $table  (accession varchar(10) not null, version int not null, comment blob not null, sequence blob not null, primary key (accession))";
+  my $statement = "CREATE table $table  (accession varchar(10) not null, genename varchar(20), version int, comment blob not null, sequence blob not null, primary key (accession))";
   print "Statement: $statement\n";
   my $sth = $dbh->prepare("$statement");
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
@@ -128,36 +139,46 @@ sub Load_Genome_Table {
   else {
 	open(IN, "<$config->{input}") or die "Could not open the fasta file\n $!\n";
   }
-  my %datum = (accession => undef, version => undef, comment => undef, sequence => undef);
+  my %datum = (accession => undef, genename => undef, version => undef, comment => undef, sequence => undef);
   while(my $line = <IN>) {
 	chomp $line;
-	if ($line =~ /^\>/) {
+	if ($line =~ /^\>ORFN/) {  ## If it is one of the kooky yeast genomes
 	  if (defined($datum{accession})) {
 		Insert_Genome_Entry(\%datum);
 	  }
-	  my ($gi, $id, $gb, $accession_version, $comment) = split(/\|/, $line);
-	  my ($accession, $version) = split(/\./, $accession_version);
+	  my ($fake_accession, $comment) = split(/\,/, $line);
+	  my ($accession, $genename) = split(/ /, $fake_accession);
+	  $accession =~ s/^\>//g;
 	  $datum{accession} = $accession;
-	  $datum{version} = $version;
+	  $datum{genename} = $genename;
 	  $datum{comment} = $comment;
-#	  print "TEST: $accession $version $comment\n";
-#	  sleep(1);
-	}
+	}  ## End if it is a kooky yeast genome.
+	elsif ($line =~ /^\>/) {
+		if (defined($datum{accession})) {
+		  Insert_Genome_Entry(\%datum);
+		}
+		my ($gi, $id, $gb, $accession_version, $comment) = split(/\|/, $line);
+		my ($accession, $version) = split(/\./, $accession_version);
+		$datum{accession} = $accession;
+		$datum{version} = $version;
+		$datum{comment} = $comment;
+	  }  ## The mgc genomes
 	else {
 	  $datum{sequence} .= $line;
-	}
-  }
-  Insert_Genome_Entry(\%datum);
+	}  ## Non accession line
+  }  ## End every line
+  Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
 }
 
 sub Insert_Genome_Entry {
   my $datum = shift;
   my $qa = $dbh->quote($datum->{accession});
+  my $qn = $dbh->quote($datum->{genename});
   my $qv = $dbh->quote($datum->{version});
   my $qc = $dbh->quote($datum->{comment});
   my $qs = $dbh->quote($datum->{sequence});
   my $table = "genome_" . $config->{species};
-  my $statement = "INSERT into $table values($qa, $qv, $qc, $qs)";
+  my $statement = "INSERT INTO $table (accession, genename, version, comment, sequence) VALUES($qa, $qn, $qv, $qc, $qs)";
   $datum->{sequence} = undef;
 #  print "TEST: $statement\n";
   my $sth = $dbh->prepare($statement);
