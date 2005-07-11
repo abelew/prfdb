@@ -1,10 +1,15 @@
 $ENV{EFNDATA} = "/usr/local/bin/efndata";
+my $prefix = '/home/trey/browser';
 $PRFConfig::config = {
-		    errorfile => '/home/trey/browser/prfdb.log',
-                      basedir => '/home/trey/browser',
-                      tmpdir => '/home/trey/browser/work',
-                      nupack_dir => '/home/trey/browser/work',
-                      nupack => '/home/trey/browser/work/Fold.out',
+                      do_nupack => 1,
+                      do_pknots => 0,
+                      privqueue => "$prefix/private_queue",
+                      pubqueue => "$prefix/public_queue",
+                      errorfile => "$prefix/prfdb.log",
+                      basedir => $prefix,
+                      tmpdir => "$prefix/work",
+                      nupack_dir => "$prefix/work",
+                      nupack => "$prefix/work/Fold.out",
                       rnamotif => '/usr/local/bin/rnamotif',
                       rmprune => '/usr/local/bin/rmprune',
                       pknots => '/usr/local/bin/pknots',
@@ -22,6 +27,7 @@ $PRFConfig::config = {
                       input => 'inputfile',
                       action => 'die',
                       dboutput => 'dbi',
+                      dbinput => 'dbi',
 };
 $PRFConfig::config->{dsn} = "DBI:mysql:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host}";
 my $err = $PRFConfig::config->{errorfile};

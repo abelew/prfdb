@@ -123,7 +123,7 @@ sub Put_Nupack {
   my $me = shift;
   my $data = shift;
   my $table = 'nupack_' . $data->{species};
-  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, seqlength, sequence, paren_output, pairs, mfe, knotp) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{seqlength}', '$data->{sequence}', '$data->{paren_output}', '$data->{pairs}', '$data->{mfe}', '$data->{knotp}'));
+  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, seqlength, sequence, paren_output, parsed, mfe, knotp) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{seqlength}', '$data->{sequence}', '$data->{paren_output}', '$data->{parsed}', '$data->{mfe}', '$data->{knotp}'));
 #  print "NUPACK: $statement\n";
   if ($PRFConfig::config->{dboutput} eq 'dbi') {
 	my $sth = $me->{dbh}->prepare($statement);
@@ -180,4 +180,5 @@ sub Get_Slippery {
   my $slippery = "$reg[$start]" . "$reg[$start+1]" . "$reg[$start+2]" . "$reg[$start+3]" . "$reg[$start+4]" . "$reg[$start+5]" . "$reg[$start+6]";
   return($slippery);
 }
+
 1;

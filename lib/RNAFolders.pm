@@ -67,13 +67,26 @@ sub Nupack {
   }  ## End of the line reading the nupack output.
   open(PAIRS, "<out.pair") or Error("Could not open the nupack pairs file: $!");
   my $pairs = '';
+  my @nupack_output = ();
   while(my $line = <PAIRS>) {
 	chomp $line;
-	$pairs .= $line . ',';
+	my ($fiveprime, $threeprime) = split(/\s+/, $line);
+	$nupack_output[$threeprime] = $fiveprime;
+	$nupack_output[$fiveprime] = $threeprime;
+  }
+  for my $c (0 .. $#nupack_output) {
+	$nupack_output[$c] = '.' unless(defined $nupack_output[$c]);
   }
   close(PAIRS);
   unlink("out.pair");
   $return->{pairs} = $pairs;
+  my $parser = new PkParse(debug => 0);
+  my $out = $parser->Unzip(\@nupack_output);
+  my $parsed = '';
+  foreach my $char (@{$out}) {
+	$parsed .= $char . ' ';
+  }
+  $return->{parsed} = $parsed;
   chdir($config->{basedir});
   return($return);
 }

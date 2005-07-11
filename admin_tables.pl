@@ -109,7 +109,7 @@ sub Create_Pknots {
 
 sub Create_Nupack {
   my $tablename = 'nupack_' . $config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), seqlength int, sequence char(200), paren_output char(200), pairs blob, mfe float, knotp bool, primary key(id))";
+  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), seqlength int, sequence char(200), paren_output char(200), parsed blob, mfe float, knotp bool, primary key(id))";
   my $sth = $dbh->prepare("$statement");
   $sth->execute;
 }

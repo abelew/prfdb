@@ -13,10 +13,17 @@ use Input;
 my $config = $PRFConfig::config;
 chdir($config->{basedir});
 
-if (defined($ARGV[0]) and $ARGV[0] eq 'split') {
-  Split_Queues($ARGV[1]);
-  exit(0);
+if (defined($ARGV[0])) {
+  if ($ARGV[0] eq 'split') {
+	Split_Queue($ARGV[1]);
+	exit(0);
+  }
+  elsif ($ARGV[0] eq 'privqueue') {
+	$PRFConfig::config->{provqueue} = $ARGV[1];
+  }
 }
+
+Check_Environment();
 
 my $time_to_die = 0;
 my $pid = fork;
@@ -80,10 +87,14 @@ sub Check_Db {
   my $db = new PRFdb;
   my $motifs = new RNAMotif_Search;
   ## First see that there is rna motif information
-  my $info = $db->Get_RNAmotif($datum->{species}, $datum->{accession});
-  if ($info) {  ## If the motif information _does_ exist, check the folding information
- foreach my $start (keys %{$info}) {  ## For every start site in the sequence
-      my $folding = $db->Get_RNAfolds($datum->{species}, $datum->{accession}, $start);
+  my $motif_info;
+  if ($PRFConfig::config->{dbinput} ne 'dbi') { $motif_info = 0; }
+  else { $motif_info = $db->Get_RNAmotif($datum->{species}, $datum->{accession}); }
+  if ($motif_info) {  ## If the motif information _does_ exist, check the folding information
+ foreach my $start (keys %{$motif_info}) {  ## For every start site in the sequence
+   my $folding;
+   if ($PRFConfig::config->{dbinput} ne 'dbi') { $folding = 0; }
+   else { $folding = $db->Get_RNAfolds($datum->{species}, $datum->{accession}, $start); }
       if ($folding) {  ## Both have motif and folding
         print "HAVE FOLDING AND MOTIF!\n";
         sleep(1);
@@ -91,16 +102,24 @@ sub Check_Db {
       }
       else {  ## Do have a motif for the sequence, do not have folding information
         print "HAVE MOTIF, NO FOLDING\n";
-        my $filename = $db->Motif_to_Fasta($info->{$start}{filedata});
+        my $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
         my $slippery = $db->Get_Slippery($db->Get_Sequence($datum->{species}, $datum->{accession}), $start);
         my $fold_search = new RNAFolders(file => $filename,
                                        accession => $datum->{accession},
                                        start => $start,
                                        slippery => $slippery,
                                        species => $datum->{species},);
-      my $nupack_info = $fold_search->Nupack();
-      $db->Put_Nupack($nupack_info);
-      unlink($filename);
+
+		my ($nupack_info, $pknots_info);
+		if ($PRFConfig::config->{do_nupack}) {
+		  $nupack_info = $fold_search->Nupack();
+		  $db->Put_Nupack($nupack_info);
+		}
+		if ($PRFConfig::config->{do_pknots}) {
+		  $pknots_info = $fold_search->Pknots();
+		  $db->Put_Pknots($pknots_info);
+		}
+		unlink($filename);
       } ## End if you have a motif but no folding information
     } ## End recursing over the starts in a given sequence
   }  ## End if there is a motif for this sequence
@@ -117,8 +136,15 @@ sub Check_Db {
                                        start => $start,
                                        slippery => $slippery,
                                        species => $datum->{species},);
-      my $nupack_info = $fold_search->Nupack();
-      $db->Put_Nupack($nupack_info);
+	  my ($nupack_info, $pknots_info);
+	  if ($PRFConfig::config->{do_nupack}) {
+		$nupack_info = $fold_search->Nupack();
+		$db->Put_Nupack($nupack_info);
+	  }
+	  if ($PRFConfig::config->{do_pknots}) {
+		$pknots_info = $fold_search->Pknots();
+		$db->Put_Pknots($pknots_info);
+	  }
       unlink($slipsites->{$start}{filename});
     } ##End checking slipsites for a locus when have not motif nor folding information
   } ## End no motif nor folding information.
@@ -131,9 +157,6 @@ sub Split_Queues {
   for my $c ($count .. $num) {
 	my $priv_handle = "private_$c";
 	open($priv_handle, ">$priv_handle");
-
-	my $pub_handle = "public_$c";
-	open($pub_handle, ">$pub_handle");
   }
 
   open(PRIV_IN, "<private_queue");
@@ -145,16 +168,21 @@ sub Split_Queues {
     print "Printing $line to $handle\n";
 	print $handle $line;
   }
+}
 
-  open(PUB_IN, "<public_queue");
-  $count = 0;
-  while (my $line = <PUB_IN>) {
-	$count++;
-	my $serial = $count % $num;
-	my $handle = "public_" . $serial;
-    print "Printing $line to $handle\n";
-	print $handle $line;
-  }
+sub Check_Environment {
+  die("Missing rnamotif: $!") unless(-x $PRFConfig::config->{rnamotif});
+  die("Missing pknots: $!") unless(-x $PRFConfig::config->{pknots});
+  die("Missing nupack: $!") unless(-x $PRFConfig::config->{nupack});
+  die("Missing rmprune: $!") unless(-x $PRFConfig::config->{rmprune});
+  die("Tmpdir must be executable: $!") unless(-x $PRFConfig::config->{tmpdir});
+  die("Tmpdir must be writable: $!") unless(-w $PRFConfig::config->{tmpdir});
+  die("Privqueue must be writable: $!") unless(-w $PRFConfig::config->{privqueue});
+  die("Pubqueue must be writable: $!") unless(-w $PRFConfig::config->{pubqueue});
+  die("Database not defined") unless(defined($PRFConfig::config->{db}));
+  die("Database host not defined") unless(defined($PRFConfig::config->{host}));
+  die("Database user not defined") unless(defined($PRFConfig::config->{user}));
+  die("Database pass not defined") unless(defined($PRFConfig::config->{pass}));
 }
 
 sub signal_handler {

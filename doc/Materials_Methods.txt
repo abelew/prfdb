@@ -1,5 +1,12 @@
 Materials and Methods:
+Hardware and Software:
+All operations were performed using: a dual PIII Xeon 866 Mhz with 2Gb ram running Linux.
+dual G4 1.4 Ghz with 1.5Gb ram running OSX.
+<SGI Cluster 64 x MIPS R14k 600Mhz 64Gb ram Irix 6.5>
+Amd64 2200+ with 2Gb ram running Linux.
+Supercomputing resources were provided by The National Cancer Institute's Advanced
+Biomedical Computing Center in Frederick Md (ABCC)
+All analyses were carried out with the help of Perl; all code is availble at:
+http://prfdb.umd.edu/browser/code/
+All data is maintained in a mySQL database.
 
-
-Hardware:  Amd64 2200+ with 2gig ram, Apple G4 2gig ram.
-Software:  Perl, mysql, rnamotif, nupack, pknots
