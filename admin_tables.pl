@@ -134,7 +134,7 @@ sub Create_Rnamotif {
 
 sub Load_Genome_Table {
   if ($config->{input} =~ /gz$/) {
-	open(IN, "zcat $config->{input} |") or die "Could not open the fasta file\n $!\n";
+	open(IN, "$PRFConfig::config->{zcat} $config->{input} |") or die "Could not open the fasta file\n $!\n";
   }
   else {
 	open(IN, "<$config->{input}") or die "Could not open the fasta file\n $!\n";

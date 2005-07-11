@@ -13,6 +13,7 @@ $PRFConfig::config = {
                       rnamotif => '/usr/local/bin/rnamotif',
                       rmprune => '/usr/local/bin/rmprune',
                       pknots => '/usr/local/bin/pknots',
+                      zcat => '/usr/bin/zcat',
                       db => 'atbprfdb',
                       host => 'localhost',
                       user => 'trey',
