@@ -26,10 +26,12 @@ sub Nupack {
   my $species = $me->{species};
   my $slippery = $me->{slippery};
   my $config = $PRFConfig::config;
-  my $return = { accession => $accession,
-				 start => $start,
-				 slippery => $slippery,
-				 species => $species,
+  my $return = {
+                accession => $accession,
+                start => $start,
+                slippery => $slippery,
+                species => $species,
+                knotp => 0,
                };
   chdir($config->{tmpdir});
   my $command = "$config->{nupack} $input";

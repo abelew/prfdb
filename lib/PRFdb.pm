@@ -54,18 +54,23 @@ sub Get_RNAmotif {
   my $accession = shift;
   my $return = {};
   my $table = "rnamotif_$species";
-  my $statement = "SELECT total, permissable, filedata, output FROM $table WHERE accession = '$accession'";
-  print "TEST: $statement\n";
+  my $statement = "SELECT total, start, permissable, filedata, output FROM $table WHERE accession = '$accession'";
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_arrayref($statement);
 #  return(0) if (scalar(@{$info}) == 0);
   return(0) if (scalar(@{$info}) == 0);
   my @data = @{$info};
-  foreach my $start (0 .. $#data) {
-	$return->{$data[$start]}{total} = $data[$start]->[0] if defined($return->{$data[$start]}{total});
-	$return->{$data[$start]}{permissable} = $data[$start]->[1] if defined($return->{$data[$start]}{permissable});
-	$return->{$data[$start]}{filedata} = $data[$start]->[2] if defined($return->{$data[$start]}{filedata});
-	$return->{$data[$start]}{output} = $data[$start]->[3];
+  foreach my $start (@data) {
+	my $total = $start->[0];
+	my $st = $start->[1];
+	my $permissable = $start->[2];
+	my $filedata = $start->[3];
+	my $output = $start->[4];
+	$return->{$st}{total} = $total;
+	$return->{$st}{start} = $st;
+	$return->{$st}{permissable} = $permissable;
+	$return->{$st}{filedata} = $filedata;
+	$return->{$st}{output} = $output;
   }
   return($return);
 }
@@ -74,7 +79,7 @@ sub Motif_to_Fasta {
   my $me = shift;
   my $data = shift;
   my $fh = MakeTempfile();
-  print "TEST: $data\n";
+#  print "TEST: $data\n";
   print $fh $data;
   return($fh->filename);
 }

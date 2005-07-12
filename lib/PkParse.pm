@@ -3,13 +3,14 @@ package PkParse;
 sub new {
   my ($class, %args) = @_;
   my $me = bless {
-				  recursion_count => 0,
-				  out_pattern => [],
-				  stemid => 0,
-				  debug => 0,
-				  max_spaces => 3,
-				  pseudoknot => 0,
-				 }, $class;
+                  recursion_count => 0,
+                  out_pattern => [],
+                  stemid => 0,
+                  debug => 0,
+                  max_spaces => 3,
+                  pseudoknot => 0,
+                  positions_remaining => 0,
+                 }, $class;
   if (defined($args{debug})) { $me->{debug} = $args{debug} };
   return($me);
 }
@@ -26,7 +27,6 @@ sub Unzip {
 	  $me->{positions_remaining}++;
 	}
   }
-
   while ($me->{positions_remaining} > 0) {
 	if ($me->{debug}) {
 	  print "STARTING THE WIND LOOP with:

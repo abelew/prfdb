@@ -13,6 +13,7 @@ $PRFConfig::config = {
                       nupack => "$prefix/work/Fold.out",
                       rnamotif => '/usr/local/bin/rnamotif',
                       rmprune => '/usr/local/bin/rmprune',
+                      mfold => '/usr/local/bin/mfold',
                       pknots => '/usr/local/bin/pknots',
                       zcat => '/usr/bin/zcat',
                       db => 'atbprfdb',
@@ -33,15 +34,23 @@ $PRFConfig::config = {
 };
 $PRFConfig::config->{dsn} = "DBI:mysql:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host}";
 my $err = $PRFConfig::config->{errorfile};
-`touch $err` unless(-w $err);
-open(ERRFH, ">>$err") or die "Unable to open the log file $err: $!\n";
 my $out = $PRFConfig::config->{logfile};
-`touch $out` unless(-w $out);
-open(LOGFH, ">>$out") or die "Unable to open the log file $out: $!\n";
 my $error_counter = 0;
+
+sub Out {
+  my $message = shift;
+  open(OUTFH, ">>$out") or die "Unable to open the log file $out: $!\n";
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+  my $month = $mon + 1;
+  my $y = $year + 1900;
+  my $datestring = "$hour:$min:$sec $mday/$month/$y";
+  print OUTFH "$datestring\t$message\n";
+  close(OUTFH);
+}
 
 sub Error {
   my $message = shift;
+  open(ERRFH, ">>$err") or die "Unable to open the log file $err: $!\n";
   $error_counter++;
   if ($error_counter >= 20) {
     die("Passed 20 errors, check the error log $PRFConfig::config->{errfile}");
@@ -51,6 +60,7 @@ sub Error {
   my $y = $year + 1900;
   my $datestring = "$hour:$min:$sec $mday/$month/$y";
   print ERRFH "$datestring\t$message\n";
+  close(ERRFH);
 }
 
 1;

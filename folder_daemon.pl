@@ -2,13 +2,13 @@
 use strict;
 use POSIX;
 use DBI;
+use Time::HiRes;
 
 use lib 'lib';
 use PRFConfig;
 use PRFdb;
 use RNAMotif_Search;
 use RNAFolders;
-use Input;
 
 my $config = $PRFConfig::config;
 chdir($config->{basedir});
@@ -34,7 +34,7 @@ POSIX::setsid() or die "Could not start a new process group: $!\n";
 $SIG{INT} = $SIG{TERM} = $SIG{HUP} = \&signal_handler;
 
 until ($time_to_die) {
-  sleep(2);
+  Time::HiRes::usleep(100);
   ## Code goes here.
   ## Process:
   # 1.  Open queue file, read last line; gather species, accession, start
@@ -94,7 +94,6 @@ sub Check_Db {
     foreach my $start (keys %{$motif_info}) {  ## For every start site in the sequence
       my $folding;
       my $fdata = $motif_info->{$start}{filedata};
-      print "Checkdb: $fdata\n";
       if ($PRFConfig::config->{dbinput} ne 'dbi') { $folding = 0; } ##Yeah yeah, bad style.  Except logically it is simpler
       ## to just drop out if we are not in a dbi environment.
       else { ## Therefore this is in a DBI environment
@@ -103,12 +102,11 @@ sub Check_Db {
 
         if ($PRFConfig::config->{do_nupack}) {  ## Check the configuration file for nupack
           $nupack_folding = $db->Get_RNAfolds('nupack', $datum->{species}, $datum->{accession}, $start);
-          if ($nupack_folding eq '0') {  ## Both have motif and folding
-            print LOGFH "HAVE NUPACK FOLDING AND MOTIF for $datum->{species} $datum->{accession}\n";
+          if ($nupack_folding > 0) {  ## Both have motif and folding
+            Out("HAVE NUPACK FOLDING AND MOTIF for $datum->{species} $datum->{accession}");
             return(1);
           }
           else { ## Want nupack, have motif, no folding, so need to make a tmp file for nupack.
-            print "Checkdb: $fdata\n";
             my $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
             my $slippery = $db->Get_Slippery($db->Get_Sequence($datum->{species}, $datum->{accession}), $start);
             my $fold_search = new RNAFolders(file => $filename,
@@ -124,7 +122,7 @@ sub Check_Db {
         if ($PRFConfig::config->{do_pknots}) {  ## Check to see if pknots should be run
           $pknots_folding = $db->Get_RNAfolds('pknots', $datum->{species}, $datum->{accession}, $start);
           if ($pknots_folding eq '0') {  ## Both have motif and folding
-            print LOGFH "HAVE PKNOTS FOLDING AND MOTIF for $datum->{species} $datum->{accession}\n";
+            Out("HAVE PKNOTS FOLDING AND MOTIF for $datum->{species} $datum->{accession}");
             return(1);
           }
           else {  ## Want pknots, have motif, no folding, so make a tempfile
@@ -146,11 +144,11 @@ sub Check_Db {
     my $sequence = $db->Get_Sequence($datum->{species}, $datum->{accession});
     my $slipsites = $motifs->Search($sequence);
     $db->Put_RNAmotif($datum->{species}, $datum->{accession}, $slipsites);
-    print LOGFH "NO MOTIF, NO FOLDING for $datum->{species} $datum->{accession}\n";
+    Out("NO MOTIF, NO FOLDING for $datum->{species} $datum->{accession}");
     my $success = scalar(%{$slipsites});
-    if ($success eq '0') { print LOGFH "$datum->{species} $datum->{accession} has no slippery sites.\n"; }
+    if ($success eq '0') { Out("$datum->{species} $datum->{accession} has no slippery sites."); }
     foreach my $start (keys %{$slipsites}) {
-      print LOGFH "STARTING FOLD FOR $start in $datum->{accession}\n";
+      Out("STARTING FOLD FOR $start in $datum->{accession}");
       my $slippery = $db->Get_Slippery($sequence, $start); 
       my $fold_search = new RNAFolders(file => $slipsites->{$start}{filename},
                                        accession => $datum->{accession},
@@ -186,7 +184,7 @@ sub Split_Queue {
     $count++;
     my $serial = $count % $num;
     my $handle = "private_" . $serial;
-    print LOGFH "Printing $line to $handle\n";
+    Out("Printing $line to $handle");
     print $handle $line;
   }
 }
@@ -196,6 +194,7 @@ sub Check_Environment {
   die("Missing pknots: $!") unless(-x $PRFConfig::config->{pknots});
   die("Missing nupack: $!") unless(-x $PRFConfig::config->{nupack});
   die("Missing rmprune: $!") unless(-x $PRFConfig::config->{rmprune});
+  die("Missing mfold: $!") unless(-x $PRFConfig::config->{mfold});
   die("Tmpdir must be executable: $!") unless(-x $PRFConfig::config->{tmpdir});
   die("Tmpdir must be writable: $!") unless(-w $PRFConfig::config->{tmpdir});
   die("Privqueue must be writable: $!") unless(-w $PRFConfig::config->{privqueue});
@@ -209,3 +208,4 @@ sub Check_Environment {
 sub signal_handler {
   $time_to_die = 1;
 }
+
