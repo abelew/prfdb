@@ -1,4 +1,4 @@
-#! /usr/bin/perl -w
+#!/usr/bin/perl -w
 use strict;
 use POSIX;
 use DBI;
@@ -93,6 +93,8 @@ sub Check_Db {
   if ($motif_info) {  ## If the motif information _does_ exist, check the folding information
     foreach my $start (keys %{$motif_info}) {  ## For every start site in the sequence
       my $folding;
+      my $fdata = $motif_info->{$start}{filedata};
+      print "Checkdb: $fdata\n";
       if ($PRFConfig::config->{dbinput} ne 'dbi') { $folding = 0; } ##Yeah yeah, bad style.  Except logically it is simpler
       ## to just drop out if we are not in a dbi environment.
       else { ## Therefore this is in a DBI environment
@@ -106,6 +108,7 @@ sub Check_Db {
             return(1);
           }
           else { ## Want nupack, have motif, no folding, so need to make a tmp file for nupack.
+            print "Checkdb: $fdata\n";
             my $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
             my $slippery = $db->Get_Slippery($db->Get_Sequence($datum->{species}, $datum->{accession}), $start);
             my $fold_search = new RNAFolders(file => $filename,
@@ -145,7 +148,7 @@ sub Check_Db {
     $db->Put_RNAmotif($datum->{species}, $datum->{accession}, $slipsites);
     print LOGFH "NO MOTIF, NO FOLDING for $datum->{species} $datum->{accession}\n";
     my $success = scalar(%{$slipsites});
-    if ($success == 0) { print LOGFH "$datum->{species} $datum->{accession} has no slippery sites.\n"; }
+    if ($success eq '0') { print LOGFH "$datum->{species} $datum->{accession} has no slippery sites.\n"; }
     foreach my $start (keys %{$slipsites}) {
       print LOGFH "STARTING FOLD FOR $start in $datum->{accession}\n";
       my $slippery = $db->Get_Slippery($sequence, $start); 

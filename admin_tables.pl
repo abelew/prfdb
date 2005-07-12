@@ -127,7 +127,7 @@ sub Create_Nupack {
 
 sub Create_Rnamotif {
   my $tablename = "rnamotif_" . $config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, total int, permissable int, data blob, output blob, primary key (id))";
+  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, total int, permissable int, filedata blob, output blob, primary key (id))";
   my $sth = $dbh->prepare("$statement");
   $sth->execute;
 }

@@ -54,7 +54,8 @@ sub Get_RNAmotif {
   my $accession = shift;
   my $return = {};
   my $table = "rnamotif_$species";
-  my $statement = "SELECT total, permissable, data, output FROM $table WHERE accession = '$accession'";
+  my $statement = "SELECT total, permissable, filedata, output FROM $table WHERE accession = '$accession'";
+  print "TEST: $statement\n";
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_arrayref($statement);
 #  return(0) if (scalar(@{$info}) == 0);
@@ -73,6 +74,7 @@ sub Motif_to_Fasta {
   my $me = shift;
   my $data = shift;
   my $fh = MakeTempfile();
+  print "TEST: $data\n";
   print $fh $data;
   return($fh->filename);
 }
@@ -174,7 +176,7 @@ sub Put_RNAmotif {
     my $filename = $slipsites_data->{$start}{filename};
     my $filedata = $slipsites_data->{$start}{filedata};
     my $output = $slipsites_data->{$start}{output};
-    my $statement = qq(INSERT INTO $table (id, accession, start, total, permissable, data, output) VALUES ('', '$accession', '$start', '$total', '$permissable', '$filedata', '$output'));
+    my $statement = qq(INSERT INTO $table (id, accession, start, total, permissable, filedata, output) VALUES ('', '$accession', '$start', '$total', '$permissable', '$filedata', '$output'));
 #    print "RNAMOTIF: $statement\n";
 	if ($PRFConfig::config->{dboutput} eq 'dbi') {
 	  my $sth = $me->{dbh}->prepare($statement);
