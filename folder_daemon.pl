@@ -9,6 +9,7 @@ use PRFConfig;
 use PRFdb;
 use RNAMotif_Search;
 use RNAFolders;
+use Randomizer;
 
 my $config = $PRFConfig::config;
 chdir($config->{basedir});
@@ -190,6 +191,7 @@ sub Split_Queue {
 }
 
 sub Check_Environment {
+  die("No rnamotif descriptor file set.") unless(defined($PRFConfig::config->{descriptor_file}));
   die("Missing rnamotif: $!") unless(-x $PRFConfig::config->{rnamotif});
   die("Missing pknots: $!") unless(-x $PRFConfig::config->{pknots});
   die("Missing nupack: $!") unless(-x $PRFConfig::config->{nupack});
@@ -203,6 +205,10 @@ sub Check_Environment {
   die("Database host not defined") unless(defined($PRFConfig::config->{host}));
   die("Database user not defined") unless(defined($PRFConfig::config->{user}));
   die("Database pass not defined") unless(defined($PRFConfig::config->{pass}));
+  unless(-r $PRFConfig::config->{descriptor_file}) {
+	RNAMotif_Search::Descriptor();
+	die("Unable to read the rnamotif descriptor file: $!") unless(-r $PRFConfig::config->{descriptor_file});
+  }
 }
 
 sub signal_handler {

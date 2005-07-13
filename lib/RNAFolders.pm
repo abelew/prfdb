@@ -18,6 +18,7 @@ sub new {
   return ($me);
 }
 
+
 sub Nupack {
   my $me = shift;
   my $input = $me->{file};
@@ -151,6 +152,41 @@ sub Pknots {
   }
   $return->{parsed} = $parsed;
   return($return);
+}
+
+
+sub Mfold {
+  my $me = shift;
+  my $input = $me->{file};
+  $ENV{MFOLDLIB} = $PRFConfig::config->{tmpdir} . '/dat';
+
+  my $accession = $me->{accession};
+  my $start = $me->{start};
+  my $species = $me->{species};
+  my $slippery = $me->{slippery};
+
+  my $return = {
+                accession => $accession,
+                start => $start,
+                slippery => $slippery,
+                species => $species,
+               };
+  chdir($config->{tmpdir});
+
+  my $command = "$config->{mfold} SEQ=$input MAX=1";
+  open(MF, "$command 2>mfold.err |") or Error("Could not run mfold: $!");
+  my $count = 0;
+  while (my $line = <MF>) {
+	$count++;
+	next unless ($count > 11);
+	chomp $line;
+	my @crap = ();
+	my $mfe;
+	if ($line =~ /^Minimum folding energy/) {
+	  @crap = split(/\s+/, $line);
+	  $mfe = $crap[4];
+	}
+	my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count');
 }
 
 1;

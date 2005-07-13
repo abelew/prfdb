@@ -3,6 +3,7 @@ use strict;
 use lib '.';
 use PRFdb;
 use PRFConfig;
+use Template;
 
 my %slippery_sites = (
 					  aaaaaaa => 'A AAA AAA',
@@ -76,9 +77,7 @@ sub Search {
 $string
 ";
         print $fh $data;
-        #print $data;
-#		my $command = "/usr/local/bin/rnamotif -descr descr/$slipsite.desc $filename | /usr/local/bin/rmprune";
-        my $command = "/usr/local/bin/rnamotif -context -descr descr/trey.desc $filename 2>rnamotif.err | /usr/local/bin/rmprune";
+        my $command = "$PRFConfig::config->{rnamotif} -context -descr $PRFConfig::config->{descriptor_file} $filename 2>rnamotif.err | $PRFConfig::config->{rmprune}";
         open(RNAMOT, "$command |") or Error("Unable to run rnamotif: $!");
         my $permissable = 0;
         my $nonpermissable = 0;
@@ -122,6 +121,33 @@ sub Slip_p {
     return($slip) if ($slippery_sites{$slip} eq $septet);
   }
   return(0);
+}
+
+sub Descriptor {
+  my $output = $PRFConfig::config->{descriptor_file};
+  unless (-r $output) {
+    my $vars = {
+                slip_site_1 => $PRFConfig::config->{slip_site_1},
+                slip_site_2 => $PRFConfig::config->{slip_site_2},
+                slip_site_3 => $PRFConfig::config->{slip_site_3},
+                slip_site_spacer_min => $PRFConfig::config->{slip_site_spacer_min},
+                slip_site_spacer_max => $PRFConfig::config->{slip_site_spacer_max},
+                stem1_min => $PRFConfig::config->{stem1_min},
+                stem1_max => $PRFConfig::config->{stem1_max},
+                stem1_bulge => $PRFConfig::config->{stem1_bulge},
+                stem1_spacer_min => $PRFConfig::config->{stem1_spacer_min},
+                stem1_spacer_max => $PRFConfig::config->{stem1_spacer_max},
+                stem2_min => $PRFConfig::config->{stem2_min},
+                stem2_max => $PRFConfig::config->{stem2_max},
+                stem2_bulge => $PRFConfig::config->{stem2_bulge},
+                stem2_loop_min => $PRFConfig::config->{stem2_loop_min},
+                stem2_loop_max => $PRFConfig::config->{stem2_loop_max},
+                stem2_spacer_min => $PRFConfig::config->{stem2_spacer_min},
+                stem2_spacer_max => $PRFConfig::config->{stem2_spacer_max},
+               };
+    my $input =  $PRFConfig::config->{descriptor_template};
+    $template->process($input, $vars, $output) or die $template->error();
+  }  ## Unless the template file exists.
 }
 
 1;
