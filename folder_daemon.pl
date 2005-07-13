@@ -67,7 +67,7 @@ sub Check_Queue {
   my $qfile = $type . '_queue';
   my $return = {};
   open (FH, "+<$qfile") or die "can't update queue: $qfile: $!";
-  my $addr= undef;
+  my $addr = undef;
   my $line_bak;
   while (my $line = <FH> ) {
 	$addr = tell(FH) unless eof(FH);

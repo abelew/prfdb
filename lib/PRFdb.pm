@@ -9,6 +9,7 @@ sub new {
   my ($class, %arg) = @_;
   my $me = bless {
                   dsn => $PRFConfig::config->{dsn},
+                  user => $PRFConfig::config->{user},
                  }, $class;
   $me->{dbh} = DBI->connect($me->{dsn}, $PRFConfig::config->{user}, $PRFConfig::config->{pass});
   unless ($PRFConfig::config->{dboutput} eq 'dbi') {
