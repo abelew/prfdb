@@ -49,6 +49,32 @@ sub Get_RNAfolds {
   return($count);
 }
 
+sub Get_Mfold {
+  my $me = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $start = shift;
+  my $statement = "SELECT total, start, permissable, filedata, output FROM $table WHERE accession = '$accession'";
+  my $dbh = $me->{dbh};
+  my $info = $dbh->selectall_arrayref($statement);
+#  return(0) if (scalar(@{$info}) == 0);
+  return(0) if (scalar(@{$info}) == 0);
+  my @data = @{$info};
+  foreach my $start (@data) {
+	my $total = $start->[0];
+	my $st = $start->[1];
+	my $permissable = $start->[2];
+	my $filedata = $start->[3];
+	my $output = $start->[4];
+	$return->{$st}{total} = $total;
+	$return->{$st}{start} = $st;
+	$return->{$st}{permissable} = $permissable;
+	$return->{$st}{filedata} = $filedata;
+	$return->{$st}{output} = $output;
+  }
+  return($return);
+}
+
 sub Get_RNAmotif {
   my $me = shift;
   my $species = shift;

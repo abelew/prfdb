@@ -181,12 +181,17 @@ sub Mfold {
 	next unless ($count > 11);
 	chomp $line;
 	my @crap = ();
-	my $mfe;
 	if ($line =~ /^Minimum folding energy/) {
 	  @crap = split(/\s+/, $line);
-	  $mfe = $crap[4];
+	  $return->{mfe} = $crap[4];
 	}
-	my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count');
+	my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
+  }
+  for my $ext (@extra_files) {
+	my $filename = $me->{file} . '*.' . $ext;
+	unlink($filename);
+  }
+  return($return);
 }
 
 1;

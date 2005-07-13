@@ -3,6 +3,7 @@ my $prefix = '/home/trey/browser';
 $PRFConfig::config = {
                       do_nupack => 1,                       ## Run nupack on sequences?
                       do_pknots => 0,                       ## Run pknots on sequence?
+                      do_mfold => 0,                        ## Run mfold on the sequence as a mfe bootstrap?
                       privqueue => "$prefix/private_queue", ## Location of private queue
                       pubqueue => "$prefix/public_queue",   ## Location of public queue
                       errorfile => "$prefix/prfdb.err",     ## Location of error file

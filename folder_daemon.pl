@@ -100,17 +100,19 @@ sub Check_Db {
       else { ## Therefore this is in a DBI environment
         my $nupack_folding = undef;
         my $pknots_folding = undef;
+        my $mfold_folding = undef;
 
         if ($PRFConfig::config->{do_nupack}) {  ## Check the configuration file for nupack
           $nupack_folding = $db->Get_RNAfolds('nupack', $datum->{species}, $datum->{accession}, $start);
-          if ($nupack_folding > 0) {  ## Both have motif and folding
+          if ($nupack_folding ne '0') {  ## Both have motif and folding
             Out("HAVE NUPACK FOLDING AND MOTIF for $datum->{species} $datum->{accession}");
             return(1);
           }
           else { ## Want nupack, have motif, no folding, so need to make a tmp file for nupack.
             my $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
             my $slippery = $db->Get_Slippery($db->Get_Sequence($datum->{species}, $datum->{accession}), $start);
-            my $fold_search = new RNAFolders(file => $filename,
+            my $fold_search = new RNAFolders(
+                                             file => $filename,
                                              accession => $datum->{accession},
                                              start => $start,
                                              slippery => $slippery,
@@ -122,7 +124,7 @@ sub Check_Db {
 
         if ($PRFConfig::config->{do_pknots}) {  ## Check to see if pknots should be run
           $pknots_folding = $db->Get_RNAfolds('pknots', $datum->{species}, $datum->{accession}, $start);
-          if ($pknots_folding eq '0') {  ## Both have motif and folding
+          if ($pknots_folding ne '0') {  ## Both have motif and folding
             Out("HAVE PKNOTS FOLDING AND MOTIF for $datum->{species} $datum->{accession}");
             return(1);
           }
@@ -138,6 +140,29 @@ sub Check_Db {
             $db->Put_Pknots($pknots_info);
           }  ## End checking for folding and motif information
         } ## End check for do_pknots
+
+        ## At this point pknot and nupack should both have output for the case in which there there is not folding/motif info
+        ## Now we wish to see if there is bootstrap informaiton for mfold
+        ## FIXME: This will need to be reworked to deal with different randomization schemes and may need to store different data
+        if ($PRFConfig::config->{do_mfold}) {
+          my $mfold_test = $db->Get_Mfold($datum->{species}, $datum->{accession}, $start);
+          if ($mfold_test ne '0') {  ## Do not have mfold mfe data for this species and accession
+            Out("HAVE MFOLD data and RNAMotif for $datum->{species} $datum->{accession}");
+            return(1);
+          }  ## End having mfold data
+          else {
+            my $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
+            my $slippery = $db->Get_Slippery($db->Get_Sequence($datum->{species}, $datum->{accession}), $start);
+            my $fold_search = new RNAFolders(
+                                             file => $filename,
+                                             accession => $datum->{accession},
+                                             start => $start,
+                                             slippery => $slippery,
+                                             species => $datum->{species},);
+            my $mfold_info = $fold_search->Mfold();
+            $db->Put_Mfold($mfold_info);
+          }  ## End checking for mfold data
+        }  ## End checking if we are using mfold
       }  ## End if we are in a dbi environment
     }  ## End foreach piece of $motif_info
   }  ## End if there is motif information
@@ -161,11 +186,21 @@ sub Check_Db {
         $nupack_info = $fold_search->Nupack();
         $db->Put_Nupack($nupack_info);
       }
+
       if ($PRFConfig::config->{do_pknots}) {
         $pknots_info = $fold_search->Pknots();
         $db->Put_Pknots($pknots_info);
       }
-      unlink($slipsites->{$start}{filename});
+
+      ## At this point pknot and nupack should both have output for the case in which there there is not folding/motif info
+      ## Now we wish to see if there is bootstrap informaiton for mfold
+      ## FIXME: This will need to be reworked to deal with different randomization schemes and may need to store different data
+      if ($PRFConfig::config->{do_mfold}) {
+        $mfold_info = $fold_search->Mfold();
+        $db->Put_Mfold($mfold_info);
+      }
+
+    unlink($slipsites->{$start}{filename});
     } ##End checking slipsites for a locus when have not motif nor folding information
   } ## End no motif nor folding information.
 }
