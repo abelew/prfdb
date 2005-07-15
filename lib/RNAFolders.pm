@@ -194,4 +194,43 @@ sub Mfold {
   return($return);
 }
 
+sub Mfold_MFE {
+  my $me = shift;
+  my $input = $me->{file};
+  $ENV{MFOLDLIB} = $PRFConfig::config->{tmpdir} . '/dat';
+
+  my $accession = $me->{accession};
+  my $start = $me->{start};
+  my $species = $me->{species};
+  my $slippery = $me->{slippery};
+
+  my $return = {
+                accession => $accession,
+                start => $start,
+                slippery => $slippery,
+                species => $species,
+               };
+  chdir($config->{tmpdir});
+
+  my $command = "$config->{mfold} SEQ=$input MAX=1";
+  open(MF, "$command 2>mfold.err |") or Error("Could not run mfold: $!");
+  my $count = 0;
+  while (my $line = <MF>) {
+	$count++;
+	next unless ($count > 11);
+	chomp $line;
+	my @crap = ();
+	if ($line =~ /^Minimum folding energy/) {
+	  @crap = split(/\s+/, $line);
+	  $return->{mfe} = $crap[4];
+	}
+	my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
+  }
+  for my $ext (@extra_files) {
+	my $filename = $me->{file} . '*.' . $ext;
+	unlink($filename);
+  }
+  return($return);
+}
+
 1;
