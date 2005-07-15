@@ -124,6 +124,9 @@ sub Slip_p {
 }
 
 sub Descriptor {
+  my $template_config = $PRFConfig::config;
+  $template_config->{PRE_PROCESS} = undef;
+  my $template = new Template($template_config);
   my $output = $PRFConfig::config->{descriptor_file};
   unless (-r $output) {
     my $vars = {

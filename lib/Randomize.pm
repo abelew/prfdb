@@ -70,9 +70,9 @@ sub Codon_montecarlo {
   my $new_seq_count = 0;
   my @codons = $$start_sequence =~ /(\w\w\w)/g;
   while (@codons) {
-	my $position = rand(@codons);
-	my ($nt1, $nt2, $nt3) = split(//, $codons[$position]);
-	push(@new_sequence, $nt1, nt2, nt3);
+    my $position = rand(@codons);
+    my @nts = split(//, $codons[$position]);
+    push(@new_sequence, @nts);
 	splice(@codons, $position, 1);
   }
   return(\@new_sequence);
@@ -85,7 +85,7 @@ sub Related_Codon {
   my $start_sequence = shift;
   my @codons = $start_sequence =~ /(\w\w\w)/g;
   for my $c (0 .. $#codons) {
-	my @potential = split(/\s/, $amino_acids{$codons[$c]});
+	my @potential = split(/\s/, $Randomize::amino_acids{$codons[$c]});
 	$codons[$c] = $potential[rand(@potential)];
   }
   return(\@codons);

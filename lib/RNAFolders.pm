@@ -3,7 +3,7 @@ use strict;
 use IO::Handle;
 use POSIX 'setsid';
 use lib 'lib';
-use PRFConfig qw(Error);
+use PRFConfig qw(Error Out);
 use PkParse;
 
 sub new {
@@ -158,7 +158,8 @@ sub Pknots {
 sub Mfold {
   my $me = shift;
   my $input = $me->{file};
-  $ENV{MFOLDLIB} = $PRFConfig::config->{tmpdir} . '/dat';
+  my $config = $PRFConfig::config;
+  $ENV{MFOLDLIB} = $config->{tmpdir} . '/dat';
 
   my $accession = $me->{accession};
   my $start = $me->{start};
@@ -185,34 +186,30 @@ sub Mfold {
 	  @crap = split(/\s+/, $line);
 	  $return->{mfe} = $crap[4];
 	}
-	my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
   }
+  my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
   for my $ext (@extra_files) {
-	my $filename = $me->{file} . '*.' . $ext;
-	unlink($filename);
+	my $stupido_filename = $me->{file} . '*.' . $ext;
+	unlink($stupido_filename);
   }
   return($return);
 }
 
 sub Mfold_MFE {
-  my $me = shift;
-  my $input = $me->{file};
-  $ENV{MFOLDLIB} = $PRFConfig::config->{tmpdir} . '/dat';
-
-  my $accession = $me->{accession};
-  my $start = $me->{start};
-  my $species = $me->{species};
-  my $slippery = $me->{slippery};
-
+  my $inputfile = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $start = shift;
+  my $config = $PRFConfig::config;
+  $ENV{MFOLDLIB} = $config->{tmpdir} . '/dat';
   my $return = {
                 accession => $accession,
                 start => $start,
-                slippery => $slippery,
                 species => $species,
                };
   chdir($config->{tmpdir});
 
-  my $command = "$config->{mfold} SEQ=$input MAX=1";
+  my $command = "$config->{mfold} SEQ=$inputfile MAX=1";
   open(MF, "$command 2>mfold.err |") or Error("Could not run mfold: $!");
   my $count = 0;
   while (my $line = <MF>) {
@@ -224,11 +221,12 @@ sub Mfold_MFE {
 	  @crap = split(/\s+/, $line);
 	  $return->{mfe} = $crap[4];
 	}
-	my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
+
   }
+  my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
   for my $ext (@extra_files) {
-	my $filename = $me->{file} . '*.' . $ext;
-	unlink($filename);
+    my $stupido_filename = $inputfile . '*.' . $ext;
+    unlink($stupido_filename);
   }
   return($return);
 }

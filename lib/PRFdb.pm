@@ -54,6 +54,8 @@ sub Get_Mfold {
   my $species = shift;
   my $accession = shift;
   my $start = shift;
+  my $return;
+  my $table = "mfold_$species";
   my $statement = "SELECT total, start, permissable, filedata, output FROM $table WHERE accession = '$accession'";
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_arrayref($statement);
