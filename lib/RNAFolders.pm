@@ -201,7 +201,9 @@ sub Mfold_MFE {
   my $accession = shift;
   my $start = shift;
   my $config = $PRFConfig::config;
-  $ENV{MFOLDLIB} = $config->{tmpdir} . '/dat';
+  print "RNAFolders::Mfold_MFE: $inputfile, $species $accession $start\n";
+#  $ENV{MFOLDLIB} = $config->{tmpdir} . '/dat';
+  $ENV{MFOLDLIB} = '/home/trey/browser/work/dat';
   my $return = {
                 accession => $accession,
                 start => $start,
@@ -209,19 +211,25 @@ sub Mfold_MFE {
                };
   chdir($config->{tmpdir});
 
-  my $command = "$config->{mfold} SEQ=$inputfile MAX=1";
-  open(MF, "$command 2>mfold.err |") or Error("Could not run mfold: $!");
+  $inputfile = `basename $inputfile`;
+#  my $command = "$config->{mfold} SEQ=$inputfile MAX=1 2>mfold.err";
+  my $command = "$config->{mfold} SEQ=$inputfile 2>mfold.err";
+  print "RNAFOlders::MFold_MFE Command: $command\n";
+  print "PATH: $ENV{PATH}\n";
+  sleep(3);
+  open(MF, "$command |") or Error("Could not run mfold: $!");
   my $count = 0;
   while (my $line = <MF>) {
-	$count++;
-	next unless ($count > 11);
-	chomp $line;
-	my @crap = ();
-	if ($line =~ /^Minimum folding energy/) {
-	  @crap = split(/\s+/, $line);
-	  $return->{mfe} = $crap[4];
-	}
-
+    $count++;
+    next unless ($count > 11);
+    chomp $line;
+    print "TEST: $line\n";
+    my @crap = ();
+    if ($line =~ /^Minimum folding energy/) {
+      print "GOT MFE: $line !!!\n";
+      @crap = split(/\s+/, $line);
+      $return->{mfe} = $crap[4];
+    }
   }
   my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
   for my $ext (@extra_files) {

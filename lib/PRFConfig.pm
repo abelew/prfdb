@@ -6,6 +6,8 @@ $PRFConfig::config = {
                       do_mfold => 0,                        ## Run mfold on the sequence as a mfe bootstrap?
                       do_boot => 1,                         ## Perform our faux bootstrap
                       boot_repetitions => 10,
+                      boot_mfe_algorithms => { mfold => \&RNAFolders::Mfold_MFE, },
+                      boot_randomizers => {coin => \&MoreRandom::CoinRandom, },
                       privqueue => "$prefix/private_queue", ## Location of private queue
                       pubqueue => "$prefix/public_queue",   ## Location of public queue
                       errorfile => "$prefix/prfdb.err",     ## Location of error file

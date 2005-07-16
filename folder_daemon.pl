@@ -10,6 +10,7 @@ use PRFdb;
 use RNAMotif_Search;
 use RNAFolders;
 use Bootlace;
+use MoreRandom;
 
 my $config = $PRFConfig::config;
 chdir($config->{basedir});
@@ -72,7 +73,7 @@ sub Check_Queue {
   my $line_bak;
   while (my $line = <FH> ) {
 	$addr = tell(FH) unless eof(FH);
-	$line_bak = $line;
+\	$line_bak = $line;
   }
   return(undef) unless defined($line_bak);
   chomp $line_bak;
@@ -144,15 +145,19 @@ sub Check_Db {
         ## At this point pknot and nupack should both have output for the case in which there there is not folding/motif info
         ## Now we wish to see if there is bootstrap informaiton for mfold
         ## FIXME: This will need to be reworked to deal with different randomization schemes and may need to store different data
-        if ($PRFConfig::config->{do_bootlace}) {
+        if ($PRFConfig::config->{do_boot}) {
+          my $species = $datum->{species};
+          my $accession = $datum->{accession};
           my $boot = new Bootlace(
                                   inputfile => $filename,
-                                  species => $datum->{species},
-                                  accession => $datum->{accession},
+                                  species => $species,
+                                  accession => $accession,
                                   start => $start,
                                   repetitions => $PRFConfig::config->{boot_repetitions},
-                                  mfe_algorithms => { mfold => \&RNAFolders::Mfold_MFE, },
-                                  randomizers => { coin => \&Randomize::Coin_Random, },
+#                                  mfe_algorithms => { mfold => \&RNAFolders::Mfold_MFE, },
+#                                  randomizers => { coin => \&MoreRandom::CoinRandom, },
+                                  mfe_algorithms => $PRFConfig::config->{boot_mfe_algorithms},
+                                  randomizers => $PRFConfig::config->{boot_randomizers},
                                   );
           $boot->Go();
         }  ## End if do_bootlace
@@ -207,7 +212,9 @@ sub Check_Db {
         $db->Put_Pknots($pknots_info);
       }
 
-      if ($PRFConfig::config->{do_bootlace}) {
+      if ($PRFConfig::config->{do_boot}) {
+        print "TESTME!!  About to Bootlace with $filename $species $accession $start\n";
+        sleep(3);
         my $boot = new Bootlace(
                                 inputfile => $filename,
                                 species => $species,
@@ -215,7 +222,7 @@ sub Check_Db {
                                 start => $start,
                                 repetitions => $PRFConfig::config->{boot_repetitions},
                                 mfe_algorithms => { mfold => \&RNAFolders::Mfold_MFE, },
-                                randomizers => { coin => \&Randomize::Coin_Random, },
+                                randomizers => { coin => \&MoreRandom::CoinRandom, },
                                );
         $boot->Go();
       }  # End if do_bootlace
