@@ -138,7 +138,7 @@ sub Check_Db {
                                              start => $start,
                                              slippery => $slippery,
                                              species => $datum->{species},);
-            my $pknots_info = $fold_search->Pknots();
+            my $pknots_info = $fold_search->Pknots()
             $db->Put_Pknots($pknots_info);
           }  ## End checking for folding and motif information
         } ## End check for do_pknots
@@ -155,47 +155,31 @@ sub Check_Db {
                                   accession => $accession,
                                   start => $start,
                                   repetitions => $PRFConfig::config->{boot_repetitions},
-#                                  mfe_algorithms => { mfold => \&RNAFolders::Mfold_MFE, },
-#                                  randomizers => { coin => \&MoreRandom::CoinRandom, },
                                   mfe_algorithms => $PRFConfig::config->{boot_mfe_algorithms},
                                   randomizers => $PRFConfig::config->{boot_randomizers},
                                   );
           $bootlaces = $boot->Go();
-          foreach my $lace (keys %{$bootlaces}) {
-            print " CHECKBOOTLACE: \nkey: $lace ";
-            my %fun = %{$bootlaces->{$lace}};
-            foreach my $next (keys %fun) {
-              my %rand = %{$bootlaces->{$lace}->{$next}};
-              foreach my $rand_alg (keys %rand) {
-                my %stuff = %{$bootlaces->{$lace}->{$next}->{$rand_alg}};
-                print "NEXT: $next rand_alg: $rand_alg data: $rand{$rand_alg}\n";
-              }
-            }
-          }
-
+          $bootlaces->{species} = $species;
+          $bootlaces->{accession} = $accession;
+          $bootlaces->{start} = $start;
+          $bootlaces->{num_iterations} = $num_iterations;
+          ## bootlaces should be organized:
+          ## bootlaces->{mfe_algorithm}->{random_algorithm}->{num_iterations} = 100;
+          ## bootlaces->{mfe_algorithm}->{random_algorithm}->{total_mfe} = -250.0;
+          ## bootlaces->{mfe_algorithm}->{random_algorithm}->{total_pairs} = 40;
+          ## bootlaces->{mfe_algorithm}->{random_algorithm}->{mfe_mean} = -25.0;
+          ## bootlaces->{mfe_algorithm}->{random_algorithm}->{pairs_mean} = 8.0;
+          ## bootlaces->{mfe_algorithm}->{random_algorithm}->{mfe_st_dev} = 10.0;
+          ## bootlaces->{mfe_algorithm}->{random_algorithm}->{pairs_st_dev} = 1.0;
+          ## bootlaces->{mfe_algorithm}->{random_algorithm}->{mfe_st_err} = 0.5;
+          ## bootlaces->{mfe_algorithm}->{random_algorithm}->{pairs_st_err} = 0.2;
+          ## bootlaces->{mfe_algorithm}->{random_algorithm}->{1}->{mfe} = -10;
+          ## etc etc
+          $db->Put_Boot($bootlaces);
         }  ## End if do_bootlace
- #       if ($PRFConfig::config->{do_mfold}) {
- #         my $mfold_test = $db->Get_Mfold($datum->{species}, $datum->{accession}, $start);
- #         if ($mfold_test ne '0') {  ## Do not have mfold mfe data for this species and accession
- #           Out("HAVE MFOLD data and RNAMotif for $datum->{species} $datum->{accession}");
- #           return(1);
- #         }  ## End having mfold data
- #         else {
- #           my $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
- #           my $slippery = $db->Get_Slippery($db->Get_Sequence($datum->{species}, $datum->{accession}), $start);
- #           my $fold_search = new RNAFolders(
- #                                            file => $filename,
- #                                            accession => $datum->{accession},
- #                                            start => $start,
- #                                            slippery => $slippery,
- #                                            species => $datum->{species},);
- #           my $mfold_info = $fold_search->Mfold();
- #           $db->Put_Mfold($mfold_info);
- #         }  ## End checking for mfold data
       }  ## End checking if we are using mfold
     }  ## End if we are in a dbi environment
   }  ## End foreach piece of $motif_info
-#}  ## End if there is motif information
   else { ## No folding information
     my $sequence = $db->Get_Sequence($datum->{species}, $datum->{accession});
     my $slipsites = $motifs->Search($sequence);
@@ -236,41 +220,24 @@ sub Check_Db {
                                 randomizers => { coin => \&MoreRandom::CoinRandom, },
                                );
        $bootlaces = $boot->Go();
-       my $mfe_value = $bootlaces->{1}->{mfold}->{coin}->{mfe};
-       my @sequence = $bootlaces->{1}->{mfold}->{coin}->{sequence};
-       print "WTFWTFWTF: $mfe_value @sequence\n";
-       foreach my $iteration (keys %{$bootlaces}) {
-         my %fold_algo = %{$bootlaces->{$iteration}};
-         foreach my $falg (keys %fold_algo) {
-           my %rand_algo = %{$bootlaces->{$iteration}->{$falg}};
-           foreach my $ralg (keys %rand_algo) {
-             my %datum = %{$bootlaces->{$iteration}->{$falg}->{$ralg}};
-             print "Iteration: $iteration falg: $falg ralg: $ralg mfe: $datum{mfe}\n";
-             print "Iteration: $iteration falg: $falg ralg: $ralg mfe: $datum{pairs}\n";
-           } } }
-#            foreach my $next (keys %fun) {
-#              my %rand = %{$bootlaces->{$lace}->{$next}};
- #             foreach my $rand_alg (keys %rand) {
- #               my %stuff = %{$bootlaces->{$lace}->{$next}->{$rand_alg}};
- #               foreach my $something (keys %stuff) {
- #                 my %some = %{$bootlaces->{$lace}->{$next}->{$rand_alg}->{$something}};
- #                 foreach my $last (keys %some) {
-  #                  print "NEXT: $next rand_alg: $rand_alg data: $something some value: $stuff{$something}\n";
- #                 }
-  #              }
-  #            }
-  #          }
-  #        }
+       $bootlaces->{species} = $species;
+       $bootlaces->{accession} = $accession;
+       $bootlaces->{start} = $start;
+       $bootlaces->{num_iterations} = $num_iterations;
+       ## bootlaces should be organized:
+       ## bootlaces->{mfe_algorithm}->{random_algorithm}->{num_iterations} = 100;
+       ## bootlaces->{mfe_algorithm}->{random_algorithm}->{total_mfe} = -250.0;
+       ## bootlaces->{mfe_algorithm}->{random_algorithm}->{total_pairs} = 40;
+       ## bootlaces->{mfe_algorithm}->{random_algorithm}->{mfe_mean} = -25.0;
+       ## bootlaces->{mfe_algorithm}->{random_algorithm}->{pairs_mean} = 8.0;
+       ## bootlaces->{mfe_algorithm}->{random_algorithm}->{mfe_st_dev} = 10.0;
+       ## bootlaces->{mfe_algorithm}->{random_algorithm}->{pairs_st_dev} = 1.0;
+       ## bootlaces->{mfe_algorithm}->{random_algorithm}->{mfe_st_err} = 0.5;
+       ## bootlaces->{mfe_algorithm}->{random_algorithm}->{pairs_st_err} = 0.2;
+       ## bootlaces->{mfe_algorithm}->{random_algorithm}->{1}->{mfe} = -10;
+       ## etc etc
+       $db->Put_Boot($bootlaces);
       }  # End if do_bootlace
-
-      ## At this point pknot and nupack should both have output for the case in which there there is not folding/motif info
-      ## Now we wish to see if there is bootstrap informaiton for mfold
-      ## FIXME: This will need to be reworked to deal with different randomization schemes and may need to store different data
-#      if ($PRFConfig::config->{do_mfold}) {
-#        $mfold_info = $fold_search->Mfold();
-#        $db->Put_Mfold($mfold_info);
-#      }
-
     unlink($slipsites->{$start}{filename});
     } ##End checking slipsites for a locus when have not motif nor folding information
   } ## End no motif nor folding information.

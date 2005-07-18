@@ -50,51 +50,69 @@ sub Go {
   my $accession = $me->{accession};
   my $start = $me->{start};
 
-  while ($count < $me->{repetitions}) {
-    $count++;
     ## randomizer should be a reference to a function which takes as input
     ## the array reference of the sequence window of interest.  Thus allowing us to
     ## change which function randomizes the sequence
     foreach my $mfe_algo_name (keys %{$me->{mfe_algorithms}}) {
       foreach my $rand_name (keys %{$me->{randomizers}}) {
-        my $ret = {
-                   accession => $accession,
-                   species => $species,
-                   start => $start,
-                   num_iterations => 0,
-                   mfe_mean => 0.0,
-                   pairs_mean => 0.0,
-                   mfe_sd => 0.0,
-                   pairs_sd => 0.0,
-                   mfe_se => 0.0,
-                   pairs_se => 0.0,
-                   total_pairs => 0,
-                   total_mfe => 0.0,
-                  };
-        my $mfe_algo = $me->{mfe_algorithms}->{$mfe_algo_name};
-#        my $rand_algo = $me->{randomizers}->{$rand_name}($inputfile, $species, $accession);
-        my $rand_algo = $me->{randomizers}->{$rand_name};
-        my $array_reference = $me->{fasta_arrayref};
-        my $randomized_sequence = &{$rand_algo}($array_reference);
-        $me->Overwrite_Inputfile($randomized_sequence);
-        my $mfe = &{$mfe_algo}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
-#        $return->{$count}->{$mfe_algo_name}->{$rand_name}->{sequence} = $randomized_sequence;
-        foreach my $k (keys %{$mfe}) {
-          $return->{$count}->{$mfe_algo_name}->{$rand_name}->{$k} = $mfe->{$k};
-          if (defined($mfe->{pairs})) {
-            $ret->{num_iterations}++;
-            $ret->{total_pairs} += $mfe->{pairs};
-            $ret->{total_mfe} += $mfe->{mfe};
-        }  ## Foreach element
-          ## First calculate means
-          $ret->{mfe_mean} = $ret->{total_mfe} / $ret->{num_iterations};
-          $ret->{pairs_mean} = $ret->{total_pairs} / $ret->{num_iterations};
-          ## Standard Deviations
-          my ($error, $deviation);
-          foreach my $
-      } ## End recursing over randomizations
-    }   ## End recursing over mfe algorithms
-  }     ## End foreach repetition
+
+        while ($count < $me->{repetitions}) {
+          $count++;
+          my $ret = {
+                     accession => $accession,
+                     species => $species,
+                     start => $start,
+                     num_iterations => 0,
+                     mfe_mean => 0.0,
+                     pairs_mean => 0.0,
+                     mfe_sd => 0.0,
+                     pairs_sd => 0.0,
+                     mfe_se => 0.0,
+                     pairs_se => 0.0,
+                     total_pairs => 0,
+                     total_mfe => 0.0,
+                     total_mfe_deviation => 0.0,
+                     total_pairs_deviation => 0.0,
+                     total_mfe_error => 0.0,
+                     total_pairs_error => 0.0,
+                    };
+          my $mfe_algo = $me->{mfe_algorithms}->{$mfe_algo_name};
+          #        my $rand_algo = $me->{randomizers}->{$rand_name}($inputfile, $species, $accession);
+          my $rand_algo = $me->{randomizers}->{$rand_name};
+          my $array_reference = $me->{fasta_arrayref};
+          my $randomized_sequence = &{$rand_algo}($array_reference);
+          $me->Overwrite_Inputfile($randomized_sequence);
+          my $mfe = &{$mfe_algo}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
+          foreach my $k (keys %{$mfe}) {
+            $return->{$mfe_algo_name}->{$rand_name}->{$count}->{$k} = $mfe->{$k};
+            ## This should fill out the following fields:
+            ## $return->{$mfe_algo_name}->{$rand_name}->{$count}->{mfe} and
+            ## $return->{$mfe_algo_name}->{$rand_name}->{$count}->{pairs}
+            if (defined($mfe->{pairs})) {
+              $ret->{num_iterations}++;
+              $ret->{total_pairs} += $mfe->{pairs};
+              $ret->{total_mfe} += $mfe->{mfe};
+            } ## If defined each pair
+          }  ## foreach element of the return from the mfe algorithm
+        }  ## Foreach repetition
+        ## Now have collected every repetition, so we can calculate the means
+        $ret->{mfe_mean} = $ret->{total_mfe} / $ret->{num_iterations};
+        $ret->{pairs_mean} = $ret->{total_pairs} / $ret->{num_iterations};
+
+        ## Standard deviations require running back over each iteration...
+        foreach my $iter (keys %{$return->{$mfe_algo_name}->{$rand_name}}) {
+          my $mfe_measure = $return->{$mfe_algo_name}->{$rand_name}->{$iter}->{mfe};
+          my $pairs_measure = $return->{$mfe_algo_name}->{$rand_name}->{$iter}->{pairs};
+          $ret->{mfe_dev_sq} += (($ret->{mfe_mean} - $mfe_measure) * ($ret->{mfe_measure} - $mfe_measure));
+          $ret->{pairs_dev_sq} += (($ret->{pairs_mean} - $pairs_measure) * ($ret->{pairs_measure} - $pairs_measure));
+        }
+        $ret->{mfe_st_dev} = sqrt($ret->{mfe_dev_sq} / ($ret->{num_iterations} - 1));
+        $ret->{pairs_st_dev} = sqrt($ret->{pairs_dev_sq} / ($ret->{num_iterations} - 1));
+        $ret->{mfe_st_err} = $ret->{mfe_st_dev} / sqrt($ret->{num_iterations});
+        $ret->{pairs_st_err} = $ret->{pairs_st_dev} / sqrt($ret->{num_iterations});
+        $return->{$mfe_algo_name}->{$rand_name}->{std} = $ret;
+      }  ## Foreach randomization
+    }  ## Foreach mfe calculator
   return($return);
 }
 

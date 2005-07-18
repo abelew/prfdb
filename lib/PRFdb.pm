@@ -198,6 +198,30 @@ sub Put_Pknots {
   }
 }
 
+sub Put_Boot {
+  my $me = shift;
+  my $data = shift;
+  my $table = 'boot_' . $data->{species};
+  foreach my $mfe_method (keys %{$data}) {
+    foreach my $rand_method (keys %{$data->{$mfe_method}}) {
+      my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{mfe_mean};
+      my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{mfe_sd};
+      my $mfe_se = $data->{$mfe_method}->{$rand_method}->{mfe_se};
+      my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{pairs_mean};
+      my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{pairs_sd};
+      my $pairs_se = $data->{$mfe_method}->{$rand_method}->{pairs_se};
+      my $statement = qq(INSERT INTO $table (id, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se VALUES ('', '$data->{accession}', '$data->{start}', '$data->{num_iterations}', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se')));
+      if ($PRFConfig::config->{dboutput} eq 'dbi') {
+        my $sth = $me->{dbh}->prepare($statement);
+        $sth->execute()
+      }
+      else {
+        print DBOUT "$statement\n";
+      } ## End if dboutput test
+    }  ### Foreach random method
+  } ## Foreach mfe method
+}
+
 sub Put_RNAmotif {
   my $me = shift;
   my $species = shift;
@@ -229,6 +253,135 @@ sub Get_Slippery {
   my @reg = split(//, $sequence);
   my $slippery = "$reg[$start]" . "$reg[$start+1]" . "$reg[$start+2]" . "$reg[$start+3]" . "$reg[$start+4]" . "$reg[$start+5]" . "$reg[$start+6]";
   return($slippery);
+}
+
+###
+### Admin functions below!
+###
+sub Clean_Table {
+  my $me = shift;
+  my $type = shift;
+  my $table = $type . '_' . $PRFConfig::config->{species};
+  my $statement = "DELETE from $table";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute or Error("Could not execute statement: $statement in Create_Genome");
+}
+
+sub Drop_All {
+  my $me = shift;
+  my $genus_species = shift;
+  my @tables = ('genome_', 'rnamotif_', 'pknots_', 'nupack_');
+  foreach my $tab (@tables) {
+	my $t_name = $tab . $genus_species;
+	my $statement = "DROP table $t_name";
+	my $sth = $me->{dbh}->prepare("$statement");
+	$sth->execute or Error("Could not execute Statement: $statement in Drop_All");
+  }
+}
+
+sub Drop_Table {
+  my $me = shift;
+  my $type = shift;
+  my $table = $type . '_' . $PRFConfig::config->{species};
+  my $statement = "DROP table $table";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute or Error("Could not execute statement: $statement in Create_Genome");
+}
+
+sub Create_Genome {
+  my $me = shift;
+  my $table = 'genome_' . $PRFConfig::config->{species};
+  my $statement = "CREATE table $table  (accession varchar(10) not null, genename varchar(20), version int, comment blob not null, sequence blob not null, primary key (accession))";
+  print "Statement: $statement\n";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute or die("Could not execute statement: $statement in Create_Genome");
+}
+
+sub Create_Boot {
+  my $me = shift;
+  my $table = 'boot_' . $PRFConfig::config->{species};
+  my $statement = "CREATE table $table (id int not null auto_increment, accession varchar(10) not null, start int, iterations int, rand_method varchar(20), mfe_method varchar(20), mfe_mean float, mfe_sd float, mfe_se float, pairs_mean float, pairs_sd float, pairs_se float, primary key(id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute or die("Could not execute statement: $statement in Create_Genome");
+}
+
+sub Create_Pknots {
+  my $me = shift;
+  my $tablename = 'pknots_' . $PRFConfig::config->{species};
+  my $statement = "CREATE table $tablename (id int not null auto_increment, process varchar(80), start int, length int, struct_start int, logodds float, mfe float, cor_mfe float, pairs int, pseudop tinyint, slipsite varchar(80), spacer varchar(80), sequence blob, structure blob, parsed blob, primary key (id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute;
+}
+
+sub Create_Nupack {
+  my $me = shift;
+  my $tablename = 'nupack_' . $PRFConfig::config->{species};
+  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), seqlength int, sequence char(200), paren_output char(200), parsed blob, mfe float, knotp bool, primary key(id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute;
+}
+
+sub Create_Rnamotif {
+  my $me = shift;
+  my $tablename = "rnamotif_" . $PRFConfig::config->{species};
+  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, total int, permissable int, filedata blob, output blob, primary key (id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute;
+}
+
+sub Load_Genome_Table {
+  my $me = shift;
+  if ($PRFConfig::config->{input} =~ /gz$/) {
+	open(IN, "$PRFConfig::config->{zcat} $PRFConfig::config->{input} |") or die "Could not open the fasta file\n $!\n";
+  }
+  else {
+	open(IN, "<$PRFConfig::config->{input}") or die "Could not open the fasta file\n $!\n";
+  }
+  my %datum = (accession => undef, genename => undef, version => undef, comment => undef, sequence => undef);
+  while(my $line = <IN>) {
+	chomp $line;
+	if ($line =~ /^\>ORFN/) {  ## If it is one of the kooky yeast genomes
+	  if (defined($datum{accession})) {
+		$me->Insert_Genome_Entry(\%datum);
+	  }
+	  my ($fake_accession, $comment) = split(/\,/, $line);
+	  my ($accession, $genename) = split(/ /, $fake_accession);
+	  $accession =~ s/^\>//g;
+	  $datum{accession} = $accession;
+	  $datum{genename} = $genename;
+	  $datum{comment} = $comment;
+	}  ## End if it is a kooky yeast genome.
+	elsif ($line =~ /^\>/) {
+		if (defined($datum{accession})) {
+		  $me->Insert_Genome_Entry(\%datum);
+		}
+		my ($gi, $id, $gb, $accession_version, $comment) = split(/\|/, $line);
+		my ($accession, $version) = split(/\./, $accession_version);
+		$datum{accession} = $accession;
+		$datum{version} = $version;
+		$datum{comment} = $comment;
+	  }  ## The mgc genomes
+	else {
+	  $datum{sequence} .= $line;
+	}  ## Non accession line
+  }  ## End every line
+  $me->Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
+}
+
+sub Insert_Genome_Entry {
+  my $me = shift;
+  my $datum = shift;
+  my $qa = $me->{dbh}->quote($datum->{accession});
+  my $qn = $me->{dbh}->quote($datum->{genename});
+  my $qv = $me->{dbh}->quote($datum->{version});
+  my $qc = $me->{dbh}->quote($datum->{comment});
+  my $qs = $me->{dbh}->quote($datum->{sequence});
+  my $table = "genome_" . $PRFConfig::config->{species};
+  my $statement = "INSERT INTO $table (accession, genename, version, comment, sequence) VALUES($qa, $qn, $qv, $qc, $qs)";
+  $datum->{sequence} = undef;
+#  print "TEST: $statement\n";
+  my $sth = $me->{dbh}->prepare($statement);
+  $sth->execute;
 }
 
 1;

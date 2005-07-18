@@ -4,6 +4,7 @@ use DBI;
 use Getopt::Long;
 use lib 'lib';
 use PRFConfig;
+use PRFdb;
 
 my $config = $PRFConfig::config;
 
@@ -16,50 +17,55 @@ GetOptions(
 		   'pass=s' => \$config->{pass},
 		   'action=s' => \$config->{action},
 		   );
-
-my $dbh = DBI->connect($PRFConfig::config->{dsn}, $PRFConfig::config->{user}, $PRFConfig::config->{pass});
+my $db = new PRFdb;
 my ($action, $object, $adjective1, $adjective2) = split(/_/, $config->{action});
 if ($config->{action} =~ /^remove/) {
   $config->{species} = $object . '_' . $adjective1;
-  Clean_Table('genome');
-  Clean_Table('nupack');
-  Clean_Table('rnamotif');
-  Clean_Table('pknots');
-  Drop_Table('genome');
-  Drop_Table('nupack');
-  Drop_Table('rnamotif');
-  Drop_Table('pknots');
+  $db->Clean_Table('genome');
+  $db->Clean_Table('nupack');
+  $db->Clean_Table('rnamotif');
+  $db->Clean_Table('pknots');
+  $db->Clean_Table('boot');
+  $db->Drop_Table('genome');
+  $db->Drop_Table('nupack');
+  $db->Drop_Table('rnamotif');
+  $db->Drop_Table('pknots');
+  $db->Drop_Table('boot');
 }
 elsif ($config->{action} =~ /^clean/) {
   $config->{species} = $adjective1 . '_' . $adjective2;
-  Clean_Table($object, $adjective1, $adjective2);
+  $db->Clean_Table($object, $adjective1, $adjective2);
 }
 elsif ($config->{action} =~ /^create/) {
   $config->{species} = $adjective1 . '_' . $adjective2;
   if ($object eq 'data') {
-	Create_Data($adjective1, $adjective2);
+	$db->Create_Data($adjective1, $adjective2);
   }
   elsif ($object eq 'rnamotif') {
-	Create_Rnamotif($adjective1, $adjective2);
+	$db->Create_Rnamotif($adjective1, $adjective2);
   }
   elsif ($object eq 'nupack') {
-	Create_Nupack($adjective1, $adjective2);
+	$db->Create_Nupack($adjective1, $adjective2);
   }
   elsif ($object eq 'genome') {
-	Create_Genome($adjective1, $adjective2);
+	$db->Create_Genome($adjective1, $adjective2);
+  }
+  elsif ($object eq 'boot') {
+	$db->Create_Boot($adjective1, $adjective2);
   }
 }
 elsif ($action eq 'load' and $object eq 'genome') {
   $config->{species} = $adjective1 . '_' . $adjective2;
-  Load_Genome_Table($adjective1, $adjective2);
+  $db->Load_Genome_Table($adjective1, $adjective2);
 }
 elsif ($action eq 'start') {
   $config->{species} = $object . '_' . $adjective1;
-  Create_Rnamotif();
-  Create_Nupack();
-  Create_Genome();
-  Create_Pknots();
-  Load_Genome_Table();
+  $db->Create_Rnamotif();
+  $db->Create_Nupack();
+  $db->Create_Genome();
+  $db->Create_Pknots();
+  $db->Create_Boot();
+  $db->Load_Genome_Table();
 }
 else {
   Error("Incorrect usage of admin_tables.pl ARGV: @ARGV");
@@ -76,111 +82,3 @@ else {
 ");
 }
 
-sub Clean_Table {
-  my $type = shift;
-  my $table = $type . '_' . $config->{species};
-  my $statement = "DELETE from $table";
-  my $sth = $dbh->prepare("$statement");
-  $sth->execute or Error("Could not execute statement: $statement in Create_Genome");
-}
-
-sub Drop_All {
-  my $genus_species = shift;
-  my @tables = ('genome_', 'rnamotif_', 'pknots_', 'nupack_');
-  foreach my $tab (@tables) {
-	my $t_name = $tab . $genus_species;
-	my $statement = "DROP table $t_name";
-	my $sth = $dbh->prepare("$statement");
-	$sth->execute or Error("Could not execute Statement: $statement in Drop_All");
-  }
-}
-
-sub Drop_Table {
-  my $type = shift;
-  my $table = $type . '_' . $config->{species};
-  my $statement = "DROP table $table";
-  my $sth = $dbh->prepare("$statement");
-  $sth->execute or Error("Could not execute statement: $statement in Create_Genome");
-}
-
-sub Create_Genome {
-  my $table = 'genome_' . $config->{species};
-  my $statement = "CREATE table $table  (accession varchar(10) not null, genename varchar(20), version int, comment blob not null, sequence blob not null, primary key (accession))";
-  print "Statement: $statement\n";
-  my $sth = $dbh->prepare("$statement");
-  $sth->execute or die("Could not execute statement: $statement in Create_Genome");
-}
-
-sub Create_Pknots {
-  my $tablename = 'pknots_' . $config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, process varchar(80), start int, length int, struct_start int, logodds float, mfe float, cor_mfe float, pairs int, pseudop tinyint, slipsite varchar(80), spacer varchar(80), sequence blob, structure blob, parsed blob, primary key (id))";
-  my $sth = $dbh->prepare("$statement");
-  $sth->execute;
-}
-
-sub Create_Nupack {
-  my $tablename = 'nupack_' . $config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), seqlength int, sequence char(200), paren_output char(200), parsed blob, mfe float, knotp bool, primary key(id))";
-  my $sth = $dbh->prepare("$statement");
-  $sth->execute;
-}
-
-sub Create_Rnamotif {
-  my $tablename = "rnamotif_" . $config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, total int, permissable int, filedata blob, output blob, primary key (id))";
-  my $sth = $dbh->prepare("$statement");
-  $sth->execute;
-}
-
-sub Load_Genome_Table {
-  if ($config->{input} =~ /gz$/) {
-	open(IN, "$PRFConfig::config->{zcat} $config->{input} |") or die "Could not open the fasta file\n $!\n";
-  }
-  else {
-	open(IN, "<$config->{input}") or die "Could not open the fasta file\n $!\n";
-  }
-  my %datum = (accession => undef, genename => undef, version => undef, comment => undef, sequence => undef);
-  while(my $line = <IN>) {
-	chomp $line;
-	if ($line =~ /^\>ORFN/) {  ## If it is one of the kooky yeast genomes
-	  if (defined($datum{accession})) {
-		Insert_Genome_Entry(\%datum);
-	  }
-	  my ($fake_accession, $comment) = split(/\,/, $line);
-	  my ($accession, $genename) = split(/ /, $fake_accession);
-	  $accession =~ s/^\>//g;
-	  $datum{accession} = $accession;
-	  $datum{genename} = $genename;
-	  $datum{comment} = $comment;
-	}  ## End if it is a kooky yeast genome.
-	elsif ($line =~ /^\>/) {
-		if (defined($datum{accession})) {
-		  Insert_Genome_Entry(\%datum);
-		}
-		my ($gi, $id, $gb, $accession_version, $comment) = split(/\|/, $line);
-		my ($accession, $version) = split(/\./, $accession_version);
-		$datum{accession} = $accession;
-		$datum{version} = $version;
-		$datum{comment} = $comment;
-	  }  ## The mgc genomes
-	else {
-	  $datum{sequence} .= $line;
-	}  ## Non accession line
-  }  ## End every line
-  Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
-}
-
-sub Insert_Genome_Entry {
-  my $datum = shift;
-  my $qa = $dbh->quote($datum->{accession});
-  my $qn = $dbh->quote($datum->{genename});
-  my $qv = $dbh->quote($datum->{version});
-  my $qc = $dbh->quote($datum->{comment});
-  my $qs = $dbh->quote($datum->{sequence});
-  my $table = "genome_" . $config->{species};
-  my $statement = "INSERT INTO $table (accession, genename, version, comment, sequence) VALUES($qa, $qn, $qv, $qc, $qs)";
-  $datum->{sequence} = undef;
-#  print "TEST: $statement\n";
-  my $sth = $dbh->prepare($statement);
-  $sth->execute;
-}
