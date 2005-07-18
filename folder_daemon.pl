@@ -72,8 +72,8 @@ sub Check_Queue {
   my $addr = undef;
   my $line_bak;
   while (my $line = <FH> ) {
-	$addr = tell(FH) unless eof(FH);
-\	$line_bak = $line;
+    $addr = tell(FH) unless eof(FH);
+    $line_bak = $line;
   }
   return(undef) unless defined($line_bak);
   chomp $line_bak;
@@ -90,6 +90,7 @@ sub Check_Db {
   my $motifs = new RNAMotif_Search;
   ## First see that there is rna motif information
   my $motif_info;
+  my $bootlaces;
   if ($PRFConfig::config->{dbinput} ne 'dbi') { $motif_info = 0; }
   else { $motif_info = $db->Get_RNAmotif($datum->{species}, $datum->{accession}); }
   if ($motif_info) {  ## If the motif information _does_ exist, check the folding information
@@ -159,7 +160,19 @@ sub Check_Db {
                                   mfe_algorithms => $PRFConfig::config->{boot_mfe_algorithms},
                                   randomizers => $PRFConfig::config->{boot_randomizers},
                                   );
-          $boot->Go();
+          $bootlaces = $boot->Go();
+          foreach my $lace (keys %{$bootlaces}) {
+            print " CHECKBOOTLACE: \nkey: $lace ";
+            my %fun = %{$bootlaces->{$lace}};
+            foreach my $next (keys %fun) {
+              my %rand = %{$bootlaces->{$lace}->{$next}};
+              foreach my $rand_alg (keys %rand) {
+                my %stuff = %{$bootlaces->{$lace}->{$next}->{$rand_alg}};
+                print "NEXT: $next rand_alg: $rand_alg data: $rand{$rand_alg}\n";
+              }
+            }
+          }
+
         }  ## End if do_bootlace
  #       if ($PRFConfig::config->{do_mfold}) {
  #         my $mfold_test = $db->Get_Mfold($datum->{species}, $datum->{accession}, $start);
@@ -213,9 +226,7 @@ sub Check_Db {
       }
 
       if ($PRFConfig::config->{do_boot}) {
-        print "TESTME!!  About to Bootlace with $filename $species $accession $start\n";
-        sleep(3);
-        my $boot = new Bootlace(
+       my $boot = new Bootlace(
                                 inputfile => $filename,
                                 species => $species,
                                 accession => $accession,
@@ -224,7 +235,32 @@ sub Check_Db {
                                 mfe_algorithms => { mfold => \&RNAFolders::Mfold_MFE, },
                                 randomizers => { coin => \&MoreRandom::CoinRandom, },
                                );
-        $boot->Go();
+       $bootlaces = $boot->Go();
+       my $mfe_value = $bootlaces->{1}->{mfold}->{coin}->{mfe};
+       my @sequence = $bootlaces->{1}->{mfold}->{coin}->{sequence};
+       print "WTFWTFWTF: $mfe_value @sequence\n";
+       foreach my $iteration (keys %{$bootlaces}) {
+         my %fold_algo = %{$bootlaces->{$iteration}};
+         foreach my $falg (keys %fold_algo) {
+           my %rand_algo = %{$bootlaces->{$iteration}->{$falg}};
+           foreach my $ralg (keys %rand_algo) {
+             my %datum = %{$bootlaces->{$iteration}->{$falg}->{$ralg}};
+             print "Iteration: $iteration falg: $falg ralg: $ralg mfe: $datum{mfe}\n";
+             print "Iteration: $iteration falg: $falg ralg: $ralg mfe: $datum{pairs}\n";
+           } } }
+#            foreach my $next (keys %fun) {
+#              my %rand = %{$bootlaces->{$lace}->{$next}};
+ #             foreach my $rand_alg (keys %rand) {
+ #               my %stuff = %{$bootlaces->{$lace}->{$next}->{$rand_alg}};
+ #               foreach my $something (keys %stuff) {
+ #                 my %some = %{$bootlaces->{$lace}->{$next}->{$rand_alg}->{$something}};
+ #                 foreach my $last (keys %some) {
+  #                  print "NEXT: $next rand_alg: $rand_alg data: $something some value: $stuff{$something}\n";
+ #                 }
+  #              }
+  #            }
+  #          }
+  #        }
       }  # End if do_bootlace
 
       ## At this point pknot and nupack should both have output for the case in which there there is not folding/motif info

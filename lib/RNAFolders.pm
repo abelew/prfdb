@@ -125,7 +125,7 @@ sub Pknots {
 	   $line_to_read = $counter + 2;
 	 }
 	elsif (defined($line_to_read) and $line_to_read == $counter) {
-	  print "TEST: $line\n";
+#	  print "TEST: $line\n";
 	  $line =~ s/^\s+//g;
 	  $line =~ s/$/ /g;
 	  $string .= $line;
@@ -201,41 +201,51 @@ sub Mfold_MFE {
   my $accession = shift;
   my $start = shift;
   my $config = $PRFConfig::config;
-  print "RNAFolders::Mfold_MFE: $inputfile, $species $accession $start\n";
 #  $ENV{MFOLDLIB} = $config->{tmpdir} . '/dat';
   $ENV{MFOLDLIB} = '/home/trey/browser/work/dat';
-  my $return = {
-                accession => $accession,
-                start => $start,
-                species => $species,
-               };
+  my $return;
+#  my $return = {
+ #               accession => $accession,
+ #               start => $start,
+ #               species => $species,
+ #              };
   chdir($config->{tmpdir});
 
   $inputfile = `basename $inputfile`;
+  chomp $inputfile;
 #  my $command = "$config->{mfold} SEQ=$inputfile MAX=1 2>mfold.err";
-  my $command = "$config->{mfold} SEQ=$inputfile 2>mfold.err";
-  print "RNAFOlders::MFold_MFE Command: $command\n";
-  print "PATH: $ENV{PATH}\n";
-  sleep(3);
+  my $command = "$config->{mfold} SEQ=$inputfile MAX=1 2>/dev/null";
   open(MF, "$command |") or Error("Could not run mfold: $!");
   my $count = 0;
   while (my $line = <MF>) {
     $count++;
     next unless ($count > 11);
     chomp $line;
-    print "TEST: $line\n";
     my @crap = ();
     if ($line =~ /^Minimum folding energy/) {
-      print "GOT MFE: $line !!!\n";
       @crap = split(/\s+/, $line);
       $return->{mfe} = $crap[4];
+#      $return = $crap[4];
     }
   }
+  ## Now get the number of pairs
+  my $detfile = $inputfile . '.det';
+  open(DET, "<$detfile");
+  my $pairs = 0;
+  while (my $line = <DET>) {
+    chomp $line;
+    if ($line =~ /^Helix/) {
+      my ($helix, $ddg, $eq, $dumb_num, $num) = split(/\s+/, $line);
+      $pairs += $num;
+    }
+  }
+  $return->{pairs} = $pairs;
   my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
   for my $ext (@extra_files) {
-    my $stupido_filename = $inputfile . '*.' . $ext;
+    my $stupido_filename = $inputfile . '.' . $ext;
     unlink($stupido_filename);
   }
+  chdir($config->{basedir});
   return($return);
 }
 
