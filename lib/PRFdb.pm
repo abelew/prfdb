@@ -202,16 +202,21 @@ sub Put_Boot {
   my $me = shift;
   my $data = shift;
   my $table = 'boot_' . $data->{species};
-  foreach my $mfe_method (keys %{$data}) {
-    foreach my $rand_method (keys %{$data->{$mfe_method}}) {
-      my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{mfe_mean};
-      my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{mfe_sd};
-      my $mfe_se = $data->{$mfe_method}->{$rand_method}->{mfe_se};
-      my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{pairs_mean};
-      my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{pairs_sd};
-      my $pairs_se = $data->{$mfe_method}->{$rand_method}->{pairs_se};
-      my $statement = qq(INSERT INTO $table (id, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se VALUES ('', '$data->{accession}', '$data->{start}', '$data->{num_iterations}', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se')));
+  foreach my $mfe_method (keys%{$PRFConfig::config->{boot_mfe_algorithms}}) {
+  #foreach my $mfe_method (keys %{$data}) {
+      foreach my $rand_method (keys %{$PRFConfig::config->{boot_randomizers}}) {
+      #foreach my $rand_method (keys %{$data->{$mfe_method}}) {
+      my $num_iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{num_iterations};
+      my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
+      my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
+      my $mfe_se = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_se};
+      my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
+      my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
+      my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
+      my $statement = qq(INSERT INTO $table (id, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se) VALUES ('', '$data->{accession}', '$data->{start}', '$num_iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se'));
+      print "STATEMENTS: $statement\n";
       if ($PRFConfig::config->{dboutput} eq 'dbi') {
+
         my $sth = $me->{dbh}->prepare($statement);
         $sth->execute()
       }
@@ -292,7 +297,6 @@ sub Create_Genome {
   my $me = shift;
   my $table = 'genome_' . $PRFConfig::config->{species};
   my $statement = "CREATE table $table  (accession varchar(10) not null, genename varchar(20), version int, comment blob not null, sequence blob not null, primary key (accession))";
-  print "Statement: $statement\n";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
 }
@@ -353,7 +357,7 @@ sub Grab_Queue {
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
   my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' limit 1);
-  my ($species, $accession) = $me->{dbh}->selectrow_array($single_accession);
+  my ($species, $accession) = $me->{dbh}->fetchrow_array($single_accession);
   return(undef) unless(defined($species));
   my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and public='$type');
   print "UPDATE is: $update\n";

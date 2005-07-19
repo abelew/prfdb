@@ -3,6 +3,7 @@ use strict;
 use RNAFolders;
 use PRFdb;
 use Randomize;
+use Math::Stat;
 
 sub new {
   my ($class, %arg) = @_;
@@ -56,8 +57,6 @@ sub Go {
     foreach my $mfe_algo_name (keys %{$me->{mfe_algorithms}}) {
       foreach my $rand_name (keys %{$me->{randomizers}}) {
 
-        while ($count < $me->{repetitions}) {
-          $count++;
           my $ret = {
                      accession => $accession,
                      species => $species,
@@ -69,6 +68,8 @@ sub Go {
                      pairs_sd => 0.0,
                      mfe_se => 0.0,
                      pairs_se => 0.0,
+                     mfe_conf => 0.0,
+                     pairs_conf => 0.0,
                      total_pairs => 0,
                      total_mfe => 0.0,
                      total_mfe_deviation => 0.0,
@@ -76,42 +77,42 @@ sub Go {
                      total_mfe_error => 0.0,
                      total_pairs_error => 0.0,
                     };
-          my $mfe_algo = $me->{mfe_algorithms}->{$mfe_algo_name};
-          #        my $rand_algo = $me->{randomizers}->{$rand_name}($inputfile, $species, $accession);
-          my $rand_algo = $me->{randomizers}->{$rand_name};
-          my $array_reference = $me->{fasta_arrayref};
-          my $randomized_sequence = &{$rand_algo}($array_reference);
-          $me->Overwrite_Inputfile($randomized_sequence);
-          my $mfe = &{$mfe_algo}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
-          foreach my $k (keys %{$mfe}) {
-            $return->{$mfe_algo_name}->{$rand_name}->{$count}->{$k} = $mfe->{$k};
-            ## This should fill out the following fields:
-            ## $return->{$mfe_algo_name}->{$rand_name}->{$count}->{mfe} and
-            ## $return->{$mfe_algo_name}->{$rand_name}->{$count}->{pairs}
-            if (defined($mfe->{pairs})) {
-              $ret->{num_iterations}++;
-              $ret->{total_pairs} += $mfe->{pairs};
-              $ret->{total_mfe} += $mfe->{mfe};
-            } ## If defined each pair
-          }  ## foreach element of the return from the mfe algorithm
-        }  ## Foreach repetition
-        ## Now have collected every repetition, so we can calculate the means
-        $ret->{mfe_mean} = $ret->{total_mfe} / $ret->{num_iterations};
-        $ret->{pairs_mean} = $ret->{total_pairs} / $ret->{num_iterations};
 
-        ## Standard deviations require running back over each iteration...
-        foreach my $iter (keys %{$return->{$mfe_algo_name}->{$rand_name}}) {
-          my $mfe_measure = $return->{$mfe_algo_name}->{$rand_name}->{$iter}->{mfe};
-          my $pairs_measure = $return->{$mfe_algo_name}->{$rand_name}->{$iter}->{pairs};
-          $ret->{mfe_dev_sq} += (($ret->{mfe_mean} - $mfe_measure) * ($ret->{mfe_measure} - $mfe_measure));
-          $ret->{pairs_dev_sq} += (($ret->{pairs_mean} - $pairs_measure) * ($ret->{pairs_measure} - $pairs_measure));
-        }
-        $ret->{mfe_st_dev} = sqrt($ret->{mfe_dev_sq} / ($ret->{num_iterations} - 1));
-        $ret->{pairs_st_dev} = sqrt($ret->{pairs_dev_sq} / ($ret->{num_iterations} - 1));
-        $ret->{mfe_st_err} = $ret->{mfe_st_dev} / sqrt($ret->{num_iterations});
-        $ret->{pairs_st_err} = $ret->{pairs_st_dev} / sqrt($ret->{num_iterations});
-        $return->{$mfe_algo_name}->{$rand_name}->{std} = $ret;
-      }  ## Foreach randomization
+
+          my @stats_mfe;
+          my @stats_pairs;
+          while ($count <= $me->{repetitions}) {
+            $count++;
+            my $mfe_algo = $me->{mfe_algorithms}->{$mfe_algo_name};
+	    #my $rand_algo = $me->{randomizers}->{$rand_name}($inputfile, $species, $accession);
+            my $rand_algo = $me->{randomizers}->{$rand_name};
+            my $array_reference = $me->{fasta_arrayref};
+            my $randomized_sequence = &{$rand_algo}($array_reference);
+            $me->Overwrite_Inputfile($randomized_sequence);
+            my $mfe = &{$mfe_algo}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
+
+            foreach my $k (keys %{$mfe}) {
+              $return->{$mfe_algo_name}->{$rand_name}->{$count}->{$k} = $mfe->{$k};
+            }
+
+              push(@stats_mfe, $mfe->{mfe}), $ret->{num_iterations}++ if (defined($mfe->{mfe}));
+              push(@stats_pairs, $mfe->{pairs}) if (defined($mfe->{pairs}));
+
+          }  ## Foreach repetition
+          ## Now have collected every repetition, so we can calculate the means
+          my $mfe_stat = new Math::Stat(\@stats_mfe, {AutoClean => 1});
+          $ret->{mfe_mean} = sprintf("%.2f", $mfe_stat->average());
+          $ret->{mfe_sd} = sprintf("%.2f", $mfe_stat->stddev());
+
+          my $pairs_stat = new Math::Stat(\@stats_pairs, {AutoClean => 1});
+          $ret->{pairs_mean} = sprintf("%.2f", $pairs_stat->average());
+          $ret->{pairs_sd} = sprintf("%.2f", $pairs_stat->stddev());
+
+	  $ret->{mfe_se} = sprintf("%.2f", $ret->{mfe_sd} / sqrt($ret->{num_iterations}));
+	  $ret->{pairs_se} = sprintf("%.2f", $ret->{pairs_sd} / sqrt($ret->{num_iterations}));
+
+	  $return->{$mfe_algo_name}->{$rand_name}->{stats} = $ret;
+        }  ## Foreach randomization
     }  ## Foreach mfe calculator
   return($return);
 }

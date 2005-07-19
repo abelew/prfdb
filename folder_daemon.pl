@@ -145,7 +145,7 @@ sub Check_Db {
                                              start => $start,
                                              slippery => $slippery,
                                              species => $datum->{species},);
-            my $pknots_info = $fold_search->Pknots()
+            my $pknots_info = $fold_search->Pknots();
             $db->Put_Pknots($pknots_info);
           }  ## End checking for folding and motif information
         } ## End check for do_pknots
@@ -169,7 +169,7 @@ sub Check_Db {
           $bootlaces->{species} = $species;
           $bootlaces->{accession} = $accession;
           $bootlaces->{start} = $start;
-          $bootlaces->{num_iterations} = $num_iterations;
+#          $bootlaces->{num_iterations} = $num_iterations;
           ## bootlaces should be organized:
           ## bootlaces->{mfe_algorithm}->{random_algorithm}->{num_iterations} = 100;
           ## bootlaces->{mfe_algorithm}->{random_algorithm}->{total_mfe} = -250.0;
@@ -230,7 +230,7 @@ sub Check_Db {
        $bootlaces->{species} = $species;
        $bootlaces->{accession} = $accession;
        $bootlaces->{start} = $start;
-       $bootlaces->{num_iterations} = $num_iterations;
+ #      $bootlaces->{num_iterations} = $num_iterations;
        ## bootlaces should be organized:
        ## bootlaces->{mfe_algorithm}->{random_algorithm}->{num_iterations} = 100;
        ## bootlaces->{mfe_algorithm}->{random_algorithm}->{total_mfe} = -250.0;
