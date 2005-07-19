@@ -36,7 +36,7 @@ sub Nupack {
                };
   chdir($config->{tmpdir});
   my $command = "$config->{nupack} $input";
-  open(NU, "$command $input 2>nupack.err |") or Error("Could not run nupack: $!");
+  open(NU, "$command $input 2>nupack.err |") or PRFConfig::Error("Could not run nupack: $!");
   my $count = 0;
   while (my $line = <NU>) {
 	$count++;
@@ -231,7 +231,7 @@ sub Mfold_MFE {
   ## Now get the number of pairs
   my $detfile = $inputfile . '.det';
   my $det = 1;
-  open(DET, "<$detfile") or Error("Could not open the detfile $detfile: $!") , $det = 0;
+  open(DET, "<$detfile") or PRFConfig::Error("Could not open the detfile $detfile: $!") , $det = 0;
   if ($det) {
     my $pairs = 0;
     while (my $line = <DET>) {
