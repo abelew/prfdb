@@ -329,6 +329,41 @@ sub Create_Rnamotif {
   $sth->execute;
 }
 
+sub Create_Queue {
+  my $me = shift;
+  my $tablename = 'queue';
+  my $statement = "CREATE table $tablename (id int not null auto_increment, public bool, species varchar(20), accession varchar(80), params blob, out bool, done bool, primary key (id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute;
+}
+
+sub FillQueue {
+  my $me = shift;
+  my $species = $PRFConfig::config->{species};
+  my $collect_table = 'genome_' . $species;
+  my $best_statement = "INSERT into queue (id, public, species, accession, params, out, done) SELECT '', 0, '$species', accession, '', 0, 0 from $collect_table";
+#  my $collection = "SELECT 'homo_sapiens', accession from $collect_table";
+  my $sth = $me->{dbh}->prepare($best_statement);
+  $sth->execute;
+}
+
+sub Grab_Queue {
+  my $me = shift;
+  my $type = shift;  ## public or private
+  $type = ($type eq 'public' ? 1 : 0);
+  my $return;
+  my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' limit 1);
+  my ($species, $accession) = $me->{dbh}->selectrow_array($single_accession);
+  return(undef) unless(defined($species));
+  my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession');
+  print "UPDATE is: $update\n";
+  my $st = $me->{dbh}->prepare($update);
+  $st->execute();
+  $return->{species} = $species;
+  $return->{accession} = $accession;
+  return($return);
+}
+
 sub Load_Genome_Table {
   my $me = shift;
   if ($PRFConfig::config->{input} =~ /gz$/) {

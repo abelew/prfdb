@@ -66,22 +66,29 @@ until ($time_to_die) {
 
 sub Check_Queue {
   my $type = shift;
-  my $qfile = $type . '_queue';
-  my $return = {};
-  open (FH, "+<$qfile") or die "can't update queue: $qfile: $!";
-  my $addr = undef;
-  my $line_bak;
-  while (my $line = <FH> ) {
-    $addr = tell(FH) unless eof(FH);
-    $line_bak = $line;
+  if ($PRFConfig::config->{dbinput} eq 'dbi') {
+    ## Pull from the queue in dbi
+    my $db = new PRFdb;
+    return($db->Grab_Queue($type));
   }
-  return(undef) unless defined($line_bak);
-  chomp $line_bak;
-  my ($species, $accession) = split(/\t/, $line_bak);
-  $return->{species} = $species;
-  $return->{accession} = $accession;
-  truncate(FH, $addr);
-  return($return);
+  else {
+    my $qfile = $type . '_queue';
+    my $return = {};
+    open (FH, "+<$qfile") or die "can't update queue: $qfile: $!";
+    my $addr = undef;
+    my $line_bak;
+    while (my $line = <FH> ) {
+      $addr = tell(FH) unless eof(FH);
+      $line_bak = $line;
+    }
+    return(undef) unless defined($line_bak);
+    chomp $line_bak;
+    my ($species, $accession) = split(/\t/, $line_bak);
+    $return->{species} = $species;
+    $return->{accession} = $accession;
+    truncate(FH, $addr);
+    return($return);
+  }
 }
 
 sub Check_Db {

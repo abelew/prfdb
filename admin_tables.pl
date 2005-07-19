@@ -38,20 +38,23 @@ elsif ($config->{action} =~ /^clean/) {
 }
 elsif ($config->{action} =~ /^create/) {
   $config->{species} = $adjective1 . '_' . $adjective2;
-  if ($object eq 'data') {
-	$db->Create_Data($adjective1, $adjective2);
+  if ($object eq 'queue') {
+    $db->Create_Queue();
+  }
+  elsif ($object eq 'data') {
+    $db->Create_Data($adjective1, $adjective2);
   }
   elsif ($object eq 'rnamotif') {
-	$db->Create_Rnamotif($adjective1, $adjective2);
+    $db->Create_Rnamotif($adjective1, $adjective2);
   }
   elsif ($object eq 'nupack') {
-	$db->Create_Nupack($adjective1, $adjective2);
+    $db->Create_Nupack($adjective1, $adjective2);
   }
   elsif ($object eq 'genome') {
-	$db->Create_Genome($adjective1, $adjective2);
+    $db->Create_Genome($adjective1, $adjective2);
   }
   elsif ($object eq 'boot') {
-	$db->Create_Boot($adjective1, $adjective2);
+    $db->Create_Boot($adjective1, $adjective2);
   }
 }
 elsif ($action eq 'load' and $object eq 'genome') {
@@ -66,6 +69,10 @@ elsif ($action eq 'start') {
   $db->Create_Pknots();
   $db->Create_Boot();
   $db->Load_Genome_Table();
+}
+elsif ($action eq 'fillqueue') {
+  $config->{species} = $object . '_' . $adjective1;
+  $db->FillQueue();
 }
 else {
   Error("Incorrect usage of admin_tables.pl ARGV: @ARGV");
