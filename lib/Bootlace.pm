@@ -108,8 +108,14 @@ sub Go {
           $ret->{pairs_mean} = sprintf("%.2f", $pairs_stat->average());
           $ret->{pairs_sd} = sprintf("%.2f", $pairs_stat->stddev());
 
-	  $ret->{mfe_se} = sprintf("%.2f", $ret->{mfe_sd} / sqrt($ret->{num_iterations}));
-	  $ret->{pairs_se} = sprintf("%.2f", $ret->{pairs_sd} / sqrt($ret->{num_iterations}));
+          if (!defined($ret->{num_iterations}) or $ret->{num_iterations} eq '0') {
+            $ret->{mfe_se} = undef;
+            $ret->{pairs_se} = undef;
+          }
+          else {
+            $ret->{mfe_se} = sprintf("%.2f", $ret->{mfe_sd} / sqrt($ret->{num_iterations}));
+            $ret->{pairs_se} = sprintf("%.2f", $ret->{pairs_sd} / sqrt($ret->{num_iterations}));
+          }
 
 	  $return->{$mfe_algo_name}->{$rand_name}->{stats} = $ret;
         }  ## Foreach randomization
