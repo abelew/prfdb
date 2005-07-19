@@ -357,10 +357,9 @@ sub Grab_Queue {
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
   my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' limit 1);
-  my ($species, $accession) = $me->{dbh}->fetchrow_array($single_accession);
+  my ($species, $accession) = $me->{dbh}->selectrow_array($single_accession);
   return(undef) unless(defined($species));
   my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and public='$type');
-  print "UPDATE is: $update\n";
   my $st = $me->{dbh}->prepare($update);
   $st->execute();
   $return->{species} = $species;
