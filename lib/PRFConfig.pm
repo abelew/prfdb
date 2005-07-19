@@ -74,10 +74,13 @@ sub Out {
 
 sub Error {
   my $message = shift;
+  my $species = shift;
+  my $accession = shift;
   open(ERRFH, ">>$err") or die "Unable to open the log file $err: $!\n";
-  $error_counter++;
-  if ($error_counter >= 20) {
-    die("Passed 20 errors, check the error log $PRFConfig::config->{errfile}");
+  if ($PRFConfig::config->{dboutput} eq 'dbi') {
+    use PRFdb;
+    my $db = new PRFdb;
+    $db->Error_Db($message, $species, $accession);
   }
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
   my $month = $mon + 1;

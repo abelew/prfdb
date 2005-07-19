@@ -260,6 +260,16 @@ sub Get_Slippery {
   return($slippery);
 }
 
+sub Error_Db {
+  my $me = shift;
+  my $message = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $statement = qq(INSERT into errors VALUES('', curdate(), '$message', '$species', '$accession'));
+  my $sth = $me->{dbh}->prepare($statement);
+  $sth->execute();
+}
+
 ###
 ### Admin functions below!
 ###
@@ -337,6 +347,14 @@ sub Create_Queue {
   my $me = shift;
   my $tablename = 'queue';
   my $statement = "CREATE table $tablename (id int not null auto_increment, public bool, species varchar(20), accession varchar(80), params blob, out bool, done bool, primary key (id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute;
+}
+
+sub Create_Errordb {
+  my $me = shift;
+  my $tablename = 'errors';
+  my $statement = "CREATE table $tablename (id int not null auto_increment, time timestamp, message blob, species varchar(80), accession varchar(80), primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute;
 }

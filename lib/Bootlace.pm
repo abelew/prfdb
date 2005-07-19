@@ -25,7 +25,7 @@ sub new {
                   fasta_arrayref => [],
                  }, $class;
   my $inputfile = $me->{inputfile};
-  open(IN, "<$inputfile") or Error("Could not open the Bootlace input file.");
+  open(IN, "<$inputfile") or Error("Could not open the Bootlace input file.", $arg{species}, $arg{accession});
   while (my $line = <IN>) {
     chomp $line;
     if ($line =~ /^\>/) {
@@ -128,7 +128,7 @@ sub Overwrite_Inputfile {
   my $sequence = shift;
   my $string;
   foreach my $char (@{$sequence}) { $string .= $char; }
-  open(OUT, ">$me->{inputfile}") or Error("Could not open output file in Bootlace.");
+  open(OUT, ">$me->{inputfile}") or Error("Could not open output file in Bootlace.", $me->{species}, $me->{accession});
   print OUT "$me->{fasta_comment}
 $string
 ";
