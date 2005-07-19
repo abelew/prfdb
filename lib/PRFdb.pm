@@ -1,7 +1,7 @@
 package PRFdb;
 use strict;
 use DBI;
-use PRFConfig;
+use PRFConfig qw / PRF_Error PRF_OUT /;
 use File::Temp qw / tmpnam /;
 use Fcntl ':flock'; # import LOCK_* constants
 
@@ -13,9 +13,8 @@ sub new {
                  }, $class;
   $me->{dbh} = DBI->connect($me->{dsn}, $PRFConfig::config->{user}, $PRFConfig::config->{pass});
   unless ($PRFConfig::config->{dboutput} eq 'dbi') {
-	open(DBOUT, ">>$PRFConfig::config->{dboutput}");
+	open(DBOUT, ">>$PRFConfig::config->{dboutput}");	
   }
-
   return ($me);
 }
 
@@ -214,7 +213,6 @@ sub Put_Boot {
       my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
       my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
       my $statement = qq(INSERT INTO $table (id, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se) VALUES ('', '$data->{accession}', '$data->{start}', '$num_iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se'));
-      print "STATEMENTS: $statement\n";
       if ($PRFConfig::config->{dboutput} eq 'dbi') {
 
         my $sth = $me->{dbh}->prepare($statement);
@@ -265,7 +263,7 @@ sub Error_Db {
   my $message = shift;
   my $species = shift;
   my $accession = shift;
-  my $statement = qq(INSERT into errors VALUES('', curdate(), '$message', '$species', '$accession'));
+  my $statement = qq(INSERT into errors VALUES('', now(), '$message', '$species', '$accession'));
   my $sth = $me->{dbh}->prepare($statement);
   $sth->execute();
 }
@@ -279,7 +277,7 @@ sub Clean_Table {
   my $table = $type . '_' . $PRFConfig::config->{species};
   my $statement = "DELETE from $table";
   my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute or Error("Could not execute statement: $statement in Create_Genome");
+  $sth->execute or PRF_Error("Could not execute statement: $statement in Create_Genome");
 }
 
 sub Drop_All {
@@ -290,7 +288,7 @@ sub Drop_All {
 	my $t_name = $tab . $genus_species;
 	my $statement = "DROP table $t_name";
 	my $sth = $me->{dbh}->prepare("$statement");
-	$sth->execute or Error("Could not execute Statement: $statement in Drop_All");
+	$sth->execute or PRF_Error("Could not execute Statement: $statement in Drop_All");
   }
 }
 
@@ -300,7 +298,7 @@ sub Drop_Table {
   my $table = $type . '_' . $PRFConfig::config->{species};
   my $statement = "DROP table $table";
   my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute or Error("Could not execute statement: $statement in Create_Genome");
+  $sth->execute or PRF_Error("Could not execute statement: $statement in Create_Genome");
 }
 
 sub Create_Genome {

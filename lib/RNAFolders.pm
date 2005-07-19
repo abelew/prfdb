@@ -1,10 +1,9 @@
 package RNAFolders;
 use strict;
 use IO::Handle;
-use POSIX 'setsid';
 use lib 'lib';
-use PRFConfig;
 use PkParse;
+use PRFConfig qw / PRF_Error /;
 
 sub new {
   my ($class, %arg) = @_;
@@ -17,7 +16,6 @@ sub new {
                  }, $class;
   return ($me);
 }
-
 
 sub Nupack {
   my $me = shift;
@@ -36,7 +34,7 @@ sub Nupack {
                };
   chdir($config->{tmpdir});
   my $command = "$config->{nupack} $input";
-  open(NU, "$command $input 2>nupack.err |") or Error("Could not run nupack: $!", $species, $accession);
+  open(NU, "$command $input 2>nupack.err |") or PRF_Error("Could not run nupack: $!", $species, $accession);
   my $count = 0;
   while (my $line = <NU>) {
 	$count++;
@@ -68,7 +66,7 @@ sub Nupack {
 	  }
 	}
   }  ## End of the line reading the nupack output.
-  open(PAIRS, "<out.pair") or Error("Could not open the nupack pairs file: $!", $species, $accession);
+  open(PAIRS, "<out.pair") or PRF_Error("Could not open the nupack pairs file: $!", $species, $accession);
   my $pairs = '';
   my @nupack_output = ();
   while(my $line = <PAIRS>) {
@@ -109,7 +107,7 @@ sub Pknots {
                };
   chdir($config->{tmpdir});
   my $command = "$config->{pknots} -k $input";
-  open(PK, "$command $input 2>pknots.err |") or Error("Failed to run pknots: $!", $species, $accession);
+  open(PK, "$command $input 2>pknots.err |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
   my $counter = 0;
   my ($line_to_read, $crap) = undef;
   my $string = '';
@@ -175,7 +173,7 @@ sub Mfold {
   chdir($config->{tmpdir});
 
   my $command = "$config->{mfold} SEQ=$input MAX=1";
-  open(MF, "$command 2>mfold.err |") or Error("Could not run mfold: $!", $species, $accession);
+  open(MF, "$command 2>mfold.err |") or PRF_Error("Could not run mfold: $!", $species, $accession);
   my $count = 0;
   while (my $line = <MF>) {
 	$count++;
@@ -215,7 +213,7 @@ sub Mfold_MFE {
   chomp $inputfile;
 #  my $command = "$config->{mfold} SEQ=$inputfile MAX=1 2>mfold.err";
   my $command = "$config->{mfold} SEQ=$inputfile MAX=1 2>/dev/null";
-  open(MF, "$command |") or Error("Could not run mfold: $!", $species, $accession);
+  open(MF, "$command |") or PRF_Error("Could not run mfold: $!", $species, $accession);
   my $count = 0;
   while (my $line = <MF>) {
     $count++;
@@ -231,7 +229,7 @@ sub Mfold_MFE {
   ## Now get the number of pairs
   my $detfile = $inputfile . '.det';
   my $det = 1;
-  open(DET, "<$detfile") or Error("Could not open the detfile $detfile: $!", $species, $accession) , $det = 0;
+  open(DET, "<$detfile") or $det = 0, PRF_Error("Could not open the detfile $detfile: $!", $species, $accession);
   if ($det) {
     my $pairs = 0;
     while (my $line = <DET>) {

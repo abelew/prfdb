@@ -1,5 +1,13 @@
+package PRFConfig;
+require      Exporter;
+our @ISA       = qw(Exporter);
+our @EXPORT    = qw(PRF_Out PRF_Error config);    # Symbols to be exported by default
+#our @EXPORT_OK = qw();  # Symbols to be exported on request
+our $VERSION   = 1.00;         # Version number
+
 $ENV{EFNDATA} = "/usr/local/bin/efndata";
 my $prefix = '/home/trey/browser';
+
 $PRFConfig::config = {
                       do_nupack => 1,                       ## Run nupack on sequences?
                       do_pknots => 0,                       ## Run pknots on sequence?
@@ -61,7 +69,7 @@ my $err = $PRFConfig::config->{errorfile};
 my $out = $PRFConfig::config->{logfile};
 my $error_counter = 0;
 
-sub Out {
+sub PRF_Out {
   my $message = shift;
   open(OUTFH, ">>$out") or die "Unable to open the log file $out: $!\n";
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
@@ -72,7 +80,7 @@ sub Out {
   close(OUTFH);
 }
 
-sub Error {
+sub PRF_Error {
   my $message = shift;
   my $species = shift;
   my $accession = shift;
@@ -89,5 +97,6 @@ sub Error {
   print ERRFH "$datestring\t$message\n";
   close(ERRFH);
 }
+
 
 1;
