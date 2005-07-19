@@ -230,16 +230,22 @@ sub Mfold_MFE {
   }
   ## Now get the number of pairs
   my $detfile = $inputfile . '.det';
-  open(DET, "<$detfile");
-  my $pairs = 0;
-  while (my $line = <DET>) {
-    chomp $line;
-    if ($line =~ /^Helix/) {
-      my ($helix, $ddg, $eq, $dumb_num, $num) = split(/\s+/, $line);
-      $pairs += $num;
+  my $det = 1;
+  open(DET, "<$detfile") or Error("Could not open the detfile $detfile: $!") , $det = 0;
+  if ($det) {
+    my $pairs = 0;
+    while (my $line = <DET>) {
+      chomp $line;
+      if ($line =~ /^Helix/) {
+        my ($helix, $ddg, $eq, $dumb_num, $num) = split(/\s+/, $line);
+        $pairs += $num;
+      }
     }
+    $return->{pairs} = $pairs;
+  }  ## End checking for the detfile
+  else {
+    $return->{pairs} = 0;
   }
-  $return->{pairs} = $pairs;
   my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
   for my $ext (@extra_files) {
     my $stupido_filename = $inputfile . '.' . $ext;
