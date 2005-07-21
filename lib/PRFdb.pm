@@ -172,6 +172,8 @@ sub Put_Nupack {
   my $me = shift;
   my $data = shift;
   my $table = 'nupack_' . $data->{species};
+  PRFConfig::PRF_Error("Put_Nupack");
+  PRFConfig::PRF_Error("Undefined value in Put_Nupack", $data->{species}, $data->{accession}) unless(defined($data->{start}) and defined($data->{slippery}) and defined($data->{seqlength}) and defined($data->{sequence}) and defined($data->{paren_output}) and defined($data->{parsed}) and defined($data->{mfe}) and defined($data->{knotp}));
   my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, seqlength, sequence, paren_output, parsed, mfe, knotp) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{seqlength}', '$data->{sequence}', '$data->{paren_output}', '$data->{parsed}', '$data->{mfe}', '$data->{knotp}'));
 #  print "NUPACK: $statement\n";
   if ($PRFConfig::config->{dboutput} eq 'dbi') {
@@ -277,7 +279,7 @@ sub Clean_Table {
   my $table = $type . '_' . $PRFConfig::config->{species};
   my $statement = "DELETE from $table";
   my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute or PRF_Error("Could not execute statement: $statement in Create_Genome");
+  $sth->execute or PRFConfig::PRF_Error("Could not execute statement: $statement in Create_Genome");
 }
 
 sub Drop_All {
@@ -288,7 +290,7 @@ sub Drop_All {
 	my $t_name = $tab . $genus_species;
 	my $statement = "DROP table $t_name";
 	my $sth = $me->{dbh}->prepare("$statement");
-	$sth->execute or PRF_Error("Could not execute Statement: $statement in Drop_All");
+	$sth->execute or PRFConfig::PRF_Error("Could not execute Statement: $statement in Drop_All");
   }
 }
 
@@ -298,7 +300,7 @@ sub Drop_Table {
   my $table = $type . '_' . $PRFConfig::config->{species};
   my $statement = "DROP table $table";
   my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute or PRF_Error("Could not execute statement: $statement in Create_Genome");
+  $sth->execute or PRFConfig::PRF_Error("Could not execute statement: $statement in Create_Genome");
 }
 
 sub Create_Genome {

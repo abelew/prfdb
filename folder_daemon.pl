@@ -28,12 +28,12 @@ if (defined($ARGV[0])) {
 Check_Environment();
 
 my $time_to_die = 0;
-my $pid = fork;
-exit if $pid;
-die "Could not fork: $!\n" unless defined($pid);
-
-POSIX::setsid() or die "Could not start a new process group: $!\n";
-$SIG{INT} = $SIG{TERM} = $SIG{HUP} = \&signal_handler;
+#my $pid = fork;
+#exit if $pid;
+#die "Could not fork: $!\n" unless defined($pid);
+#
+#POSIX::setsid() or die "Could not start a new process group: $!\n";
+#$SIG{INT} = $SIG{TERM} = $SIG{HUP} = \&signal_handler;
 
 until ($time_to_die) {
   Time::HiRes::usleep(100);
