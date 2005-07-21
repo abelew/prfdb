@@ -172,7 +172,6 @@ sub Put_Nupack {
   my $me = shift;
   my $data = shift;
   my $table = 'nupack_' . $data->{species};
-  PRFConfig::PRF_Error("Put_Nupack");
   PRFConfig::PRF_Error("Undefined value in Put_Nupack", $data->{species}, $data->{accession}) unless(defined($data->{start}) and defined($data->{slippery}) and defined($data->{seqlength}) and defined($data->{sequence}) and defined($data->{paren_output}) and defined($data->{parsed}) and defined($data->{mfe}) and defined($data->{knotp}));
   my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, seqlength, sequence, paren_output, parsed, mfe, knotp) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{seqlength}', '$data->{sequence}', '$data->{paren_output}', '$data->{parsed}', '$data->{mfe}', '$data->{knotp}'));
 #  print "NUPACK: $statement\n";
