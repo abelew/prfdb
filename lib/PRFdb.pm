@@ -264,6 +264,8 @@ sub Error_Db {
   my $message = shift;
   my $species = shift;
   my $accession = shift;
+  $species = '' if (!defined($species));
+  $accession = '' if (!defined($accession));
   my $statement = qq(INSERT into errors VALUES('', now(), '$message', '$species', '$accession'));
   my $sth = $me->{dbh}->prepare($statement);
   $sth->execute();

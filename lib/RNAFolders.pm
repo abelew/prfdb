@@ -190,6 +190,8 @@ sub Mfold {
 	my $stupido_filename = $me->{file} . '*.' . $ext;
 	unlink($stupido_filename);
   }
+  system("rm $me->{file}_*" 2>/dev/null);
+  system("rm $me->{file.*" 2>/dev/null);
   return($return);
 }
 
