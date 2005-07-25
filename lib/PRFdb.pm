@@ -34,6 +34,23 @@ sub Get_Sequence {
   }
 }
 
+sub Keyword_Search {
+  my $me = shift;
+  my $species = shift;
+  my $keyword = shift;
+  my $table = 'genome_' . $species;
+  my $statement = qq(SELECT accession, comment FROM $table WHERE comment like '%$keyword%' ORDER BY accession);
+  my $dbh = $me->{dbh};
+  my $info = $dbh->selectall_arrayref($statement);
+  my $return = {};
+  foreach my $accession (@{$info}) {
+    my $accession_id = $accession->[0];
+    my $accession_comment = $accession->[1];
+    $return->{$accession_id} = $accession_comment;
+  }
+  return($return);
+}
+
 sub Get_RNAfolds {
   my $me = shift;
   my $db = shift;
@@ -55,33 +72,6 @@ sub Get_Mfold {
   my $start = shift;
   my $return;
   my $table = "mfold_$species";
-  my $statement = "SELECT total, start, permissable, filedata, output FROM $table WHERE accession = '$accession'";
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_arrayref($statement);
-#  return(0) if (scalar(@{$info}) == 0);
-  return(0) if (scalar(@{$info}) == 0);
-  my @data = @{$info};
-  foreach my $start (@data) {
-	my $total = $start->[0];
-	my $st = $start->[1];
-	my $permissable = $start->[2];
-	my $filedata = $start->[3];
-	my $output = $start->[4];
-	$return->{$st}{total} = $total;
-	$return->{$st}{start} = $st;
-	$return->{$st}{permissable} = $permissable;
-	$return->{$st}{filedata} = $filedata;
-	$return->{$st}{output} = $output;
-  }
-  return($return);
-}
-
-sub Get_RNAmotif {
-  my $me = shift;
-  my $species = shift;
-  my $accession = shift;
-  my $return = {};
-  my $table = "rnamotif_$species";
   my $statement = "SELECT total, start, permissable, filedata, output FROM $table WHERE accession = '$accession'";
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_arrayref($statement);
@@ -168,6 +158,22 @@ sub Remove_Tempfile {
   rename("recorder.tmp.txt", "recorder.txt");
 }
 
+####
+### Get and Set Nupack data
+####
+sub Get_Nupack {
+  my $me = shift;
+  my $species = shift;
+  my $accession = shift;
+  PRFConfig::PRF_Error("Undefined value in Get_Nupack", $species, $accession) unless (defined($species) and defined($accession));
+  my $table = 'nupack_' . $species;
+  my $statement = qq(SELECT * from $table where accession='$accession' ORDER BY start);
+  print "TEST: $statement\n";
+  my $dbh = $me->{dbh};
+  my $info = $dbh->selectall_hashref($statement, 1);
+  return($info);
+}
+
 sub Put_Nupack {
   my $me = shift;
   my $data = shift;
@@ -184,6 +190,20 @@ sub Put_Nupack {
   }
 }
 
+####
+### Get and Set Pknots data
+####
+sub Get_Pknots {
+  my $me = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $table = 'pknots_' . $species;
+  my $statement = qq(SELECT * from $table where accession='$accession');
+  my $dbh = $me->{dbh};
+  my $info = $dbh->selectall_hashref($statement, 'id');
+  return($info);
+}
+
 sub Put_Pknots {
   my $me = shift;
   my $data = shift;
@@ -196,6 +216,16 @@ sub Put_Pknots {
   else {
 	print DBOUT "$statement\n";
   }
+}
+
+####
+### Get and Set Bootstrap data
+####
+sub Get_Boot {
+  my $me = shift;
+  my $species = shift;
+  my $accession = shift;
+
 }
 
 sub Put_Boot {
@@ -226,29 +256,67 @@ sub Put_Boot {
   } ## Foreach mfe method
 }
 
+####
+### Get and Set motif data
+####
+sub Get_RNAmotif {
+  my $me = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $return = {};
+  my $table = "rnamotif_$species";
+  my $statement = "SELECT total, start, permissable, filedata, output FROM $table WHERE accession = '$accession'";
+  my $dbh = $me->{dbh};
+  my $info = $dbh->selectall_arrayref($statement);
+#  return(0) if (scalar(@{$info}) == 0);
+  return(0) if (scalar(@{$info}) == 0);
+  my @data = @{$info};
+  foreach my $start (@data) {
+	my $total = $start->[0];
+	my $st = $start->[1];
+	my $permissable = $start->[2];
+	my $filedata = $start->[3];
+	my $output = $start->[4];
+	$return->{$st}{total} = $total;
+	$return->{$st}{start} = $st;
+	$return->{$st}{permissable} = $permissable;
+	$return->{$st}{filedata} = $filedata;
+	$return->{$st}{output} = $output;
+  }
+  return($return);
+}
+
 sub Put_RNAmotif {
   my $me = shift;
   my $species = shift;
   my $accession = shift;
   my $slipsites_data = shift;
   my $table = "rnamotif_" . $species;
-  foreach my $start (keys %{$slipsites_data}) {
-    my $total = $slipsites_data->{$start}{total};
-    my $permissable = $slipsites_data->{$start}{permissable};
-    my $filename = $slipsites_data->{$start}{filename};
-    my $filedata = $slipsites_data->{$start}{filedata};
-    my $output = $slipsites_data->{$start}{output};
-    my $statement = qq(INSERT INTO $table (id, accession, start, total, permissable, filedata, output) VALUES ('', '$accession', '$start', '$total', '$permissable', '$filedata', '$output'));
-#    print "RNAMOTIF: $statement\n";
-	if ($PRFConfig::config->{dboutput} eq 'dbi') {
-	  my $sth = $me->{dbh}->prepare($statement);
-	  $sth->execute();
-	}
-	else {
-	  print DBOUT "$statement\n";
-	}
+  if (scalar %{$slipsites_data} eq '0') {
+    my $statement = qq(INSERT INTO $table (id, accession, start, total, permissable, filedata, output) VALUES ('', '$accession', '', '', '', '', ''));
+    if ($PRFConfig::config->{dboutput} eq 'dbi') {
+      my $sth = $me->{dbh}->prepare($statement);
+      $sth->execute();
+    }
+    else { print DBOUT "$statement\n"; }
   }
-}
+  else {  ## There are some keys to play with
+    foreach my $start (keys %{$slipsites_data}) {
+      my $total = $slipsites_data->{$start}{total};
+      my $permissable = $slipsites_data->{$start}{permissable};
+      my $filename = $slipsites_data->{$start}{filename};
+      my $filedata = $slipsites_data->{$start}{filedata};
+      my $output = $slipsites_data->{$start}{output};
+      my $statement = qq(INSERT INTO $table (id, accession, start, total, permissable, filedata, output) VALUES ('', '$accession', '$start', '$total', '$permissable', '$filedata', '$output'));
+      #    print "RNAMOTIF: $statement\n";
+      if ($PRFConfig::config->{dboutput} eq 'dbi') {
+        my $sth = $me->{dbh}->prepare($statement);
+        $sth->execute();
+      }
+      else { print DBOUT "$statement\n"; } ## End checking on the type of db connection
+    } ## End looking at every slipsite for a locus
+  }  ## End checking for a null set
+}  ## End Put_RNAMotif
 
 sub Get_Slippery {
   my $me = shift;
@@ -375,12 +443,12 @@ sub Grab_Queue {
   my $type = shift;  ## public or private
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
-  my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' limit 1);
+  my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
   my ($species, $accession) = $me->{dbh}->selectrow_array($single_accession);
   return(undef) unless(defined($species));
-  my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and public='$type');
-  my $st = $me->{dbh}->prepare($update);
-  $st->execute();
+#  my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and public='$type');
+#  my $st = $me->{dbh}->prepare($update);
+#  $st->execute();
   $return->{species} = $species;
   $return->{accession} = $accession;
   return($return);
