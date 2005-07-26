@@ -34,10 +34,10 @@ sub Nupack {
                };
   chdir($config->{tmpdir});
   my $command = "$config->{nupack} $input";
-#  open(NU, "$command $input 2>nupack.err |") or PRF_Error("Could not run nupack: $!", $species, $accession);
-  open(NU, "/bin/true |");
-  print "Running Nupack: $command\n";
-  sleep(2);
+  open(NU, "$command $input 2>nupack.err |") or PRF_Error("Could not run nupack: $!", $species, $accession);
+#  open(NU, "/bin/true |");
+#  print "Running Nupack: $command\n";
+#  sleep(2);
   my $count = 0;
   while (my $line = <NU>) {
 	$count++;
@@ -110,10 +110,10 @@ sub Pknots {
                };
   chdir($config->{tmpdir});
   my $command = "$config->{pknots} -k $input";
-#  open(PK, "$command $input 2>pknots.err |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
-  open(PK, "/bin/true |");
-  print "Running pknots: $command\n";
-  sleep(1);
+  open(PK, "$command $input 2>pknots.err |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
+#  open(PK, "/bin/true |");
+#  print "Running pknots: $command\n";
+#  sleep(1);
   my $counter = 0;
   my ($line_to_read, $crap) = undef;
   my $string = '';
@@ -179,10 +179,10 @@ sub Mfold {
   chdir($config->{tmpdir});
 
   my $command = "$config->{mfold} SEQ=$input MAX=1";
-#  open(MF, "$command 2>mfold.err |") or PRF_Error("Could not run mfold: $!", $species, $accession);
-  open(MF, "/bin/true |");
-  print "Running mfold\n";
-  sleep(2);
+  open(MF, "$command 2>mfold.err |") or PRF_Error("Could not run mfold: $!", $species, $accession);
+#  open(MF, "/bin/true |");
+#  print "Running mfold\n";
+#  sleep(2);
   my $count = 0;
   while (my $line = <MF>) {
 	$count++;
@@ -227,9 +227,9 @@ sub Mfold_MFE {
   chomp $inputfile;
 #  my $command = "$config->{mfold} SEQ=$inputfile MAX=1 2>mfold.err";
   my $command = "$config->{mfold} SEQ=$inputfile MAX=1 2>/dev/null";
-#  open(MF, "$command |") or PRF_Error("Could not run mfold: $!", $species, $accession);
-  open(MF, "/bin/true |");
-  print "Running mfold $command\n";
+  open(MF, "$command |") or PRF_Error("Could not run mfold: $!", $species, $accession);
+#  open(MF, "/bin/true |");
+#  print "Running mfold $command\n";
   my $count = 0;
   while (my $line = <MF>) {
     $count++;
