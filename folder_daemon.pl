@@ -114,7 +114,7 @@ sub Check_Db {
         if ($PRFConfig::config->{do_nupack}) {  ## Check the configuration file for nupack
           $nupack_folding = $db->Get_RNAfolds('nupack', $datum->{species}, $datum->{accession}, $start);
           if ($nupack_folding ne '0') {  ## Both have motif and folding
-	      print "HAVE NUPACK FOLDING AND MOTIF for $datum->{species} $datum->{accession}\n";
+	      PRF_Out("HAVE NUPACK FOLDING AND MOTIF for $datum->{species} $datum->{accession}");
             return(1);
           }
           else { ## Want nupack, have motif, no folding, so need to make a tmp file for nupack.
@@ -133,7 +133,7 @@ sub Check_Db {
         if ($PRFConfig::config->{do_pknots}) {  ## Check to see if pknots should be run
           $pknots_folding = $db->Get_RNAfolds('pknots', $datum->{species}, $datum->{accession}, $start);
           if ($pknots_folding ne '0') {  ## Both have motif and folding
-	      print("HAVE PKNOTS FOLDING AND MOTIF for $datum->{species} $datum->{accession}\n");
+	      PRF_Out("HAVE PKNOTS FOLDING AND MOTIF for $datum->{species} $datum->{accession}");
             return(1);
           }
           else {  ## Want pknots, have motif, no folding, so make a tempfile
@@ -190,14 +190,14 @@ sub Check_Db {
     my $sequence = $db->Get_Sequence($datum->{species}, $datum->{accession});
     my $slipsites = $motifs->Search($sequence);
     $db->Put_RNAmotif($datum->{species}, $datum->{accession}, $slipsites);
-    print("NO MOTIF, NO FOLDING for $datum->{species} $datum->{accession}\n");
+    PRF_Out("NO MOTIF, NO FOLDING for $datum->{species} $datum->{accession}");
     my $success = scalar(%{$slipsites});
-    if ($success eq '0') { print("$datum->{species} $datum->{accession} has no slippery sites.\n"); }
+    if ($success eq '0') { PRF_Out("$datum->{species} $datum->{accession} has no slippery sites."); }
     foreach my $start (keys %{$slipsites}) {
       my $filename = $slipsites->{$start}{filename};
       my $accession = $datum->{accession};
       my $species = $datum->{species};
-      print "STARTING FOLD FOR $start in $datum->{accession}\n";
+      PRF_Out("STARTING FOLD FOR $start in $datum->{accession}");
       my $slippery = $db->Get_Slippery($sequence, $start); 
       my $fold_search = new RNAFolders(file => $filename,
                                        accession => $accession,

@@ -6,6 +6,7 @@ use Template;
 use lib "lib";
 use PRFConfig;
 use PRFdb;
+use RNAMotif_Search;
 
 my $config = $PRFConfig::config;  ## All configuration information exists here
 chdir($config->{basedir});  ## Change into the home directory of the folder daemon
@@ -62,7 +63,9 @@ sub Explore {
 sub Accession_Search {
   my $species = shift;
   my $accession = shift;
-
+  my $vars = {
+             };
+  my $input = 'accession_search.html';
   $template->process($input, $vars) or die $template->error();
 }
 
@@ -76,11 +79,12 @@ sub Keyword_Search {
     $hits->{$hit} =~ s/\(.*//g;
   }
   my $next_step = "$base/dig";
-  my $vars = { startform => $fun->startform(-action => $next_step),
-               next_step => $next_step,
-               species => $species,
-#               submit => $fun->submit(),
-               hits => $hits,
+  my $vars = {
+              startform => $fun->startform(-action => $next_step),
+              next_step => $next_step,
+              species => $species,
+              # submit => $fun->submit(),
+              hits => $hits,
              };
   my $input = 'keyword.html';
   $template->process($input, $vars) or die $template->error();
@@ -97,13 +101,13 @@ sub Dig {
   my $filename = '';
   my @params = $fun->param();
   my ($species, $accession);
-  (defined($sp)) ? $species = $sp : $species = $fun->param('species');
-  (defined($ac)) ? $accession = $ac : $accession = $fun->('accession');
+  $species = (defined($sp)) ? $sp : $fun->param('species');
+  $accession = (defined($ac)) ? $ac : $fun->param('accession');
   my ($nupack_structures, $pknots_structures, $boot_structures);
 
-  my $sequence = $db->Get_Sequence($species, $accession);
   ## Check to see if this has already been generated.
   my $slipsites_data = $db->Get_RNAmotif($species, $accession);
+  my $sequence = $db->Get_Sequence($species, $accession);
   unless ($slipsites_data) {
     my $stemsearch = new RNAMotif_Search;
     $slipsites_data = $stemsearch->Search($sequence, $config->{max_stem_length});
@@ -128,20 +132,19 @@ sub Dig {
   for my $c (0 .. 79) { $diagram[$c] = '-' if ($diagram[$c] eq '0'); }
 
   my $next_step = "$base/dig";
-  my $vars = { startform => $fun->startform(-action => $next_step),
-			   next_step => $next_step,
-			   accession => $accession,
-			   species => $species,
-			   slipsites => $slipsites,
-			   filenames => $filenames,
-			   ratio => $ratio,
-			   length => $length,
-			   diagram => \@diagram,
-#			   submit => $fun->submit(),
-			   };
+  my $vars = {
+              startform => $fun->startform(-action => $next_step),
+              next_step => $next_step,
+              accession => $accession,
+              species => $species,
+              slipsites => $slipsites,
+              filenames => $filenames,
+              ratio => $ratio,
+              length => $length,
+              diagram => \@diagram,
+              # submit => $fun->submit(),
+             };
   my $input = 'explore.html';
-
-  $rnamotif_info =$db->Get_RNAMotif($species, $accession)
 
   if ($PRFConfig::config->{do_nupack}) {
     $nupack_structures = $db->Get_Nupack($species, $accession);
