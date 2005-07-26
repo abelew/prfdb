@@ -1,7 +1,7 @@
 package PRFdb;
 use strict;
 use DBI;
-use PRFConfig qw / PRF_Error PRF_OUT /;
+use PRFConfig qw / PRF_Error PRF_Out /;
 use File::Temp qw / tmpnam /;
 use Fcntl ':flock'; # import LOCK_* constants
 
@@ -32,6 +32,14 @@ sub Get_Sequence {
   else {
 	return(undef);
   }
+}
+
+sub Get_All_Sequences {
+  my $me = shift;
+  my $species = shift;
+  my $table = 'genome_' . $species;
+  my $statement = "SELECT accession, sequence from $table";
+  return($me->{dbh}->selectall_arrayref($statement));
 }
 
 sub Keyword_Search {
