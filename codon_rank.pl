@@ -7,11 +7,11 @@ use PRFConfig;
 my $freq = {};
 my $species = 'homo_sapiens';
 my $db = new PRFdb;
-my $all_sequences = $db->Get_All_Sequences($species);
+my $sth = $db->Get_All_Sequences($species);
 my $c = 0;
 my ($accession, $sequence);
 my $num = scalar(@{$all_sequences});
-while ($c < $num) {
+while ($sth->fetch) {
   $accession = $all_sequences->[$c]->[0];
   $sequence = $all_sequences->[$c]->[1];
   $sequence =~ s/A+$//g;

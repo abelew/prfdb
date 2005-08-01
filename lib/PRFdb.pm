@@ -173,10 +173,16 @@ sub Get_Nupack {
   my $me = shift;
   my $species = shift;
   my $accession = shift;
+  my $start  = shift;
   PRFConfig::PRF_Error("Undefined value in Get_Nupack", $species, $accession) unless (defined($species) and defined($accession));
   my $table = 'nupack_' . $species;
-  my $statement = qq(SELECT * from $table where accession='$accession' ORDER BY start);
-  print "TEST: $statement\n";
+  my $statement;
+  if (defined($start)) {
+    $statement = qq(SELECT * FROM $table WHERE accession='$accession' AND start='$start' ORDER BY start);
+  }
+  else {
+    $statement = qq(SELECT * from $table where accession='$accession' ORDER BY start);
+  }
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_hashref($statement, 1);
   return($info);
@@ -233,7 +239,19 @@ sub Get_Boot {
   my $me = shift;
   my $species = shift;
   my $accession = shift;
-
+  my $start = shift;
+  PRFConfig::PRF_Error("Undefined value in Get_Boot", $species, $accession) unless (defined($species) and defined($accession));
+  my $table = 'boot_' . $species;
+  my $statement;
+  if (defined($start)) {
+    $statement = qq(SELECT * FROM $table WHERE accession='$accession' AND start='$start' ORDER BY start);
+  }
+  else {
+    $statement = qq(SELECT * from $table where accession='$accession' ORDER BY start);
+  }
+  my $dbh = $me->{dbh};
+  my $info = $dbh->selectall_hashref($statement, 1);
+  return($info);
 }
 
 sub Put_Boot {
