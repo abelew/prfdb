@@ -3,7 +3,7 @@ use strict;
 use DBI;
 use Getopt::Long;
 use lib 'lib';
-use PRFConfig;
+use PRFConfig qw( PRF_Error );
 use PRFdb;
 
 my $config = $PRFConfig::config;
@@ -75,7 +75,7 @@ elsif ($action eq 'fillqueue') {
   $db->FillQueue();
 }
 else {
-  Error("Incorrect usage of admin_tables.pl ARGV: @ARGV");
+  PRFConfig::PRF_Error("Incorrect usage of admin_tables.pl ARGV: @ARGV");
   die("I do not know what to do. Known actions are:
 --action create_genome_genus_species
 --action create_nupack_genus_species

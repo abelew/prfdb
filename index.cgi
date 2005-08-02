@@ -29,6 +29,9 @@ elsif ($fun->path_info() eq '/dig') {
 elsif ($fun->path_info() eq '/examine') {
   Examine();
 }
+elsif ($fun->path_info() eq '/pubqueue_add') {
+  Pubqueue_Add();
+}
 elsif ($fun->path_info() eq '/clean') {
   RNAMotif_Search->Remove_Old();
 }
@@ -251,11 +254,11 @@ sub Ask_For_Fold {
   my $accession = shift;
 
   my $entries = $db->Get_Pubqueue();
-
+  my $num_entries = scalar(@{$entries});
   my $next_step = "$base/pubqueue_add";
   my $vars = {
               startform => $fun->startform(-action => $next_step),
-#              entries => $num_entries,
+              entries => $num_entries,
               next_step => $next_step,
               species => $species,
               accession => $accession,
@@ -288,6 +291,29 @@ sub Examine {
               # submit => $fun->submit(),
              };
   }
+}
+
+sub Pubqueue_Add {
+  my $sp = shift;
+  my $ac = shift;
+  my $st = shift;
+  my ($species, $accession, $start);
+  $species = (defined($sp)) ? $sp : $fun->param('species');
+  $accession = (defined($ac)) ? $ac : $fun->param('accession');
+  $start = (defined($st)) ? $st : $fun->param('start');
+  my $entries = $db->Set_Pubqueue($species, $accession);
+
+  my $next_step = "$base/added";
+  my $vars = {
+              startform => $fun->startform(-action => $next_step),
+              entries => $num_entries,
+              next_step => $next_step,
+              species => $species,
+              accession => $accession,
+              submit => $fun->submit(),
+             };
+  my $input = 'added.html';
+  $template->process($input, $vars) or die $template->error();
 }
 
 ###################

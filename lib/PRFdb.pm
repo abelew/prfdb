@@ -365,6 +365,23 @@ sub Error_Db {
   $sth->execute();
 }
 
+sub Get_Pubqueue {
+  my $me = shift;
+  my $return;
+  my $statement = qq(SELECT accession FROM queue WHERE public='1' and  out='0');
+  my $accessions = $me->{dbh}->selectall_arrayref($statement);
+  return($accessions);
+}
+
+sub Set_Pubqueue {
+  my $me = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $params = shift;
+  my $statement = qq(INSERT INTO queue (id, public, species, accession, params, out, done) VALUES ('',$params->{public}, $species, $accession, $params->{params}, 0, 0));
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute or PRFConfig::PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
+
 ###
 ### Admin functions below!
 ###
@@ -385,7 +402,7 @@ sub Drop_All {
 	my $t_name = $tab . $genus_species;
 	my $statement = "DROP table $t_name";
 	my $sth = $me->{dbh}->prepare("$statement");
-	$sth->execute or PRFConfig::PRF_Error("Could not execute Statement: $statement in Drop_All");
+	$sth->execute or PRFConfig::PRF_Error("Could not execute \"$statement\" in Drop_All");
   }
 }
 
@@ -401,7 +418,7 @@ sub Drop_Table {
 sub Create_Genome {
   my $me = shift;
   my $table = 'genome_' . $PRFConfig::config->{species};
-  my $statement = "CREATE table $table  (accession varchar(10) not null, genename varchar(20), version int, comment blob not null, sequence blob not null, primary key (accession))";
+  my $statement = "CREATE table $table  (accession varchar(16) not null, genename varchar(20), version int, comment blob not null, sequence blob not null, primary key (accession))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
 }
@@ -482,7 +499,7 @@ sub Grab_Queue {
 
 sub Load_Genome_Table {
   my $me = shift;
-  if ($PRFConfig::config->{input} =~ /gz$/) {
+  if ($PRFConfig::config->{input} =~ /gz$/ or $PRFConfig::config->{input} =~ /Z$/) {
 	open(IN, "$PRFConfig::config->{zcat} $PRFConfig::config->{input} |") or die "Could not open the fasta file\n $!\n";
   }
   else {
@@ -490,31 +507,31 @@ sub Load_Genome_Table {
   }
   my %datum = (accession => undef, genename => undef, version => undef, comment => undef, sequence => undef);
   while(my $line = <IN>) {
-	chomp $line;
-	if ($line =~ /^\>ORFN/) {  ## If it is one of the kooky yeast genomes
-	  if (defined($datum{accession})) {
-		$me->Insert_Genome_Entry(\%datum);
-	  }
-	  my ($fake_accession, $comment) = split(/\,/, $line);
-	  my ($accession, $genename) = split(/ /, $fake_accession);
-	  $accession =~ s/^\>//g;
-	  $datum{accession} = $accession;
-	  $datum{genename} = $genename;
-	  $datum{comment} = $comment;
-	}  ## End if it is a kooky yeast genome.
-	elsif ($line =~ /^\>/) {
-		if (defined($datum{accession})) {
-		  $me->Insert_Genome_Entry(\%datum);
-		}
-		my ($gi, $id, $gb, $accession_version, $comment) = split(/\|/, $line);
-		my ($accession, $version) = split(/\./, $accession_version);
-		$datum{accession} = $accession;
-		$datum{version} = $version;
-		$datum{comment} = $comment;
-	  }  ## The mgc genomes
-	else {
-	  $datum{sequence} .= $line;
-	}  ## Non accession line
+    chomp $line;
+    if ($line =~ /^\>ORFN/) {  ## If it is one of the kooky yeast genomes
+      if (defined($datum{accession})) {
+        $me->Insert_Genome_Entry(\%datum);
+      }
+      my ($fake_accession, $comment) = split(/\,/, $line);
+      my ($accession, $genename) = split(/ /, $fake_accession);
+      $accession =~ s/^\>//g;
+      $datum{accession} = $accession;
+      $datum{genename} = $genename;
+      $datum{comment} = $comment;
+    }  ## End if it is a kooky yeast genome.
+    elsif ($line =~ /^\>/) {
+      if (defined($datum{accession})) {
+        $me->Insert_Genome_Entry(\%datum);
+      }
+      my ($gi, $id, $gb, $accession_version, $comment) = split(/\|/, $line);
+      my ($accession, $version) = split(/\./, $accession_version);
+      $datum{accession} = $accession;
+      $datum{version} = $version;
+      $datum{comment} = $comment;
+    }  ## The mgc genomes
+    else {
+      $datum{sequence} .= $line;
+    }   ## Non accession line
   }  ## End every line
   $me->Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
 }
