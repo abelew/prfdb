@@ -136,8 +136,6 @@ sub Dig {
   }
   for my $c (0 .. 79) { $diagram[$c] = '-' if ($diagram[$c] eq '0'); }
 
-  my $next_step = "$base/examine";
-
 
   ## Gather information
   my $nupack_structures;
@@ -154,7 +152,7 @@ sub Dig {
         $nu_parens->{$id} = $nupack_structures->{$id}{paren_output};
         $nu_parses->{$id} = $nupack_structures->{$id}{parsed};
         $nu_parses->{$id} =~ s/\s+//g;
-        $nu_parses->{$id} =~ s/^.{1}//g;
+        $nu_parses->{$id} =~ s/^.{1}//g;  ## I have no clue why there is a leading .
         $nu_knots->{$id} = $nupack_structures->{$id}{knotp};
       }
     }
@@ -179,7 +177,7 @@ sub Dig {
         $pk_knots->{$id} = $pknots_structures->{$id}{knotp};
       }
     }
-    else {  ## Do not have nupack structures
+    else {  ## Do not have pknots structures
       Ask_For_Fold('pknots', $species, $accession);
     }
   } ## End do_pknots
@@ -203,6 +201,8 @@ sub Dig {
     }
   }  ## End check for bootstrap info
 
+
+  my $next_step = "$base/examine";
   my $vars = {
               startform => $fun->startform(-action => $next_step),
               next_step => $next_step,
@@ -244,6 +244,27 @@ sub Dig {
   $template->process($input, $vars) or die $template->error();
 }  ## End Dig
 
+
+sub Ask_For_Fold {
+  my $algorithm = shift;
+  my $species = shift;
+  my $accession = shift;
+
+  my $entries = $db->Get_Pubqueue();
+
+  my $next_step = "$base/pubqueue_add";
+  my $vars = {
+              startform => $fun->startform(-action => $next_step),
+#              entries => $num_entries,
+              next_step => $next_step,
+              species => $species,
+              accession => $accession,
+              algorithm => $algorithm,
+              submit => $fun->submit(),
+             };
+  my $input = 'ask.html';
+  $template->process($input, $vars) or die $template->error();
+}
 
 sub Examine {
   my $sp = shift;
