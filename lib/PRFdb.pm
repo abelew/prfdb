@@ -381,6 +381,7 @@ sub Set_Pubqueue {
   my $statement = qq(INSERT INTO queue (id, public, species, accession, params, out, done) VALUES ('',$params->{public}, $species, $accession, $params->{params}, 0, 0));
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or PRFConfig::PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
+}
 
 ###
 ### Admin functions below!

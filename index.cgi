@@ -306,7 +306,6 @@ sub Pubqueue_Add {
   my $next_step = "$base/added";
   my $vars = {
               startform => $fun->startform(-action => $next_step),
-              entries => $num_entries,
               next_step => $next_step,
               species => $species,
               accession => $accession,
