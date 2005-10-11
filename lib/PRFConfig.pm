@@ -5,14 +5,16 @@ our @EXPORT    = qw(PRF_Out PRF_Error config);    # Symbols to be exported by de
 #our @EXPORT_OK = qw();  # Symbols to be exported on request
 our $VERSION   = 1.00;         # Version number
 
-$ENV{EFNDATA} = "/usr/local/bin/efndata";
-my $prefix = '/home/trey/browser';
+$ENV{EFNDATA} = "$ENV{HOME}/browser/work";
+$ENV{ENERGY_FILE} = "$ENV{HOME}/browser/work/dataS_G.rna";
+my $prefix = "$ENV{HOME}/browser";
 
 $PRFConfig::config = {
                       do_nupack => 1,                       ## Run nupack on sequences?
                       do_pknots => 0,                       ## Run pknots on sequence?
                       do_mfold => 0,                        ## Run mfold on the sequence as a mfe bootstrap?
                       do_boot => 1,                         ## Perform our faux bootstrap
+                      arch_specific_exe => 1,        ## Architecture specific executables (used for a pbs environment)
                       boot_repetitions => 100,
                       boot_mfe_algorithms => { mfold => \&RNAFolders::Mfold_MFE, },
                       boot_randomizers => {coin => \&MoreRandom::CoinRandom, },
@@ -23,12 +25,17 @@ $PRFConfig::config = {
                       basedir => $prefix,                   ## The base directory of this crap
                       tmpdir => "$prefix/work",             ## Temporary directory, fasta files live there
                       nupack_dir => "$prefix/work",         ## Where does nupack live?
-                      nupack => "$prefix/work/Fold.out",    ## Redundant?
-                      rnamotif => '/usr/local/bin/rnamotif', ## Location of rnamotif
-                      rmprune => '/usr/local/bin/rmprune',  ## Location of rmprune
-                      mfold => '/usr/local/bin/mfold',      ## Location of mfold
-                      pknots => '/usr/local/bin/pknots',    ## Location of pknots
-                      zcat => '/usr/bin/zcat',              ## Location of zcat (rename to gzcat for OSX)
+                      nupack => "Fold.out",
+                      rnamotif_dir => "$prefix/work",
+                      rnamotif => 'rnamotif',
+                      rmprune_dir => "$prefix/work",
+                      rmprune => 'rmprune',  ## Location of rmprune
+                      mfold_dir => "$prefix/work",
+                      mfold => 'mfold',      ## Location of mfold
+                      pknots_dir => "$prefix/work",
+                      pknots => 'pknots',    ## Location of pknots
+                      zcat_dir => "$prefix/work",
+                      zcat => 'zcat',              ## Location of zcat (rename to gzcat for OSX)
                       db => 'atbprfdb',                     ## Name of mysql database
                       host => 'prfdb.no-ip.org',              ## Mysql database hostname
                       user => 'trey',                       ## Mysql username
@@ -68,6 +75,46 @@ $PRFConfig::config->{dsn} = "DBI:mysql:database=$PRFConfig::config->{db};host=$P
 my $err = $PRFConfig::config->{errorfile};
 my $out = $PRFConfig::config->{logfile};
 my $error_counter = 0;
+my @exes = ('nupack', 'rnamotif', 'rmprune', 'mfold', 'pknots');
+foreach my $exe (@exes) {
+  my $dirname = $exe . '_dir';
+  $PRFConfig::config->{$exe} = $PRFConfig::config->{dirname} . '/' . $PRFConfig::config->{$exe};
+}
+if ($PRFConfig::config->{arch_specific_exe} == 1) {
+  ## If we have architecture specific executables, then
+  ## They should live in directories named after their architecture
+  my @modified_exes = ('rnamotif', 'rmprune', 'mfold', 'pknots', 'zcat');
+  my $arch = `uname -a`;
+  chomp $arch;
+  foreach my $exe (@modified_exes) {
+    my $dirvar = $exe . '_dir';
+    if ($arch =~ /IRIX/) {
+      $PRFConfig::config->{$dirvar} .= '/irix';
+      $PRFConfig::config->{$exe} = $PRFConfig::config->{dirvar} . '/' . $PRFConfig::config->{$exe};
+    }
+    elsif ($arch =~ /AIX/) {
+      $PRFConfig::config->{$dirvar} .= '/aix';
+      $PRFConfig::config->{$exe} = $PRFConfig::config->{dirvar} . '/' . $PRFConfig::config->{$exe};
+    }
+    elsif ($arch =~ /Linux/) {
+      $PRFConfig::config->{$dirvar} .= '/linux';
+      $PRFConfig::config->{$exe} = $PRFConfig::config->{dirvar} . '/' . $PRFConfig::config->{$exe};
+    }
+    else {
+      die("Architecture $arch not available.");
+    }
+  } ## For every modified executable
+
+  if ($arch =~ /IRIX/) {
+    $PRFConfig::config->{nupack} .= ".irix";
+  }
+  elsif ($arch =~ /AIX/) {
+    $PRFConfig::config->{nupack} .= ".aix";
+  }
+  elsif ($arch =~ /Linux/) {
+    $PRFConfig::config->{nupack} .= ".linux";
+  }
+}  ## End checking if multiple architectures are in use
 
 sub PRF_Out {
   my $message = shift;

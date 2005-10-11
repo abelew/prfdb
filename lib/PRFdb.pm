@@ -39,7 +39,8 @@ sub Get_All_Sequences {
   my $species = shift;
   my $table = 'genome_' . $species;
   my $statement = "SELECT accession, sequence from $table";
-  return($me->{dbh}->selectall_arrayref($statement));
+  my $sth = $me->{dbh}->prepare($statement);
+  return($sth);
 }
 
 sub Keyword_Search {
@@ -459,7 +460,7 @@ sub Create_Rnamotif {
 sub Create_Queue {
   my $me = shift;
   my $tablename = 'queue';
-  my $statement = "CREATE table $tablename (id int not null auto_increment, public bool, species varchar(20), accession varchar(80), params blob, out bool, done bool, primary key (id))";
+  my $statement = "CREATE table $tablename (id int not null auto_increment, public bool, species varchar(40), accession varchar(80), params blob, out bool, done bool, primary key (id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute;
 }
@@ -490,9 +491,9 @@ sub Grab_Queue {
   my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
   my ($species, $accession) = $me->{dbh}->selectrow_array($single_accession);
   return(undef) unless(defined($species));
-#  my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and public='$type');
-#  my $st = $me->{dbh}->prepare($update);
-#  $st->execute();
+  my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and public='$type');
+  my $st = $me->{dbh}->prepare($update);
+  $st->execute();
   $return->{species} = $species;
   $return->{accession} = $accession;
   return($return);

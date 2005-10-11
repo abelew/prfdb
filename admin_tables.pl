@@ -1,10 +1,13 @@
-#! /usr/bin/perl -w
+#! /usr/bin/env perl5.8.2
 use strict;
 use DBI;
 use Getopt::Long;
+use lib "$ENV{HOME}/usr/lib/perl5";
 use lib 'lib';
 use PRFConfig qw( PRF_Error );
 use PRFdb;
+
+$^W=1;
 
 my $config = $PRFConfig::config;
 
@@ -75,7 +78,7 @@ elsif ($action eq 'fillqueue') {
   $db->FillQueue();
 }
 else {
-  PRFConfig::PRF_Error("Incorrect usage of admin_tables.pl ARGV: @ARGV");
+  PRF_Error("Incorrect usage of admin_tables.pl ARGV: @ARGV");
   die("I do not know what to do. Known actions are:
 --action create_genome_genus_species
 --action create_nupack_genus_species

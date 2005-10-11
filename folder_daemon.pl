@@ -1,9 +1,10 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl5.8.2
 use strict;
 use POSIX;
 use DBI;
 use Time::HiRes;
 
+use lib "$ENV{HOME}/usr/lib/perl5";
 use lib 'lib';
 use PRFConfig;
 use PRFdb;
@@ -11,6 +12,8 @@ use RNAMotif_Search;
 use RNAFolders;
 use Bootlace;
 use MoreRandom;
+
+$^W = 1;
 
 my $config = $PRFConfig::config;
 chdir($config->{basedir});
@@ -102,6 +105,7 @@ sub Check_Db {
   else { $motif_info = $db->Get_RNAmotif($datum->{species}, $datum->{accession}); }
   if ($motif_info) {  ## If the motif information _does_ exist, check the folding information
     foreach my $start (keys %{$motif_info}) {  ## For every start site in the sequence
+      print "Doing locus: $datum->{accession} start: $start\n";
       my $folding;
       my $fdata = $motif_info->{$start}{filedata};
       if ($PRFConfig::config->{dbinput} ne 'dbi') { $folding = 0; } ##Yeah yeah, bad style.  Except logically it is simpler
@@ -271,15 +275,13 @@ sub Split_Queue {
 
 sub Check_Environment {
   die("No rnamotif descriptor file set.") unless(defined($PRFConfig::config->{descriptor_file}));
-  die("Missing rnamotif: $!") unless(-x $PRFConfig::config->{rnamotif});
-  die("Missing pknots: $!") unless(-x $PRFConfig::config->{pknots});
-  die("Missing nupack: $!") unless(-x $PRFConfig::config->{nupack});
-  die("Missing rmprune: $!") unless(-x $PRFConfig::config->{rmprune});
-  die("Missing mfold: $!") unless(-x $PRFConfig::config->{mfold});
+#  die("Missing rnamotif: $!") unless(-x $PRFConfig::config->{rnamotif});
+#  die("Missing pknots: $!") unless(-x $PRFConfig::config->{pknots});
+#  die("Missing nupack: $!") unless(-x $PRFConfig::config->{nupack});
+#  die("Missing rmprune: $!") unless(-x $PRFConfig::config->{rmprune});
+#  die("Missing mfold: $!") unless(-x $PRFConfig::config->{mfold});
   die("Tmpdir must be executable: $!") unless(-x $PRFConfig::config->{tmpdir});
   die("Tmpdir must be writable: $!") unless(-w $PRFConfig::config->{tmpdir});
-  die("Privqueue must be writable: $!") unless(-w $PRFConfig::config->{privqueue});
-  die("Pubqueue must be writable: $!") unless(-w $PRFConfig::config->{pubqueue});
   die("Database not defined") unless(defined($PRFConfig::config->{db}));
   die("Database host not defined") unless(defined($PRFConfig::config->{host}));
   die("Database user not defined") unless(defined($PRFConfig::config->{user}));
