@@ -163,7 +163,7 @@ sub Mfold {
   my $me = shift;
   my $input = $me->{file};
   my $config = $PRFConfig::config;
-  $ENV{MFOLDLIB} = $config->{tmpdir} . '/dat';
+  $ENV{MFOLDLIB} = $config->{mfoldlib};
 
   my $accession = $me->{accession};
   my $start = $me->{start};
@@ -194,13 +194,16 @@ sub Mfold {
 	  $return->{mfe} = $crap[4];
 	}
   }
-  my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
-  for my $ext (@extra_files) {
-	my $stupido_filename = $me->{file} . '*.' . $ext;
-	unlink($stupido_filename);
-  }
+#  my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
+#  for my $ext (@extra_files) {
+#	my $stupido_filename = $me->{file} . '*.' . $ext;
+#	unlink($stupido_filename);
+#  }
   my $command1 = "rm $me->{file}" . '_* 2>/dev/null';
   my $command2 = "rm $me->{file}" . '.* 2>/dev/null';
+  print "TESTME: $command1
+$command2
+";
 
   system($command1);
   system($command2);
@@ -260,11 +263,19 @@ sub Mfold_MFE {
   else {
     $return->{pairs} = 0;
   }
-  my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
-  for my $ext (@extra_files) {
-    my $stupido_filename = $inputfile . '.' . $ext;
-    unlink($stupido_filename);
-  }
+#  my @extra_files = ('ann', 'cmd', 'ct', 'det', 'h-num', 'log', 'out', 'plot', 'pnt', 'rnaml', 'sav', 'ss-count', 'gif');
+#  for my $ext (@extra_files) {
+#	my $stupido_filename = $me->{file} . '*.' . $ext;
+#	unlink($stupido_filename);
+#  }
+  my $command1 = "rm $me->{file}" . '_* 2>/dev/null';
+  my $command2 = "rm $me->{file}" . '.* 2>/dev/null';
+  print "TESTME: $command1
+$command2
+";
+
+  system($command1);
+  system($command2;)
   chdir($config->{basedir});
   return($return);
 }

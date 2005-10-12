@@ -1,4 +1,4 @@
-#!/usr/bin/env perl5.8.2
+#!/usr/local/bin/perl
 use strict;
 use POSIX;
 use DBI;
