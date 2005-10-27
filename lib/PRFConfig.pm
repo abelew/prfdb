@@ -16,9 +16,16 @@ $PRFConfig::config = {
                       do_boot => 1,             ## Perform our faux bootstrap
                       arch_specific_exe => 1,   ## Architecture specific executables (used for a pbs environment)
                       boot_repetitions => 100,
-                      boot_mfe_algorithms => { mfold => \&RNAFolders::Mfold_MFE, },
-                      boot_randomizers => {coin => \&MoreRandom::CoinRandom, },
-                      privqueue => "$prefix/private_queue",     ## Location of private queue
+#                      boot_mfe_algorithms => { mfold => \&RNAFolders::Mfold_MFE, },
+                      boot_mfe_algorithms => { mfold => \&RNAFolders::Mfold_by_Pknots_MFE, },
+#                      boot_randomizers => {
+#                                           coin => \&MoreRandom::CoinRandom,
+#                                           dinuc => \&MoreRandom::Dinucleotide,
+#                                          },
+                      boot_randomizers => {
+                             coin => \&MoreRandom::CoinRandom,
+                          },
+                      privqueue => "$prefix/private_queue",     ## Location of public queue
                       pubqueue => "$prefix/public_queue",       ## Location of public queue
                       errorfile => "$prefix/prfdb.err",         ## Location of error file
                       logfile => "$prefix/prfdb.log",           ## Location of output file
