@@ -11,7 +11,7 @@ my $prefix = "$ENV{HOME}/browser";
 
 $PRFConfig::config = {
                       do_nupack => 1,           ## Run nupack on sequences?
-                      do_pknots => 0,           ## Run pknots on sequence?
+		      do_pknots => 0,           ## Run pknots on sequence?
                       do_mfold => 0,            ## Run mfold on the sequence as a mfe bootstrap?
                       do_boot => 1,             ## Perform our faux bootstrap
                       arch_specific_exe => 1,   ## Architecture specific executables (used for a pbs environment)
@@ -77,16 +77,12 @@ $PRFConfig::config->{dsn} = "DBI:mysql:database=$PRFConfig::config->{db};host=$P
 my $err = $PRFConfig::config->{errorfile};
 my $out = $PRFConfig::config->{logfile};
 my $error_counter = 0;
-my @exes = ('nupack', 'rnamotif', 'rmprune', 'mfold', 'pknots');
-foreach my $exe (@exes) {
-  my $dirname = $exe . '_dir';
-  $PRFConfig::config->{$exe} = $PRFConfig::config->{dirname} . '/' . $PRFConfig::config->{$exe};
-}
+
 if ($PRFConfig::config->{arch_specific_exe} == 1) {
   ## If we have architecture specific executables, then
   ## They should live in directories named after their architecture
   my @modified_exes = ('rnamotif', 'rmprune', 'mfold', 'pknots', 'zcat');
-  open(UNAME, "/usr/bin/uname -a |");
+  open(UNAME, "/usr/bin/env uname -a |");
   my $arch;
   while (my $line = <UNAME>) {
     chomp $line;
@@ -95,6 +91,7 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
     }
   }
   chomp $arch;
+  print "TEST: $arch\n";
   if ($arch =~ /IRIX/) {
     $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/irix';
   }
@@ -104,20 +101,29 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
   elsif ($arch =~ /AIX/) {
     $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/aix';
   }
+  print "PATH TEST: $ENV{PATH}\n";
   foreach my $exe (@modified_exes) {
     my $dirvar = $exe . '_dir';
     if ($arch =~ /IRIX/) {
-      print "GOTHERE!";
-      $PRFConfig::config->{$dirvar} .= '/irix';
-      $PRFConfig::config->{$exe} = $PRFConfig::config->{dirvar} . '/' . $PRFConfig::config->{$exe};
+      my $dir = $PRFConfig::config->{$dirvar};
+      $dir .= '/irix';
+      $PRFConfig::config->{$dirvar} = $dir;
+      my $exe_path = join('', $dir, '/', $PRFConfig::config->{$exe});
+      $PRFConfig::config->{$exe} = $exe_path;
     }
     elsif ($arch =~ /AIX/) {
-      $PRFConfig::config->{$dirvar} .= '/aix';
-      $PRFConfig::config->{$exe} = $PRFConfig::config->{dirvar} . '/' . $PRFConfig::config->{$exe};
+      my $dir = $PRFConfig::config->{$dirvar};
+      $dir .= '/aix';
+      $PRFConfig::config->{$dirvar} = $dir;
+      my $exe_path = join('', $dir, '/', $PRFConfig::config->{$exe});
+      $PRFConfig::config->{$exe} = $exe_path;
     }
     elsif ($arch =~ /Linux/) {
-      $PRFConfig::config->{$dirvar} .= '/linux';
-      $PRFConfig::config->{$exe} = $PRFConfig::config->{dirvar} . '/' . $PRFConfig::config->{$exe};
+      my $dir = $PRFConfig::config->{$dirvar};
+      $dir .= '/linux';
+      $PRFConfig::config->{$dirvar} = $dir;
+      my $exe_path = join('', $dir, '/', $PRFConfig::config->{$exe});
+      $PRFConfig::config->{$exe} = $exe_path;
     }
     else {
       die("Architecture $arch not available.");

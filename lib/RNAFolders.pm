@@ -211,6 +211,7 @@ $command2
 }
 
 sub Mfold_MFE {
+  my $me = shift;
   my $inputfile = shift;
   my $species = shift;
   my $accession = shift;
@@ -268,16 +269,16 @@ sub Mfold_MFE {
 #	my $stupido_filename = $me->{file} . '*.' . $ext;
 #	unlink($stupido_filename);
 #  }
-  my $command1 = "rm $me->{file}" . '_* 2>/dev/null';
-  my $command2 = "rm $me->{file}" . '.* 2>/dev/null';
-  print "TESTME: $command1
-$command2
-";
-
-  system($command1);
-  system($command2;)
-  chdir($config->{basedir});
-  return($return);
+#  my $command1 = "rm $me->{file}" . '_* 2>/dev/null';
+#  my $command2 = "rm $me->{file}" . '.* 2>/dev/null';
+#  print "TESTME: $command1
+#$command2
+#";
+#
+#  system($command1);
+#  system($command2);
+#  chdir($config->{basedir});
+#  return($return);
 }
 
 1;

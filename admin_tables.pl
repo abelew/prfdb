@@ -1,5 +1,9 @@
-#! /usr/bin/env perl5.8.2
+#!/usr/bin/env perl5.8.2
 use strict;
+
+use lib "$ENV{HOME}/usr/lib/perl5/";
+use lib "lib/";
+
 use DBI;
 use Getopt::Long;
 use lib "$ENV{HOME}/usr/lib/perl5";

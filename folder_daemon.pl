@@ -13,7 +13,7 @@ use RNAFolders;
 use Bootlace;
 use MoreRandom;
 
-$^W = 1;
+$^W=1;
 
 my $config = $PRFConfig::config;
 chdir($config->{basedir});

@@ -490,6 +490,7 @@ sub Grab_Queue {
   my $return;
   my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
   my ($species, $accession) = $me->{dbh}->selectrow_array($single_accession);
+
   return(undef) unless(defined($species));
   my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and public='$type');
   my $st = $me->{dbh}->prepare($update);
