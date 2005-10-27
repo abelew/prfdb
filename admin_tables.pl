@@ -57,6 +57,9 @@ elsif ($config->{action} =~ /^create/) {
   elsif ($object eq 'nupack') {
     $db->Create_Nupack($adjective1, $adjective2);
   }
+  elsif ($object eq 'pknots') {
+    $db->Create_Pknots($adjective1, $adjective2);
+  }
   elsif ($object eq 'genome') {
     $db->Create_Genome($adjective1, $adjective2);
   }
