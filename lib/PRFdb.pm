@@ -222,6 +222,7 @@ sub Get_Pknots {
 sub Put_Pknots {
   my $me = shift;
   my $data = shift;
+  print "TESTME: $data->{species}\n";
   my $table = 'pknots_' . $data->{species};
 #  PRFConfig::PRF_Error("Undefined value in Put_Pknots", $data->{species} $data->{accession}) unless(defined($data->{start}) and defined($data->{slippery}) and defined($data->{pk_output}) and defined($data->{parsed}) and defined($data->{mfe}) and defined($data->{pairs}) and defined($data->{knotp}));
   my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, pk_output, parsed, mfe, pairs, knotp) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{pk_output}', '$data->{parsed}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}'));

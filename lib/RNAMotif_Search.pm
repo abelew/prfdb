@@ -35,7 +35,7 @@ my %slippery_sites = (
 sub new {
   my ($class, %arg) = @_;
   my $me = bless {}, $class;
-  $me->{max_stem_length} = 100;
+  $me->{max_struct_length} = $PRFConfig::config->{max_struct_length};
   $me->{stem_length} = 6;
   $me->{max_dist_from_slip} = 15;
 
@@ -62,7 +62,7 @@ sub Search {
       my $slipsite = Slip_p($next_seven) if (defined($next_seven));
       if ($slipsite) {  ## Then check that a slippery site is in the correct frame
         my $start = $c;
-        my $end = $c + $me->{max_stem_length};
+        my $end = $c + $me->{max_struct_length};
         my $fh = PRFdb::MakeTempfile();
         my $filename = $fh->filename;
         my $string = '';

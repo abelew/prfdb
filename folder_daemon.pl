@@ -115,6 +115,7 @@ sub Check_Db {
         my $pknots_folding = undef;
         my $mfold_folding = undef;
         my $filename;
+
         if ($PRFConfig::config->{do_nupack}) {  ## Check the configuration file for nupack
           $nupack_folding = $db->Get_RNAfolds('nupack', $datum->{species}, $datum->{accession}, $start);
           if ($nupack_folding ne '0') {  ## Both have motif and folding
@@ -134,6 +135,7 @@ sub Check_Db {
             $db->Put_Nupack($nupack_info);
           }  ## Else checking for folding and motif information
         }  ## End do_nupack
+
         if ($PRFConfig::config->{do_pknots}) {  ## Check to see if pknots should be run
           $pknots_folding = $db->Get_RNAfolds('pknots', $datum->{species}, $datum->{accession}, $start);
           if ($pknots_folding ne '0') {  ## Both have motif and folding
@@ -143,7 +145,8 @@ sub Check_Db {
           else {  ## Want pknots, have motif, no folding, so make a tempfile
             $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
             my $slippery = $db->Get_Slippery($db->Get_Sequence($datum->{species}, $datum->{accession}), $start);
-            my $fold_search = new RNAFolders(file => $filename,
+            my $fold_search = new RNAFolders(
+                                             file => $filename,
                                              accession => $datum->{accession},
                                              start => $start,
                                              slippery => $slippery,
@@ -164,8 +167,8 @@ sub Check_Db {
                                   species => $species,
                                   accession => $accession,
                                   start => $start,
-                                  repetitions => $PRFConfig::config->{boot_repetitions},
-                                  mfe_algorithms => $PRFConfig::config->{boot_mfe_algorithms},
+                                  iterations => $PRFConfig::config->{boot_iterations},
+                                  boot_mfe_algorithms => $PRFConfig::config->{boot_mfe_algorithms},
                                   randomizers => $PRFConfig::config->{boot_randomizers},
                                   );
           $bootlaces = $boot->Go();
@@ -225,9 +228,9 @@ sub Check_Db {
                                 species => $species,
                                 accession => $accession,
                                 start => $start,
-                                repetitions => $PRFConfig::config->{boot_repetitions},
-                                mfe_algorithms => { mfold => \&RNAFolders::Mfold_MFE, },
-                                randomizers => { coin => \&MoreRandom::CoinRandom, },
+                                iterations => $PRFConfig::config->{boot_iterations},
+				boot_mfe_algorithms => $PRFConfig::config->{boot_mfe_algorithms},
+				randomizers => $PRFConfig::config->{boot_randomizers},
                                );
        $bootlaces = $boot->Go();
        $bootlaces->{species} = $species;

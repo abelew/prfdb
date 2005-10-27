@@ -19,25 +19,23 @@ sub new {
 
 sub Nupack {
   my $me = shift;
-  my $input = $me->{file};
+  print "NUPACK\n";
+  my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
   my $species = $me->{species};
   my $slippery = $me->{slippery};
   my $config = $PRFConfig::config;
   my $return = {
-                accession => $accession,
-                start => $start,
-                slippery => $slippery,
-                species => $species,
-                knotp => 0,
-               };
+      accession => $accession,
+      start => $start,
+      slippery => $slippery,
+      species => $species,
+      knotp => 0,
+  };
   chdir($config->{tmpdir});
-  my $command = "$config->{nupack} $input";
-  open(NU, "$command $input 2>nupack.err |") or PRF_Error("Could not run nupack: $!", $species, $accession);
-#  open(NU, "/bin/true |");
-#  print "Running Nupack: $command\n";
-#  sleep(2);
+  my $command = qq(sh -c "time $config->{nupack} $inputfile" 2>nupack.err);
+  open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $species, $accession);
   my $count = 0;
   while (my $line = <NU>) {
 	$count++;
@@ -97,36 +95,28 @@ sub Nupack {
 
 sub Pknots {
   my $me = shift;
-  my $mfold = shift;
-  my $input = $me->{file};
+  print "PKNOTS!\n";
+  my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
   my $species = $me->{species};
   my $slippery = $me->{slippery};
   my $config = $PRFConfig::config;
-  my $return = { accession => $accession,
-                 start => $start,
-                 slippery => $slippery,
-                 species => $species,
-               };
+  my $return = { 
+      accession => $accession,
+      start => $start,
+      slippery => $slippery,
+      species => $species,
+      knotp => 0,
+  };
   chdir($config->{tmpdir});
-  my $command = "";
-  if (!defined($mfold)) {
-    my $command = "$config->{pknots} -k $input";
-  }
-  else {
-    my $command = "$config->{pknots} $input";
-  }
-  open(PK, "$command $input 2>pknots.err |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
-#  open(PK, "/bin/true |");
-#  print "Running pknots: $command\n";
-#  sleep(1);
+  my $command = qq(sh -c "time $config->{pknots} -k $inputfile" 2>pknots.err);
+  open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
   my $counter = 0;
   my ($line_to_read, $crap) = undef;
   my $string = '';
   my $uninteresting = undef;
   while (my $line = <PK>) {
-	next if (defined($uninteresting));
 	$counter++;
 	chomp $line;
 	if ($line =~ /^NAM/) {
@@ -141,19 +131,18 @@ sub Pknots {
 	  $line =~ s/$/ /g;
 	  $string .= $line;
 	}
-	elsif ($line =~ /Log odds/) {
-	  ($crap, $return->{logodds}) = split(/score\:\s+/, $line);
-	}
+#	elsif ($line =~ /Log odds/) {
+#	  ($crap, $return->{logodds}) = split(/score\:\s+/, $line);
+#	}
 	elsif ($line =~ /\/mol\)\:\s+/) {
 	  ($crap, $return->{mfe}) = split(/\/mol\)\:\s+/, $line);
 	}
 	elsif ($line =~ /found\:\s+/) {
 	  ($crap, $return->{pairs}) = split(/found\:\s+/, $line);
-	  $uninteresting = 1;
 	}
   } ## For every line of pknots
   $string =~ s/\s+/ /g;
-  $return->{pkout} = $string;
+  $return->{pk_output} = $string;
   my $parser = new PkParse(debug => 0);
   my @struct_array = split(/ /, $string);
   my $out = $parser->Unzip(\@struct_array);
@@ -162,13 +151,20 @@ sub Pknots {
 	$parsed .= $char . ' ';
   }
   $return->{parsed} = $parsed;
+  if ($parser->{pseudoknot} == 0) {
+      $return->{knotp} = 0;
+  }
+  else {
+      $return->{knotp} = 1;
+  }
+  chdir($config->{basedir});
   return($return);
 }
 
 
 sub Mfold {
   my $me = shift;
-  my $input = $me->{file};
+  my $inputfile = $me->{file};
   my $config = $PRFConfig::config;
   $ENV{MFOLDLIB} = $config->{mfoldlib};
 
@@ -184,8 +180,7 @@ sub Mfold {
                 species => $species,
                };
   chdir($config->{tmpdir});
-
-  my $command = "$config->{mfold} SEQ=$input MAX=1";
+  my $command = qq(sh -c "time $config->{mfold} SEQ=$inputfile MAX=1" 2>mfold.err);
   open(MF, "$command 2>mfold.err |") or PRF_Error("Could not run mfold: $!", $species, $accession);
 #  open(MF, "/bin/true |");
 #  print "Running mfold\n";
@@ -217,66 +212,59 @@ $command2
   return($return);
 }
 
-sub Mfold_by_Pknots_MFE {
-  my $me = shift;
-  my $inputfile = shift;
-  my $species = shift;
-  my $accession = shift;
-  my $start = shift;
-  my $config = $PRFConfig::config;
-  my $return;
-  chdir($config->{tmpdir});
-  my $command = "$config->{pknots} $input";
-  open(PK, "$command $input 2>pknots.err |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
-#  open(PK, "/bin/true |");
-#  print "Running pknots: $command\n";
-#  sleep(1);
-  my $counter = 0;
-  my ($line_to_read, $crap) = undef;
-  my $string = '';
-  my $uninteresting = undef;
-  while (my $line = <PK>) {
+sub Pknots_Boot {
+    ## The caller of this function is in Bootlace.pm and does not expect it to be
+    ## In an OO fashion.
+    my $inputfile = shift;
+    my $species = shift;
+    my $accession = shift;
+    my $start = shift;
+    my $config = $PRFConfig::config;
+    my $return = {
+	accession => $accession,
+	start => $start,
+	species => $species,
+    };
+  
+    chdir($config->{tmpdir});
+    my $command = qq(sh -c "time $config->{pknots} $inputfile" 2>pknots_boot.err);
+    open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
+    my $counter = 0;
+    my ($line_to_read, $crap) = undef;
+    my $string = '';
+    my $uninteresting = undef;
+    while (my $line = <PK>) {
 	next if (defined($uninteresting));
 	$counter++;
 	chomp $line;
 	if ($line =~ /^NAM/) {
-	  ($crap, $return->{slippery}) = split(/NAM\s+/, $line);
-	}
-	elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
-	   $line_to_read = $counter + 2;
-	 }
-	elsif (defined($line_to_read) and $line_to_read == $counter) {
-#	  print "TEST: $line\n";
-	  $line =~ s/^\s+//g;
-	  $line =~ s/$/ /g;
-	  $string .= $line;
+	    my ($crap, $name) = split(/NAM\s+/, $line);
 	}
 	elsif ($line =~ /Log odds/) {
-	  ($crap, $return->{logodds}) = split(/score\:\s+/, $line);
+	    my ($crap, $logodds) = split(/score\:\s+/, $line);
 	}
-	elsif ($line =~ /\/mol\)\:\s+/) {
-	  ($crap, $return->{mfe}) = split(/\/mol\)\:\s+/, $line);
+	elsif ($line =~ m/\/mol\)\:\s+/) {
+	    ($crap, $return->{mfe}) = split(/\/mol\)\:\s+/, $line);
 	}
 	elsif ($line =~ /found\:\s+/) {
-	  ($crap, $return->{pairs}) = split(/found\:\s+/, $line);
-	  $uninteresting = 1;
+	    ($crap, $return->{pairs}) = split(/found\:\s+/, $line);
+	    $uninteresting = 1;
 	}
-  } ## For every line of pknots
-  $string =~ s/\s+/ /g;
-  $return->{pkout} = $string;
-#  my $parser = new PkParse(debug => 0);
-#  my @struct_array = split(/ /, $string);
-#  my $out = $parser->Unzip(\@struct_array);
-#  my $parsed = '';
-#  foreach my $char (@{$out}) {
-#	$parsed .= $char . ' ';
-#  }
-#  $return->{parsed} = $parsed;
-  return($return);
+	elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
+	    $line_to_read = $counter + 2;
+	}
+	elsif (defined($line_to_read) and $line_to_read == $counter) {
+	    $line =~ s/^\s+//g;
+	    $line =~ s/$/ /g;
+	    $string .= $line;
+	}
+    } ## For every line of pknots
+    $string =~ s/\s+/ /g;
+    $return->{pkout} = $string;
+    return($return);
 }
 
-sub Mfold_MFE {
-  my $me = shift;
+sub Mfold_Boot {
   my $inputfile = shift;
   my $species = shift;
   my $accession = shift;
@@ -294,8 +282,7 @@ sub Mfold_MFE {
 
   $inputfile = `basename $inputfile`;
   chomp $inputfile;
-#  my $command = "$config->{mfold} SEQ=$inputfile MAX=1 2>mfold.err";
-  my $command = "$config->{mfold} SEQ=$inputfile MAX=1 2>/dev/null";
+  my $command = qq(sh -c "time $config->{mfold} SEQ=$inputfile MAX=1" 2>mfold_boot.err);
   open(MF, "$command |") or PRF_Error("Could not run mfold: $!", $species, $accession);
 #  open(MF, "/bin/true |");
 #  print "Running mfold $command\n";
