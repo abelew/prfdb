@@ -97,6 +97,7 @@ sub Nupack {
 
 sub Pknots {
   my $me = shift;
+  my $mfold = shift;
   my $input = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
@@ -109,7 +110,13 @@ sub Pknots {
                  species => $species,
                };
   chdir($config->{tmpdir});
-  my $command = "$config->{pknots} -k $input";
+  my $command = "";
+  if (!defined($mfold)) {
+    my $command = "$config->{pknots} -k $input";
+  }
+  else {
+    my $command = "$config->{pknots} $input";
+  }
   open(PK, "$command $input 2>pknots.err |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
 #  open(PK, "/bin/true |");
 #  print "Running pknots: $command\n";
@@ -207,6 +214,64 @@ $command2
 
   system($command1);
   system($command2);
+  return($return);
+}
+
+sub Mfold_by_Pknots_MFE {
+  my $me = shift;
+  my $inputfile = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $start = shift;
+  my $config = $PRFConfig::config;
+  my $return;
+  chdir($config->{tmpdir});
+  my $command = "$config->{pknots} $input";
+  open(PK, "$command $input 2>pknots.err |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
+#  open(PK, "/bin/true |");
+#  print "Running pknots: $command\n";
+#  sleep(1);
+  my $counter = 0;
+  my ($line_to_read, $crap) = undef;
+  my $string = '';
+  my $uninteresting = undef;
+  while (my $line = <PK>) {
+	next if (defined($uninteresting));
+	$counter++;
+	chomp $line;
+	if ($line =~ /^NAM/) {
+	  ($crap, $return->{slippery}) = split(/NAM\s+/, $line);
+	}
+	elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
+	   $line_to_read = $counter + 2;
+	 }
+	elsif (defined($line_to_read) and $line_to_read == $counter) {
+#	  print "TEST: $line\n";
+	  $line =~ s/^\s+//g;
+	  $line =~ s/$/ /g;
+	  $string .= $line;
+	}
+	elsif ($line =~ /Log odds/) {
+	  ($crap, $return->{logodds}) = split(/score\:\s+/, $line);
+	}
+	elsif ($line =~ /\/mol\)\:\s+/) {
+	  ($crap, $return->{mfe}) = split(/\/mol\)\:\s+/, $line);
+	}
+	elsif ($line =~ /found\:\s+/) {
+	  ($crap, $return->{pairs}) = split(/found\:\s+/, $line);
+	  $uninteresting = 1;
+	}
+  } ## For every line of pknots
+  $string =~ s/\s+/ /g;
+  $return->{pkout} = $string;
+#  my $parser = new PkParse(debug => 0);
+#  my @struct_array = split(/ /, $string);
+#  my $out = $parser->Unzip(\@struct_array);
+#  my $parsed = '';
+#  foreach my $char (@{$out}) {
+#	$parsed .= $char . ' ';
+#  }
+#  $return->{parsed} = $parsed;
   return($return);
 }
 
