@@ -223,7 +223,10 @@ sub Put_Pknots {
   my $me = shift;
   my $data = shift;
   my $table = 'pknots_' . $data->{species};
-  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, logodds, mfe, pairs, output, parsed) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{logodds}', '$data->{mfe}', '$data->{pairs}', '$data->{pkout}', '$data->{parsed}'));
+#  PRFConfig::PRF_Error("Undefined value in Put_Pknots", $data->{species} $data->{accession}) unless(defined($data->{start}) and defined($data->{slippery}) and defined($data->{pk_output}) and defined($data->{parsed}) and defined($data->{mfe}) and defined($data->{pairs}) and defined($data->{knotp}));
+  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, pk_output, parsed, mfe, pairs, knotp) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{pk_output}', '$data->{parsed}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}'));
+
+#  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, logodds, mfe, pairs, output, parsed) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{logodds}', '$data->{mfe}', '$data->{pairs}', '$data->{pkout}', '$data->{parsed}'));
   if ($PRFConfig::config->{dboutput} eq 'dbi') {
 	my $sth = $me->{dbh}->prepare($statement);
 	$sth->execute()
@@ -271,6 +274,7 @@ sub Put_Boot {
       my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
       my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
       my $statement = qq(INSERT INTO $table (id, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se) VALUES ('', '$data->{accession}', '$data->{start}', '$num_iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se'));
+      print "TEST: $statement\n";
       if ($PRFConfig::config->{dboutput} eq 'dbi') {
 
         my $sth = $me->{dbh}->prepare($statement);
@@ -436,7 +440,8 @@ sub Create_Boot {
 sub Create_Pknots {
   my $me = shift;
   my $tablename = 'pknots_' . $PRFConfig::config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, process varchar(80), start int, length int, struct_start int, logodds float, mfe float, cor_mfe float, pairs int, pseudop tinyint, slipsite varchar(80), spacer varchar(80), sequence blob, structure blob, parsed blob, primary key (id))";
+  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), pk_output blob, parsed blob, mfe float, pairs int, knotp bool, primary key(id))";
+#  my $statement = "CREATE table $tablename (id int not null auto_increment, process varchar(80), start int, length int, struct_start int, logodds float, mfe float, cor_mfe float, pairs int, pseudop tinyint, slipsite varchar(80), spacer varchar(80), sequence blob, structure blob, parsed blob, primary key (id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute;
 }

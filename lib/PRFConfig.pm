@@ -10,20 +10,19 @@ $ENV{ENERGY_FILE} = "$ENV{HOME}/browser/work/dataS_G.rna";
 my $prefix = "$ENV{HOME}/browser";
 
 $PRFConfig::config = {
+                      max_struct_length => 35,  ## The maximum structure size to be examined
                       do_nupack => 1,           ## Run nupack on sequences?
-		      do_pknots => 0,           ## Run pknots on sequence?
+		      do_pknots => 1,           ## Run pknots on sequence?
                       do_mfold => 0,            ## Run mfold on the sequence as a mfe bootstrap?
                       do_boot => 1,             ## Perform our faux bootstrap
-                      arch_specific_exe => 1,   ## Architecture specific executables (used for a pbs environment)
-                      boot_repetitions => 100,
-#                      boot_mfe_algorithms => { mfold => \&RNAFolders::Mfold_MFE, },
-                      boot_mfe_algorithms => { mfold => \&RNAFolders::Mfold_by_Pknots_MFE, },
-#                      boot_randomizers => {
-#                                           coin => \&MoreRandom::CoinRandom,
-#                                           dinuc => \&MoreRandom::Dinucleotide,
-#                                          },
+                      arch_specific_exe => 0,   ## Architecture specific executables (used for a pbs environment)
+                      boot_iterations => 100,
+                      boot_mfe_algorithms => {
+			  mfold => \&RNAFolders::Pknots_Boot,
+		      },
                       boot_randomizers => {
-                             coin => \&MoreRandom::CoinRandom,
+#                             coin => \&MoreRandom::CoinRandom,
+			  array => \&MoreRandom::ArrayShuffle,
                           },
                       privqueue => "$prefix/private_queue",     ## Location of public queue
                       pubqueue => "$prefix/public_queue",       ## Location of public queue
@@ -84,7 +83,7 @@ $PRFConfig::config->{dsn} = "DBI:mysql:database=$PRFConfig::config->{db};host=$P
 my $err = $PRFConfig::config->{errorfile};
 my $out = $PRFConfig::config->{logfile};
 my $error_counter = 0;
-
+$ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir};
 if ($PRFConfig::config->{arch_specific_exe} == 1) {
   ## If we have architecture specific executables, then
   ## They should live in directories named after their architecture

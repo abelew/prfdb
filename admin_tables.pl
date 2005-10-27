@@ -1,4 +1,4 @@
-#!/usr/bin/env perl5.8.2
+#!/usr/bin/perl
 use strict;
 
 use lib "$ENV{HOME}/usr/lib/perl5/";
