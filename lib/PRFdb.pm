@@ -198,7 +198,7 @@ sub Put_Nupack {
 #  print "NUPACK: $statement\n";
   if ($PRFConfig::config->{dboutput} eq 'dbi') {
 	my $sth = $me->{dbh}->prepare($statement);
-	$sth->execute()
+	$sth->execute();
   }
   else {
 	print DBOUT "$statement\n";
@@ -222,15 +222,14 @@ sub Get_Pknots {
 sub Put_Pknots {
   my $me = shift;
   my $data = shift;
-  print "TESTME: $data->{species}\n";
   my $table = 'pknots_' . $data->{species};
 #  PRFConfig::PRF_Error("Undefined value in Put_Pknots", $data->{species} $data->{accession}) unless(defined($data->{start}) and defined($data->{slippery}) and defined($data->{pk_output}) and defined($data->{parsed}) and defined($data->{mfe}) and defined($data->{pairs}) and defined($data->{knotp}));
   my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, pk_output, parsed, mfe, pairs, knotp) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{pk_output}', '$data->{parsed}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}'));
 
 #  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, logodds, mfe, pairs, output, parsed) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{logodds}', '$data->{mfe}', '$data->{pairs}', '$data->{pkout}', '$data->{parsed}'));
   if ($PRFConfig::config->{dboutput} eq 'dbi') {
-	my $sth = $me->{dbh}->prepare($statement);
-	$sth->execute()
+      my $sth = $me->{dbh}->prepare($statement);
+      $sth->execute();
   }
   else {
 	print DBOUT "$statement\n";
@@ -274,8 +273,9 @@ sub Put_Boot {
       my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
       my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
       my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
-      my $statement = qq(INSERT INTO $table (id, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se) VALUES ('', '$data->{accession}', '$data->{start}', '$num_iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se'));
-      print "TEST: $statement\n";
+      my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
+
+      my $statement = qq(INSERT INTO $table (id, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('', '$data->{accession}', '$data->{start}', '$num_iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
       if ($PRFConfig::config->{dboutput} eq 'dbi') {
 
         my $sth = $me->{dbh}->prepare($statement);
@@ -433,7 +433,7 @@ sub Create_Genome {
 sub Create_Boot {
   my $me = shift;
   my $table = 'boot_' . $PRFConfig::config->{species};
-  my $statement = "CREATE table $table (id int not null auto_increment, accession varchar(10) not null, start int, iterations int, rand_method varchar(20), mfe_method varchar(20), mfe_mean float, mfe_sd float, mfe_se float, pairs_mean float, pairs_sd float, pairs_se float, primary key(id))";
+  my $statement = "CREATE table $table (id int not null auto_increment, accession varchar(10) not null, start int, iterations int, rand_method varchar(20), mfe_method varchar(20), mfe_mean float, mfe_sd float, mfe_se float, pairs_mean float, pairs_sd float, pairs_se float, mfe_values blob, primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
 }
@@ -533,13 +533,20 @@ sub Load_Genome_Table {
         $me->Insert_Genome_Entry(\%datum);
       }
       my ($gi, $id, $gb, $accession_version, $comment) = split(/\|/, $line);
-      my ($accession, $version) = split(/\./, $accession_version);
+      my ($accession, $version);
+      if ($accession_version =~ m/\./) {
+	  ($accession, $version) = split(/\./, $accession_version);
+      }
+      else {
+	  $accession = $accession_version;
+	  $version = '0';
+      }
       $datum{accession} = $accession;
       $datum{version} = $version;
       $datum{comment} = $comment;
     }  ## The mgc genomes
     else {
-      $datum{sequence} .= $line;
+	$datum{sequence} .= $line;
     }   ## Non accession line
   }  ## End every line
   $me->Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
