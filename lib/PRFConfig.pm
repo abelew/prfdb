@@ -97,7 +97,6 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
     }
   }
   chomp $arch;
-  print "TEST: $arch\n";
   if ($arch =~ /IRIX/) {
     $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/irix';
   }
@@ -107,7 +106,6 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
   elsif ($arch =~ /AIX/) {
     $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/aix';
   }
-  print "PATH TEST: $ENV{PATH}\n";
   foreach my $exe (@modified_exes) {
     my $dirvar = $exe . '_dir';
     if ($arch =~ /IRIX/) {
