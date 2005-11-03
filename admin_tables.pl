@@ -10,6 +10,8 @@ use lib "$ENV{HOME}/usr/lib/perl5";
 use lib 'lib';
 use PRFConfig qw( PRF_Error );
 use PRFdb;
+use Bio::DB::Universal;
+use Bio::DB::GenBank;
 
 $^W=1;
 
@@ -23,10 +25,15 @@ GetOptions(
 		   'user=s' => \$config->{user},
 		   'pass=s' => \$config->{pass},
 		   'action=s' => \$config->{action},
+		   'import=s' => \$config->{import},
 		   );
 my $db = new PRFdb;
 my ($action, $object, $adjective1, $adjective2) = split(/_/, $config->{action});
-if ($config->{action} =~ /^remove/) {
+
+if (defined($config->{import})) {
+  $db->Import_Accession($config->{import});
+}
+elsif ($config->{action} =~ /^remove/) {
   $config->{species} = $object . '_' . $adjective1;
   $db->Clean_Table('genome');
   $db->Clean_Table('nupack');

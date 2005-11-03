@@ -4,6 +4,8 @@ use DBI;
 use PRFConfig qw / PRF_Error PRF_Out /;
 use File::Temp qw / tmpnam /;
 use Fcntl ':flock'; # import LOCK_* constants
+use Bio::DB::Universal;
+#use Bio::DB::GenBank;
 
 sub new {
   my ($class, %arg) = @_;
@@ -566,6 +568,48 @@ sub Insert_Genome_Entry {
 #  print "TEST: $statement\n";
   my $sth = $me->{dbh}->prepare($statement);
   $sth->execute;
+}
+
+sub Import_Accession {
+  my $me = shift;
+  my $accession = shift;
+  my $uni = new Bio::DB::Universal;
+  my $seq = $uni->get_Seq_by_id($accession);
+  my $binomial_species = $seq->species->binomial();
+  my ($genus, $species) = split(/ /, $binomial_species);
+  my $full_species = qq(${genus}_${species});
+  $full_species =~ tr/[A-Z]/[a-z]/;
+  $PRFConfig::config->{species} = $full_species;
+  my $full_comment = $seq->desc();
+  my ($genename, $desc) = split(/\,/, $full_comment);
+
+  my %datum = (
+               accession => $accession,
+               sequence => $seq->seq(),
+               species => $full_species,
+               genename => $genename,
+               version => $seq->{_seq_version},
+               comment => $full_comment,
+              );
+  if (! $me->Check_Genome_Table($full_species)) {
+    $me->Create_Genome($full_species);
+  }
+  $me->Insert_Genome_Entry(\%datum);
+}
+
+sub Check_Genome_Table {
+  my $me = shift;
+  my $species = shift;
+  my $table = 'genome_' . $species;
+  my $statement = "SHOW TABLES like '$table'";
+  my $dbh = $me->{dbh};
+  my $info = $dbh->selectall_arrayref($statement);
+  if (scalar(@{$info}) == 0) {
+    return(0);
+  }
+  else {
+    return(1);
+  }
 }
 
 1;
