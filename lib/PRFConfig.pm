@@ -10,7 +10,7 @@ $ENV{ENERGY_FILE} = "$ENV{HOME}/browser/work/dataS_G.rna";
 my $prefix = "$ENV{HOME}/browser";
 
 $PRFConfig::config = {
-                      max_struct_length => 39,  ## The maximum structure size to be examined
+                      max_struct_length => 99,  ## The maximum structure size to be examined
                       do_nupack => 1,           ## Run nupack on sequences?
 		      do_pknots => 1,           ## Run pknots on sequence?
                       do_mfold => 0,            ## Run mfold on the sequence as a mfe bootstrap?
@@ -78,6 +78,11 @@ $PRFConfig::config = {
                       stem2_loop_max => 3,      ## Rnamotif second loop max
                       stem2_spacer_min => 0,    ## Rnamotif second spacer min
                       stem2_spacer_max => 100,  ## Rnamotif second spacer max
+                      ### The following define the mysql datatypes for common fields in the database
+                      mysql_species => 'varchar(40) not null',
+                      mysql_accession => 'varchar(80)',
+                      mysql_genename => 'varchar(20)',
+                      mysql_comment => 'blob not null',
                      };
 $PRFConfig::config->{dsn} = "DBI:mysql:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host}";
 my $err = $PRFConfig::config->{errorfile};

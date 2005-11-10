@@ -48,7 +48,7 @@ sub Search {
   my $me = shift;
   my $sequence = shift;
   my $length = shift;
-  my $db = new PRFdb();
+  my $db = new PRFdb;
  my %return = ();
   $sequence =~ s/A+$//g;
   my @information = split(//, $sequence);
