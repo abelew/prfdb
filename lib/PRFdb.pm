@@ -782,9 +782,17 @@ sub Get_Sequence05 {
   my $me = shift;
   my $species = shift;
   my $accession = shift;
-  my $statement = qq(SELECT mrna_seq FROM genome WHERE species='$species' and accession='$accession');
-  my $info = $me->{dbh}->selectall_arrayref($statement);
-  my $sequence = $info->[0]->[0];
+  my $statement = qq(SELECT mrna_seq, start, end FROM genome WHERE species='$species' and accession='$accession');
+#  my $info = $me->{dbh}->selectall_arrayref($statement);
+  my $info = $me->{dbh}->selectrow_hashref($statement);
+#  my $sequence = $info->[0]->[0];
+  my $mrna_seq = $info->{mrna_seq};
+  ### A PIECE OF CODE TO HANDLE PULLING SUBSEQUENCES FROM CDS
+  my $start = $info->{start} - 1;
+  my $end = $info->{end} - 1;
+  my $offset = $end - $start;
+  my $sequence = substr($mrna_seq, $start, $offset);
+  ### DONT SCAN THE ENTIRE MRNA, ONLY THE ORF
   if ($sequence) {
 	return($sequence);
   }
