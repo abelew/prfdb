@@ -117,7 +117,7 @@ sub Check_Db {
         my $filename;
 
         if ($PRFConfig::config->{do_nupack}) {  ## Check the configuration file for nupack
-          $nupack_folding = $db->Get_RNAfolds('nupack', $datum->{species}, $datum->{accession}, $start);
+          $nupack_folding = $db->Get_RNAfolds05('nupack', $datum->{species}, $datum->{accession}, $start);
           if ($nupack_folding ne '0') {  ## Both have motif and folding
 	      PRF_Out("HAVE NUPACK FOLDING AND MOTIF for $datum->{species} $datum->{accession}");
             return(1);
@@ -137,7 +137,7 @@ sub Check_Db {
         }  ## End do_nupack
 
         if ($PRFConfig::config->{do_pknots}) {  ## Check to see if pknots should be run
-          $pknots_folding = $db->Get_RNAfolds('pknots', $datum->{species}, $datum->{accession}, $start);
+          $pknots_folding = $db->Get_RNAfolds05('pknots', $datum->{species}, $datum->{accession}, $start);
           if ($pknots_folding ne '0') {  ## Both have motif and folding
 	      PRF_Out("HAVE PKNOTS FOLDING AND MOTIF for $datum->{species} $datum->{accession}");
             return(1);
