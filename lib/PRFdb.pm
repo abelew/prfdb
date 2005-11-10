@@ -765,6 +765,19 @@ sub Check_Genome_Table {
 #################################################
 ### Get RNAMotif Nupack Pknots Boot Sequence
 #################################################
+sub Get_RNAfolds05 {
+  my $me = shift;
+  my $table = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $return = {};
+  my $statement = "SELECT count(id) FROM $table WHERE accession = '$accession' and species='$species'";
+  my $dbh = $me->{dbh};
+  my $info = $dbh->selectall_arrayref($statement);
+  my $count = $info->[0]->[0];
+  return($count);
+}
+
 sub Get_Sequence05 {
   my $me = shift;
   my $species = shift;
