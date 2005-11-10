@@ -124,7 +124,7 @@ sub Check_Db {
           }
           else { ## Want nupack, have motif, no folding, so need to make a tmp file for nupack.
             $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
-            my $slippery = $db->Get_Slippery($db->Get_Sequence05($datum->{species}, $datum->{accession}), $start);
+            my $slippery = $db->Get_Slippery($db->Get_ORF05($datum->{species}, $datum->{accession}), $start);
             my $fold_search = new RNAFolders(
                                              file => $filename,
                                              accession => $datum->{accession},
@@ -144,7 +144,7 @@ sub Check_Db {
           }
           else {  ## Want pknots, have motif, no folding, so make a tempfile
             $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
-            my $slippery = $db->Get_Slippery($db->Get_Sequence05($datum->{species}, $datum->{accession}), $start);
+            my $slippery = $db->Get_Slippery($db->Get_ORF05($datum->{species}, $datum->{accession}), $start);
             my $fold_search = new RNAFolders(
                                              file => $filename,
                                              accession => $datum->{accession},
@@ -194,7 +194,7 @@ sub Check_Db {
     }  ## End if we are in a dbi environment
   }  ## End foreach piece of $motif_info
   else { ## No folding information
-    my $sequence = $db->Get_Sequence05($datum->{species}, $datum->{accession});
+    my $sequence = $db->Get_ORF05($datum->{species}, $datum->{accession});
     my $slipsites = $motifs->Search($sequence);
     $db->Put_RNAmotif05($datum->{species}, $datum->{accession}, $slipsites);
     PRF_Out("NO MOTIF, NO FOLDING for $datum->{species} $datum->{accession}");

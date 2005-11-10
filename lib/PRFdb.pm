@@ -778,7 +778,24 @@ sub Get_RNAfolds05 {
   return($count);
 }
 
-sub Get_Sequence05 {
+sub Get_mRNA05 {
+  my $me = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $statement = qq(SELECT mrna_seq, orf_start, orf_end FROM genome WHERE species='$species' and accession='$accession');
+#  my $info = $me->{dbh}->selectall_arrayref($statement);
+  my $info = $me->{dbh}->selectrow_hashref($statement);
+#  my $sequence = $info->[0]->[0];
+  my $mrna_seq = $info->{mrna_seq};
+  if ($mrna_seq) {
+	return($mrna_seq);
+  }
+  else {
+	return(undef);
+  }
+}
+
+sub Get_ORF05 {
   my $me = shift;
   my $species = shift;
   my $accession = shift;
