@@ -132,7 +132,7 @@ sub Check_Db {
                                              slippery => $slippery,
                                              species => $datum->{species},);
             my $nupack_info = $fold_search->Nupack();
-            $db->Put_Nupack($nupack_info);
+            $db->Put_Nupack05($nupack_info);
           }  ## Else checking for folding and motif information
         }  ## End do_nupack
 
@@ -152,7 +152,7 @@ sub Check_Db {
                                              slippery => $slippery,
                                              species => $datum->{species},);
             my $pknots_info = $fold_search->Pknots();
-            $db->Put_Pknots($pknots_info);
+            $db->Put_Pknots05($pknots_info);
           }  ## End checking for folding and motif information
         } ## End check for do_pknots
 
@@ -188,7 +188,7 @@ sub Check_Db {
           ## bootlaces->{mfe_algorithm}->{random_algorithm}->{pairs_st_err} = 0.2;
           ## bootlaces->{mfe_algorithm}->{random_algorithm}->{1}->{mfe} = -10;
           ## etc etc
-          $db->Put_Boot($bootlaces);
+          $db->Put_Boot05($bootlaces);
         }  ## End if do_bootlace
       }  ## End checking if we are using mfold
     }  ## End if we are in a dbi environment
@@ -196,7 +196,7 @@ sub Check_Db {
   else { ## No folding information
     my $sequence = $db->Get_Sequence05($datum->{species}, $datum->{accession});
     my $slipsites = $motifs->Search($sequence);
-    $db->Put_RNAmotif($datum->{species}, $datum->{accession}, $slipsites);
+    $db->Put_RNAmotif05($datum->{species}, $datum->{accession}, $slipsites);
     PRF_Out("NO MOTIF, NO FOLDING for $datum->{species} $datum->{accession}");
     my $success = scalar(%{$slipsites});
     if ($success eq '0') { PRF_Out("$datum->{species} $datum->{accession} has no slippery sites."); }
@@ -214,12 +214,12 @@ sub Check_Db {
       my ($nupack_info, $pknots_info);
       if ($PRFConfig::config->{do_nupack}) {
         $nupack_info = $fold_search->Nupack();
-        $db->Put_Nupack($nupack_info);
+        $db->Put_Nupack05($nupack_info);
       }
 
       if ($PRFConfig::config->{do_pknots}) {
         $pknots_info = $fold_search->Pknots();
-        $db->Put_Pknots($pknots_info);
+        $db->Put_Pknots05($pknots_info);
       }
 
       if ($PRFConfig::config->{do_boot}) {
@@ -249,7 +249,7 @@ sub Check_Db {
        ## bootlaces->{mfe_algorithm}->{random_algorithm}->{pairs_st_err} = 0.2;
        ## bootlaces->{mfe_algorithm}->{random_algorithm}->{1}->{mfe} = -10;
        ## etc etc
-       $db->Put_Boot($bootlaces);
+       $db->Put_Boot05($bootlaces);
       }  # End if do_bootlace
     unlink($slipsites->{$start}{filename});
     } ##End checking slipsites for a locus when have not motif nor folding information
