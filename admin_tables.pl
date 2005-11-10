@@ -88,7 +88,6 @@ elsif ($action eq 'start') {
   $db->Load_Genome_Table();
 }
 elsif ($action eq 'fillqueue') {
-  $config->{species} = $object . '_' . $adjective1;
   $db->FillQueue();
 }
 else {

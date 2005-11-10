@@ -485,8 +485,7 @@ sub Create_Errordb {
 sub FillQueue {
   my $me = shift;
   my $species = $PRFConfig::config->{species};
-  my $collect_table = 'genome_' . $species;
-  my $best_statement = "INSERT into queue (id, public, species, accession, params, out, done) SELECT '', 0, '$species', accession, '', 0, 0 from $collect_table";
+  my $best_statement = "INSERT into queue (id, public, species, accession, params, out, done) SELECT '', 0, '$species', accession, '', 0, 0 from genome";
 #  my $collection = "SELECT 'homo_sapiens', accession from $collect_table";
   my $sth = $me->{dbh}->prepare($best_statement);
   $sth->execute;
@@ -865,7 +864,7 @@ sub Put_Nupack05 {
 sub Put_Pknots05 {
   my $me = shift;
   my $data = shift;
-  my $statement = qq(INSERT INTO $table (id, species, accession, start, slipsite, pk_output, parsed, mfe, pairs, knotp) VALUES ('', '$data->{species}', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{pk_output}', '$data->{parsed}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}'));
+  my $statement = qq(INSERT INTO pknots (id, species, accession, start, slipsite, pk_output, parsed, mfe, pairs, knotp) VALUES ('', '$data->{species}', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{pk_output}', '$data->{parsed}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}'));
   if ($PRFConfig::config->{dboutput} eq 'dbi') {
       my $sth = $me->{dbh}->prepare($statement);
       $sth->execute();
