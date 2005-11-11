@@ -496,7 +496,8 @@ sub Grab_Queue {
   my $type = shift;  ## public or private
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
-  my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
+#  my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
+  my $single_accession = qq(select species, accession from queue where species='homo_sapiens' and accession='BC064621' ORDER BY rand() LIMIT 1);
   print "Running: $single_accession\n";
   my ($species, $accession) = $me->{dbh}->selectrow_array($single_accession);
   print "Done\n";
@@ -779,6 +780,32 @@ sub Get_RNAfolds05 {
   return($count);
 }
 
+sub Get_RNAmotif05 {
+  my $me = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $return = {};
+  my $statement = "SELECT total, start, permissable, filedata, output FROM rnamotif WHERE accession = '$accession' and species='$species'";
+  my $dbh = $me->{dbh};
+  my $info = $dbh->selectall_arrayref($statement);
+#  return(0) if (scalar(@{$info}) == 0);
+  return(0) if (scalar(@{$info}) == 0);
+  my @data = @{$info};
+  foreach my $start (@data) {
+	my $total = $start->[0];
+	my $st = $start->[1];
+	my $permissable = $start->[2];
+	my $filedata = $start->[3];
+	my $output = $start->[4];
+	$return->{$st}{total} = $total;
+	$return->{$st}{start} = $st;
+	$return->{$st}{permissable} = $permissable;
+	$return->{$st}{filedata} = $filedata;
+	$return->{$st}{output} = $output;
+  }
+  return($return);
+}
+
 sub Get_mRNA05 {
   my $me = shift;
   my $species = shift;
@@ -801,6 +828,7 @@ sub Get_ORF05 {
   my $species = shift;
   my $accession = shift;
   my $statement = qq(SELECT mrna_seq, orf_start, orf_end FROM genome WHERE species='$species' and accession='$accession');
+  print "TEST: $statement\n";
 #  my $info = $me->{dbh}->selectall_arrayref($statement);
   my $info = $me->{dbh}->selectrow_hashref($statement);
 #  my $sequence = $info->[0]->[0];
@@ -809,6 +837,7 @@ sub Get_ORF05 {
   my $start = $info->{orf_start} - 1;
   my $end = $info->{orf_end} - 1;
   my $offset = $end - $start;
+  print "TEST: $start, $end\n";
   my $sequence = substr($mrna_seq, $start, $offset);
   ### DONT SCAN THE ENTIRE MRNA, ONLY THE ORF
   if ($sequence) {

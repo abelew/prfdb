@@ -73,10 +73,12 @@ sub Search {
         }
         $string =~ tr/ATGCU/atgcu/ if (defined($string));
         $string =~ tr/t/u/;
+        ## Print out the text of the fasta file to be used for searching and folding
         my $data = ">$slipsite $start $end
 $string
 ";
         print $fh $data;
+        ### End of the fasta file.
         my $command = "$PRFConfig::config->{rnamotif} -context -descr $PRFConfig::config->{descriptor_file} $filename 2>rnamotif.err | $PRFConfig::config->{rmprune}";
         print "Running: $command\n";
         open(RNAMOT, "$command |") or PRF_Error("Unable to run rnamotif: $!", 'rnamotif', '');
