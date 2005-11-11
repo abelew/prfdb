@@ -119,14 +119,6 @@ sub MakeTempfile {
                           TEMPLATE => 'slip_XXXXX',
                           UNLINK => 0,
                           SUFFIX => '.fasta');
-  open(RECORDER, ">>recorder.txt");
-#  flock(RECORDER, LOCK_EX);
-  my $seconds = time();
-  my $filename = $fh->filename;
-  print RECORDER "$filename\t$seconds\n";
-#  flock(RECORDER, LOCK_UN);
-  close RECORDER;
-  return($fh);
 }
 
 sub Remove_Old {
@@ -353,7 +345,7 @@ sub Put_RNAmotif {
   }  ## End checking for a null set
 }  ## End Put_RNAMotif
 
-sub Get_Slippery {
+sub Get_Slippery_From_Sequence {
   my $me = shift;
   my $sequence = shift;
   my $start = shift;
@@ -496,11 +488,9 @@ sub Grab_Queue {
   my $type = shift;  ## public or private
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
-#  my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
-  my $single_accession = qq(select species, accession from queue where species='homo_sapiens' and accession='BC064621' ORDER BY rand() LIMIT 1);
-  print "Running: $single_accession\n";
+  my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
+#  my $single_accession = qq(select species, accession from queue where species='homo_sapiens' and accession='BC064626' ORDER BY rand() LIMIT 1);
   my ($species, $accession) = $me->{dbh}->selectrow_array($single_accession);
-  print "Done\n";
   return(undef) unless(defined($species));
   my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and public='$type');
   my $st = $me->{dbh}->prepare($update);
@@ -828,7 +818,6 @@ sub Get_ORF05 {
   my $species = shift;
   my $accession = shift;
   my $statement = qq(SELECT mrna_seq, orf_start, orf_end FROM genome WHERE species='$species' and accession='$accession');
-  print "TEST: $statement\n";
 #  my $info = $me->{dbh}->selectall_arrayref($statement);
   my $info = $me->{dbh}->selectrow_hashref($statement);
 #  my $sequence = $info->[0]->[0];
@@ -837,33 +826,35 @@ sub Get_ORF05 {
   my $start = $info->{orf_start} - 1;
   my $end = $info->{orf_end} - 1;
   my $offset = $end - $start;
-  print "TEST: $start, $end\n";
   my $sequence = substr($mrna_seq, $start, $offset);
   ### DONT SCAN THE ENTIRE MRNA, ONLY THE ORF
   if ($sequence) {
-	return($sequence);
+	return($sequence, $start);
   }
   else {
 	return(undef);
   }
 }
 
+sub Get_Slippery_From_RNAMotif {
+  my $me = shift;
+  my $filename = shift;
+  open(IN, "<$filename");
+  while(my $line = <IN>) {
+      chomp $line;
+      if ($line =~ /^\>/) {
+	  my ($slippery, $crap) = split(/ /, $line);
+	  $slippery =~ s/\>//g;
+	  return($slippery);
+      }
+  }
+  return(undef);
+}
+
+
 #################################################
 ### Put RNAMotif, Nupack, Pknots, Boot, Genome
 #################################################
-sub Get_RNAfolds05 {
-  my $me = shift;
-  my $table = shift;
-  my $species = shift;
-  my $accession = shift;
-  my $return = {};
-  my $statement = "SELECT count(id) FROM $table WHERE accession = '$accession' and species = '$species'";
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_arrayref($statement);
-  my $count = $info->[0]->[0];
-  return($count);
-}
-
 sub Insert_Genome05_Entry {
   my $me = shift;
   my $datum = shift;
@@ -918,7 +909,7 @@ sub Put_Nupack05 {
   my $me = shift;
   my $data = shift;
   PRFConfig::PRF_Error("Undefined value in Put_Nupack05", $data->{species}, $data->{accession}) unless(defined($data->{start}) and defined($data->{slippery}) and defined($data->{seqlength}) and defined($data->{sequence}) and defined($data->{paren_output}) and defined($data->{parsed}) and defined($data->{mfe}) and defined($data->{knotp}));
-  my $statement = qq(INSERT INTO nupack (id, species, accession, start, slipsite, seqlength, sequence, paren_output, parsed, mfe, knotp) VALUES ('', '$data->{species}', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{seqlength}', '$data->{sequence}', '$data->{paren_output}', '$data->{parsed}', '$data->{mfe}', '$data->{knotp}'));
+  my $statement = qq(INSERT INTO nupack (id, species, accession, start, slipsite, seqlength, sequence, paren_output, parsed, mfe, pairs, knotp) VALUES ('', '$data->{species}', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{seqlength}', '$data->{sequence}', '$data->{paren_output}', '$data->{parsed}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}'));
 #  print "NUPACK: $statement\n";
   if ($PRFConfig::config->{dboutput} eq 'dbi') {
 	my $sth = $me->{dbh}->prepare($statement);
@@ -984,7 +975,7 @@ genename $PRFConfig::config->{mysql_genename},
 version int,
 comment $PRFConfig::config->{mysql_comment},
 mrna_seq blob not null,
-protein_seq blob not null,
+protein_seq blob,
 orf_start int,
 orf_end int,
 primary key (accession))";
@@ -1037,6 +1028,7 @@ sequence char(200),
 paren_output char(200),
 parsed blob,
 mfe float,
+pairs int,
 knotp bool,
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");

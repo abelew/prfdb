@@ -19,13 +19,24 @@ sub new {
 
 sub Nupack {
   my $me = shift;
-  print "NUPACK\n";
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
   my $species = $me->{species};
-  my $slippery = $me->{slippery};
   my $config = $PRFConfig::config;
+  print "NUPACK: infile: $inputfile accession: $accession start: $start\n";
+  open(SLIP, "<$inputfile");
+  my ($slippery, $crap);
+  while(my $line = <SLIP>) {
+      chomp $line;
+      if ($line =~ /^\>/) {
+	  ($slippery, $crap) = split(/ /, $line);
+	  $slippery =~ tr/actgTu/ACUGUU/;
+	  $slippery =~ s/\>//g;
+      }
+      else {next;}
+  }
+  close(SLIP);
   my $return = {
       accession => $accession,
       start => $start,
@@ -68,10 +79,11 @@ sub Nupack {
 	}
   }  ## End of the line reading the nupack output.
   open(PAIRS, "<out.pair") or PRF_Error("Could not open the nupack pairs file: $!", $species, $accession);
-  my $pairs = '';
+  my $pairs = 0;
   my @nupack_output = ();
   while(my $line = <PAIRS>) {
 	chomp $line;
+	$pairs++;
 	my ($fiveprime, $threeprime) = split(/\s+/, $line);
 	$nupack_output[$threeprime] = $fiveprime;
 	$nupack_output[$fiveprime] = $threeprime;
@@ -95,17 +107,16 @@ sub Nupack {
 
 sub Pknots {
   my $me = shift;
-  print "PKNOTS!\n";
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
   my $species = $me->{species};
-  my $slippery = $me->{slippery};
   my $config = $PRFConfig::config;
+  print "PKNOTS: infile: $inputfile accession: $accession start: $start\n";
   my $return = {
       accession => $accession,
       start => $start,
-      slippery => $slippery,
+      slippery => '',
       species => $species,
       knotp => 0,
   };
@@ -119,6 +130,8 @@ sub Pknots {
   while (my $line = <PK>) {
 	$counter++;
 	chomp $line;
+	### The NAM field prints out the name of the sequence
+	### Which is set to the slippery site in RNAMotif
 	if ($line =~ /^NAM/) {
 	  ($crap, $return->{slippery}) = split(/NAM\s+/, $line);
 	}
@@ -158,7 +171,6 @@ sub Pknots {
       $return->{knotp} = 1;
   }
   chdir($config->{basedir});
-  print "TEST: $return->{parsed} $return->{mfe} $return->{pk_output}\n";
   return($return);
 }
 
@@ -202,15 +214,14 @@ sub Mfold {
 #	my $stupido_filename = $me->{file} . '*.' . $ext;
 #	unlink($stupido_filename);
 #  }
-  my $command1 = "rm $me->{file}" . '_* 2>/dev/null';
-  my $command2 = "rm $me->{file}" . '.* 2>/dev/null';
-  print "TESTME: $command1
-$command2
-";
-
-  system($command1);
-  system($command2);
-  return($return);
+#  my $command1 = "rm $me->{file}" . '_* 2>/dev/null';
+#  my $command2 = "rm $me->{file}" . '.* 2>/dev/null';
+#$command2
+#";
+#
+#  system($command1);
+#  system($command2);
+#  return($return);
 }
 
 sub Pknots_Boot {
@@ -221,6 +232,7 @@ sub Pknots_Boot {
     my $accession = shift;
     my $start = shift;
     my $config = $PRFConfig::config;
+#    print "BOOT: infile: $inputfile accession: $accession start: $start\n";
     my $return = {
 	accession => $accession,
 	start => $start,

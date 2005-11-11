@@ -47,13 +47,11 @@ sub new {
 sub Search {
   my $me = shift;
   my $sequence = shift;
-  my $length = shift;
+  my $orf_start = shift;
   my $db = new PRFdb;
   my %return = ();
-  $sequence =~ s/A+$//g;  ## Remove the ending polyA
   my @information = split(//, $sequence);
   my $end_trim = 70;
-  print "In search\n";
 #  for my $c (0 .. ($#information - $end_trim)) {  ## Recurse over every nucleotide
   for my $c (0 .. $#information) {  ## Recurse over every nucleotide
     if ((($c + 1) % 3) == 0) {  ## Check for correct reading frame
@@ -74,13 +72,16 @@ sub Search {
         $string =~ tr/ATGCU/atgcu/ if (defined($string));
         $string =~ tr/t/u/;
         ## Print out the text of the fasta file to be used for searching and folding
-        my $data = ">$slipsite $start $end
+	## The start and end in full sequence takes into account
+	## Sequences which are cds
+	my $start_in_full_sequence = $start + $orf_start;
+	my $end_in_full_sequence = $end + $orf_start;
+        my $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
 $string
 ";
         print $fh $data;
         ### End of the fasta file.
         my $command = "$PRFConfig::config->{rnamotif} -context -descr $PRFConfig::config->{descriptor_file} $filename 2>rnamotif.err | $PRFConfig::config->{rmprune}";
-        print "Running: $command\n";
         open(RNAMOT, "$command |") or PRF_Error("Unable to run rnamotif: $!", 'rnamotif', '');
         my $permissable = 0;
         my $nonpermissable = 0;
@@ -90,7 +91,6 @@ $string
           next if ($line =~ /^\>/);
           next if ($line =~ /^ss/);
           next if ($line =~ /^\#+/);
-#		  print "$line<br>\n";
           $rnamotif_output .= $line;
           chomp $line;
           my ($spec, $score, $num1, $num2, $num3, $leader, $slip1, $slip2, $slip3, $spacer, $stem1_5, $loop1, $stem2_5, $loop2, $stem1_3, $loop3, $stem2_3, $footer) = split(/ +/, $line);
@@ -105,11 +105,11 @@ $string
           $total++;
 #		  print "$line<br>\n";
         }  ## End the while loop
-        $return{$start}{total} = $total;
-        $return{$start}{filename} = $filename;
-        $return{$start}{output} = $rnamotif_output;
-        $return{$start}{permissable} = $permissable;
-        $return{$start}{filedata} = $data;
+        $return{$start_in_full_sequence}{total} = $total;
+        $return{$start_in_full_sequence}{filename} = $filename;
+        $return{$start_in_full_sequence}{output} = $rnamotif_output;
+        $return{$start_in_full_sequence}{permissable} = $permissable;
+        $return{$start_in_full_sequence}{filedata} = $data;
 #		}
       } ## End checking for a slippery site
     }  ## End the reading frame check
