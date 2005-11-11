@@ -49,11 +49,11 @@ sub Search {
   my $sequence = shift;
   my $length = shift;
   my $db = new PRFdb;
- my %return = ();
-  $sequence =~ s/A+$//g;
+  my %return = ();
+  $sequence =~ s/A+$//g;  ## Remove the ending polyA
   my @information = split(//, $sequence);
   my $end_trim = 70;
-
+  print "In search\n";
 #  for my $c (0 .. ($#information - $end_trim)) {  ## Recurse over every nucleotide
   for my $c (0 .. $#information) {  ## Recurse over every nucleotide
     if ((($c + 1) % 3) == 0) {  ## Check for correct reading frame
@@ -78,6 +78,7 @@ $string
 ";
         print $fh $data;
         my $command = "$PRFConfig::config->{rnamotif} -context -descr $PRFConfig::config->{descriptor_file} $filename 2>rnamotif.err | $PRFConfig::config->{rmprune}";
+        print "Running: $command\n";
         open(RNAMOT, "$command |") or PRF_Error("Unable to run rnamotif: $!", 'rnamotif', '');
         my $permissable = 0;
         my $nonpermissable = 0;

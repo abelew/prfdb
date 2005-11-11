@@ -72,6 +72,7 @@ sub Check_Queue {
   if ($PRFConfig::config->{dbinput} eq 'dbi') {
     ## Pull from the queue in dbi
     my $db = new PRFdb;
+    print "About to grab queue\n";
     return($db->Grab_Queue($type));
   }
   else {
@@ -102,7 +103,7 @@ sub Check_Db {
   my $motif_info;
   my $bootlaces;
   if ($PRFConfig::config->{dbinput} ne 'dbi') { $motif_info = 0; }
-  else { $motif_info = $db->Get_RNAmotif($datum->{species}, $datum->{accession}); }
+  else { print "Get RNAMotif\n"; $motif_info = $db->Get_RNAmotif($datum->{species}, $datum->{accession}); }
   if ($motif_info) {  ## If the motif information _does_ exist, check the folding information
     foreach my $start (keys %{$motif_info}) {  ## For every start site in the sequence
       print "Doing locus: $datum->{accession} start: $start\n";

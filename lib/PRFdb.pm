@@ -485,7 +485,7 @@ sub Create_Errordb {
 sub FillQueue {
   my $me = shift;
   my $species = $PRFConfig::config->{species};
-  my $best_statement = "INSERT into queue (id, public, species, accession, params, out, done) SELECT '', 0, '$species', accession, '', 0, 0 from genome";
+  my $best_statement = "INSERT into queue (id, public, species, accession, params, out, done) SELECT '', 0, species, accession, '', 0, 0 from genome";
 #  my $collection = "SELECT 'homo_sapiens', accession from $collect_table";
   my $sth = $me->{dbh}->prepare($best_statement);
   $sth->execute;
@@ -497,8 +497,9 @@ sub Grab_Queue {
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
   my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
+  print "Running: $single_accession\n";
   my ($species, $accession) = $me->{dbh}->selectrow_array($single_accession);
-
+  print "Done\n";
   return(undef) unless(defined($species));
   my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and public='$type');
   my $st = $me->{dbh}->prepare($update);

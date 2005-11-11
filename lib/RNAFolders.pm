@@ -102,7 +102,7 @@ sub Pknots {
   my $species = $me->{species};
   my $slippery = $me->{slippery};
   my $config = $PRFConfig::config;
-  my $return = { 
+  my $return = {
       accession => $accession,
       start => $start,
       slippery => $slippery,
@@ -158,6 +158,7 @@ sub Pknots {
       $return->{knotp} = 1;
   }
   chdir($config->{basedir});
+  print "TEST: $return->{parsed} $return->{mfe} $return->{pk_output}\n";
   return($return);
 }
 
