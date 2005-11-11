@@ -122,6 +122,7 @@ sub Pknots {
   };
   chdir($config->{tmpdir});
   my $command = qq(sh -c "time $config->{pknots} -k $inputfile" 2>pknots.err);
+  print "PKNOTS: $command\n";
   open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
   my $counter = 0;
   my ($line_to_read, $crap) = undef;

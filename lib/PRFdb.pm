@@ -379,7 +379,7 @@ sub Set_Pubqueue {
   my $species = shift;
   my $accession = shift;
   my $params = shift;
-  my $statement = qq(INSERT INTO queue (id, public, species, accession, params, out, done) VALUES ('',$params->{public}, $species, $accession, $params->{params}, 0, 0));
+  my $statement = qq(INSERT INTO queue (id, public, species, accession, params, out, done) VALUES ('', '0', '$species', '$accession', '', 0, 0));
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or PRFConfig::PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
 }
@@ -586,7 +586,7 @@ sub Load_ORF_Data {
                mrna_seq => undef,
                protein_seq => undef,
                orf_start => undef,
-               orf_end => undef,
+               orf_stop => undef,
                );
   while(my $line = <IN>) {
     chomp $line;
@@ -596,7 +596,7 @@ sub Load_ORF_Data {
       if (defined($datum{accession})) {
         $datum{protein_seq} = $misc->Translate($datum{mrna_seq});
         $datum{orf_start} = 1;
-        $datum{orf_end} = length($datum{mrna_seq});
+        $datum{orf_stop} = length($datum{mrna_seq});
         print "Submitting $datum{accession}\n";
         if (!defined($me->Get_Sequence05($datum{species}, $datum{accession}))) {
           $me->Insert_Genome05_Entry(\%datum);
@@ -609,7 +609,7 @@ sub Load_ORF_Data {
                     mrna_seq => undef,
                     protein_seq => undef,
                     orf_start => undef,
-                    orf_end => undef,
+                    orf_stop => undef,
                );
         }
       }
@@ -659,7 +659,7 @@ sub Import_CDS {
 
 #  my @features = $seq->all_SeqFeatures();
   my @cds      = grep { $_->primary_tag eq 'CDS' } $seq->get_SeqFeatures();
-  my ($protein_sequence, $orf_start, $orf_end);
+  my ($protein_sequence, $orf_start, $orf_stop);
   my $counter = 0;
   foreach my $feature (@cds) {
     if ($counter > 1) {
@@ -669,7 +669,8 @@ sub Import_CDS {
     my $primary_tag = $feature->primary_tag();
     $protein_sequence =  $feature->seq->translate->seq();
     $orf_start = $feature->start();
-    $orf_end = $feature->end();
+    ### Don't change me, this is provided by genbank
+    $orf_stop = $feature->end();
   }
   my $binomial_species = $seq->species->binomial();
   my ($genus, $species) = split(/ /, $binomial_species);
@@ -685,7 +686,7 @@ sub Import_CDS {
                mrna_seq => $mrna_sequence,
                protein_seq => $protein_sequence,
                orf_start => $orf_start,
-               orf_end => $orf_end,
+               orf_stop => $orf_stop,
                species => $full_species,
                genename => $genename,
                version => $seq->{_seq_version},
@@ -701,12 +702,12 @@ sub mRNA_subsequence {
   my $me = shift;
   my $sequence = shift;
   my $start = shift;
-  my $end = shift;
+  my $stop = shift;
   $start--;
-  $end--;
+  $stop--;
   my @t = split(//, $sequence);
   my $orf_sequence;
-  foreach my $c ($start .. $end) {
+  foreach my $c ($start .. $stop) {
     $orf_sequence .= $t[$c];
   }
   return($orf_sequence);
@@ -757,6 +758,21 @@ sub Check_Genome_Table {
 #################################################
 ### Get RNAMotif Nupack Pknots Boot Sequence
 #################################################
+sub Get_Sequence05 {
+  my $me = shift;
+  my $species = shift;
+  my $accession = shift;
+  my $statement = qq(SELECT mrna_seq FROM genome WHERE accession = '$accession' and species = '$species');
+  my $info = $me->{dbh}->selectall_arrayref($statement);
+  my $sequence = $info->[0]->[0];
+  if ($sequence) {
+	return($sequence);
+  }
+  else {
+	return(undef);
+  }
+}
+
 sub Get_RNAfolds05 {
   my $me = shift;
   my $table = shift;
@@ -800,7 +816,7 @@ sub Get_mRNA05 {
   my $me = shift;
   my $species = shift;
   my $accession = shift;
-  my $statement = qq(SELECT mrna_seq, orf_start, orf_end FROM genome WHERE species='$species' and accession='$accession');
+  my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE species='$species' and accession='$accession');
 #  my $info = $me->{dbh}->selectall_arrayref($statement);
   my $info = $me->{dbh}->selectrow_hashref($statement);
 #  my $sequence = $info->[0]->[0];
@@ -817,15 +833,15 @@ sub Get_ORF05 {
   my $me = shift;
   my $species = shift;
   my $accession = shift;
-  my $statement = qq(SELECT mrna_seq, orf_start, orf_end FROM genome WHERE species='$species' and accession='$accession');
+  my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE species='$species' and accession='$accession');
 #  my $info = $me->{dbh}->selectall_arrayref($statement);
   my $info = $me->{dbh}->selectrow_hashref($statement);
 #  my $sequence = $info->[0]->[0];
   my $mrna_seq = $info->{mrna_seq};
   ### A PIECE OF CODE TO HANDLE PULLING SUBSEQUENCES FROM CDS
   my $start = $info->{orf_start} - 1;
-  my $end = $info->{orf_end} - 1;
-  my $offset = $end - $start;
+  my $stop = $info->{orf_stop} - 1;
+  my $offset = $stop - $start;
   my $sequence = substr($mrna_seq, $start, $offset);
   ### DONT SCAN THE ENTIRE MRNA, ONLY THE ORF
   if ($sequence) {
@@ -866,8 +882,8 @@ sub Insert_Genome05_Entry {
   my $qs = $me->{dbh}->quote($datum->{mrna_seq});
   my $qp = $me->{dbh}->quote($datum->{protein_seq});
   my $qos = $me->{dbh}->quote($datum->{orf_start});
-  my $qoe = $me->{dbh}->quote($datum->{orf_end});
-  my $statement = "INSERT INTO genome (accession, species, genename, version, comment, mrna_seq, protein_seq, orf_start, orf_end) VALUES($qa, $qsp, $qn, $qv, $qc, $qs, $qp, $qos, $qoe)";
+  my $qoe = $me->{dbh}->quote($datum->{orf_stop});
+  my $statement = "INSERT INTO genome (id, accession, species, genename, version, comment, mrna_seq, protein_seq, orf_start, orf_stop) VALUES('', $qa, $qsp, $qn, $qv, $qc, $qs, $qp, $qos, $qoe)";
   $datum->{sequence} = undef;
 #  print "TEST: $statement\n";
   my $sth = $me->{dbh}->prepare($statement);
@@ -969,16 +985,19 @@ sub Create_Genome05 {
   my $me = shift;
   my $table = 'genome';
   my $statement = "CREATE table $table (
+id $PRFConfig::config->{mysql_id},
 accession $PRFConfig::config->{mysql_accession},
 species $PRFConfig::config->{mysql_species},
 genename $PRFConfig::config->{mysql_genename},
 version int,
 comment $PRFConfig::config->{mysql_comment},
-mrna_seq blob not null,
-protein_seq blob,
+mrna_seq text not null,
+protein_seq text,
 orf_start int,
-orf_end int,
-primary key (accession))";
+orf_stop int,
+primary key (id),
+UNIQUE(accession),
+INDEX(genename))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
 }
@@ -986,7 +1005,7 @@ primary key (accession))";
 sub Create_Rnamotif05 {
   my $me = shift;
   my $statement = "CREATE table rnamotif (
-id int not null auto_increment,
+id $PRFConfig::config->{mysql_id},
 species $PRFConfig::config->{mysql_species},
 accession $PRFConfig::config->{mysql_accession},
 start int,
@@ -1003,7 +1022,7 @@ sub Create_Queue05 {
   my $me = shift;
   my $tablename = 'queue';
   my $statement = "CREATE table $tablename (
-id int not null auto_increment,
+id $PRFConfig::config->{mysql_id},
 public bool,
 species $PRFConfig::config->{mysql_species},
 accession $PRFConfig::config->{mysql_accession},
