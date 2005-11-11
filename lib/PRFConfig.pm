@@ -10,12 +10,12 @@ $ENV{ENERGY_FILE} = "$ENV{HOME}/browser/work/dataS_G.rna";
 my $prefix = "$ENV{HOME}/browser";
 
 $PRFConfig::config = {
-                      max_struct_length => 39,  ## The maximum structure size to be examined
+                      max_struct_length => 89,  ## The maximum structure size to be examined
                       do_nupack => 1,           ## Run nupack on sequences?
 		      do_pknots => 1,           ## Run pknots on sequence?
                       do_mfold => 0,            ## Run mfold on the sequence as a mfe bootstrap?
                       do_boot => 1,             ## Perform our faux bootstrap
-                      arch_specific_exe => 0,   ## Architecture specific executables (used for a pbs environment)
+                      arch_specific_exe => 1,   ## Architecture specific executables (used for a pbs environment)
                       boot_iterations => 100,
                       boot_mfe_algorithms => {
 			  mfold => \&RNAFolders::Pknots_Boot,
