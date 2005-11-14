@@ -1015,7 +1015,7 @@ total int,
 permissable int,
 filedata blob,
 output blob,
-lastupdate timestamp ON UPDATE CURRENT_TIMESTAMP,
+lastupdate $PRFConfig::config->{mysql_timestamp},
 primary key (id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute;
@@ -1052,7 +1052,7 @@ parsed blob,
 mfe float,
 pairs int,
 knotp bool,
-lastupdate timestamp ON UPDATE CURRENT_TIMESTAMP,
+lastupdate $PRFConfig::config->{mysql_timestamp},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute;
@@ -1071,7 +1071,7 @@ parsed blob,
 mfe float,
 pairs int,
 knotp bool,
-lastupdate timestamp ON UPDATE CURRENT_TIMESTAMP,
+lastupdate $PRFConfig::config->{mysql_timestamp},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute;
@@ -1094,7 +1094,7 @@ pairs_mean float,
 pairs_sd float,
 pairs_se float,
 mfe_values blob,
-lastupdate timestamp ON UPDATE CURRENT_TIMESTAMP,
+lastupdate timestamp $PRFConfig::config->{mysql_timestamp},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
