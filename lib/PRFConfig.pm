@@ -1,7 +1,8 @@
+B
 package PRFConfig;
 require      Exporter;
 our @ISA       = qw(Exporter);
-our @EXPORT    = qw(PRF_Out PRF_Error config);    # Symbols to be exported by default
+our @EXPORT    = qw(PRF_Out PRF_ErrorPRF_Die config);    # Symbols to be exported by default
 #our @EXPORT_OK = qw();  # Symbols to be exported on request
 our $VERSION   = 1.00;         # Version number
 
@@ -10,12 +11,12 @@ $ENV{ENERGY_FILE} = "$ENV{HOME}/browser/work/dataS_G.rna";
 my $prefix = "$ENV{HOME}/browser";
 
 $PRFConfig::config = {
-                      max_struct_length => 39,  ## The maximum structure size to be examined
+                      max_struct_length => 99,  ## The maximum structure size to be examined
                       do_nupack => 1,           ## Run nupack on sequences?
-		      do_pknots => 1,           ## Run pknots on sequence?
+		      do_pknots => 0,           ## Run pknots on sequence?
                       do_mfold => 0,            ## Run mfold on the sequence as a mfe bootstrap?
                       do_boot => 1,             ## Perform our faux bootstrap
-                      arch_specific_exe => 0,   ## Architecture specific executables (used for a pbs environment)
+                      arch_specific_exe => 1,   ## Architecture specific executables (used for a pbs environment)
                       boot_iterations => 100,
                       boot_mfe_algorithms => {
 			  mfold => \&RNAFolders::Pknots_Boot,
@@ -178,6 +179,25 @@ sub PRF_Error {
   my $datestring = "$hour:$min:$sec $mday/$month/$y";
   print ERRFH "$datestring\t$message\n";
   close(ERRFH);
+}
+
+sub PRF_Die {
+  my $message = shift;
+  my $species = shift;
+  my $accession = shift;
+  open(ERRFH, ">>$err") or die "Unable to open the log file $err: $!\n";
+  if ($PRFConfig::config->{dboutput} eq 'dbi') {
+    use PRFdb;
+    my $db = new PRFdb;
+    $db->Error_Db($message, $species, $accession);
+  }
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+  my $month = $mon + 1;
+  my $y = $year + 1900;
+  my $datestring = "$hour:$min:$sec $mday/$month/$y";
+  print ERRFH "$datestring\t$message\n";
+  close(ERRFH);
+  die("Died in PRF_Die");
 }
 
 

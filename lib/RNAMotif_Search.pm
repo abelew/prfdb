@@ -82,7 +82,7 @@ $string
         print $fh $data;
         ### End of the fasta file.
         my $command = "$PRFConfig::config->{rnamotif} -context -descr $PRFConfig::config->{descriptor_file} $filename 2>rnamotif.err | $PRFConfig::config->{rmprune}";
-        open(RNAMOT, "$command |") or PRF_Error("Unable to run rnamotif: $!", 'rnamotif', '');
+        open(RNAMOT, "$command |") or PRF_Die("Unable to run rnamotif: $!", 'rnamotif', '');
         my $permissable = 0;
         my $nonpermissable = 0;
         my $total = 0;
