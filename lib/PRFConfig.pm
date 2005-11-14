@@ -32,6 +32,9 @@ for my $config_option (keys %data) {
   $PRFConfig::config->{$config_option} = $data{$config_option};
   undef $data{$config_option};
 }
+$PRFConfig::config->{boot_mfe_algorithms} = eval($PRFConfig::config->{boot_mfe_algorithms});
+$PRFConfig::config->{boot_randomizers} = eval($PRFConfig::config->{boot_randomizers});
+
 
 sub Go_Away {
   return();

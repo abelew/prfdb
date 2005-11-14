@@ -1004,8 +1004,6 @@ INDEX(genename))";
 
 sub Create_Rnamotif05 {
   my $me = shift;
-  print "TESTTHIS: $PRFConfig::config->{mysql_index}\n";
-  sleep(5);
   my $statement = "CREATE table rnamotif (
 id $PRFConfig::config->{mysql_index},
 species $PRFConfig::config->{mysql_species},
