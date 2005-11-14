@@ -18,6 +18,7 @@ $^W=1;
 my $config = $PRFConfig::config;
 chdir($config->{basedir});
 
+
 if (defined($ARGV[0])) {
   if ($ARGV[0] eq 'split') {
 	Split_Queue($ARGV[1]);

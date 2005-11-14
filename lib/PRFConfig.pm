@@ -1,5 +1,5 @@
 package PRFConfig;
-## Time-stamp: <Mon Nov 14 12:38:05 2005 Ashton Trey Belew (abelew@wesleyan.edu)>
+## Time-stamp: <Mon Nov 14 12:59:48 2005 Ashton Trey Belew (abelew@wesleyan.edu)>
 use strict;
 use AppConfig qw/:argcount :expand/;
 require      Exporter;
@@ -28,7 +28,6 @@ my $appconfig = AppConfig->new({
 my $open = $appconfig->file('prfdb.conf');
 my %data = $appconfig->varlist("^.*");
 for my $config_option (keys %data) {
-  print "TESTME: option: $config_option and value: $data{$config_option}\n";
 #  $PRFConfig::config->{$config_option} = $data{$config_option};
   $PRFConfig::config->{$config_option} = $data{$config_option};
   undef $data{$config_option};

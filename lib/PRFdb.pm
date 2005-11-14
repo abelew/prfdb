@@ -1004,7 +1004,6 @@ INDEX(genename))";
 
 sub Create_Rnamotif05 {
   my $me = shift;
-  print "TESTTHIS: $PRFConfig::config->{mysql_index}\n";
   sleep(5);
   my $statement = "CREATE table rnamotif (
 id $PRFConfig::config->{mysql_index},
@@ -1094,7 +1093,7 @@ pairs_mean float,
 pairs_sd float,
 pairs_se float,
 mfe_values blob,
-lastupdate timestamp $PRFConfig::config->{mysql_timestamp},
+lastupdate $PRFConfig::config->{mysql_timestamp},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
