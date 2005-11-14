@@ -1004,8 +1004,10 @@ INDEX(genename))";
 
 sub Create_Rnamotif05 {
   my $me = shift;
+  print "TESTTHIS: $PRFConfig::config->{mysql_index}\n";
+  sleep(5);
   my $statement = "CREATE table rnamotif (
-id $PRFConfig::config->{mysql_id},
+id $PRFConfig::config->{mysql_index},
 species $PRFConfig::config->{mysql_species},
 accession $PRFConfig::config->{mysql_accession},
 start int,
@@ -1023,7 +1025,7 @@ sub Create_Queue05 {
   my $me = shift;
   my $tablename = 'queue';
   my $statement = "CREATE table $tablename (
-id $PRFConfig::config->{mysql_id},
+id $PRFConfig::config->{mysql_index},
 public bool,
 species $PRFConfig::config->{mysql_species},
 accession $PRFConfig::config->{mysql_accession},
@@ -1038,7 +1040,7 @@ primary key (id))";
 sub Create_Nupack05 {
   my $me = shift;
   my $statement = "CREATE TABLE nupack (
-id int not null auto_increment,
+id $PRFConfig::config->{mysql_index},
 species $PRFConfig::config->{mysql_species},
 accession $PRFConfig::config->{mysql_accession},
 start int,
@@ -1059,7 +1061,7 @@ primary key(id))";
 sub Create_Pknots05 {
   my $me = shift;
   my $statement = "CREATE TABLE pknots (
-id int not null auto_increment,
+id $PRFConfig::config->{mysql_index},
 species $PRFConfig::config->{mysql_species},
 accession $PRFConfig::config->{mysql_accession},
 start int,
@@ -1078,7 +1080,7 @@ primary key(id))";
 sub Create_Boot05 {
   my $me = shift;
   my $statement = "CREATE TABLE boot (
-id int not null auto_increment,
+id $PRFConfig::config->{mysql_index},
 species $PRFConfig::config->{mysql_species},
 accession $PRFConfig::config->{mysql_accession},
 start int,
