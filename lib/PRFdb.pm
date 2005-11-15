@@ -693,7 +693,8 @@ sub Import_CDS {
     ### Don't change me, this is provided by genbank
     $orf_stop = $feature->end();
     my %datum = (
-                 accession => "$accession.$counter",
+                 ### fixme
+                 accession => "$accession.$counter" $ALICE
                  mrna_seq => $mrna_sequence,
                  protein_seq => $protein_sequence,
                  orf_start => $orf_start,
