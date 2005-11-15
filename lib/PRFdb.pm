@@ -376,10 +376,17 @@ sub Get_Pubqueue {
 
 sub Set_Pubqueue {
   my $me = shift;
-  my $species = shift;
   my $accession = shift;
+  my $species = shift;
   my $params = shift;
-  my $statement = qq(INSERT INTO queue (id, public, species, accession, params, out, done) VALUES ('', '0', '$species', '$accession', '', 0, 0));
+  my $statement;
+  if (defined($species)) {
+    $statement = qq(INSERT INTO queue (id, public, species, accession, params, out, done) VALUES ('', '1', '$species', '$accession', '', 0, 0));
+  }
+  else {
+    $statement = qq(INSERT INTO queue (id, public, accession, params, out, done) VALUES ('', '1', '$accession', '', 0, 0));
+  }
+  print "ST: $statement\n";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or PRFConfig::PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
 }
@@ -488,14 +495,13 @@ sub Grab_Queue {
   my $type = shift;  ## public or private
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
-  my $single_accession = qq(select species, accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
+  my $single_accession = qq(select accession from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
 #  my $single_accession = qq(select species, accession from queue where species='homo_sapiens' and accession='BC064626' ORDER BY rand() LIMIT 1);
-  my ($species, $accession) = $me->{dbh}->selectrow_array($single_accession);
-  return(undef) unless(defined($species));
-  my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and public='$type');
+  my $accession = $me->{dbh}->selectrow_array($single_accession);
+  return(undef) unless(defined($accession));
+  my $update = qq(UPDATE queue SET out='1' WHERE accession='$accession' and public='$type');
   my $st = $me->{dbh}->prepare($update);
   $st->execute();
-  $return->{species} = $species;
   $return->{accession} = $accession;
   return($return);
 }

@@ -32,6 +32,7 @@ until ($time_to_die) {
   # 4.  Next if exists.
   # 4a. Fold via algorithms
   # 5. Fill db
+  my $db = new PRFdb;
   my $public_datum = $db->Grab_Queue('public');
   if (defined($public_datum)) {  ## The public queue is not empty
     my $existsp = Check_Db($public_datum);

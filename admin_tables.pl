@@ -1,9 +1,6 @@
 #!/usr/bin/perl
 use strict;
 
-use lib "$ENV{HOME}/usr/lib/perl5/";
-use lib "lib/";
-
 use DBI;
 use Getopt::Long;
 use lib "$ENV{HOME}/usr/lib/perl5";
@@ -89,6 +86,10 @@ elsif ($action eq 'start') {
 }
 elsif ($action eq 'fillqueue') {
   $db->FillQueue();
+}
+elsif ($action eq 'pubqueue') {
+  print "TESTME: $action $object\n";
+  $db->Set_Pubqueue($object);
 }
 else {
   PRF_Error("Incorrect usage of admin_tables.pl ARGV: @ARGV");

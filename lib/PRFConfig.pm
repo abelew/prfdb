@@ -40,6 +40,7 @@ my $err = $PRFConfig::config->{errorfile};
 my $out = $PRFConfig::config->{logfile};
 my $error_counter = 0;
 $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir};
+
 if ($PRFConfig::config->{arch_specific_exe} == 1) {
 
   ## If we have architecture specific executables, then
