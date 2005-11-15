@@ -17,27 +17,9 @@ $^W=1;
 
 my $config = $PRFConfig::config;
 chdir($config->{basedir});
-
-
-if (defined($ARGV[0])) {
-  if ($ARGV[0] eq 'split') {
-	Split_Queue($ARGV[1]);
-	exit(0);
-  }
-  elsif ($ARGV[0] eq 'privqueue') {
-	$PRFConfig::config->{privqueue} = $ARGV[1];
-  }
-}
-
 Check_Environment();
 
 my $time_to_die = 0;
-#my $pid = fork;
-#exit if $pid;
-#die "Could not fork: $!\n" unless defined($pid);
-#
-#POSIX::setsid() or die "Could not start a new process group: $!\n";
-#$SIG{INT} = $SIG{TERM} = $SIG{HUP} = \&signal_handler;
 
 until ($time_to_die) {
   Time::HiRes::usleep(100);
@@ -50,14 +32,12 @@ until ($time_to_die) {
   # 4.  Next if exists.
   # 4a. Fold via algorithms
   # 5. Fill db
-
-  ## Check queue file.
-  my $public_datum = Check_Queue('public');
+  my $public_datum = $db->Grab_Queue('public');
   if (defined($public_datum)) {  ## The public queue is not empty
     my $existsp = Check_Db($public_datum);
   }
   else {  ## The public queue is empty
-    my $private_datum = Check_Queue('private');
+    my $private_datum = $db->Grab_Queue('private');
     if (defined($private_datum)) {  # The queue is not empty
       my $existsp = Check_Db($private_datum);
     }
@@ -67,33 +47,6 @@ until ($time_to_die) {
   }  ## End the public queue is empty
 }    ## End until it is time to die
 
-
-sub Check_Queue {
-  my $type = shift;
-  if ($PRFConfig::config->{dbinput} eq 'dbi') {
-    ## Pull from the queue in dbi
-    my $db = new PRFdb;
-    return($db->Grab_Queue($type));
-  }
-  else {
-    my $qfile = $type . '_queue';
-    my $return = {};
-    open (FH, "+<$qfile") or die "can't update queue: $qfile: $!";
-    my $addr = undef;
-    my $line_bak;
-    while (my $line = <FH> ) {
-      $addr = tell(FH) unless eof(FH);
-      $line_bak = $line;
-    }
-    return(undef) unless defined($line_bak);
-    chomp $line_bak;
-    my ($species, $accession) = split(/\t/, $line_bak);
-    $return->{species} = $species;
-    $return->{accession} = $accession;
-    truncate(FH, $addr);
-    return($return);
-  }
-}
 
 sub Check_Db {
   my $datum = shift;
@@ -261,26 +214,6 @@ sub Check_Db {
     unlink($slipsites->{$start}{filename});
     } ##End checking slipsites for a locus when have not motif nor folding information
   } ## End no motif nor folding information.
-}
-
-sub Split_Queue {
-  my $num = shift;
-  my $count = 0;
-  no strict 'refs';
-  for my $c ($count .. $num) {
-	my $priv_handle = "private_$c";
-	open($priv_handle, ">$priv_handle");
-  }
-
-  open(PRIV_IN, "<private_queue");
-  $count = 0;
-  while (my $line = <PRIV_IN>) {
-    $count++;
-    my $serial = $count % $num;
-    my $handle = "private_" . $serial;
-    PRF_Out("Printing $line to $handle");
-    print $handle $line;
-  }
 }
 
 sub Check_Environment {
