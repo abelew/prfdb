@@ -377,15 +377,20 @@ sub Get_Pubqueue {
 sub Set_Pubqueue {
   my $me = shift;
   my $accession = shift;
-  my $species = shift;
   my $params = shift;
   my $statement;
-  if (defined($species)) {
-    $statement = qq(INSERT INTO queue (id, public, species, accession, params, out, done) VALUES ('', '1', '$species', '$accession', '', 0, 0));
-  }
-  else {
-    $statement = qq(INSERT INTO queue (id, public, accession, params, out, done) VALUES ('', '1', '$accession', '', 0, 0));
-  }
+  $statement = qq(INSERT INTO queue (id, public, accession, params, out, done) VALUES ('', '1', '$accession', '', 0, 0));
+  print "ST: $statement\n";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute or PRFConfig::PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
+}
+
+sub Set_Privqueue {
+  my $me = shift;
+  my $accession = shift;
+  my $params = shift;
+  my $statement;
+  $statement = qq(INSERT INTO queue (id, public, accession, params, out, done) VALUES ('', '0', '$accession', '', 0, 0));
   print "ST: $statement\n";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or PRFConfig::PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
@@ -502,22 +507,13 @@ sub Grab_Queue {
   my $species_statement = qq(select species from genome where accession='$accession');
   print "TESTME: $species_statement\n";
   my $species = $me->{dbh}->selectrow_array($species_statement);
+  print "TESTME species: $species\n";
   return(undef) unless(defined($species));
-  my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and
-public='$type');
+  my $update = qq(UPDATE queue SET out='1' WHERE accession='$accession' and public='$type');
+  print "TESTME: update: $update\n";
   my $st = $me->{dbh}->prepare($update);
   $st->execute();
   $return->{species} = $species;
-  $return->{accession} = $accession;
-
-
-  my $single_accession = qq(select accession from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
-#  my $single_accession = qq(select species, accession from queue where species='homo_sapiens' and accession='BC064626' ORDER BY rand() LIMIT 1);
-  my $accession = $me->{dbh}->selectrow_array($single_accession);
-  return(undef) unless(defined($accession));
-  my $update = qq(UPDATE queue SET out='1' WHERE accession='$accession' and public='$type');
-  my $st = $me->{dbh}->prepare($update);
-  $st->execute();
   $return->{accession} = $accession;
   return($return);
 }
@@ -680,19 +676,20 @@ sub Import_CDS {
   my $seq = $uni->get_Seq_by_id($accession);
 
 #  my @features = $seq->all_SeqFeatures();
-  my @cds      = grep { $_->primary_tag eq 'CDS' } $seq->get_SeqFeatures();
+  my @cds = grep { $_->primary_tag eq 'CDS' } $seq->get_SeqFeatures();
   my ($protein_sequence, $orf_start, $orf_stop);
   my $counter = 0;
   foreach my $feature (@cds) {
-    if ($counter > 1) {
-      die("HOLY SHIT MORE THAN 1 CDS!");
-    }
-    $counter++;
-    my $primary_tag = $feature->primary_tag();
-    $protein_sequence =  $feature->seq->translate->seq();
-    $orf_start = $feature->start();
-    ### Don't change me, this is provided by genbank
-    $orf_stop = $feature->end();
+      if ($counter > 1) {
+	  die("HOLY SHIT MORE THAN 1 CDS!");
+      }
+      $counter++;
+      my $primary_tag = $feature->primary_tag();
+      $protein_sequence =  $feature->seq->translate->seq();
+      $orf_start = $feature->start();
+      ### Don't change me, this is provided by genbank
+      $orf_stop = $feature->end();
+      print "START: $orf_start STOP: $orf_stop\n";
   }
   my $binomial_species = $seq->species->binomial();
   my ($genus, $species) = split(/ /, $binomial_species);
@@ -702,7 +699,7 @@ sub Import_CDS {
   my $full_comment = $seq->desc();
   my ($genename, $desc) = split(/\,/, $full_comment);
   my $mrna_sequence = $seq->seq();
-
+  print "TESTSPEC: $binomial_species $full_species\n";
   my %datum = (
                accession => $accession,
                mrna_seq => $mrna_sequence,
@@ -714,9 +711,6 @@ sub Import_CDS {
                version => $seq->{_seq_version},
                comment => $full_comment,
               );
-#  foreach my $k (keys %datum) {
-#    print "TEST: $k and $datum{$k}\n";
-#  }
   $me->Insert_Genome05_Entry(\%datum);
 }
 
@@ -902,7 +896,7 @@ sub Insert_Genome05_Entry {
   my $qoe = $me->{dbh}->quote($datum->{orf_stop});
   my $statement = "INSERT INTO genome (id, accession, species, genename, version, comment, mrna_seq, protein_seq, orf_start, orf_stop) VALUES('', $qa, $qsp, $qn, $qv, $qc, $qs, $qp, $qos, $qoe)";
   $datum->{sequence} = undef;
-#  print "TEST: $statement\n";
+  print "TEST: $statement\n";
   my $sth = $me->{dbh}->prepare($statement);
   $sth->execute;
 }
