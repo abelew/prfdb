@@ -685,8 +685,15 @@ sub Import_CDS {
   my ($genename, $desc) = split(/\,/, $full_comment);
   my $mrna_sequence = $seq->seq();
   my $counter = 0;
+  my $num_cds = scalar(@cds);
   foreach my $feature (@cds) {
     $counter++;
+    ### This is a short term solution FIXME FIXME
+    ### The real solution is to remove the uniqueness of accession
+    ### In the genome table and introduce an int index
+    if ($num_cds > 1) {
+      $accession = "$accession.$counter";
+    }
     my $primary_tag = $feature->primary_tag();
     $protein_sequence =  $feature->seq->translate->seq();
     $orf_start = $feature->start();
@@ -694,7 +701,7 @@ sub Import_CDS {
     $orf_stop = $feature->end();
     my %datum = (
                  ### fixme
-                 accession => "$accession.$counter" $ALICE
+                 accession => $accession,
                  mrna_seq => $mrna_sequence,
                  protein_seq => $protein_sequence,
                  orf_start => $orf_start,
