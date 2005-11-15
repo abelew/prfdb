@@ -7,7 +7,7 @@ sub new {
                   out_pattern => [],
                   stemid => 0,
                   debug => 0,
-                  max_spaces => 3,
+                  max_spaces => defined($args{max_spaces})?$args{max_spaces}:3,
                   pseudoknot => 0,
                   positions_remaining => 0,
                  }, $class;
@@ -401,6 +401,84 @@ sub SETALTERNATIVEBRACKETS {
   $rightG = "]";
 }
 
+sub ReBarcoder{
+    # Added by JLJ.
+    my $strREF = shift;
+    my $str = "";
+    if( ref($strREF) eq "ARRAY" ){
+        $str = "@{$strREF}";
+    }else{
+        $str = $strREF;
+    }
+    
+    my $x = "";
+    my $max = 0;
+    my $stems = "";
+    my $order = "";
+    
+    while($str =~ m/(\d)/g){
+        $x = $1;
+        if( $x > $max ){ $max = $x }
+    }
+    
+    for(my $i=1; $i <= $max; $i++){ $stems .= $i }
+    
+    while($str =~ m/(\d)/g){
+        $x = $1;
+        unless( $order =~ m/$x/){ $order .= $x; }
+    }
+    
+    #print "$str\n";
+    $_ = $str;
+    eval "tr/$order/$stems/" or die $@;
+    $str = $_;
+        
+    if( ref($strREF) eq "ARRAY" ){
+        my @duh = split(/ /,$str);
+        return \@duh;
+    }else{
+        return $str;
+    }
+    
+    die "WHAT THE HELLL!?!?!?!?!?!\n";
+}
+
+sub Condense{
+    # Added JLJ.
+    my $strREF = shift;
+    my $str = "";
+    if( ref($strREF) eq "ARRAY" ){
+        $str = "@{$strREF}";
+    }else{
+        $str = $strREF;
+    }
+    
+    my $x = "";
+    my $max = 0;    
+    while($str =~ m/(\d)/g){
+        $x = $1;
+        if( $x > $max ){ $max = $x }
+    }
+    
+    for(my $i = 1; $i <= $max; $i++){
+        $str =~ s/\s?($i)(?:\s[$i\.])*?\s?/$1/g;
+        $str =~ s/\.|\s//g;
+        $str =~ s/$i+/$i/g;
+    }
+    #print $str,"\n";
+    
+    my $count = 0;
+    for(my $i = 1; $i <= $max; $i++){
+       $count++ while $str =~ m/$i/g;
+       #print "$i $count\n";
+       if($count < 2){ $str =~ s/($i)/$1$1/; }
+       $count = 0;
+    }
+    #print $str,"\n";
+ 
+    
+    return $str;  
+}
 1;
 
 __END__
