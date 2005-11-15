@@ -496,9 +496,11 @@ sub Grab_Queue {
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
   my $single_accession = qq(select accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
+  print "TESTME: $single_accession\n";
   my $accession = $me->{dbh}->selectrow_array($single_accession);
   return(undef) unless(defined($accession));
   my $species_statement = qq(select species from genome where accession='$accession');
+  print "TESTME: $species_statement\n";
   my $species = $me->{dbh}->selectrow_array($species_statement);
   return(undef) unless(defined($species));
   my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and

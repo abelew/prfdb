@@ -98,7 +98,7 @@ sub Check_Db {
         }
         else {  ## Want pknots, have motif, no folding, so make a tempfile
           $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
-	  my $orf_sequence = $db->Get_ORF05($datum->{$datum->{accession});
+          my $orf_sequence = $db->Get_ORF05($datum->{accession});
 #          my $slippery = $db->Get_Slippery_From_RNAMotif($orf_sequence, $start);
 	  print "Want pknots, have notif, no folding\n";
           my $fold_search = new RNAFolders(
