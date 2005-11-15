@@ -239,7 +239,7 @@ sub Pknots_Boot {
 	start => $start,
 	species => $species,
     };
-  
+
     chdir($config->{tmpdir});
     my $command = qq(sh -c "time $config->{pknots} $inputfile" 2>pknots_boot.err);
     open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $species, $accession);

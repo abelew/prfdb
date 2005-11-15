@@ -282,6 +282,125 @@ sub Finished_Test_p {
   }
 }
 
+sub Pknots_to_Bracket {
+  my $me = shift;
+  my $string = shift;
+  my @helixLIST = ();
+  push(@helixLIST, $me->Find_PK_Helices($string));
+  push(@helixLIST, $me->Find_PK_Gaps($string));
+  my @brackets = ();
+  while(my $helixREF = pop(@helixLIST)) {
+    for(my $i=0; $i < @$helixREF; $i++) {
+      unless($$helixREF[$i] eq '-'){
+        $brackets[$i] = $$helixREF[$i];
+      }
+    }
+  }
+  return join("",@brackets);
+}
+
+sub Find_PK_Helices {
+  my $me = shift;
+  my $string = shift;
+  my $helixREF = "";
+  my @helixLIST = ();
+  my $last3 = 0;
+  my $limit = @$string;
+	
+  for(my $i = 0; $i < @$string; $i++ ){
+    if(($$string[$i] =~ /\d+/) and ($i < $$string[$i])) {
+      $me->SETDEFAULTBRACKETS();
+      if(($i < $last3 ) and ($limit < @$string)) {
+        $me->SETALTERNATIVEBRACKETS();
+      }
+      ($i, $last3, $limit, $helixREF) = $me->Zip_PK_Helix($string, $i, $limit);
+      #print @$helixREF,"\n";
+      push(@helixLIST, $helixREF);
+    }
+  }
+  return @helixLIST;
+}
+
+sub Find_PK_Gaps {
+  my $me = shift;
+  my $string = shift;
+  my @gaps = ();
+  for(my $i = 0; $i < @$string; $i++){
+    if($$string[$i] eq '.'){
+      $gaps[$i] = ':';
+    }
+    else {
+      $gaps[$i] = '?';
+    }
+  }
+  return \@gaps;
+}
+
+sub Zip_PK_Helix {
+  my $me = shift;
+  my( $strREF, $b5, $limit ) = @_;
+  my @helix = ();
+
+  my $b3 = $$strREF[ $b5 ];
+  my $last5 = $b5;
+  my $last3 = $b3;
+  my $knot5 = "";
+  my $knotted = 0;
+  my $helixCrown = 0;
+  my $nextLimit = @$strREF;
+
+  for(my $i = 0; $i < $b5; $i++){
+    $helix[$i] = "-";
+  }
+
+  for(my $i = $b5; $i < $b3; $i++){
+    if(defined($helix[$i])){
+      if($helix[$i] =~ /[\)\]]/) {
+        $helixCrown = 1;
+      }
+    }	
+    if(($$strREF[$i] =~ /\d+/) and ($i < $$strREF[$i]) and ($$strREF[$i] <= $b3) and ($i < $limit) and
+       (not $knotted) and (not $helixCrown) and (not $helix[$i])) {
+      $helix[$i] = $leftG;
+      $helix[ $$strREF[$i] ] = $rightG;
+      $last3 = $$strREF[$i];
+      $last5 = $i;
+    }
+    elsif(($$strREF[$i] =~ /\d+/ ) and ($i < $$strREF[$i]) and ($$strREF[$i] > $b3) and (not $helix[$i])) {
+      $helix[$i] = "-";
+      $nextLimit = $i+1;
+      unless($knotted){
+        $knot5 = $i-1;
+        $knotted = 1;
+      }
+    }elsif($$strREF[$i] =~ /\./) {
+      $helix[$i] = "-";
+    }elsif(not $helix[$i]) {
+      $helix[$i] = "-";
+    }
+  }
+
+  if( $knot5 ){
+    $last5 = $knot5;
+  }
+  else {
+    $nextLimit = @$strREF;
+  }
+  return ($last5, $last3, $nextLimit, \@helix);
+}
+
+sub SETDEFAULTBRACKETS {
+  my $me = shift;
+  $leftG = "(";
+  $rightG = ")";
+}
+
+sub SETALTERNATIVEBRACKETS {
+  my $me = shift;
+  $leftG = "[";
+  $rightG = "]";
+}
+
 1;
 
 __END__

@@ -60,7 +60,11 @@ sub Search {
       my $slipsite = Slip_p($next_seven) if (defined($next_seven));
       if ($slipsite) {  ## Then check that a slippery site is in the correct frame
         my $start = $c;
-        my $end = $c + $me->{max_struct_length};
+        ## The end of the sequence should include 7 more bases so that when
+        ## We chop off the slippery site we will still have a window of the
+        ## Desired size.
+        my $no_slip_site_start = $start + 7;
+        my $end = $c + $me->{max_struct_length} + 7;
         my $fh = PRFdb::MakeTempfile();
         my $filename = $fh->filename;
         my $string = '';
@@ -71,15 +75,25 @@ sub Search {
         }
         $string =~ tr/ATGCU/atgcu/ if (defined($string));
         $string =~ tr/t/u/;
+        ## This will create a string for the file without the slippery site.
+        ## After we run rnamotif, we will overwrite the fastafile with this information.
+        my $no_slip_string = '';
+        foreach my $c ($no_slip_site_start .. $end) {
+          $no_slip_string .= $information[$c] if (defined($information[$c]));
+        }
+        $no_slip_string =~ tr/ATGCU/atgcu/ if (defined($string));
+        $no_slip_string =~ tr/t/u/;
         ## Print out the text of the fasta file to be used for searching and folding
-	## The start and end in full sequence takes into account
-	## Sequences which are cds
-	my $start_in_full_sequence = $start + $orf_start;
-	my $end_in_full_sequence = $end + $orf_start;
+        ## The start and end in full sequence takes into account
+        ## Sequences which are cds
+        my $start_in_full_sequence = $start + $orf_start;
+        my $end_in_full_sequence = $end + $orf_start;
         my $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
 $string
 ";
+#        print "PRE DATA: $data\n";
         print $fh $data;
+        close($fh);
         ### End of the fasta file.
         my $command = "$PRFConfig::config->{rnamotif} -context -descr $PRFConfig::config->{descriptor_file} $filename 2>rnamotif.err | $PRFConfig::config->{rmprune}";
         open(RNAMOT, "$command |") or PRF_Die("Unable to run rnamotif: $!", 'rnamotif', '');
@@ -105,12 +119,23 @@ $string
           $total++;
 #		  print "$line<br>\n";
         }  ## End the while loop
+        ## Close the pipe to rnamotif
+        close(RNAMOT);
+        ## Overwrite the fasta file with the same sequence minus the slippery site.
+        unlink($fh);
+        $fh = PRFdb::MakeTempfile();
+        $filename = $fh->filename;
+        $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
+$no_slip_string
+";
+#        print "POS DATA: $data\n";
+        print $fh $data;
+        ## This non-slippery-site-containing data will be used throughout the database
         $return{$start_in_full_sequence}{total} = $total;
         $return{$start_in_full_sequence}{filename} = $filename;
         $return{$start_in_full_sequence}{output} = $rnamotif_output;
         $return{$start_in_full_sequence}{permissable} = $permissable;
         $return{$start_in_full_sequence}{filedata} = $data;
-#		}
       } ## End checking for a slippery site
     }  ## End the reading frame check
   }  ## End searching over the sequence
