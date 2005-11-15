@@ -674,8 +674,6 @@ sub Import_CDS {
   my $accession = shift;
   my $uni = new Bio::DB::Universal;
   my $seq = $uni->get_Seq_by_id($accession);
-
-#  my @features = $seq->all_SeqFeatures();
   my @cds = grep { $_->primary_tag eq 'CDS' } $seq->get_SeqFeatures();
   my ($protein_sequence, $orf_start, $orf_stop);
   my $counter = 0;
@@ -689,7 +687,6 @@ sub Import_CDS {
       $orf_start = $feature->start();
       ### Don't change me, this is provided by genbank
       $orf_stop = $feature->end();
-      print "START: $orf_start STOP: $orf_stop\n";
   }
   my $binomial_species = $seq->species->binomial();
   my ($genus, $species) = split(/ /, $binomial_species);
@@ -699,7 +696,6 @@ sub Import_CDS {
   my $full_comment = $seq->desc();
   my ($genename, $desc) = split(/\,/, $full_comment);
   my $mrna_sequence = $seq->seq();
-  print "TESTSPEC: $binomial_species $full_species\n";
   my %datum = (
                accession => $accession,
                mrna_seq => $mrna_sequence,
@@ -896,7 +892,7 @@ sub Insert_Genome05_Entry {
   my $qoe = $me->{dbh}->quote($datum->{orf_stop});
   my $statement = "INSERT INTO genome (id, accession, species, genename, version, comment, mrna_seq, protein_seq, orf_start, orf_stop) VALUES('', $qa, $qsp, $qn, $qv, $qc, $qs, $qp, $qos, $qoe)";
   $datum->{sequence} = undef;
-  print "TEST: $statement\n";
+#  print "TEST: $statement\n";
   my $sth = $me->{dbh}->prepare($statement);
   $sth->execute;
 }
