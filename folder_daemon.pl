@@ -55,10 +55,10 @@ sub Check_Db {
   my $motifs = new RNAMotif_Search;
   ## First see that there is rna motif information
   my $bootlaces;
-  my $motif_info = $db->Get_RNAmotif05($datum->{species}, $datum->{accession});
+  my $motif_info = $db->Get_RNAmotif05($datum->{accession});
   if ($motif_info) {  ## If the motif information _does_ exist, check the folding information
       ## For every slippery start site in the sequence
-    foreach my $start (keys %{$motif_info}) { 
+    foreach my $start (keys %{$motif_info}) {
       print "Doing locus: $datum->{accession} start: $start\n";
       my $folding;
       my $fdata = $motif_info->{$start}{filedata};
@@ -68,7 +68,7 @@ sub Check_Db {
       my $filename;
 
       if ($PRFConfig::config->{do_nupack}) {  ## Check the configuration file for nupack
-        $nupack_folding = $db->Get_RNAfolds05('nupack', $datum->{species}, $datum->{accession}, $start);
+        $nupack_folding = $db->Get_RNAfolds05('nupack', $datum->{accession}, $start);
         if ($nupack_folding ne '0') {  ## Both have motif and folding
           PRF_Out("HAVE NUPACK FOLDING AND MOTIF for $datum->{species} $datum->{accession}");
           return(1);
@@ -91,14 +91,14 @@ sub Check_Db {
       }  ## End do_nupack
 
       if ($PRFConfig::config->{do_pknots}) {  ## Check to see if pknots should be run
-        $pknots_folding = $db->Get_RNAfolds05('pknots', $datum->{species}, $datum->{accession}, $start);
+        $pknots_folding = $db->Get_RNAfolds05('pknots', $datum->{accession}, $start);
         if ($pknots_folding ne '0') {  ## Both have motif and folding
           PRF_Out("HAVE PKNOTS FOLDING AND MOTIF for $datum->{species} $datum->{accession}");
           return(1);
         }
         else {  ## Want pknots, have motif, no folding, so make a tempfile
           $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
-	  my $orf_sequence = $db->Get_ORF05($datum->{species}, $datum->{accession});
+	  my $orf_sequence = $db->Get_ORF05($datum->{$datum->{accession});
 #          my $slippery = $db->Get_Slippery_From_RNAMotif($orf_sequence, $start);
 	  print "Want pknots, have notif, no folding\n";
           my $fold_search = new RNAFolders(
@@ -151,7 +151,7 @@ sub Check_Db {
   }  ## End foreach starting_orf of $motif_info
 
   else { ## No folding information
-    my ($sequence, $orf_start) = $db->Get_ORF05($datum->{species}, $datum->{accession});
+    my ($sequence, $orf_start) = $db->Get_ORF05($datum->{accession});
     ## Get_ORF05 should return a piece of sequence starting with the ATG
     ## End ending with the stop codon as well as the start position
     my $slipsites = $motifs->Search($sequence, $orf_start);

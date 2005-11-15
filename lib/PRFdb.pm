@@ -495,6 +495,20 @@ sub Grab_Queue {
   my $type = shift;  ## public or private
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
+  my $single_accession = qq(select accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
+  my $accession = $me->{dbh}->selectrow_array($single_accession);
+  return(undef) unless(defined($accession));
+  my $species_statement = qq(select species from genome where accession='$accession');
+  my $species = $me->{dbh}->selectrow_array($species_statement);
+  return(undef) unless(defined($species));
+  my $update = qq(UPDATE queue SET out='1' WHERE species='$species' and accession='$accession' and
+public='$type');
+  my $st = $me->{dbh}->prepare($update);
+  $st->execute();
+  $return->{species} = $species;
+  $return->{accession} = $accession;
+
+
   my $single_accession = qq(select accession from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
 #  my $single_accession = qq(select species, accession from queue where species='homo_sapiens' and accession='BC064626' ORDER BY rand() LIMIT 1);
   my $accession = $me->{dbh}->selectrow_array($single_accession);
@@ -766,9 +780,8 @@ sub Check_Genome_Table {
 #################################################
 sub Get_Sequence05 {
   my $me = shift;
-  my $species = shift;
   my $accession = shift;
-  my $statement = qq(SELECT mrna_seq FROM genome WHERE accession = '$accession' and species = '$species');
+  my $statement = qq(SELECT mrna_seq FROM genome WHERE accession = '$accession');
   my $info = $me->{dbh}->selectall_arrayref($statement);
   my $sequence = $info->[0]->[0];
   if ($sequence) {
@@ -782,10 +795,9 @@ sub Get_Sequence05 {
 sub Get_RNAfolds05 {
   my $me = shift;
   my $table = shift;
-  my $species = shift;
   my $accession = shift;
   my $return = {};
-  my $statement = "SELECT count(id) FROM $table WHERE accession = '$accession' and species='$species'";
+  my $statement = "SELECT count(id) FROM $table WHERE accession = '$accession'";
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_arrayref($statement);
   my $count = $info->[0]->[0];
@@ -794,10 +806,9 @@ sub Get_RNAfolds05 {
 
 sub Get_RNAmotif05 {
   my $me = shift;
-  my $species = shift;
   my $accession = shift;
   my $return = {};
-  my $statement = "SELECT total, start, permissable, filedata, output FROM rnamotif WHERE accession = '$accession' and species='$species'";
+  my $statement = "SELECT total, start, permissable, filedata, output FROM rnamotif WHERE accession = '$accession'";
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_arrayref($statement);
 #  return(0) if (scalar(@{$info}) == 0);
@@ -820,9 +831,8 @@ sub Get_RNAmotif05 {
 
 sub Get_mRNA05 {
   my $me = shift;
-  my $species = shift;
   my $accession = shift;
-  my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE species='$species' and accession='$accession');
+  my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession='$accession');
 #  my $info = $me->{dbh}->selectall_arrayref($statement);
   my $info = $me->{dbh}->selectrow_hashref($statement);
 #  my $sequence = $info->[0]->[0];
@@ -837,9 +847,8 @@ sub Get_mRNA05 {
 
 sub Get_ORF05 {
   my $me = shift;
-  my $species = shift;
   my $accession = shift;
-  my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE species='$species' and accession='$accession');
+  my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession='$accession');
 #  my $info = $me->{dbh}->selectall_arrayref($statement);
   my $info = $me->{dbh}->selectrow_hashref($statement);
 #  my $sequence = $info->[0]->[0];
