@@ -676,18 +676,6 @@ sub Import_CDS {
   my $seq = $uni->get_Seq_by_id($accession);
   my @cds = grep { $_->primary_tag eq 'CDS' } $seq->get_SeqFeatures();
   my ($protein_sequence, $orf_start, $orf_stop);
-  my $counter = 0;
-  foreach my $feature (@cds) {
-      if ($counter > 1) {
-	  die("HOLY SHIT MORE THAN 1 CDS!");
-      }
-      $counter++;
-      my $primary_tag = $feature->primary_tag();
-      $protein_sequence =  $feature->seq->translate->seq();
-      $orf_start = $feature->start();
-      ### Don't change me, this is provided by genbank
-      $orf_stop = $feature->end();
-  }
   my $binomial_species = $seq->species->binomial();
   my ($genus, $species) = split(/ /, $binomial_species);
   my $full_species = qq(${genus}_${species});
@@ -696,18 +684,28 @@ sub Import_CDS {
   my $full_comment = $seq->desc();
   my ($genename, $desc) = split(/\,/, $full_comment);
   my $mrna_sequence = $seq->seq();
-  my %datum = (
-               accession => $accession,
-               mrna_seq => $mrna_sequence,
-               protein_seq => $protein_sequence,
-               orf_start => $orf_start,
-               orf_stop => $orf_stop,
-               species => $full_species,
-               genename => $genename,
-               version => $seq->{_seq_version},
-               comment => $full_comment,
-              );
-  $me->Insert_Genome05_Entry(\%datum);
+  my $counter = 0;
+  foreach my $feature (@cds) {
+    $counter++;
+    my $primary_tag = $feature->primary_tag();
+    $protein_sequence =  $feature->seq->translate->seq();
+    $orf_start = $feature->start();
+    ### Don't change me, this is provided by genbank
+    $orf_stop = $feature->end();
+    my %datum = (
+                 accession => "$accession.$counter",
+                 mrna_seq => $mrna_sequence,
+                 protein_seq => $protein_sequence,
+                 orf_start => $orf_start,
+                 orf_stop => $orf_stop,
+                 species => $full_species,
+                 genename => $genename,
+                 version => $seq->{_seq_version},
+                 comment => $full_comment,
+                );
+    $me->Insert_Genome05_Entry(\%datum);
+
+  }
 }
 
 sub mRNA_subsequence {
