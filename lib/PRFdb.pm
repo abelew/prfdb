@@ -691,8 +691,12 @@ sub Import_CDS {
     ### This is a short term solution FIXME FIXME
     ### The real solution is to remove the uniqueness of accession
     ### In the genome table and introduce an int index
+    my $tmp_accession;
     if ($num_cds > 1) {
-      $accession = "$accession.$counter";
+      $tmp_accession = "$accession.$counter";
+    }
+    else {
+      $tmp_accession = $accession;
     }
     my $primary_tag = $feature->primary_tag();
     $protein_sequence =  $feature->seq->translate->seq();
@@ -701,7 +705,7 @@ sub Import_CDS {
     $orf_stop = $feature->end();
     my %datum = (
                  ### fixme
-                 accession => $accession,
+                 accession => $tmp_accession,
                  mrna_seq => $mrna_sequence,
                  protein_seq => $protein_sequence,
                  orf_start => $orf_start,
