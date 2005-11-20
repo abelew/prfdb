@@ -337,7 +337,6 @@ sub Mfold_Boot {
 #  }
 #  my $command1 = "rm $me->{file}" . '_* 2>/dev/null';
 #  my $command2 = "rm $me->{file}" . '.* 2>/dev/null';
-#  print "TESTME: $command1
 #$command2
 #";
 #
