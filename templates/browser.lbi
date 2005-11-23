@@ -1,9 +1,14 @@
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 <p>To begin browsing the PRFdb, please enter your search terms below.
 </p>
-<form action="/index.pl" method="post" enctype="application/x-www-form-urlencoded" name="browser" target="_self" id="browser">
-  <input name="term" type="text" id="term" size="20" maxlength="20">
+<form action="prfdb05_index.pl" method="post" enctype="application/x-www-form-urlencoded" name="browser" target="_self" id="browser">
+  <input name="query" type="text" id="query" size="20" maxlength="20">
+  <select name="select">
+  <option value="genename" selected>Gene Name</option>
+  <option value="accession">Accession</option>
+  </select>
   <input type="submit" name="Submit" value="Submit">
 </form>
+<input name="browse" type="hidden" id="browse" value="1">
 <hr noshade>
 [% results %]

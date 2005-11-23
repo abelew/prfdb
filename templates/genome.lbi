@@ -1,0 +1,38 @@
+<table width="100%" border="0" cellspacing="2" cellpadding="2">
+  <tr align="left" valign="top">
+    <td width="400"><p><strong>Gene Name: </strong>[% genename %]<br>
+        <strong>Accession:</strong> [% accession %]<br>
+        <strong>Species:</strong> [%
+        species %]</p>
+    </td>
+    <td><p>[% sig_count %] folded structures found among [% ss_count %] potential
+      slippery sites.</p></td>
+  </tr>
+  <tr align="left" valign="top">
+    <td width="400"><p><font color="#000000" size="-1" face="Courier New, Courier, mono"><strong>[%
+            sliplist %]</strong></font></p>
+      <p><font color="#000000" size="-1" face="Courier New, Courier, mono"><br>
+        <strong><img src="images/red_chip.gif" width="15" height="15" align="baseline"> Slippery
+        Sites</strong> </font></p>
+    </td>
+    <td><p><strong>Comments:</strong> <br>
+        [% comments %]</p>
+      <p></td>
+  </tr>
+  <tr align="left" valign="top">
+    <td colspan="2"><hr align="center" width="100%" noshade>
+    </td>
+  </tr>
+  <tr align="left" valign="top">
+    <td colspan="2" bgcolor="#CCCCCC"><font size="-2" face="Courier New, Courier, mono">&nbsp;</font>
+      <p><strong><font color="#000000" size="-1" face="Courier New, Courier, mono">&gt;[%accession%]
+            | [% genename %]<br>
+        </font></strong><font size="-1" face="Courier New, Courier, mono">[%mrna_seq%]</font></p>
+    </td>
+  </tr>
+  <tr align="left" valign="top">
+    <td colspan="2"><div align="center"><font size="-2" face="Courier New, Courier, mono"><strong>id:
+            [% id %] : [% timestamp %] </strong></font></div>
+    </td>
+  </tr>
+</table>
