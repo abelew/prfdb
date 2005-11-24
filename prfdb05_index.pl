@@ -56,33 +56,37 @@ sub BROWSE{
     my $query = $cgi->param('query');
     
     # clean offending badness
-    $select =~ s/[^\w\s-]/_/g;
-    $query =~ s/[^\w\s-]/_/g;
+    $select =~ s/[^\w\s-:]/_/g;
+    $query =~ s/[^\w\s-:]/_/g;
     
     my $q1 = ""; # 1st query; a reference to a 2D-array representing all the rows of the result set.
-    
+    my $sql = "";
     if( $query and $select eq 'genename' ){
-        my $sql = "select id,accession,species,genename,comment,lastupdate,mrna_seq from genome where genename regexp \"$query\"";
-        $q1 = DBI_doSQL( $dbh, $sql);
-        if( scalar(@$q1) == 0 ){
-            #display no match page.
-            $body .= "<p>\"$query\" was not found in our database. Please try again.</p>";
-        }elsif( scalar( @$q1) > 1){
-            #display multi-genome page.
-            # the following is just for a place holder
-            #$body .= "<p>\"$query\" found more than one choice in the PRFdb. Please be more specific.</p>";
-             $body .= &MULTIMATCH($q1,$body);
-        }else{
-            $body .= &SINGLEMATCH($q1,$body );
-            #display single match page.
-        }
+        $sql = "select id,accession,species,genename,comment,lastupdate,mrna_seq from genome where genename regexp \"$query\"";
     }elsif( $query and $select eq 'accession' ){
+        $sql = "select id,accession,species,genename,comment,lastupdate,mrna_seq from genome where accession regexp \"$query\"";
+    }else{
+        # RUN FOR TYOUR LIFE!
+        my $browse_vars = { results => $body };
+        $template->process("browser.lbi",$browse_vars,\$text_body) || die $template->error();
+        return;
+    }
+
+    $q1 = DBI_doSQL( $dbh, $sql);
+    if( scalar(@$q1) == 0 ){
+        #display no match page.
+        $body .= "<p>\"$query\" was not found in our database. Please try again.</p>";
+    }elsif( scalar( @$q1) > 1){
+        #display multi-genome page.
+        # the following is just for a place holder
+        #$body .= "<p>\"$query\" found more than one choice in the PRFdb. Please be more specific.</p>";
+         $body .= &MULTIMATCH($q1,$body);
+    }else{
+        $body .= &SINGLEMATCH($q1,$body );
+        #display single match page.
     }
     
-    my $browse_vars = {
-        results => $body
-    };
-    
+    my $browse_vars = { results => $body };
     $template->process("browser.lbi",$browse_vars,\$text_body) || die $template->error();
 }
 
@@ -96,13 +100,18 @@ sub MULTIMATCH{
     $template->process("multimatch_header.lbi","",\$body) || die $template->error();
     for(my $i = 0; $i < @$q1; $i++){
         my $row = $$q1[$i];
+        
+        #count the number of slippery sites for this accession
+        my $q2= &DBI_doSQL($dbh,"select count(distinct start) from pknots where accession=\'$$row[1]\'");
+        my $r2 = shift(@$q2);
+        
         my $vars = {
             counter => $i+1,
-            id => $$row[0],
             accession => $$row[1],
             species => $$row[2],
             genename => $$row[3],
-            lastupdate => $$row[5]
+            comments => $$row[4],
+            ss_count => $$r2[0]
         };
         $template->process("multimatch_body.lbi",$vars,\$body) || die $template->error();
     }
@@ -166,8 +175,8 @@ sub PRETTY_MRNA{
     my @seq = split( //, $seq);
     
     # EDIT THESE TAGS TO ADD href links later on...
-    my $prefont = "<font color=\"#FF0000\"><strong>";
-    my $postfont = "</strong></font>";
+    my $prefont_ss = "<font color=\"#FF0000\"><strong>";
+    my $postfont_ss = "</strong></font>";
     
     my $resultset = DBI_doSQL($dbh, "select distinct start from pknots where accession = \'$accession\' order by start" );
     my $slips = " ";
@@ -180,15 +189,20 @@ sub PRETTY_MRNA{
         $seq .= $seq[$i];
         $x = $i+2;
         if( $slips =~ / $x /){
-            unless($slipcounter){ $seq .= $prefont; }
+            unless($slipcounter){ $seq .= $prefont_ss; }
             $slipcounter = 8;
             $slips =~ s/ $x //;
         }
         if( $slipcounter > 1 ){ $slipcounter-- }
-        elsif( $slipcounter == 1) { $slipcounter--; $seq .= $postfont; }        
+        elsif( $slipcounter == 1) { $slipcounter--; $seq .= $postfont_ss; }        
     }
-    $seq =~ s/($prefont[ATGC])/$1 /g;
+    $seq =~ s/($prefont_ss[ATGC])/$1 /g;
     $seq =~ s/([ATGC]{3})/$1 /g;
+    
+    # color the -1 Frame stops tga tag taa
+    # yeah.. this is a mess; but it work
+    $seq =~ s/T \<\/strong\>\<\/font>(AA|AG|GA)/\<\/strong\>\<\/font\>\<font color =\"#0000FF\"\>\<strong\>T $1\<\/strong\>\<\/font\>/g;
+    $seq =~ s/(#FF0000.*?)T (AA|GA|AG)/$1\<font color =\"#0000FF\"\>\<strong\>T $2\<\/strong\>\<\/font\>/g;
     return $seq;
 }
 

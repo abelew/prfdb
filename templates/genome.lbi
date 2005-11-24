@@ -12,9 +12,10 @@
     <td width="400"><p><font color="#000000" size="-1" face="Courier New, Courier, mono"><strong>[%
             sliplist %]</strong></font></p>
       <p><font color="#000000" size="-1" face="Courier New, Courier, mono"><br>
-        <strong><img src="images/red_chip.gif" width="15" height="15" align="baseline"> Slippery
-        Sites</strong> </font></p>
-    </td>
+        <strong><img src="images/red_chip.gif" width="15" height="15" align="absmiddle"> Slippery
+        Sites</strong></font></p>
+      <p><font color="#000000" size="-1" face="Courier New, Courier, mono"><strong><img src="images/blue_chip.gif" width="15" height="15" align="absmiddle"> -1
+            Frame Stop Codon</strong></font></p></td>
     <td><p><strong>Comments:</strong> [% comments %]</p>
       <p></td>
   </tr>
