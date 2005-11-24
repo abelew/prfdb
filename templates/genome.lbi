@@ -15,8 +15,7 @@
         <strong><img src="images/red_chip.gif" width="15" height="15" align="baseline"> Slippery
         Sites</strong> </font></p>
     </td>
-    <td><p><strong>Comments:</strong> <br>
-        [% comments %]</p>
+    <td><p><strong>Comments:</strong> [% comments %]</p>
       <p></td>
   </tr>
   <tr align="left" valign="top">

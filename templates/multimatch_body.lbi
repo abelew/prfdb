@@ -1,0 +1,7 @@
+  <tr>
+    <td><font size="-1">[% counter %]</font></td>
+    <td><font size="-1">[% id %]</font></td>
+    <td><a href="prfdb05_index.pl?browse=1&query=[% genename %]&select=genename"><font size="-1">[% genename %]</font></a></td>
+    <td><font size="-1">[% accession %]</font></td>
+    <td><font size="-1">[% species %]</font></td>
+  </tr>

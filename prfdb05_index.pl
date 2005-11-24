@@ -54,7 +54,12 @@ sub BROWSE{
     my $body = "";
     my $select = $cgi->param('select');
     my $query = $cgi->param('query');
-    my $q1 = ""; # 1st query
+    
+    # clean offending badness
+    $select =~ s/[^\w\s-]/_/g;
+    $query =~ s/[^\w\s-]/_/g;
+    
+    my $q1 = ""; # 1st query; a reference to a 2D-array representing all the rows of the result set.
     
     if( $query and $select eq 'genename' ){
         my $sql = "select id,accession,species,genename,comment,lastupdate,mrna_seq from genome where genename regexp \"$query\"";
@@ -65,47 +70,11 @@ sub BROWSE{
         }elsif( scalar( @$q1) > 1){
             #display multi-genome page.
             # the following is just for a place holder
-            $body .= "<p>\"$query\" found more than one choice in the PRFdb. Please be more specific.</p>";
+            #$body .= "<p>\"$query\" found more than one choice in the PRFdb. Please be more specific.</p>";
+             $body .= &MULTIMATCH($q1,$body);
         }else{
+            $body .= &SINGLEMATCH($q1,$body );
             #display single match page.
-            my $row = pop(@$q1);
-            my $sig_count = 0;
-            my $ss_count = 0;
-           
-            # find the number of slippery sites, there position, etc.
-            # we could add direct links here for each slippery site.
-            # also, this next block is very close to similar block in &PRETTY_MRNA; fix later.
-            my $q2 = DBI_doSQL($dbh, "select distinct start, slipsite,count(id) from pknots where accession = \'$$row[1]\' group by start order by start" );
-            my $sliplist = "";
-            $template->process("sliplist_header.lbi","",\$sliplist) || die $template->error();
-            while(my $r = shift(@$q2)){ 
-                my $sliplist_vars = {
-                    slipstart => $$r[0],
-                    slipseq => $$r[1],
-                    pknotscount => $$r[2]
-                };
-                $ss_count++;
-                $sig_count += $$r[2];
-                $template->process("sliplist_body.lbi",$sliplist_vars,\$sliplist) || die $template->error();
-            }
-            $template->process("sliplist_footer.lbi","",\$sliplist) || die $template->error();
-            
-            #fix up the mRNA sequence.
-            $$row[6] = &PRETTY_MRNA($$row[1],$$row[6]);# =~ s/(\w{40})/$1\n/g;
-            
-            my $vars={
-                id => $$row[0],
-                accession => $$row[1],
-                species => $$row[2],
-                genename => $$row[3],
-                comments => $$row[4],
-                timestamp => $$row[5],
-                mrna_seq => $$row[6],
-                sig_count => $sig_count,
-                ss_count => $ss_count,
-                sliplist => $sliplist
-            };
-            $template->process("genome.lbi",$vars,\$body) || die $template->error();
         }
     }elsif( $query and $select eq 'accession' ){
     }
@@ -117,6 +86,78 @@ sub BROWSE{
     $template->process("browser.lbi",$browse_vars,\$text_body) || die $template->error();
 }
 
+#############
+# MULTIMATCH
+sub MULTIMATCH{
+    my $q1 = shift;
+    my $body = shift;
+    
+    # id,accession,species,genename,comment,lastupdate,mrna_seq
+    $template->process("multimatch_header.lbi","",\$body) || die $template->error();
+    for(my $i = 0; $i < @$q1; $i++){
+        my $row = $$q1[$i];
+        my $vars = {
+            counter => $i+1,
+            id => $$row[0],
+            accession => $$row[1],
+            species => $$row[2],
+            genename => $$row[3],
+            lastupdate => $$row[5]
+        };
+        $template->process("multimatch_body.lbi",$vars,\$body) || die $template->error();
+    }
+    $template->process("multimatch_footer.lbi","",\$body) || die $template->error();
+    return $body;
+}
+
+#############
+# SINGLEMATCH
+sub SINGLEMATCH{
+    my $q1 = shift;
+    my $body = shift;
+    
+    my $sig_count = 0;
+    my $ss_count = 0;
+    
+    # get the ONE row in the result set.
+    my $row = pop(@$q1);
+    
+    # find the number of slippery sites, there position, etc.
+    # we could add direct links here for each slippery site.
+    # also, this next block is very close to similar block in &PRETTY_MRNA; fix later.
+    my $q2 = DBI_doSQL($dbh, "select distinct start, slipsite,count(id) from pknots where accession = \'$$row[1]\' group by start order by start" );
+    my $sliplist = "";
+    $template->process("sliplist_header.lbi","",\$sliplist) || die $template->error();
+    while(my $r = shift(@$q2)){ 
+        my $sliplist_vars = {
+            slipstart => $$r[0],
+            slipseq => $$r[1],
+            pknotscount => $$r[2]
+        };
+        $ss_count++;
+        $sig_count += $$r[2];
+        $template->process("sliplist_body.lbi",$sliplist_vars,\$sliplist) || die $template->error();
+    }
+    $template->process("sliplist_footer.lbi","",\$sliplist) || die $template->error();
+    
+    #fix up the mRNA sequence.
+    $$row[6] = &PRETTY_MRNA($$row[1],$$row[6]);# =~ s/(\w{40})/$1\n/g;
+    
+    my $vars={
+        id => $$row[0],
+        accession => $$row[1],
+        species => $$row[2],
+        genename => $$row[3],
+        comments => $$row[4],
+        timestamp => $$row[5],
+        mrna_seq => $$row[6],
+        sig_count => $sig_count,
+        ss_count => $ss_count,
+        sliplist => $sliplist
+    };
+    $template->process("genome.lbi",$vars,\$body) || die $template->error();
+    return $body;
+}
 #############
 # PRETTY mRNA
 sub PRETTY_MRNA{
@@ -202,21 +243,16 @@ sub DBI_doSQL{
 	
 	unless( $sth = $dbh->prepare($statement) ){
 		$prep_error = $dbh->errstr;
-		print "SQL syntax error!\n\n$prep_error\n\n
-			Your statement was \n\n$statement\n\n
-			Exiting...\n";
+		print "SQL syntax error!\n\n$prep_error\n\nYour statement was \n\n$statement\n\nExiting...\n";
 		exit();
 	}
 	
 	if( $returncode = $sth -> execute() ) {
-		while(@record = $sth -> fetchrow_array() ){
-				push(@resultSet, [@record] );
-		}
+		while(@record = $sth -> fetchrow_array() ){ push(@resultSet, [@record] ); }
 		$sth -> finish();
 	} else {
 		$data_error = $dbh->errstr;
-		print "SQL execution error!\n\n$data_error\n\n
-			Your statement was \n\n$statement\n\n";
+		print "SQL execution error!\n\n$data_error\n\nYour statement was \n\n$statement\n\n";
 		exit();
 	}
 	return \@resultSet;
