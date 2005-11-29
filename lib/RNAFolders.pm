@@ -46,7 +46,7 @@ sub Nupack {
   };
   chdir($config->{tmpdir});
   my $command = qq(sh -c "time $config->{nupack} $inputfile" 2>nupack.err);
-  open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $species, $accession);
+  my $nupack_pid = open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $species, $accession);
   my $count = 0;
   while (my $line = <NU>) {
 	$count++;
@@ -78,6 +78,12 @@ sub Nupack {
 	  }
 	}
   }  ## End of the line reading the nupack output.
+  close(NU);
+  my $nupack_return = $?;
+  unless ($nupack_return eq '0') {
+      PRFConfig::PRF_Error("Nupack Error: $!", $species, $accession);
+      die("Nupack Error!");
+  }
   open(PAIRS, "<out.pair") or PRF_Error("Could not open the nupack pairs file: $!", $species, $accession);
   my $pairs = 0;
   my @nupack_output = ();
@@ -94,7 +100,14 @@ sub Nupack {
   close(PAIRS);
   unlink("out.pair");
   $return->{pairs} = $pairs;
-  my $parser = new PkParse(debug => 0);
+  my $parser;
+  if (defined($PRFConfig::config->{max_spaces})) {
+      my $max_spaces = $PRFConfig::config->{max_spaces};
+      $parser = new PkParse(debug => 0, max_spaces => $max_spaces);
+  }
+  else {
+      $parser = new PkParse(debug => 0);
+  }
   my $out = $parser->Unzip(\@nupack_output);
   my $parsed = '';
   foreach my $char (@{$out}) {
@@ -157,7 +170,13 @@ sub Pknots {
   } ## For every line of pknots
   $string =~ s/\s+/ /g;
   $return->{pk_output} = $string;
-  my $parser = new PkParse(debug => 0);
+  if (defined($PRFConfig::config->{max_spaces})) {
+      my $max_spaces = $PRFConfig::config->{max_spaces};
+      $parser = new PkParse(debug => 0, max_spaces => $max_spaces);
+  }
+  else {
+      $parser = new PkParse(debug => 0);
+  }
   my @struct_array = split(/ /, $string);
   my $out = $parser->Unzip(\@struct_array);
   my $parsed = '';

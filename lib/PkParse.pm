@@ -7,7 +7,7 @@ sub new {
                   out_pattern => [],
                   stemid => 0,
                   debug => 0,
-                  max_spaces => defined($args{max_spaces})?$args{max_spaces}:3,
+                  max_spaces => defined($args{max_spaces}) ? $args{max_spaces} : 3,
                   pseudoknot => 0,
                   positions_remaining => 0,
                  }, $class;
@@ -54,17 +54,31 @@ return(0);
 sub UnWind {
   my $me = shift;
   my $pattern = shift;
-  my $state = {st_length => 0,
-			   last => 0,
-			   current => 0,
-			   next => 0,
-			   front_pos => 0,
-			   back_pos => $#$pattern,
-			   placement => 'front',
-			   spaces => 1000,
-			   last_pos => -1000,
-			   times_in_layer => 0,
-			   };
+  my $state = {
+      ##  st_length is not currently used, intended to keep the length of each stem
+      st_length => 0,
+      ##  last is set to current at the end of each loop
+      last => 0,
+      ##  current is the current position in the putative structure
+      current => 0,
+      ##  next is set to either: 1 base 5' if you are currently in a 3' loop
+      ##  1 base 3' if in a 5' loop, or the same
+      next => 0,
+      ##  The number of bases from the first 5' base
+      front_pos => 0,
+      ##  The number of bases from the end
+      back_pos => $#$pattern,
+      ##  front switches to back after each iteration
+      placement => 'front',
+      ##  spaces is compared to max_spaces to see if the current stem
+      ##  should be incremented.  Thus on the first stem it will increment to 1
+      spaces => 1000,
+      ##  last_pos similarly should start in crazy land so it gets popped
+      ##  to the last position in the structure
+      last_pos => -1000,
+      ##  when this gets to 4 we can check for a pseudoknot 1212
+      times_in_layer => 0,
+  };
 #  WIND: while ($me->Finished_Stem_p(\%state) == 0) {
  WIND: while ($me->Finished_Test_p($state) == 0) {
 	my $last = $state->{last};
@@ -405,9 +419,9 @@ sub ReBarcoder{
     # Added by JLJ.
     my $strREF = shift;
     my $str = "";
-    if( ref($strREF) eq "ARRAY" ){
+    if(ref($strREF) eq "ARRAY" ){
         $str = "@{$strREF}";
-    }else{
+    } else {
         $str = $strREF;
     }
     
@@ -416,16 +430,16 @@ sub ReBarcoder{
     my $stems = "";
     my $order = "";
     
-    while($str =~ m/(\d)/g){
+    while($str =~ m/(\d)/g) {
         $x = $1;
-        if( $x > $max ){ $max = $x }
+        if($x > $max) { $max = $x }
     }
     
-    for(my $i=1; $i <= $max; $i++){ $stems .= $i }
+    for(my $i=1; $i <= $max; $i++) { $stems .= $i }
     
-    while($str =~ m/(\d)/g){
+    while($str =~ m/(\d)/g) {
         $x = $1;
-        unless( $order =~ m/$x/){ $order .= $x; }
+        unless($order =~ m/$x/) { $order .= $x; }
     }
     
     #print "$str\n";
@@ -433,13 +447,12 @@ sub ReBarcoder{
     eval "tr/$order/$stems/" or die $@;
     $str = $_;
         
-    if( ref($strREF) eq "ARRAY" ){
+    if(ref($strREF) eq "ARRAY") {
         my @duh = split(/ /,$str);
         return \@duh;
-    }else{
+    } else {
         return $str;
     }
-    
     die "WHAT THE HELLL!?!?!?!?!?!\n";
 }
 

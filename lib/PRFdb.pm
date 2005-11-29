@@ -11,37 +11,19 @@ use Bio::DB::Universal;
 sub new {
   my ($class, %arg) = @_;
   my $me = bless {
-                  dsn => $PRFConfig::config->{dsn},
-                  user => $PRFConfig::config->{user},
-                 }, $class;
+      dsn => $PRFConfig::config->{dsn},
+      user => $PRFConfig::config->{user},
+  }, $class;
   $me->{dbh} = DBI->connect($me->{dsn}, $PRFConfig::config->{user}, $PRFConfig::config->{pass});
   unless ($PRFConfig::config->{dboutput} eq 'dbi') {
-	open(DBOUT, ">>$PRFConfig::config->{dboutput}");	
+      open(DBOUT, ">>$PRFConfig::config->{dboutput}");	
   }
   return ($me);
 }
 
-sub Get_Sequence {
-  my $me = shift;
-  my $species = shift;
-  my $accession = shift;
-  my $table = 'genome_' . $species;
-  my $statement = qq(SELECT sequence FROM $table WHERE accession = '$accession');
-  my $info = $me->{dbh}->selectall_arrayref($statement);
-  my $sequence = $info->[0]->[0];
-  if ($sequence) {
-	return($sequence);
-  }
-  else {
-	return(undef);
-  }
-}
-
 sub Get_All_Sequences {
   my $me = shift;
-  my $species = shift;
-  my $table = 'genome_' . $species;
-  my $statement = "SELECT accession, sequence from $table";
+  my $statement = "SELECT accession, sequence from genome";
   my $sth = $me->{dbh}->prepare($statement);
   return($sth);
 }
@@ -50,8 +32,7 @@ sub Keyword_Search {
   my $me = shift;
   my $species = shift;
   my $keyword = shift;
-  my $table = 'genome_' . $species;
-  my $statement = qq(SELECT accession, comment FROM $table WHERE comment like '%$keyword%' ORDER BY accession);
+  my $statement = qq(SELECT accession, comment FROM genome WHERE comment like '%$keyword%' ORDER BY accession);
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_arrayref($statement);
   my $return = {};
@@ -61,20 +42,6 @@ sub Keyword_Search {
     $return->{$accession_id} = $accession_comment;
   }
   return($return);
-}
-
-sub Get_RNAfolds {
-  my $me = shift;
-  my $db = shift;
-  my $species = shift;
-  my $accession = shift;
-  my $return = {};
-  my $table = $db . '_' . $species;
-  my $statement = "SELECT count(id) FROM $table WHERE accession = '$accession'";
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_arrayref($statement);
-  my $count = $info->[0]->[0];
-  return($count);
 }
 
 sub Get_Mfold {
@@ -184,22 +151,6 @@ sub Get_Nupack {
   return($info);
 }
 
-sub Put_Nupack {
-  my $me = shift;
-  my $data = shift;
-  my $table = 'nupack_' . $data->{species};
-  PRFConfig::PRF_Error("Undefined value in Put_Nupack", $data->{species}, $data->{accession}) unless(defined($data->{start}) and defined($data->{slippery}) and defined($data->{seqlength}) and defined($data->{sequence}) and defined($data->{paren_output}) and defined($data->{parsed}) and defined($data->{mfe}) and defined($data->{knotp}));
-  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, seqlength, sequence, paren_output, parsed, mfe, knotp) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{seqlength}', '$data->{sequence}', '$data->{paren_output}', '$data->{parsed}', '$data->{mfe}', '$data->{knotp}'));
-#  print "NUPACK: $statement\n";
-  if ($PRFConfig::config->{dboutput} eq 'dbi') {
-	my $sth = $me->{dbh}->prepare($statement);
-	$sth->execute();
-  }
-  else {
-	print DBOUT "$statement\n";
-  }
-}
-
 ####
 ### Get and Set Pknots data
 ####
@@ -212,23 +163,6 @@ sub Get_Pknots {
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_hashref($statement, 'id');
   return($info);
-}
-
-sub Put_Pknots {
-  my $me = shift;
-  my $data = shift;
-  my $table = 'pknots_' . $data->{species};
-#  PRFConfig::PRF_Error("Undefined value in Put_Pknots", $data->{species} $data->{accession}) unless(defined($data->{start}) and defined($data->{slippery}) and defined($data->{pk_output}) and defined($data->{parsed}) and defined($data->{mfe}) and defined($data->{pairs}) and defined($data->{knotp}));
-  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, pk_output, parsed, mfe, pairs, knotp) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{pk_output}', '$data->{parsed}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}'));
-
-#  my $statement = qq(INSERT INTO $table (id, accession, start, slipsite, logodds, mfe, pairs, output, parsed) VALUES ('', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{logodds}', '$data->{mfe}', '$data->{pairs}', '$data->{pkout}', '$data->{parsed}'));
-  if ($PRFConfig::config->{dboutput} eq 'dbi') {
-      my $sth = $me->{dbh}->prepare($statement);
-      $sth->execute();
-  }
-  else {
-	print DBOUT "$statement\n";
-  }
 }
 
 ####
@@ -252,98 +186,6 @@ sub Get_Boot {
   my $info = $dbh->selectall_hashref($statement, 1);
   return($info);
 }
-
-sub Put_Boot {
-  my $me = shift;
-  my $data = shift;
-  my $table = 'boot_' . $data->{species};
-  foreach my $mfe_method (keys%{$PRFConfig::config->{boot_mfe_algorithms}}) {
-  #foreach my $mfe_method (keys %{$data}) {
-      foreach my $rand_method (keys %{$PRFConfig::config->{boot_randomizers}}) {
-      #foreach my $rand_method (keys %{$data->{$mfe_method}}) {
-      my $num_iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{num_iterations};
-      my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
-      my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
-      my $mfe_se = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_se};
-      my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
-      my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
-      my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
-      my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
-
-      my $statement = qq(INSERT INTO $table (id, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('', '$data->{accession}', '$data->{start}', '$num_iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
-      if ($PRFConfig::config->{dboutput} eq 'dbi') {
-
-        my $sth = $me->{dbh}->prepare($statement);
-        $sth->execute()
-      }
-      else {
-        print DBOUT "$statement\n";
-      } ## End if dboutput test
-    }  ### Foreach random method
-  } ## Foreach mfe method
-}
-
-####
-### Get and Set motif data
-####
-sub Get_RNAmotif {
-  my $me = shift;
-  my $species = shift;
-  my $accession = shift;
-  my $return = {};
-  my $table = "rnamotif_$species";
-  my $statement = "SELECT total, start, permissable, filedata, output FROM $table WHERE accession = '$accession'";
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_arrayref($statement);
-#  return(0) if (scalar(@{$info}) == 0);
-  return(0) if (scalar(@{$info}) == 0);
-  my @data = @{$info};
-  foreach my $start (@data) {
-	my $total = $start->[0];
-	my $st = $start->[1];
-	my $permissable = $start->[2];
-	my $filedata = $start->[3];
-	my $output = $start->[4];
-	$return->{$st}{total} = $total;
-	$return->{$st}{start} = $st;
-	$return->{$st}{permissable} = $permissable;
-	$return->{$st}{filedata} = $filedata;
-	$return->{$st}{output} = $output;
-  }
-  return($return);
-}
-
-sub Put_RNAmotif {
-  my $me = shift;
-  my $species = shift;
-  my $accession = shift;
-  my $slipsites_data = shift;
-  my $table = "rnamotif_" . $species;
-  if (scalar %{$slipsites_data} eq '0') {
-    my $statement = qq(INSERT INTO $table (id, accession, start, total, permissable, filedata, output) VALUES ('', '$accession', '', '', '', '', ''));
-    if ($PRFConfig::config->{dboutput} eq 'dbi') {
-      my $sth = $me->{dbh}->prepare($statement);
-      $sth->execute();
-    }
-    else { print DBOUT "$statement\n"; }
-  }
-  else {  ## There are some keys to play with
-    foreach my $start (keys %{$slipsites_data}) {
-      my $total = $slipsites_data->{$start}{total};
-      my $permissable = $slipsites_data->{$start}{permissable};
-      my $filename = $slipsites_data->{$start}{filename};
-      my $filedata = $slipsites_data->{$start}{filedata};
-      my $output = $slipsites_data->{$start}{output};
-      my $statement = qq(INSERT INTO $table (id, accession, start, total, permissable, filedata, output) VALUES ('', '$accession', '$start', '$total', '$permissable', '$filedata', '$output'));
-      #    print "RNAMOTIF: $statement\n";
-      if ($PRFConfig::config->{dboutput} eq 'dbi') {
-        my $sth = $me->{dbh}->prepare($statement);
-        $sth->execute();
-      }
-      else { print DBOUT "$statement\n"; } ## End checking on the type of db connection
-    } ## End looking at every slipsite for a locus
-  }  ## End checking for a null set
-}  ## End Put_RNAMotif
 
 sub Get_Slippery_From_Sequence {
   my $me = shift;
@@ -500,7 +342,7 @@ sub Grab_Queue {
   my $type = shift;  ## public or private
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
-  my $single_accession = qq(select accession from queue where public='$type' and  out='0' ORDER BY rand() LIMIT 1);
+  my $single_accession = qq(select accession from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
   print "TESTME: $single_accession\n";
   my $accession = $me->{dbh}->selectrow_array($single_accession);
   return(undef) unless(defined($accession));
@@ -564,22 +406,6 @@ sub Load_Genome_Table {
   $me->Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
 }
 
-sub Insert_Genome_Entry {
-  my $me = shift;
-  my $datum = shift;
-  my $qa = $me->{dbh}->quote($datum->{accession});
-  my $qn = $me->{dbh}->quote($datum->{genename});
-  my $qv = $me->{dbh}->quote($datum->{version});
-  my $qc = $me->{dbh}->quote($datum->{comment});
-  my $qs = $me->{dbh}->quote($datum->{sequence});
-  my $table = "genome_" . $PRFConfig::config->{species};
-  my $statement = "INSERT INTO $table (accession, genename, version, comment, sequence) VALUES($qa, $qn, $qv, $qc, $qs)";
-  $datum->{sequence} = undef;
-#  print "TEST: $statement\n";
-  my $sth = $me->{dbh}->prepare($statement);
-  $sth->execute;
-}
-
 ################################################3
 ### Everything below here is for the 05 tables
 ################################################
@@ -616,8 +442,8 @@ sub Load_ORF_Data {
         $datum{orf_start} = 1;
         $datum{orf_stop} = length($datum{mrna_seq});
         print "Submitting $datum{accession}\n";
-        if (!defined($me->Get_Sequence05($datum{species}, $datum{accession}))) {
-          $me->Insert_Genome05_Entry(\%datum);
+        if (!defined($me->Get_Sequence($datum{species}, $datum{accession}))) {
+          $me->Insert_Genome_Entry(\%datum);
           %datum = (
                     accession => undef,
                     species => undef,
@@ -666,7 +492,7 @@ sub Load_ORF_Data {
   }  ## End every line
     $datum{protein_seq} = $misc->Translate($datum{mrna_seq});
   print "Submitting $datum{accession}\n";
-    $me->Insert_Genome05_Entry(\%datum);  ## Get the last entry into the database.
+    $me->Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
 }
 
 sub Import_CDS {
@@ -715,7 +541,7 @@ sub Import_CDS {
                  version => $seq->{_seq_version},
                  comment => $full_comment,
                 );
-    $me->Insert_Genome05_Entry(\%datum);
+    $me->Insert_Genome_Entry(\%datum);
 
   }
 }
@@ -780,7 +606,7 @@ sub Check_Genome_Table {
 #################################################
 ### Get RNAMotif Nupack Pknots Boot Sequence
 #################################################
-sub Get_Sequence05 {
+sub Get_Sequence {
   my $me = shift;
   my $accession = shift;
   my $statement = qq(SELECT mrna_seq FROM genome WHERE accession = '$accession');
@@ -794,7 +620,7 @@ sub Get_Sequence05 {
   }
 }
 
-sub Get_RNAfolds05 {
+sub Get_RNAfolds {
   my $me = shift;
   my $table = shift;
   my $accession = shift;
@@ -806,7 +632,7 @@ sub Get_RNAfolds05 {
   return($count);
 }
 
-sub Get_RNAmotif05 {
+sub Get_RNAmotif {
   my $me = shift;
   my $accession = shift;
   my $return = {};
@@ -831,7 +657,7 @@ sub Get_RNAmotif05 {
   return($return);
 }
 
-sub Get_mRNA05 {
+sub Get_mRNA {
   my $me = shift;
   my $accession = shift;
   my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession='$accession');
@@ -847,7 +673,7 @@ sub Get_mRNA05 {
   }
 }
 
-sub Get_ORF05 {
+sub Get_ORF {
   my $me = shift;
   my $accession = shift;
   my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession='$accession');
@@ -888,7 +714,7 @@ sub Get_Slippery_From_RNAMotif {
 #################################################
 ### Put RNAMotif, Nupack, Pknots, Boot, Genome
 #################################################
-sub Insert_Genome05_Entry {
+sub Insert_Genome_Entry {
   my $me = shift;
   my $datum = shift;
   my $qa = $me->{dbh}->quote($datum->{accession});
@@ -907,7 +733,7 @@ sub Insert_Genome05_Entry {
   $sth->execute;
 }
 
-sub Put_RNAmotif05 {
+sub Put_RNAmotif {
   my $me = shift;
   my $species = shift;
   my $accession = shift;
@@ -936,12 +762,12 @@ sub Put_RNAmotif05 {
       else { print DBOUT "$statement\n"; } ## End checking on the type of db connection
     } ## End looking at every slipsite for a locus
   }  ## End checking for a null set
-}  ## End Put_RNAMotif05
+}  ## End Put_RNAMotif
 
-sub Put_Nupack05 {
+sub Put_Nupack {
   my $me = shift;
   my $data = shift;
-  PRFConfig::PRF_Error("Undefined value in Put_Nupack05", $data->{species}, $data->{accession}) unless(defined($data->{start}) and defined($data->{slippery}) and defined($data->{seqlength}) and defined($data->{sequence}) and defined($data->{paren_output}) and defined($data->{parsed}) and defined($data->{mfe}) and defined($data->{knotp}));
+  PRFConfig::PRF_Error("Undefined value in Put_Nupack", $data->{species}, $data->{accession}) unless(defined($data->{start}) and defined($data->{slippery}) and defined($data->{seqlength}) and defined($data->{sequence}) and defined($data->{paren_output}) and defined($data->{parsed}) and defined($data->{mfe}) and defined($data->{knotp}));
   my $statement = qq(INSERT INTO nupack (id, species, accession, start, slipsite, seqlength, sequence, paren_output, parsed, mfe, pairs, knotp) VALUES ('', '$data->{species}', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{seqlength}', '$data->{sequence}', '$data->{paren_output}', '$data->{parsed}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}'));
 #  print "NUPACK: $statement\n";
   if ($PRFConfig::config->{dboutput} eq 'dbi') {
@@ -951,9 +777,9 @@ sub Put_Nupack05 {
   else {
 	print DBOUT "$statement\n";
   }
-}  ## End of Put_Nupack05
+}  ## End of Put_Nupack
 
-sub Put_Pknots05 {
+sub Put_Pknots {
   my $me = shift;
   my $data = shift;
   my $statement = qq(INSERT INTO pknots (id, species, accession, start, slipsite, pk_output, parsed, mfe, pairs, knotp) VALUES ('', '$data->{species}', '$data->{accession}', '$data->{start}', '$data->{slippery}', '$data->{pk_output}', '$data->{parsed}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}'));
@@ -966,7 +792,7 @@ sub Put_Pknots05 {
   }
 }
 
-sub Put_Boot05 {
+sub Put_Boot {
   my $me = shift;
   my $data = shift;
   foreach my $mfe_method (keys%{$PRFConfig::config->{boot_mfe_algorithms}}) {
@@ -996,9 +822,9 @@ sub Put_Boot05 {
 }
 
 #################################################
-### Functions used to create the prfdb05 tables
+### Functions used to create the prfdb tables
 #################################################
-sub Create_Genome05 {
+sub Create_Genome {
   my $me = shift;
   my $table = 'genome';
   my $statement = "CREATE table $table (
@@ -1019,7 +845,7 @@ INDEX(genename))";
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
 }
 
-sub Create_Rnamotif05 {
+sub Create_Rnamotif {
   my $me = shift;
   my $statement = "CREATE table rnamotif (
 id $PRFConfig::config->{mysql_index},
@@ -1036,7 +862,7 @@ primary key (id))";
   $sth->execute;
 }
 
-sub Create_Queue05 {
+sub Create_Queue {
   my $me = shift;
   my $tablename = 'queue';
   my $statement = "CREATE table $tablename (
@@ -1052,7 +878,7 @@ primary key (id))";
   $sth->execute;
 }
 
-sub Create_Nupack05 {
+sub Create_Nupack {
   my $me = shift;
   my $statement = "CREATE TABLE nupack (
 id $PRFConfig::config->{mysql_index},
@@ -1073,7 +899,7 @@ primary key(id))";
   $sth->execute;
 }
 
-sub Create_Pknots05 {
+sub Create_Pknots {
   my $me = shift;
   my $statement = "CREATE TABLE pknots (
 id $PRFConfig::config->{mysql_index},
@@ -1094,7 +920,7 @@ primary key(id))";
   $sth->execute;
 }
 
-sub Create_Boot05 {
+sub Create_Boot {
   my $me = shift;
   my $statement = "CREATE TABLE boot (
 id $PRFConfig::config->{mysql_index},
@@ -1115,6 +941,155 @@ lastupdate $PRFConfig::config->{mysql_timestamp},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
+}
+
+sub Create_Derived {
+    my $me = shift;
+    my $statement = "CREATE TABLE derived (
+id $PRFConfig::config->{mysql_index},
+accession $PRFConfig::config->{mysql_accession},
+image_type varchar(25) default '',
+image blob,
+image_name varchar(50) default '',
+z_score float,
+primary key(id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute or die("Could not execute statement: $statement in Create_Genome");
+}
+
+sub Genomep {
+    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
+    my $dbh = DBI_Connect($datasource, 
+			  $PRFConfig::config->{user},
+			  $PRFConfig::config->{pass},
+			  { RaiseError => 1, AutoCommit => 1 });
+    my $tables = DBI_doSQL($dbh, "show tables like 'boot'");
+    if (scalar(@{$tables}) == 0) {
+	return(0);
+    }
+    else {
+	return(1);
+    }
+}
+
+sub Rnamotifp {
+    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
+    my $dbh = DBI_Connect($datasource, 
+			  $PRFConfig::config->{user},
+			  $PRFConfig::config->{pass},
+			  { RaiseError => 1, AutoCommit => 1 });
+    my $tables = DBI_doSQL($dbh, "show tables like 'rnamotif'");
+    if (scalar(@{$tables}) == 0) {
+	return(0);
+    }
+    else {
+	return(1);
+    }
+}
+
+sub Pknotsp {
+    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
+    my $dbh = DBI_Connect($datasource, 
+			  $PRFConfig::config->{user},
+			  $PRFConfig::config->{pass},
+			  { RaiseError => 1, AutoCommit => 1 });
+    my $tables = DBI_doSQL($dbh, "show tables like 'pknots'");
+    if (scalar(@{$tables}) == 0) {
+	return(0);
+    }
+    else {
+	return(1);
+    }
+}
+
+sub Nupackp {
+    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
+    my $dbh = DBI_Connect($datasource, 
+			  $PRFConfig::config->{user},
+			  $PRFConfig::config->{pass},
+			  { RaiseError => 1, AutoCommit => 1 });
+    my $tables = DBI_doSQL($dbh, "show tables like 'nupack'");
+    if (scalar(@{$tables}) == 0) {
+	return(0);
+    }
+    else {
+	return(1);
+    }
+}
+
+sub Bootp {
+    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
+    my $dbh = DBI_Connect($datasource, 
+			  $PRFConfig::config->{user},
+			  $PRFConfig::config->{pass},
+			  { RaiseError => 1, AutoCommit => 1 });
+    my $tables = DBI_doSQL($dbh, "show tables like 'boot'");
+    if (scalar(@{$tables}) == 0) {
+	return(0);
+    }
+    else {
+	return(1);
+    }
+}
+
+sub Derivedp {
+    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
+    my $dbh = DBI_Connect($datasource, 
+			  $PRFConfig::config->{user},
+			  $PRFConfig::config->{pass},
+			  { RaiseError => 1, AutoCommit => 1 });
+    my $tables = DBI_doSQL($dbh, "show tables like 'derived'");
+    if (scalar(@{$tables}) == 0) {
+	return(0);
+    }
+    else {
+	return(1);
+    }
+}
+
+sub DBI_Connect {
+    my ($datasource,$username, $password,$attr) = @_;
+    my $dbh;
+    my $conn_error;
+    # Try connecting to the database, as usual.  If that fails, print
+    # an error message and exit.
+    unless ($dbh = DBI->connect($datasource, $username, $password, $attr)) {
+	$conn_error = DBI->errstr();
+	die("Failed to connect to $datasource: $conn_error");
+    }	
+    return $dbh;
+}
+
+sub DBI_doSQL {
+    my $dbh = shift;
+    my $statement = shift;
+    my $sth;
+    my $returncode;
+    my $prep_error;
+    my $data_error;
+    my @resultSet = ();
+    my @record = ();
+    
+    unless( $sth = $dbh->prepare($statement) ){
+	$prep_error = $dbh->errstr;
+	print "SQL syntax error!\n\n$prep_error\n\n
+			Your statement was \n\n$statement\n\n
+			Exiting...\n";
+	exit();
+    }
+    
+    if( $returncode = $sth -> execute() ) {
+	while(@record = $sth -> fetchrow_array() ){
+	    push(@resultSet, [@record] );
+	}
+	$sth -> finish();
+    } else {
+	$data_error = $dbh->errstr;
+	print "SQL execution error!\n\n$data_error\n\n
+			Your statement was \n\n$statement\n\n";
+	exit();
+    }
+    return \@resultSet;
 }
 
 1;

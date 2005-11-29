@@ -6,7 +6,7 @@ do_mfold = 0              ## Run mfold on the sequence as a mfe bootstrap?
 do_boot = 1               ## Perform our faux bootstrap
 arch_specific_exe = 1     ## Architecture specific executables (used for a pbs environment)
 boot_iterations = 100
-boot_mfe_algorithms = { mfold => \&RNAFolders::Pknots_Boot, }
+boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, }
 boot_randomizers = { array => \&MoreRandom::ArrayShuffle, }
 privqueue = "$(prefix)/private_queue"         ## Location of public queue
 pubqueue = "$(prefix)/public_queue"           ## Location of public queue
@@ -62,10 +62,13 @@ stem2_loop_min = 0      ## Rnamotif second loop min
 stem2_loop_max = 3      ## Rnamotif second loop max
 stem2_spacer_min = 0    ## Rnamotif second spacer min
 stem2_spacer_max = 100  ## Rnamotif second spacer max
-#                      ### The following define the mysql datatypes for common fields in the database
+#### The following define the mysql datatypes for common fields in the database
 mysql_index = 'int not null auto_increment'
 mysql_species = 'varchar(40) not null'
 mysql_accession = 'varchar(80)'
 mysql_genename = 'varchar(20)'
 mysql_comment = 'text not null'
 mysql_timestamp = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+#### Change the number of bases allowed in a loop before making a new stem
+#### In the PkParser
+#max_spaces = 4
