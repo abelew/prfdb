@@ -271,63 +271,6 @@ sub Drop_Table {
   $sth->execute or PRFConfig::PRF_Error("Could not execute statement: $statement in Create_Genome");
 }
 
-sub Create_Genome {
-  my $me = shift;
-  my $table = 'genome_' . $PRFConfig::config->{species};
-  my $statement = "CREATE table $table  (accession varchar(16) not null, genename varchar(20), version int, comment blob not null, sequence blob not null, primary key (accession))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute or die("Could not execute statement: $statement in Create_Genome");
-}
-
-sub Create_Boot {
-  my $me = shift;
-  my $table = 'boot_' . $PRFConfig::config->{species};
-  my $statement = "CREATE table $table (id int not null auto_increment, accession varchar(10) not null, start int, iterations int, rand_method varchar(20), mfe_method varchar(20), mfe_mean float, mfe_sd float, mfe_se float, pairs_mean float, pairs_sd float, pairs_se float, mfe_values blob, primary key(id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute or die("Could not execute statement: $statement in Create_Genome");
-}
-
-sub Create_Pknots {
-  my $me = shift;
-  my $tablename = 'pknots_' . $PRFConfig::config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), pk_output blob, parsed blob, mfe float, pairs int, knotp bool, primary key(id))";
-#  my $statement = "CREATE table $tablename (id int not null auto_increment, process varchar(80), start int, length int, struct_start int, logodds float, mfe float, cor_mfe float, pairs int, pseudop tinyint, slipsite varchar(80), spacer varchar(80), sequence blob, structure blob, parsed blob, primary key (id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute;
-}
-
-sub Create_Nupack {
-  my $me = shift;
-  my $tablename = 'nupack_' . $PRFConfig::config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), seqlength int, sequence char(200), paren_output char(200), parsed blob, mfe float, knotp bool, primary key(id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute;
-}
-
-sub Create_Rnamotif {
-  my $me = shift;
-  my $tablename = "rnamotif_" . $PRFConfig::config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, total int, permissable int, filedata blob, output blob, primary key (id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute;
-}
-
-sub Create_Queue {
-  my $me = shift;
-  my $tablename = 'queue';
-  my $statement = "CREATE table $tablename (id int not null auto_increment, public bool, species varchar(40), accession varchar(80), params blob, out bool, done bool, primary key (id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute;
-}
-
-sub Create_Errordb {
-  my $me = shift;
-  my $tablename = 'errors';
-  my $statement = "CREATE table $tablename (id int not null auto_increment, time timestamp, message blob, species varchar(80), accession varchar(80), primary key(id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute;
-}
-
 sub FillQueue {
   my $me = shift;
   my $species = $PRFConfig::config->{species};
@@ -828,12 +771,12 @@ sub Create_Genome {
   my $me = shift;
   my $table = 'genome';
   my $statement = "CREATE table $table (
-id $PRFConfig::config->{mysql_id},
-accession $PRFConfig::config->{mysql_accession},
-species $PRFConfig::config->{mysql_species},
-genename $PRFConfig::config->{mysql_genename},
+id $PRFConfig::config->{sql_id},
+accession $PRFConfig::config->{sql_accession},
+species $PRFConfig::config->{sql_species},
+genename $PRFConfig::config->{sql_genename},
 version int,
-comment $PRFConfig::config->{mysql_comment},
+comment $PRFConfig::config->{sql_comment},
 mrna_seq text not null,
 protein_seq text,
 orf_start int,
@@ -848,15 +791,15 @@ INDEX(genename))";
 sub Create_Rnamotif {
   my $me = shift;
   my $statement = "CREATE table rnamotif (
-id $PRFConfig::config->{mysql_index},
-species $PRFConfig::config->{mysql_species},
-accession $PRFConfig::config->{mysql_accession},
+id $PRFConfig::config->{sql_index},
+species $PRFConfig::config->{sql_species},
+accession $PRFConfig::config->{sql_accession},
 start int,
 total int,
 permissable int,
 filedata blob,
 output blob,
-lastupdate $PRFConfig::config->{mysql_timestamp},
+lastupdate $PRFConfig::config->{sql_timestamp},
 primary key (id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute;
@@ -866,10 +809,10 @@ sub Create_Queue {
   my $me = shift;
   my $tablename = 'queue';
   my $statement = "CREATE table $tablename (
-id $PRFConfig::config->{mysql_index},
+id $PRFConfig::config->{sql_index},
 public bool,
-species $PRFConfig::config->{mysql_species},
-accession $PRFConfig::config->{mysql_accession},
+species $PRFConfig::config->{sql_species},
+accession $PRFConfig::config->{sql_accession},
 params blob,
 out bool,
 done bool,
@@ -881,9 +824,9 @@ primary key (id))";
 sub Create_Nupack {
   my $me = shift;
   my $statement = "CREATE TABLE nupack (
-id $PRFConfig::config->{mysql_index},
-species $PRFConfig::config->{mysql_species},
-accession $PRFConfig::config->{mysql_accession},
+id $PRFConfig::config->{sql_index},
+species $PRFConfig::config->{sql_species},
+accession $PRFConfig::config->{sql_accession},
 start int,
 slipsite char(7),
 seqlength int,
@@ -893,7 +836,7 @@ parsed blob,
 mfe float,
 pairs int,
 knotp bool,
-lastupdate $PRFConfig::config->{mysql_timestamp},
+lastupdate $PRFConfig::config->{sql_timestamp},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute;
@@ -902,9 +845,9 @@ primary key(id))";
 sub Create_Pknots {
   my $me = shift;
   my $statement = "CREATE TABLE pknots (
-id $PRFConfig::config->{mysql_index},
-species $PRFConfig::config->{mysql_species},
-accession $PRFConfig::config->{mysql_accession},
+id $PRFConfig::config->{sql_index},
+species $PRFConfig::config->{sql_species},
+accession $PRFConfig::config->{sql_accession},
 start int,
 slipsite char(7),
 pk_input text,
@@ -914,7 +857,7 @@ barcode text,
 mfe float,
 pairs int,
 knotp bool,
-lastupdate $PRFConfig::config->{mysql_timestamp},
+lastupdate $PRFConfig::config->{sql_timestamp},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute;
@@ -923,9 +866,9 @@ primary key(id))";
 sub Create_Boot {
   my $me = shift;
   my $statement = "CREATE TABLE boot (
-id $PRFConfig::config->{mysql_index},
-species $PRFConfig::config->{mysql_species},
-accession $PRFConfig::config->{mysql_accession},
+id $PRFConfig::config->{sql_index},
+species $PRFConfig::config->{sql_species},
+accession $PRFConfig::config->{sql_accession},
 start int,
 iterations int,
 rand_method varchar(20),
@@ -937,7 +880,7 @@ pairs_mean float,
 pairs_sd float,
 pairs_se float,
 mfe_values blob,
-lastupdate $PRFConfig::config->{mysql_timestamp},
+lastupdate $PRFConfig::config->{sql_timestamp},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
@@ -946,8 +889,8 @@ primary key(id))";
 sub Create_Derived {
     my $me = shift;
     my $statement = "CREATE TABLE derived (
-id $PRFConfig::config->{mysql_index},
-accession $PRFConfig::config->{mysql_accession},
+id $PRFConfig::config->{sql_index},
+accession $PRFConfig::config->{sql_accession},
 image_type varchar(25) default '',
 image blob,
 image_name varchar(50) default '',
@@ -955,6 +898,19 @@ z_score float,
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
+}
+
+sub Create_Errordb {
+  my $me = shift;  
+  my $statement = "CREATE table errors (
+id $PRFConfig::config->{sql_index},
+time $PRFConfig::config->{sql_timestamp},
+message blob,
+species varchar(80),
+accession $PRFConfig::config->{sql_accession},
+primary key(id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute;
 }
 
 sub Genomep {
@@ -1093,3 +1049,57 @@ sub DBI_doSQL {
 }
 
 1;
+
+
+sub Create_Genome {
+  my $me = shift;
+  my $table = 'genome_' . $PRFConfig::config->{species};
+  my $statement = "CREATE table $table  (accession varchar(16) not null, genename varchar(20), version int, comment blob not null, sequence blob not null, primary key (accession))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute or die("Could not execute statement: $statement in Create_Genome");
+}
+
+sub Create_Boot {
+  my $me = shift;
+  my $table = 'boot_' . $PRFConfig::config->{species};
+  my $statement = "CREATE table $table (id int not null auto_increment, accession varchar(10) not null, start int, iterations int, rand_method varchar(20), mfe_method varchar(20), mfe_mean float, mfe_sd float, mfe_se float, pairs_mean float, pairs_sd float, pairs_se float, mfe_values blob, primary key(id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute or die("Could not execute statement: $statement in Create_Genome");
+}
+
+sub Create_Pknots {
+  my $me = shift;
+  my $tablename = 'pknots_' . $PRFConfig::config->{species};
+  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), pk_output blob, parsed blob, mfe float, pairs int, knotp bool, primary key(id))";
+#  my $statement = "CREATE table $tablename (id int not null auto_increment, process varchar(80), start int, length int, struct_start int, logodds float, mfe float, cor_mfe float, pairs int, pseudop tinyint, slipsite varchar(80), spacer varchar(80), sequence blob, structure blob, parsed blob, primary key (id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute;
+}
+
+sub Create_Nupack {
+  my $me = shift;
+  my $tablename = 'nupack_' . $PRFConfig::config->{species};
+  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), seqlength int, sequence char(200), paren_output char(200), parsed blob, mfe float, knotp bool, primary key(id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute;
+}
+
+sub Create_Rnamotif {
+  my $me = shift;
+  my $tablename = "rnamotif_" . $PRFConfig::config->{species};
+  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, total int, permissable int, filedata blob, output blob, primary key (id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute;
+}
+
+sub Create_Queue {
+  my $me = shift;
+  my $tablename = 'queue';
+  my $statement = "CREATE table $tablename (id int not null auto_increment, public bool, species varchar(40), accession varchar(80), params blob, out bool, done bool, primary key (id))";
+  my $sth = $me->{dbh}->prepare("$statement");
+  $sth->execute;
+}
+
+
+
+
