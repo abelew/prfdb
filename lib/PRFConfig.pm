@@ -116,13 +116,12 @@ sub PRF_Out {
 
 sub PRF_Error {
   my $message = shift;
-  my $species = shift;
   my $accession = shift;
   open(ERRFH, ">>$err") or die "Unable to open the log file $err: $!\n";
   if ($PRFConfig::config->{dboutput} eq 'dbi') {
     use PRFdb;
     my $db = new PRFdb;
-    $db->Error_Db($message, $species, $accession);
+    $db->Error_Db($message, $accession);
   }
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
   my $month = $mon + 1;
@@ -186,7 +185,6 @@ __END__
 #                      PRE_PROCESS => 'header',  ## Template html headers
 #                      EVAL_PERL => 1,           ## Template evaluate inline perl code
 #                      ABSOLUTE => 1,
-#                      species => 'homo_sapiens',## default species (needed?)
 #                      input => 'inputfile',     ## Input file for loading genomes
 #                      action => 'die',          ## Default action for multiple action script(s)
 #                      dboutput => 'dbi',        ## Place output into dbi

@@ -196,6 +196,17 @@ sub Get_Slippery_From_Sequence {
   return($slippery);
 }
 
+sub Id_to_AccessionSpecies {
+  my $me = shift;
+  my $id = shift;
+  my $start  = shift;
+  PRFConfig::PRF_Error("Undefined value in Id_to_AccessionSpecies", $id) unless (defined($id));
+  my $statement = qq(SELECT accession, species from genome where id='$id');
+  my $dbh = $me->{dbh};
+  my ($accession, $species) = $dbh->selectrow_array($statement);
+  return([$accession, $species]);
+}
+
 sub Error_Db {
   my $me = shift;
   my $message = shift;
@@ -208,20 +219,20 @@ sub Error_Db {
   $sth->execute();
 }
 
-sub Get_Pubqueue {
+sub Get_Entire_Pubqueue {
   my $me = shift;
   my $return;
-  my $statement = qq(SELECT accession FROM queue WHERE public='1' and  out='0');
-  my $accessions = $me->{dbh}->selectall_arrayref($statement);
-  return($accessions);
+  my $statement = qq(SELECT id FROM queue WHERE public='1' and  out='0');
+  my $ids = $me->{dbh}->selectall_arrayref($statement);
+  return($ids);
 }
 
 sub Set_Pubqueue {
   my $me = shift;
-  my $accession = shift;
+  my $id = shift;
   my $params = shift;
   my $statement;
-  $statement = qq(INSERT INTO queue (id, public, accession, params, out, done) VALUES ('', '1', '$accession', '', 0, 0));
+  $statement = qq(INSERT INTO queue (id, public, params, out, done) VALUES ('$id', '1', '', 0, 0));
   print "ST: $statement\n";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or PRFConfig::PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
@@ -229,10 +240,10 @@ sub Set_Pubqueue {
 
 sub Set_Privqueue {
   my $me = shift;
-  my $accession = shift;
+  my $id = shift;
   my $params = shift;
   my $statement;
-  $statement = qq(INSERT INTO queue (id, public, accession, params, out, done) VALUES ('', '0', '$accession', '', 0, 0));
+  $statement = qq(INSERT INTO queue (id, public, accession, params, out, done) VALUES ('$id', '0', '', 0, 0));
   print "ST: $statement\n";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or PRFConfig::PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
@@ -273,9 +284,7 @@ sub Drop_Table {
 
 sub FillQueue {
   my $me = shift;
-  my $species = $PRFConfig::config->{species};
-  my $best_statement = "INSERT into queue (id, public, species, accession, params, out, done) SELECT '', 0, species, accession, '', 0, 0 from genome";
-#  my $collection = "SELECT 'homo_sapiens', accession from $collect_table";
+  my $best_statement = "INSERT into queue (id, public, params, out, done) SELECT id, 0, '', 0, 0 from genome";
   my $sth = $me->{dbh}->prepare($best_statement);
   $sth->execute;
 }
@@ -285,22 +294,15 @@ sub Grab_Queue {
   my $type = shift;  ## public or private
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
-  my $single_accession = qq(select accession from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
-  print "TESTME: $single_accession\n";
-  my $accession = $me->{dbh}->selectrow_array($single_accession);
-  return(undef) unless(defined($accession));
-  my $species_statement = qq(select species from genome where accession='$accession');
-  print "TESTME: $species_statement\n";
-  my $species = $me->{dbh}->selectrow_array($species_statement);
-  print "TESTME species: $species\n";
-  return(undef) unless(defined($species));
-  my $update = qq(UPDATE queue SET out='1' WHERE accession='$accession' and public='$type');
-  print "TESTME: update: $update\n";
+  ## This id is the same id which uniquely identifies a sequence in the genome database
+  my $single_id = qq(select id from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
+  my @id = $me->{dbh}->selectrow_array($single_id);
+  my $return_id = $id[0];
+  return(undef) unless(defined(@id));
+  my $update = qq(UPDATE queue SET out='1' WHERE id='$return_id' and public='$type');
   my $st = $me->{dbh}->prepare($update);
   $st->execute();
-  $return->{species} = $species;
-  $return->{accession} = $accession;
-  return($return);
+  return($return_id);
 }
 
 sub Load_Genome_Table {
@@ -563,7 +565,7 @@ sub Get_Sequence {
   }
 }
 
-sub Get_RNAfolds {
+sub Get_Num_RNAfolds {
   my $me = shift;
   my $table = shift;
   my $accession = shift;
@@ -652,7 +654,6 @@ sub Get_Slippery_From_RNAMotif {
   }
   return(undef);
 }
-
 
 #################################################
 ### Put RNAMotif, Nupack, Pknots, Boot, Genome
@@ -769,8 +770,7 @@ sub Put_Boot {
 #################################################
 sub Create_Genome {
   my $me = shift;
-  my $table = 'genome';
-  my $statement = "CREATE table $table (
+  my $statement = "CREATE table genome (
 id $PRFConfig::config->{sql_id},
 accession $PRFConfig::config->{sql_accession},
 species $PRFConfig::config->{sql_species},
@@ -792,6 +792,7 @@ sub Create_Rnamotif {
   my $me = shift;
   my $statement = "CREATE table rnamotif (
 id $PRFConfig::config->{sql_index},
+genome_id int,
 species $PRFConfig::config->{sql_species},
 accession $PRFConfig::config->{sql_accession},
 start int,
@@ -807,12 +808,9 @@ primary key (id))";
 
 sub Create_Queue {
   my $me = shift;
-  my $tablename = 'queue';
-  my $statement = "CREATE table $tablename (
+  my $statement = "CREATE table queue (
 id $PRFConfig::config->{sql_index},
 public bool,
-species $PRFConfig::config->{sql_species},
-accession $PRFConfig::config->{sql_accession},
 params blob,
 out bool,
 done bool,
@@ -825,6 +823,7 @@ sub Create_Nupack {
   my $me = shift;
   my $statement = "CREATE TABLE nupack (
 id $PRFConfig::config->{sql_index},
+genome_id int,
 species $PRFConfig::config->{sql_species},
 accession $PRFConfig::config->{sql_accession},
 start int,
@@ -846,6 +845,7 @@ sub Create_Pknots {
   my $me = shift;
   my $statement = "CREATE TABLE pknots (
 id $PRFConfig::config->{sql_index},
+genome_id int,
 species $PRFConfig::config->{sql_species},
 accession $PRFConfig::config->{sql_accession},
 start int,
@@ -866,7 +866,8 @@ primary key(id))";
 sub Create_Boot {
   my $me = shift;
   my $statement = "CREATE TABLE boot (
-id $PRFConfig::config->{sql_index},
+id $PRFConfig::config->{sql_index}
+genome_id int,
 species $PRFConfig::config->{sql_species},
 accession $PRFConfig::config->{sql_accession},
 start int,
@@ -890,6 +891,7 @@ sub Create_Derived {
     my $me = shift;
     my $statement = "CREATE TABLE derived (
 id $PRFConfig::config->{sql_index},
+genome_id int,
 accession $PRFConfig::config->{sql_accession},
 image_type varchar(25) default '',
 image blob,
@@ -901,112 +903,36 @@ primary key(id))";
 }
 
 sub Create_Errordb {
-  my $me = shift;  
+  my $me = shift;
   my $statement = "CREATE table errors (
 id $PRFConfig::config->{sql_index},
 time $PRFConfig::config->{sql_timestamp},
 message blob,
-species varchar(80),
 accession $PRFConfig::config->{sql_accession},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute;
 }
 
-sub Genomep {
-    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
-    my $dbh = DBI_Connect($datasource, 
-			  $PRFConfig::config->{user},
-			  $PRFConfig::config->{pass},
-			  { RaiseError => 1, AutoCommit => 1 });
-    my $tables = DBI_doSQL($dbh, "show tables like 'boot'");
-    if (scalar(@{$tables}) == 0) {
-	return(0);
-    }
-    else {
-	return(1);
-    }
-}
-
-sub Rnamotifp {
-    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
-    my $dbh = DBI_Connect($datasource, 
-			  $PRFConfig::config->{user},
-			  $PRFConfig::config->{pass},
-			  { RaiseError => 1, AutoCommit => 1 });
-    my $tables = DBI_doSQL($dbh, "show tables like 'rnamotif'");
-    if (scalar(@{$tables}) == 0) {
-	return(0);
-    }
-    else {
-	return(1);
-    }
-}
-
-sub Pknotsp {
-    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
-    my $dbh = DBI_Connect($datasource, 
-			  $PRFConfig::config->{user},
-			  $PRFConfig::config->{pass},
-			  { RaiseError => 1, AutoCommit => 1 });
-    my $tables = DBI_doSQL($dbh, "show tables like 'pknots'");
-    if (scalar(@{$tables}) == 0) {
-	return(0);
-    }
-    else {
-	return(1);
-    }
-}
-
-sub Nupackp {
-    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
-    my $dbh = DBI_Connect($datasource, 
-			  $PRFConfig::config->{user},
-			  $PRFConfig::config->{pass},
-			  { RaiseError => 1, AutoCommit => 1 });
-    my $tables = DBI_doSQL($dbh, "show tables like 'nupack'");
-    if (scalar(@{$tables}) == 0) {
-	return(0);
-    }
-    else {
-	return(1);
-    }
-}
-
-sub Bootp {
-    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
-    my $dbh = DBI_Connect($datasource, 
-			  $PRFConfig::config->{user},
-			  $PRFConfig::config->{pass},
-			  { RaiseError => 1, AutoCommit => 1 });
-    my $tables = DBI_doSQL($dbh, "show tables like 'boot'");
-    if (scalar(@{$tables}) == 0) {
-	return(0);
-    }
-    else {
-	return(1);
-    }
-}
-
-sub Derivedp {
-    my $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
-    my $dbh = DBI_Connect($datasource, 
-			  $PRFConfig::config->{user},
-			  $PRFConfig::config->{pass},
-			  { RaiseError => 1, AutoCommit => 1 });
-    my $tables = DBI_doSQL($dbh, "show tables like 'derived'");
-    if (scalar(@{$tables}) == 0) {
-	return(0);
-    }
-    else {
-	return(1);
-    }
+sub Tablep {
+  my $table = shift;
+  my $statement = qq(SHOW TABLES LIKE '$table');
+  my $dbh = DBI_Connect();
+  my $info = $dbh->selectall_arrayref($statement);
+  return(scalar(@{$info}));
 }
 
 sub DBI_Connect {
     my ($datasource,$username, $password,$attr) = @_;
     my $dbh;
     my $conn_error;
+    if (!defined($datasource)) {
+      $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
+      $username = $PRFConfig::config->{user};
+      $password = $PRFConfig::config->{pass};
+      $attr = {RaiseError => 1, AutoCommit => 1 };
+    }
+	
     # Try connecting to the database, as usual.  If that fails, print
     # an error message and exit.
     unless ($dbh = DBI->connect($datasource, $username, $password, $attr)) {
@@ -1049,57 +975,3 @@ sub DBI_doSQL {
 }
 
 1;
-
-
-sub Create_Genome {
-  my $me = shift;
-  my $table = 'genome_' . $PRFConfig::config->{species};
-  my $statement = "CREATE table $table  (accession varchar(16) not null, genename varchar(20), version int, comment blob not null, sequence blob not null, primary key (accession))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute or die("Could not execute statement: $statement in Create_Genome");
-}
-
-sub Create_Boot {
-  my $me = shift;
-  my $table = 'boot_' . $PRFConfig::config->{species};
-  my $statement = "CREATE table $table (id int not null auto_increment, accession varchar(10) not null, start int, iterations int, rand_method varchar(20), mfe_method varchar(20), mfe_mean float, mfe_sd float, mfe_se float, pairs_mean float, pairs_sd float, pairs_se float, mfe_values blob, primary key(id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute or die("Could not execute statement: $statement in Create_Genome");
-}
-
-sub Create_Pknots {
-  my $me = shift;
-  my $tablename = 'pknots_' . $PRFConfig::config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), pk_output blob, parsed blob, mfe float, pairs int, knotp bool, primary key(id))";
-#  my $statement = "CREATE table $tablename (id int not null auto_increment, process varchar(80), start int, length int, struct_start int, logodds float, mfe float, cor_mfe float, pairs int, pseudop tinyint, slipsite varchar(80), spacer varchar(80), sequence blob, structure blob, parsed blob, primary key (id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute;
-}
-
-sub Create_Nupack {
-  my $me = shift;
-  my $tablename = 'nupack_' . $PRFConfig::config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, slipsite char(7), seqlength int, sequence char(200), paren_output char(200), parsed blob, mfe float, knotp bool, primary key(id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute;
-}
-
-sub Create_Rnamotif {
-  my $me = shift;
-  my $tablename = "rnamotif_" . $PRFConfig::config->{species};
-  my $statement = "CREATE table $tablename (id int not null auto_increment, accession varchar(80), start int, total int, permissable int, filedata blob, output blob, primary key (id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute;
-}
-
-sub Create_Queue {
-  my $me = shift;
-  my $tablename = 'queue';
-  my $statement = "CREATE table $tablename (id int not null auto_increment, public bool, species varchar(40), accession varchar(80), params blob, out bool, done bool, primary key (id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute;
-}
-
-
-
-

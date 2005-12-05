@@ -12,7 +12,6 @@ sub new {
                   accession => $arg{accession},
                   start => $arg{start},
                   slippery => $arg{slippery},
-                  species => $arg{species},
                  }, $class;
   return ($me);
 }
@@ -22,7 +21,6 @@ sub Nupack {
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
-  my $species = $me->{species};
   my $config = $PRFConfig::config;
   print "NUPACK: infile: $inputfile accession: $accession start: $start\n";
   open(SLIP, "<$inputfile");
@@ -41,12 +39,11 @@ sub Nupack {
       accession => $accession,
       start => $start,
       slippery => $slippery,
-      species => $species,
       knotp => 0,
   };
   chdir($config->{tmpdir});
   my $command = qq(sh -c "time $config->{nupack} $inputfile" 2>nupack.err);
-  my $nupack_pid = open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $species, $accession);
+  my $nupack_pid = open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $accession);
   my $count = 0;
   while (my $line = <NU>) {
 	$count++;
@@ -81,10 +78,10 @@ sub Nupack {
   close(NU);
   my $nupack_return = $?;
   unless ($nupack_return eq '0') {
-      PRFConfig::PRF_Error("Nupack Error: $!", $species, $accession);
+      PRFConfig::PRF_Error("Nupack Error: $!", $accession);
       die("Nupack Error!");
   }
-  open(PAIRS, "<out.pair") or PRF_Error("Could not open the nupack pairs file: $!", $species, $accession);
+  open(PAIRS, "<out.pair") or PRF_Error("Could not open the nupack pairs file: $!", $accession);
   my $pairs = 0;
   my @nupack_output = ();
   while(my $line = <PAIRS>) {
@@ -123,20 +120,18 @@ sub Pknots {
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
-  my $species = $me->{species};
   my $config = $PRFConfig::config;
   print "PKNOTS: infile: $inputfile accession: $accession start: $start\n";
   my $return = {
       accession => $accession,
       start => $start,
       slippery => '',
-      species => $species,
       knotp => 0,
   };
   chdir($config->{tmpdir});
   my $command = qq(sh -c "time $config->{pknots} -k $inputfile" 2>pknots.err);
   print "PKNOTS: $command\n";
-  open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
+  open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $accession);
   my $counter = 0;
   my ($line_to_read, $crap) = undef;
   my $string = '';
@@ -203,18 +198,16 @@ sub Mfold {
 
   my $accession = $me->{accession};
   my $start = $me->{start};
-  my $species = $me->{species};
   my $slippery = $me->{slippery};
 
   my $return = {
                 accession => $accession,
                 start => $start,
                 slippery => $slippery,
-                species => $species,
                };
   chdir($config->{tmpdir});
   my $command = qq(sh -c "time $config->{mfold} SEQ=$inputfile MAX=1" 2>mfold.err);
-  open(MF, "$command 2>mfold.err |") or PRF_Error("Could not run mfold: $!", $species, $accession);
+  open(MF, "$command 2>mfold.err |") or PRF_Error("Could not run mfold: $!", $accession);
 #  open(MF, "/bin/true |");
 #  print "Running mfold\n";
 #  sleep(2);
@@ -248,7 +241,6 @@ sub Pknots_Boot {
     ## The caller of this function is in Bootlace.pm and does not expect it to be
     ## In an OO fashion.
     my $inputfile = shift;
-    my $species = shift;
     my $accession = shift;
     my $start = shift;
     my $config = $PRFConfig::config;
@@ -256,12 +248,11 @@ sub Pknots_Boot {
     my $return = {
 	accession => $accession,
 	start => $start,
-	species => $species,
     };
 
     chdir($config->{tmpdir});
     my $command = qq(sh -c "time $config->{pknots} $inputfile" 2>pknots_boot.err);
-    open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $species, $accession);
+    open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $accession);
     my $counter = 0;
     my ($line_to_read, $crap) = undef;
     my $string = '';
@@ -299,7 +290,6 @@ sub Pknots_Boot {
 
 sub Mfold_Boot {
   my $inputfile = shift;
-  my $species = shift;
   my $accession = shift;
   my $start = shift;
   my $config = $PRFConfig::config;
@@ -309,14 +299,13 @@ sub Mfold_Boot {
 #  my $return = {
  #               accession => $accession,
  #               start => $start,
- #               species => $species,
  #              };
   chdir($config->{tmpdir});
 
   $inputfile = `basename $inputfile`;
   chomp $inputfile;
   my $command = qq(sh -c "time $config->{mfold} SEQ=$inputfile MAX=1" 2>mfold_boot.err);
-  open(MF, "$command |") or PRF_Error("Could not run mfold: $!", $species, $accession);
+  open(MF, "$command |") or PRF_Error("Could not run mfold: $!", $accession);
 #  open(MF, "/bin/true |");
 #  print "Running mfold $command\n";
   my $count = 0;
@@ -334,7 +323,7 @@ sub Mfold_Boot {
   ## Now get the number of pairs
   my $detfile = $inputfile . '.det';
   my $det = 1;
-  open(DET, "<$detfile") or $det = 0, PRF_Error("Could not open the detfile $detfile: $!", $species, $accession);
+  open(DET, "<$detfile") or $det = 0, PRF_Error("Could not open the detfile $detfile: $!", $accession);
   if ($det) {
     my $pairs = 0;
     while (my $line = <DET>) {
