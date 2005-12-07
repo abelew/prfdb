@@ -2,6 +2,8 @@ TODO
 
 1. Fix Parser (PkParse.pm) 20051207
     a bug was found where the parser was incrementing stems when it should not have been. Check out in the prfdb05 database, pknots table, compare ID#'s 122193 and 122577. They should be the same (i.e. the parsed structures should be the same; hence the barcodes should be as well).
+2. For CDS entries, instead of only examining start to end of ORF, examine start of ORF to end of sequence; primarily for viral sequence compatibility and other rare genomic situtations where you bypass zero-frame termination signal.
 
+IDEAS
 
-    
+1. maybe the randomization windows not be fixed on the input sequence window that pknots or NUPACK uses to fold, but... instead, the randomization sequence windows should be the "trimmed" sequence window that corresponds to the structure plus 1 base on either side. What do you think? The expect result would be IMHO z-scores will generally increase.
