@@ -1,6 +1,6 @@
 
 <tr>
-  <td width="33%"><div align="center"><strong><font size="-1" face="Courier New, Courier, mono">
+  <td width="33%" bgcolor="#99FF66"><div align="center"><strong><font size="-1" face="Courier New, Courier, mono">
 <a href="prfdb05_index.pl?detail=1&query=[% accession %]&select=accession&slipstart=[% slipstart %]">[%
             slipstart %]</a></font></strong></div>
   </td>

@@ -29,6 +29,7 @@ my $config = {
 my $template = Template->new($config);
 my $text_body = "";
 
+
 my $db = "prfdb05";
 my $dbhost = "prfdb.no-ip.org";
 my $user = "apacheuser";
@@ -36,10 +37,10 @@ my $pass = "2vjwotuhew";
 my $dsn = "dbi:mysql:$db:hostname=$dbhost";
 my %attr = { RaiseError => 1, AutoCommit => 1};
 my $dbh = &DBI_Connect($dsn, $user, $pass, \%attr);
-#DBI->connect($dsn, $user, $pass, \%attr) or die $DBI::errstr;
 
 # get parameters
-if ($cgi->param('browse') ){ &BROWSE; }
+if($cgi->param('browse') ){ &BROWSE; }
+elsif( $cgi -> param('detail')){ &DETAIL; }
 else{
     &BROWSE;
 }
@@ -48,7 +49,65 @@ my $vars = { text_body => $text_body };
 
 $template->process("default.dwt",$vars) || die $template->error();
 
+sub DETAIL{
+    my $body = "";
+    my $select = $cgi->param('select');
+    my $query = $cgi->param('query');
+    my $slipstart = $cgi->param('slipstart');
+    
+    # clean offending badness
+    $select =~ s/[^\w\s-:]/_/g;
+    $query =~ s/[^\w\s-:]/_/g;
+    $slipstart =~ s/[^\d]/_/g;
+    
+    my $q1 = ""; # 1st query; a reference to a 2D-array representing all the rows of the result set.
+    my $sql = "";
+    if( $query and $select eq 'accession' ){
+        $sql = "select species,genename,comment from genome where accession = \"$query\"";
+    }else{
+        # RUN FOR YOUR LIFE!
+        $body .= "$query was not found in &DETAIL\n";
+        my $browse_vars = { results => $body };
+        $template->process("browser.lbi",$browse_vars,\$text_body) || die $template->error();
+        return;
+    }
+    
+    my $q1 = &DBI_doSQL( $dbh, $sql);
 
+    # get the ONE row in the result set.
+    my $row = pop(@$q1);
+    my ($sliplist,$sig_count,$ss_count) = &SLIPLIST( $query, $slipstart ); # $$row[1] = accession ID
+
+    my $detail_list = "";
+    my $vars={
+        accession => $query,
+        species => $$row[0],
+        genename => $$row[1],
+        comments => $$row[2],
+        sig_count => $sig_count,
+        ss_count => $ss_count,
+        sliplist => $sliplist
+    };
+    
+    $template->process("detail_header.lbi", $vars, \$body) || die $template->error();
+    my $q2 = DBI_doSQL($dbh, "select id, slipsite, barcode, mfe, pairs from pknots where accession = \"$query\" and start = $slipstart order by mfe" );
+    while(my $r = shift(@$q2)){
+        my $temp_seq = $$r[1];
+        my $detail_vars = {
+            id => $$r[0],
+            start => $slipstart,
+            slip => $$r[1],
+            barcode => $$r[2],
+            mfe => $$r[3],
+            bp => $$r[4]
+        };
+        $template->process("detail_body.lbi", $detail_vars, \$body) || die $template->error();
+    }
+    $template->process("detail_footer.lbi", "", \$body) || die $template->error();
+    
+    my $browse_vars = { results => $body };
+    $template->process("browser.lbi", $browse_vars, \$text_body) || die $template->error();
+}
 
 sub BROWSE{
     my $body = "";
@@ -66,7 +125,7 @@ sub BROWSE{
     }elsif( $query and $select eq 'accession' ){
         $sql = "select id,accession,species,genename,comment,lastupdate,mrna_seq from genome where accession regexp \"$query\"";
     }else{
-        # RUN FOR TYOUR LIFE!
+        # RUN FOR YOUR LIFE!
         my $browse_vars = { results => $body };
         $template->process("browser.lbi",$browse_vars,\$text_body) || die $template->error();
         return;
@@ -125,32 +184,15 @@ sub SINGLEMATCH{
     my $q1 = shift;
     my $body = shift;
     
-    my $sig_count = 0;
-    my $ss_count = 0;
+    #my $sig_count = 0;
+    #my $ss_count = 0;
     
     # get the ONE row in the result set.
     my $row = pop(@$q1);
     
-    # find the number of slippery sites, there position, etc.
-    # we could add direct links here for each slippery site.
-    # also, this next block is very close to similar block in &PRETTY_MRNA; fix later.
-    my $q2 = DBI_doSQL($dbh, "select distinct start, slipsite,count(id) from pknots where accession = \'$$row[1]\' group by start order by start" );
-    my $sliplist = "";
-    $template->process("sliplist_header.lbi","",\$sliplist) || die $template->error();
-    while(my $r = shift(@$q2)){ 
-        my $sliplist_vars = {
-            slipstart => $$r[0],
-            slipseq => $$r[1],
-            pknotscount => $$r[2]
-        };
-        $ss_count++;
-        $sig_count += $$r[2];
-        $template->process("sliplist_body.lbi",$sliplist_vars,\$sliplist) || die $template->error();
-    }
-    $template->process("sliplist_footer.lbi","",\$sliplist) || die $template->error();
+    my ($sliplist,$sig_count,$ss_count) = &SLIPLIST( $$row[1] ); # $$row[1] = accession ID
     
-    #fix up the mRNA sequence.
-    $$row[6] = &PRETTY_MRNA($$row[1],$$row[6]);# =~ s/(\w{40})/$1\n/g;
+    $$row[6] = &PRETTY_MRNA($$row[1],$$row[6]);
     
     my $vars={
         id => $$row[0],
@@ -167,6 +209,38 @@ sub SINGLEMATCH{
     $template->process("genome.lbi",$vars,\$body) || die $template->error();
     return $body;
 }
+
+sub SLIPLIST{
+    my $accession = shift;
+    my $highlighted_slip = shift;
+    my $sig_count = 0;
+    my $ss_count = 0;
+
+    # find the number of slippery sites, there position, etc.
+    # we could add direct links here for each slippery site.
+    # also, this next block is very close to similar block in &PRETTY_MRNA; fix later.
+    my $q2 = DBI_doSQL($dbh, "select distinct start,slipsite,count(id) from pknots where accession = \'$accession\' group by start order by start" );
+    my $sliplist = "";
+    $template->process("sliplist_header.lbi","",\$sliplist) || die $template->error();
+    while(my $r = shift(@$q2)){ 
+        my $sliplist_vars = {
+            accession => $accession,
+            slipstart => $$r[0],
+            slipseq => $$r[1],
+            pknotscount => $$r[2]
+        };
+        $ss_count++;
+        $sig_count += $$r[2];
+        if( $highlighted_slip eq $$r[0] ){
+            $template->process("sliplist_body_highlighted.lbi",$sliplist_vars,\$sliplist) || die $template->error();
+        }else{
+            $template->process("sliplist_body.lbi",$sliplist_vars,\$sliplist) || die $template->error();
+        }
+    }
+    $template->process("sliplist_footer.lbi","",\$sliplist) || die $template->error();
+    return ($sliplist,$sig_count,$ss_count);
+}
+
 #############
 # PRETTY mRNA
 sub PRETTY_MRNA{
