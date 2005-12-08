@@ -118,11 +118,8 @@ sub PRF_Error {
   my $message = shift;
   my $accession = shift;
   open(ERRFH, ">>$err") or die "Unable to open the log file $err: $!\n";
-  if ($PRFConfig::config->{dboutput} eq 'dbi') {
-    use PRFdb;
-    my $db = new PRFdb;
-    $db->Error_Db($message, $accession);
-  }
+  my $db = new PRFdb;
+  $db->Error_Db($message, $accession);
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
   my $month = $mon + 1;
   my $y = $year + 1900;
@@ -187,8 +184,6 @@ __END__
 #                      ABSOLUTE => 1,
 #                      input => 'inputfile',     ## Input file for loading genomes
 #                      action => 'die',          ## Default action for multiple action script(s)
-#                      dboutput => 'dbi',        ## Place output into dbi
-#                      dbinput => 'dbi',         ## Receive input from dbi
 #                      descriptor_template => "$prefix/descr/template.desc",  ## Rnamotif template descriptor file
 #                      descriptor_file => "$prefix/descr/rnamotif_descriptor.desc",  ## Rnamotif descriptor output
 #                      slip_site_1 => '^n\{3\}$',## Rnamotif first 3 bases of slippery site

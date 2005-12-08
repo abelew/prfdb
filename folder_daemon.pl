@@ -63,6 +63,7 @@ sub Check_Db {
   my $motifs = new RNAMotif_Search;
   my $accession, $species;
   [$accession, $species] = $db->Id_to_AccessionSpecies($id);
+  print "TESTME: $accession, $species\n";
   ## First see that there is rna motif information
   my $bootlaces = undef;
   my $motif_info = $db->Get_RNAmotif($accession);
@@ -224,14 +225,6 @@ sub Check_Environment {
   die("Database host not defined") unless(defined($PRFConfig::config->{host}));
   die("Database user not defined") unless(defined($PRFConfig::config->{user}));
   die("Database pass not defined") unless(defined($PRFConfig::config->{pass}));
-  ## Now we should be able to connect to the database, so check that all the tables exist.
-  Create_Genome() unless(PRFdb::Tablep('genome'));
-  Create_Rnamotif() unless(PRFdb::Tablep('rnamotif'));
-  Create_Pknots() unless(PRFdb::Tablep('pknots'));
-  Create_Nupack() unless(PRFdb::Tablep('nupack'));
-  Create_Boot() unless(PRFdb::Tablep('boot'));
-#  Create_Derived() unless(PRFdb::Tablep('derived'));
-
   unless(-r $PRFConfig::config->{descriptor_file}) {
 	RNAMotif_Search::Descriptor();
 	die("Unable to read the rnamotif descriptor file: $!") unless(-r $PRFConfig::config->{descriptor_file});
