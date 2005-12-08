@@ -15,9 +15,12 @@ sub new {
       user => $PRFConfig::config->{user},
   }, $class;
   $me->{dbh} = DBI->connect($me->{dsn}, $PRFConfig::config->{user}, $PRFConfig::config->{pass});
-  unless ($PRFConfig::config->{dboutput} eq 'dbi') {
-      open(DBOUT, ">>$PRFConfig::config->{dboutput}");	
-  }
+  $me->Create_Genome() unless($me->Tablep('genome'));
+  $me->Create_Rnamotif() unless($me->Tablep('rnamotif'));
+  $me->Create_Pknots() unless($me->Tablep('pknots'));
+  $me->Create_Nupack() unless($me->Tablep('nupack'));
+  $me->Create_Boot() unless($me->Tablep('boot'));
+  $me->Create_Derived() unless($me->Tablep('derived'));
   return ($me);
 }
 
@@ -50,8 +53,7 @@ sub Get_Mfold {
   my $accession = shift;
   my $start = shift;
   my $return;
-  my $table = "mfold_$species";
-  my $statement = "SELECT total, start, permissable, filedata, output FROM $table WHERE accession = '$accession'";
+  my $statement = "SELECT total, start, permissable, filedata, output FROM mfold WHERE accession = '$accession'";
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_arrayref($statement);
 #  return(0) if (scalar(@{$info}) == 0);
@@ -86,47 +88,6 @@ sub MakeTempfile {
                           TEMPLATE => 'slip_XXXXX',
                           UNLINK => 0,
                           SUFFIX => '.fasta');
-}
-
-sub Remove_Old {
-  my @files = ();
-  open(RECORD, "<recorder.txt");
-  open(TMP, ">recorder.tmp.txt");
-#  flock(RECORD, LOCK_EX);
-#  flock(TMP, LOCK_EX);
-  while(my $line = <RECORD>) {
-	chomp $line;
-	my ($filename, $file_time) = split(/\t/, $line);
-	my $current_time = time();
-	if (($current_time - $file_time) > 7200) {
-	  unlink($filename);
-	}
-	else {
-	  print TMP $filename;
-	}
-  }
-  close(RECORD);
-  close(TMP);
-#  flock(RECORD, LOCK_UN);
-#  flock(TMP, LOCK_UN);
-  rename("recorder.tmp.txt", "recorder.txt");
-}
-
-sub Remove_Tempfile {
-  my $filename = shift;
-  open(RECORD, "<recorder.txt");
-  open(TMP, ">recorder.tmp.txt");
-#  flock(RECORD, LOCK_EX);
-#  flock(TMP, LOCK_EX);
-  while(my $line = <RECORD>) {
-	print TMP $line unless ($line =~ /^$filename/);
-  }
-  unlink $filename;
-  close(RECORD);
-  close(TMP);
-  flock(RECORD, LOCK_UN);
-  flock(TMP, LOCK_UN);
-  rename("recorder.tmp.txt", "recorder.txt");
 }
 
 ####
@@ -414,30 +375,30 @@ sub Load_ORF_Data {
       $datum{comment} = $comment;
       $datum{species} = $species;
     }  ## End if it is a kooky yeast genome.
-#    elsif ($line =~ /^\>/) {
-#      if (defined($datum{accession})) {
-#        $me->Insert_Genome_Entry(\%datum);
-#      }
-#      my ($gi, $id, $gb, $accession_version, $comment) = split(/\|/, $line);
-#      my ($accession, $version);
-#      if ($accession_version =~ m/\./) {
-#	  ($accession, $version) = split(/\./, $accession_version);
-#      }
-#      else {
-#	  $accession = $accession_version;
-#	  $version = '0';
-#      }
-#      $datum{accession} = $accession;
-#      $datum{version} = $version;
-#      $datum{comment} = $comment;
-#    }  ## The mgc genomes
+    elsif ($line =~ /^\>/) {  ### This is a CDS entry from the MGC
+      if (defined($datum{accession})) {
+        $me->Insert_Genome_Entry(\%datum);
+      }
+      my ($gi, $id, $gb, $accession_version, $comment) = split(/\|/, $line);
+      my ($accession, $version);
+      if ($accession_version =~ m/\./) {
+	($accession, $version) = split(/\./, $accession_version);
+      }
       else {
-        $datum{mrna_seq} .= $line;
+	$accession = $accession_version;
+	$version = '0';
+      }
+      $datum{accession} = $accession;
+      $datum{version} = $version;
+      $datum{comment} = $comment;
+    }  ## END OF A MGC CDS ENTRY
+    else {
+      $datum{mrna_seq} .= $line;
     }   ## Non accession line
   }  ## End every line
-    $datum{protein_seq} = $misc->Translate($datum{mrna_seq});
+  $datum{protein_seq} = $misc->Translate($datum{mrna_seq});
   print "Submitting $datum{accession}\n";
-    $me->Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
+  $me->Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
 }
 
 sub Import_CDS {
@@ -475,10 +436,10 @@ sub Import_CDS {
     ### Don't change me, this is provided by genbank
     $orf_stop = $feature->end();
     my %datum = (
-                 ### fixme
+                 ### FIXME
                  accession => $tmp_accession,
                  mrna_seq => $mrna_sequence,
-                 protein_seq => $protein_sequence,
+		 protein_seq => $protein_sequence,
                  orf_start => $orf_start,
                  orf_stop => $orf_stop,
                  species => $full_species,
@@ -781,6 +742,7 @@ mrna_seq text not null,
 protein_seq text,
 orf_start int,
 orf_stop int,
+lastupdate $PRFConfig::config->{sql_timestamp},
 primary key (id),
 UNIQUE(accession),
 INDEX(genename))";
@@ -810,6 +772,7 @@ sub Create_Queue {
   my $me = shift;
   my $statement = "CREATE table queue (
 id $PRFConfig::config->{sql_index},
+genome_id int,
 public bool,
 params blob,
 out bool,
@@ -819,9 +782,20 @@ primary key (id))";
   $sth->execute;
 }
 
+sub Create_Pknots {
+  my $me = shift;
+  $me->Create_MFE('pknots');
+}
+
 sub Create_Nupack {
   my $me = shift;
-  my $statement = "CREATE TABLE nupack (
+  $me->Create_MFE('nupack');
+}
+
+sub Create_MFE {
+  my $me = shift;
+  my $name = shift;
+  my $statement = "CREATE TABLE $name (
 id $PRFConfig::config->{sql_index},
 genome_id int,
 species $PRFConfig::config->{sql_species},
@@ -829,34 +803,13 @@ accession $PRFConfig::config->{sql_accession},
 start int,
 slipsite char(7),
 seqlength int,
-sequence char(200),
-paren_output char(200),
-parsed blob,
+sequence text,
+output text,
+parsed text,
 mfe float,
 pairs int,
 knotp bool,
-lastupdate $PRFConfig::config->{sql_timestamp},
-primary key(id))";
-  my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute;
-}
-
-sub Create_Pknots {
-  my $me = shift;
-  my $statement = "CREATE TABLE pknots (
-id $PRFConfig::config->{sql_index},
-genome_id int,
-species $PRFConfig::config->{sql_species},
-accession $PRFConfig::config->{sql_accession},
-start int,
-slipsite char(7),
-pk_input text,
-pk_output blob,
-parsed blob,
 barcode text,
-mfe float,
-pairs int,
-knotp bool,
 lastupdate $PRFConfig::config->{sql_timestamp},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
@@ -880,7 +833,7 @@ mfe_se float,
 pairs_mean float,
 pairs_sd float,
 pairs_se float,
-mfe_values blob,
+mfe_values text,
 lastupdate $PRFConfig::config->{sql_timestamp},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
@@ -891,12 +844,13 @@ sub Create_Derived {
     my $me = shift;
     my $statement = "CREATE TABLE derived (
 id $PRFConfig::config->{sql_index},
-genome_id int,
+mfe_source varchar(20) not null,
+mfe_id int,
+boot_id int,
 accession $PRFConfig::config->{sql_accession},
-image_type varchar(25) default '',
 image blob,
-image_name varchar(50) default '',
 z_score float,
+lastupdate $PRFConfig::config->{sql_timestamp},
 primary key(id))";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or die("Could not execute statement: $statement in Create_Genome");
@@ -915,6 +869,7 @@ primary key(id))";
 }
 
 sub Tablep {
+  my $me = shift;
   my $table = shift;
   my $statement = qq(SHOW TABLES LIKE '$table');
   my $dbh = DBI_Connect();
