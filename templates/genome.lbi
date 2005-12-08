@@ -1,6 +1,6 @@
 <table width="100%" border="0" cellspacing="2" cellpadding="2">
   <tr align="left" valign="top">
-    <td width="400"><p><strong>Gene Name: </strong>[% genename %]<br>
+    <td width="400"><p><strong>Gene Name: </strong><a href="prfdb05_index.pl?browse=1&query=[% accession %]&select=accession">[% genename %]</a><br>
         <strong>Accession:</strong> [% accession %]<br>
         <strong>Species:</strong> [%
         species %]</p>

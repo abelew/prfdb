@@ -1,0 +1,50 @@
+<tr>
+	<td>
+		<div align="center">
+			<strong>
+				<font size="-1" face="Courier New, Courier, mono">
+					[% id %]</font></strong>
+		</div>
+	</td>
+	<td>
+		<div align="center">
+			<strong>
+				<font size="-1" face="Courier New, Courier, mono">
+					[% slipstart %]</font></strong>
+		</div>
+	</td>
+	<td>
+		<div align="center">
+			<strong>
+				<font size="-1" face="Courier New, Courier, mono">
+					[% slip %]</font></strong>
+		</div>
+	</td>
+	<td>
+		<div align="center">
+			<strong>
+				<font size="-1" face="Courier New, Courier, mono">
+					[% barcode %]</font></strong>
+		</div>
+	</td>
+	<td>
+		<div align="center">
+			<strong>
+				<font size="-1" face="Courier New, Courier, mono">
+					[% mfe %]</font></strong>
+		</div>
+	</td>
+	<td>
+		<div align="center">
+			<strong>
+				<font size="-1" face="Courier New, Courier, mono">
+					[% bp %]</font></strong>
+		</div>
+	</td>
+	<td>
+		<div align="center">
+			<strong>
+				<font size="-1" face="Courier New, Courier, mono"><a href="prfdb05_index.pl?detaillist=1&query=[% query %]&select=accession&slipstart=[% slipstart %]&id=[% id %]&genename=[% genename %]">DETAILS</a></font></strong>
+		</div>
+	</td>
+</tr>

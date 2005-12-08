@@ -1,7 +1,7 @@
 
 <tr>
   <td width="33%"><div align="center"><strong><font size="-1" face="Courier New, Courier, mono">
-<a href="prfdb05_index.pl?detail=1&query=[% accession %]&select=accession&slipstart=[% slipstart %]">[%
+<a href="prfdb05_index.pl?detaillist=1&query=[% accession %]&select=accession&slipstart=[% slipstart %]">[%
             slipstart %]</a></font></strong></div>
   </td>
   <td width="33%"><div align="center"><strong><font size="-1" face="Courier New, Courier, mono">[%

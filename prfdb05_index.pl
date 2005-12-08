@@ -39,8 +39,8 @@ my %attr = { RaiseError => 1, AutoCommit => 1};
 my $dbh = &DBI_Connect($dsn, $user, $pass, \%attr);
 
 # get parameters
-if($cgi->param('browse') ){ &BROWSE; }
-elsif( $cgi -> param('detail')){ &DETAIL; }
+if($cgi->param('browse')){ &BROWSE; }
+elsif( $cgi -> param('detaillist')){ &DETAILEDLIST; }
 else{
     &BROWSE;
 }
@@ -49,36 +49,30 @@ my $vars = { text_body => $text_body };
 
 $template->process("default.dwt",$vars) || die $template->error();
 
-sub DETAIL{
+sub DETAILEDLIST{
     my $body = "";
     my $select = $cgi->param('select');
     my $query = $cgi->param('query');
     my $slipstart = $cgi->param('slipstart');
+    my $id = $cgi-> param('id');
     
     # clean offending badness
     $select =~ s/[^\w\s-:]/_/g;
     $query =~ s/[^\w\s-:]/_/g;
     $slipstart =~ s/[^\d]/_/g;
+    $id =~ s/[^\d]/_/g;
     
-    my $q1 = ""; # 1st query; a reference to a 2D-array representing all the rows of the result set.
-    my $sql = "";
-    if( $query and $select eq 'accession' ){
-        $sql = "select species,genename,comment from genome where accession = \"$query\"";
-    }else{
-        # RUN FOR YOUR LIFE!
-        $body .= "$query was not found in &DETAIL\n";
-        my $browse_vars = { results => $body };
-        $template->process("browser.lbi",$browse_vars,\$text_body) || die $template->error();
-        return;
-    }
-    
-    my $q1 = &DBI_doSQL( $dbh, $sql);
+    # 1st query; a reference to a 2D-array representing all the rows of the result set.
+    my $sql1 = "select species,genename,comment from genome where accession = \"$query\"";
+    my $q1 = &DBI_doSQL( $dbh, $sql1);
 
     # get the ONE row in the result set.
     my $row = pop(@$q1);
+    
+    # build the minitable for the list of slippery sites.
     my ($sliplist,$sig_count,$ss_count) = &SLIPLIST( $query, $slipstart ); # $$row[1] = accession ID
-
-    my $detail_list = "";
+    
+    # fill the vars hash and build the top part of the detail list page
     my $vars={
         accession => $query,
         species => $$row[0],
@@ -87,24 +81,64 @@ sub DETAIL{
         sig_count => $sig_count,
         ss_count => $ss_count,
         sliplist => $sliplist
-    };
+    };    
     
-    $template->process("detail_header.lbi", $vars, \$body) || die $template->error();
-    my $q2 = DBI_doSQL($dbh, "select id, slipsite, barcode, mfe, pairs from pknots where accession = \"$query\" and start = $slipstart order by mfe" );
-    while(my $r = shift(@$q2)){
-        my $temp_seq = $$r[1];
-        my $detail_vars = {
-            id => $$r[0],
-            start => $slipstart,
-            slip => $$r[1],
-            barcode => $$r[2],
-            mfe => $$r[3],
-            bp => $$r[4]
+    if( $id ){
+        $template->process("detailed_record_header.lbi", $vars, \$body) || die $template->error();
+        my $sql2 = "select species, accession, start, slipsite, pk_input, pk_output, parsed, barcode, brackets, mfe, pairs, knotp, lastupdate from pknots where id = $id";
+        my $q2 = DBI_doSQL( $dbh, $sql2);
+        my $r2 = shift(@$q2);
+        
+        # fix pknots output and put in some HTML breaks...
+        $$r2[5] = &REFORMATPKNOTS( $$r2[5] );
+        
+        $vars ={
+            id => $id,
+            species => $$r2[0],
+            accession => $$r2[1],
+            slipstart => $$r2[2],
+            slipsite => $$r2[3],
+            pk_input => $$r2[4],
+            pk_output => $$r2[5],
+            parsed => $$r2[6],
+            barcode => $$r2[7],
+            brackets => $$r2[8],
+            mfe => $$r2[9],
+            pairs => $$r2[10],
+            knotp => $$r2[11],
+            lastupdate => $$r2[12],
+            algorithm => "pknots",
+            zscore => "UNDEF",
+            mean => "UNDEF",
+            stderr => "UNDEF",
+            genename => $$row[1] # from previous query
         };
-        $template->process("detail_body.lbi", $detail_vars, \$body) || die $template->error();
+        
+        # this gets printed straight out as a pop-up window.
+        $template->process("detailed_record_body.lbi", $vars, \$body) || die $template->error();        
+    }else{
+        $template->process("detail_list_header.lbi", $vars, \$body) || die $template->error();
+        # get all the different structures 3' of the currently selected slippery site.
+        # and build the rest of the page body.
+        my $q2 = DBI_doSQL($dbh, "select id, slipsite, barcode, mfe, pairs from pknots where accession = \"$query\" and start = $slipstart order by mfe" );
+        while(my $r = shift(@$q2)){
+            my $temp_seq = $$r[1];
+            my $detail_vars = {
+                id => $$r[0],
+                slipstart => $slipstart,
+                slip => $$r[1],
+                barcode => $$r[2],
+                mfe => $$r[3],
+                bp => $$r[4],
+                query => $query,
+                genename => $$row[1] # from previous query
+            };
+            $template->process("detail_list_body.lbi", $detail_vars, \$body) || die $template->error();
+        }
+        $template->process("detail_list_footer.lbi", "", \$body) || die $template->error();
     }
-    $template->process("detail_footer.lbi", "", \$body) || die $template->error();
     
+    # put the body text into the whole document.
     my $browse_vars = { results => $body };
     $template->process("browser.lbi", $browse_vars, \$text_body) || die $template->error();
 }
@@ -278,6 +312,25 @@ sub PRETTY_MRNA{
     $seq =~ s/T \<\/strong\>\<\/font>(AA|AG|GA)/\<\/strong\>\<\/font\>\<font color =\"#0000FF\"\>\<strong\>T $1\<\/strong\>\<\/font\>/g;
     $seq =~ s/(#FF0000.*?)T (AA|GA|AG)/$1\<font color =\"#0000FF\"\>\<strong\>T $2\<\/strong\>\<\/font\>/g;
     return $seq;
+}
+
+sub REFORMATPKNOTS{
+    my $old = shift;
+    my @lines = split(/\n/, $old );
+    my $new = "";
+    for(my $i = 0; $i < @lines; $i++){
+        if( $i%4==1 or $i%4==2 ){ $new .= "&nbsp&nbsp"; }
+        my @cols = split(/\s+/,$lines[$i]);
+        for(my $x=0; $x < @cols; $x++){
+            if( length($cols[$x]) == 1 ){
+                $new .= $cols[$x]."&nbsp ";
+            }else{
+                $new .= $cols[$x]." ";
+            }
+        }
+        $new .= "<br>";
+    }
+    return $new;
 }
 
 #############

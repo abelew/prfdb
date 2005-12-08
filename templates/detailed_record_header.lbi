@@ -1,0 +1,23 @@
+<table width="100%" border="0" cellspacing="2" cellpadding="2">
+  <tr align="left" valign="top">
+    <td width="400"><p><strong>Gene Name: </strong><a href="prfdb05_index.pl?browse=1&query=[% accession %]&select=accession">[% genename %]</a><br>
+        <strong>Accession:</strong> [% accession %]<br>
+        <strong>Species:</strong> [%
+        species %]</p>
+    </td>
+    <td><p>[% sig_count %] folded structures found among [% ss_count %] potential
+      slippery sites.</p></td>
+  </tr>
+  <tr align="left" valign="top">
+    <td width="400"><p><font color="#000000" size="-1" face="Courier New, Courier, mono"><strong>[%
+            sliplist %]</strong></font></p>
+    </td>
+    <td><p><strong>Comments:</strong> [% comments %]</p>
+      <p></td>
+  </tr>
+  <tr align="left" valign="top">
+    <td colspan="2"><hr align="center" width="100%" noshade>
+    </td>
+  </tr>
+  </table>
+ 

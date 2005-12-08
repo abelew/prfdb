@@ -1,0 +1,87 @@
+<p><font size="-1">You have requested detailed information on structure #[% id %]. This structure
+    is associated with a putative slippery site at position [% slipstart %] in
+    [% genename %] from [% species %]. The structure you have requested was folded
+    by [% algorithm %]. The predicted
+    structure
+    has
+    a minimum
+    free
+    energy value of [% mfe %] kcal/mol and comprises [% pairs %] base pairs.
+    The &quot;barcode&quot; for this structure is <strong>&quot;<font face="Courier New, Courier, mono">[%
+    barcode %]</font>&quot;</strong>. Finally, this structure is predicted to
+    have a <em><font face="Times New Roman, Times, serif">Z </font></em>score
+    of [% zscore %] (mean MFE = [% mean %] &plusmn; [% stderr %]).</font></p>
+<table width="350" border="0" align="center" cellpadding="2" cellspacing="1">
+  <tr bgcolor="#CCCCCC">
+    <td><div align="right"><em><font size="-1">Structure ID: </font></em></div>
+    </td>
+    <td><strong><font size="-1" face="Courier New, Courier, mono">#[% id %]</font></strong></td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td><div align="right"><em><font size="-1">Algorithm Used: </font></em></div>
+    </td>
+    <td><strong><font size="-1" face="Courier New, Courier, mono">[% algorithm
+          %]</font></strong></td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td><div align="right"><em><font size="-1">Barcode: </font></em></div>
+    </td>
+    <td><strong><font size="-1" face="Courier New, Courier, mono">[% barcode
+          %]</font></strong></td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td><div align="right"><em><font size="-1">MFE: </font></em></div>
+    </td>
+    <td><strong><font size="-1" face="Courier New, Courier, mono">[% mfe %]</font></strong></td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td><div align="right"><em><font size="-1">Z score: </font></em></div>
+    </td>
+    <td><strong><font size="-1" face="Courier New, Courier, mono">[% zscore %]</font></strong></td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td><div align="right"><em><font size="-1">Randomized Mean MFE: </font></em></div>
+    </td>
+    <td><strong><font size="-1" face="Courier New, Courier, mono">[% mean %] &plusmn; [%
+          stderr %]</font></strong></td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td><div align="right"><em><font size="-1">Number of Base Pairs:</font></em></div>
+    </td>
+    <td><strong><font size="-1" face="Courier New, Courier, mono">[% pairs %]</font></strong></td>
+  </tr>
+</table>
+<p><font size="-1">Below you will find 1) the input sequence in FASTA format;
+    2) the raw output from [% algorithm %]; 3) a condensed &quot;parsed&quot; structure
+    format; and 4) the structure in bracket notation.</font></p>
+<hr>
+<p><strong>FASTA</strong></p>
+<table width="100%" border="0" cellpadding="2" cellspacing="0" bgcolor="#CCCCCC">
+  <tr>
+    <td><font size="-1" face="Courier New, Courier, mono">&gt;[% accession %]
+        sub sequence<br>
+      [% pk_input %]</font></td>
+  </tr>
+</table>
+<hr>
+<p><strong>Raw Output from [% algorithm %].</strong></p>
+<table width="100%" border="0" cellpadding="2" cellspacing="0" bgcolor="#CCCCCC">
+  <tr>
+    <td><font size="-1" face="Courier New, Courier, mono">[% pk_output %]</font></td>
+  </tr>
+</table>
+<hr>
+<p><strong>Parsed Structure Format.</strong></p>
+<table width="100%" border="0" cellpadding="2" cellspacing="0" bgcolor="#CCCCCC">
+  <tr>
+    <td><font size="-1" face="Courier New, Courier, mono">[% parsed %]</font></td>
+  </tr>
+</table>
+<hr>
+<p><strong>Structure in bracket notation.</strong></p>
+<table width="100%" border="0" cellpadding="2" cellspacing="0" bgcolor="#CCCCCC">
+  <tr>
+    <td><font size="-1" face="Courier New, Courier, mono">[% brackets %]</font></td>
+  </tr>
+</table>
+
