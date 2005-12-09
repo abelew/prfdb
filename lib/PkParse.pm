@@ -296,132 +296,137 @@ sub Finished_Test_p {
   }
 }
 
-sub Pknots_to_Bracket {
-  my $me = shift;
-  my $string = shift;
-  my @helixLIST = ();
-  push(@helixLIST, $me->Find_PK_Helices($string));
-  push(@helixLIST, $me->Find_PK_Gaps($string));
-  my @brackets = ();
-  while(my $helixREF = pop(@helixLIST)) {
-    for(my $i=0; $i < @$helixREF; $i++) {
-      unless($$helixREF[$i] eq '-'){
-        $brackets[$i] = $$helixREF[$i];
-      }
+sub MAKEBRACKETS {
+    my($strREF) = @_;
+    my @helixLIST = ();
+    push(@helixLIST, FINDHELIX($strREF) );
+    push(@helixLIST, FINDGAPS($strREF) );
+    my @brackets = ();
+    while( my $helixREF = pop(@helixLIST) ){
+	for(my $i=0; $i < @$helixREF; $i++){
+	    unless($$helixREF[$i] eq '-'){
+		$brackets[$i] = $$helixREF[$i];
+	    }
+	}
     }
-  }
-  return join("",@brackets);
+    return join("",@brackets);
 }
 
-sub Find_PK_Helices {
-  my $me = shift;
-  my $string = shift;
-  my $helixREF = "";
-  my @helixLIST = ();
-  my $last3 = 0;
-  my $limit = @$string;
-	
-  for(my $i = 0; $i < @$string; $i++ ){
-    if(($$string[$i] =~ /\d+/) and ($i < $$string[$i])) {
-      $me->SETDEFAULTBRACKETS();
-      if(($i < $last3 ) and ($limit < @$string)) {
-        $me->SETALTERNATIVEBRACKETS();
-      }
-      ($i, $last3, $limit, $helixREF) = $me->Zip_PK_Helix($string, $i, $limit);
-      #print @$helixREF,"\n";
-      push(@helixLIST, $helixREF);
+sub FINDHELIX {
+    my( $strREF ) = @_;
+    my $helixREF = "";
+    my @helixLIST = ();
+    my $last3 = 0;
+    my $limit = @$strREF;
+
+    for(my $i = 0; $i < @$strREF; $i++ ){
+	if(( $$strREF[$i] =~ /\d+/) and
+	   ( $i < $$strREF[$i] )) {
+	    SETDEFAULTBRACKETS();
+	    if(($i < $last3 ) and
+	       ($limit < @$strREF)) {
+		SETALTERNATIVEBRACKETS();
+	    }
+	    ( $i, $last3, $limit, $helixREF) = ZIPHELIX( $strREF, $i, $limit );
+	    # print @$helixREF,"\n";
+	    push( @helixLIST, $helixREF );
+	}
     }
-  }
-  return @helixLIST;
+    return @helixLIST;
 }
 
-sub Find_PK_Gaps {
-  my $me = shift;
-  my $string = shift;
-  my @gaps = ();
-  for(my $i = 0; $i < @$string; $i++){
-    if($$string[$i] eq '.'){
-      $gaps[$i] = ':';
+sub FINDGAPS{
+    my($strREF) = @_;
+    my @gaps = ();
+    for(my $i = 0; $i < @$strREF; $i++){
+	if($$strREF[$i] eq '.'){
+	    $gaps[$i] = ':';
+	} else {
+	    $gaps[$i] = '?';
+	}
     }
-    else {
-      $gaps[$i] = '?';
-    }
-  }
-  return \@gaps;
+    return \@gaps;
 }
 
-sub Zip_PK_Helix {
-  my $me = shift;
-  my( $strREF, $b5, $limit ) = @_;
-  my @helix = ();
+sub ZIPHELIX{
+    my( $strREF, $b5, $limit ) = @_;
+    my @helix = ();
 
-  my $b3 = $$strREF[ $b5 ];
-  my $last5 = $b5;
-  my $last3 = $b3;
-  my $knot5 = "";
-  my $knotted = 0;
-  my $helixCrown = 0;
-  my $nextLimit = @$strREF;
+    my $b3 = $$strREF[ $b5 ];
+    my $last5 = $b5;
+    my $last3 = $b3;
+    my $knot5 = "";
+    my $knotted = 0;
+    my $helixCrown = 0;
+    my $nextLimit = @$strREF;
 
-  for(my $i = 0; $i < $b5; $i++){
-    $helix[$i] = "-";
-  }
-
-  for(my $i = $b5; $i < $b3; $i++){
-    if(defined($helix[$i])){
-      if($helix[$i] =~ /[\)\]]/) {
-        $helixCrown = 1;
-      }
-    }	
-    if(($$strREF[$i] =~ /\d+/) and ($i < $$strREF[$i]) and ($$strREF[$i] <= $b3) and ($i < $limit) and
-       (not $knotted) and (not $helixCrown) and (not $helix[$i])) {
-      $helix[$i] = $leftG;
-      $helix[ $$strREF[$i] ] = $rightG;
-      $last3 = $$strREF[$i];
-      $last5 = $i;
+    for(my $i = 0; $i < $b5; $i++){
+	$helix[$i] = "-";
     }
-    elsif(($$strREF[$i] =~ /\d+/ ) and ($i < $$strREF[$i]) and ($$strREF[$i] > $b3) and (not $helix[$i])) {
-      $helix[$i] = "-";
-      $nextLimit = $i+1;
-      unless($knotted){
-        $knot5 = $i-1;
-        $knotted = 1;
-      }
-    }elsif($$strREF[$i] =~ /\./) {
-      $helix[$i] = "-";
-    }elsif(not $helix[$i]) {
-      $helix[$i] = "-";
-    }
-  }
 
-  if( $knot5 ){
-    $last5 = $knot5;
-  }
-  else {
-    $nextLimit = @$strREF;
-  }
-  return ($last5, $last3, $nextLimit, \@helix);
+    for(my $i = $b5; $i < $b3; $i++ ){
+	if( defined($helix[$i]) ){
+	    if( $helix[$i] =~ /[\)\]]/ ){
+		$helixCrown = 1;
+	    }
+	}
+
+	if(( $$strREF[$i] =~ /\d+/ ) and
+	   ( $i < $$strREF[$i] ) and
+	   ( $$strREF[$i] <= $b3 ) and
+	   ( $i < $limit ) and
+	   ( not $knotted ) and
+	   ( not $helixCrown ) and
+	   ( not $helix[$i] )) {
+	    $helix[$i] = $leftG;
+	    $helix[ $$strREF[$i] ] = $rightG;
+	    $last3 = $$strREF[$i];
+	    $last5 = $i;
+	}
+	elsif (( $$strREF[$i] =~ /\d+/ ) and
+	       ( $i < $$strREF[$i] ) and
+	       ( $$strREF[$i] > $b3 ) and
+	       ( not $helix[$i] )) {
+	    $helix[$i] = "-";
+	    $nextLimit = $i+1;
+	    unless( $knotted ) {
+		$knot5 = $i-1;
+		$knotted = 1;
+	    }
+	} elsif( $$strREF[$i] =~ /\./  ) {
+	    $helix[$i] = "-";
+	    $helix[$i] = "-";
+	} elsif( not $helix[$i] ) {
+	    $helix[$i] = "-";
+	}
+    }
+
+    if( $knot5 ){
+	$last5 = $knot5;
+    }else{
+	$nextLimit = @$strREF;
+    }
+    return ($last5, $last3, $nextLimit, \@helix);
 }
 
-sub SETDEFAULTBRACKETS {
-  my $me = shift;
-  $leftG = "(";
-  $rightG = ")";
+sub SETDEFAULTBRACKETS{
+    $leftG = "(";
+    $rightG = ")";
 }
 
-sub SETALTERNATIVEBRACKETS {
-  my $me = shift;
-  $leftG = "[";
-  $rightG = "]";
+sub SETALTERNATIVEBRACKETS{
+    $leftG = "[";
+    $rightG = "]";
 }
 
 sub ReBarcoder{
     # Added by JLJ.
     my $strREF = shift;
     my $str = "";
-    if(ref($strREF) eq "ARRAY" ){
+    if (ref($strREF) eq "ARRAY") {
         $str = "@{$strREF}";
-    } else {
+    } 
+    else {
         $str = $strREF;
     }
     
@@ -430,21 +435,21 @@ sub ReBarcoder{
     my $stems = "";
     my $order = "";
     
-    while($str =~ m/(\d)/g) {
+    while ($str =~ m/(\d)/g) {
         $x = $1;
         if($x > $max) { $max = $x }
     }
     
     for(my $i=1; $i <= $max; $i++) { $stems .= $i }
     
-    while($str =~ m/(\d)/g) {
+    while ($str =~ m/(\d)/g) {
         $x = $1;
         unless($order =~ m/$x/) { $order .= $x; }
     }
     
-    #print "$str\n";
+    print "$str\n";
     $_ = $str;
-    eval "tr/$order/$stems/" or die $@;
+    eval "tr/$order/$stems/"; # or die $@;
     $str = $_;
         
     if(ref($strREF) eq "ARRAY") {

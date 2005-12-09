@@ -25,8 +25,53 @@ my $appconfig = AppConfig->new({
                                           },
                               },
                              );
+####
+## Set up some reasonable defaults here
+####
+$PRFConfig::config->{max_struct_length} = 99;
+$PRFConfig::config->{do_nupack} = 1;
+$PRFConfig::config->{do_pknots} = 1;
+$PRFConfig::config->{do_boot} = 1;
+$PRFConfig::config->{arch_specific_exe} = 0;
+$PRFConfig::config->{boot_iterations} = 100;
+$PRFConfig::config->{boot_mfe_algorithms} = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, };
+$PRFConfig::config->{boot_randomizers} = { array => \&MoreRandom::ArrayShuffle, };
+$PRFConfig::config->{db} = 'prfconfigdefault_db';
+$PRFConfig::config->{host} = 'prfconfigdefault_host';
+$PRFConfig::config->{user} = 'prfconfigdefault_user';
+$PRFConfig::config->{pass} = 'prfconfigdefault_pass';
+$PRFConfig::config->{INCLUDE_PATH} = 'html/';
+$PRFConfig::config->{INTERPOLATE} = 1;
+$PRFConfig::config->{POST_CHOMP} = 1;
+$PRFConfig::config->{PRE_PROCESS} = 'header';
+$PRFConfig::config->{EVAL_PERL} = 0;
+$PRFConfig::config->{ABSOLUTE} = 1;
+$PRFConfig::config->{slip_site_1} = '^n\{3\}$';
+$PRFConfig::config->{slip_site_2} = '^w\{3\}$';
+$PRFConfig::config->{slip_site_3} = '^h\{3\}$';
+$PRFConfig::config->{slip_site_spacer_min} = 5;
+$PRFConfig::config->{slip_site_spacer_max} = 9;
+$PRFConfig::config->{stem1_min} = 4;
+$PRFConfig::config->{stem1_max} = 20;
+$PRFConfig::config->{stem1_bulge} = 0.8;
+$PRFConfig::config->{stem1_spacer_min} = 1;
+$PRFConfig::config->{stem1_spacer_max} = 4;
+$PRFConfig::config->{stem2_min} = 4;
+$PRFConfig::config->{stem2_max} = 20;
+$PRFConfig::config->{stem2_bulge} = 0.8;
+$PRFConfig::config->{stem2_loop_min} = 0;
+$PRFConfig::config->{stem2_loop_max} = 3;
+$PRFConfig::config->{stem2_spacer_min} = 0;
+$PRFConfig::config->{stem2_spacer_max} = 100;
+$PRFConfig::config->{sql_id} = 'int not null auto_incremenent';
+$PRFConfig::config->{sql_species} = 'varchar(40) not null';
+$PRFConfig::config->{sql_genename} = 'varchar(80)';
+$PRFConfig::config->{sql_comment} = 'text not null';
+$PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
+$PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
 my $open = $appconfig->file('prfdb.conf');
 my %data = $appconfig->varlist("^.*");
+$PRFConfig::config->{sql_index} = $PRFConfig::config->{sql_id};
 for my $config_option (keys %data) {
 #  $PRFConfig::config->{$config_option} = $data{$config_option};
   $PRFConfig::config->{$config_option} = $data{$config_option};

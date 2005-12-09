@@ -76,4 +76,10 @@ sub x_format {
     return (sprintf("%.3f", abs($value)));
 }
 
+sub ZScore {
+ my( $X,$avg,$sd,$N ) = @_;
+ #return  ( ( $X - $avg ) / ( $sd / sqrt( $N ) ) );
+ return  ( ( $X - $avg ) / $sd );
+}
+
 1;

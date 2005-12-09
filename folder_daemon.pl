@@ -16,6 +16,7 @@ use MoreRandom;
 $^W=1;
 
 my $config = $PRFConfig::config;
+my $db = new PRFdb;
 chdir($config->{basedir});
 Check_Environment();
 
@@ -23,15 +24,16 @@ my $time_to_die = 0;
 
 until ($time_to_die) {
   Time::HiRes::usleep(100);
-  my $db = new PRFdb;
   my $public_id = $db->Grab_Queue('public');
   if (defined($public_id)) {  ## The public queue is not empty
     my $existsp = Check_Db($public_id);
+    $db->Done_Queue($public_id);
   }
   else {  ## The public queue is empty
     my $private_id = $db->Grab_Queue('private');
     if (defined($private_id)) {  # The queue is not empty
       my $existsp = Check_Db($private_id);
+      $db->Done_Queue($private_id);
     }
     else {  ## Both queues are empty
       sleep(10);
@@ -58,62 +60,71 @@ until ($time_to_die) {
 ##    }
 ##  }
 sub Check_Db {
-  my $id = shift;
-  my $db = new PRFdb;
-  my $motifs = new RNAMotif_Search;
-  my $accession, $species;
-  [$accession, $species] = $db->Id_to_AccessionSpecies($id);
-  print "TESTME: $accession, $species\n";
-  ## First see that there is rna motif information
-  my $bootlaces = undef;
-  my $motif_info = $db->Get_RNAmotif($accession);
-  if ($motif_info) {  ## If the motif information _does_ exist, check the folding information
-      ## For every slippery start site in the sequence
-    foreach my $start (keys %{$motif_info}) {
-      print "Doing locus: $accession start: $start\n";
-      my $fdata = $motif_info->{$start}{filedata};
-      my $folding = undef;
-      my $nupack_folding = undef;
-      my $pknots_folding = undef;
-      my $mfold_folding = undef;
-      my $filename = undef;
-
-      if ($PRFConfig::config->{do_nupack}) {  ## Check the configuration file for nupack
-        $nupack_folding = $db->Get_Num_RNAfolds('nupack', $accession, $start);
-        if ($nupack_folding ne '0') {  ## Both have motif and folding
-          PRF_Out("HAVE NUPACK FOLDING AND MOTIF for $accession");
-          return(1);
-        }
-        else { ## Want nupack, have motif, no folding, so need to make a tmp file for nupack.
-	    ## First thing: create a fasta file with the sequence from rnamotif
-	    ## The rnamotif table has the motif start position with respect to the
-	    ## first base pair in the sequence
-	    $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
-	    my $fold_search = new RNAFolders(
-					     file => $filename,
-					     accession => $accession,
-					     start => $start,
-					     species => $datum->{species},);
-	    my $nupack_info = $fold_search->Nupack();
-	    $db->Put_Nupack($nupack_info);
+    my $id = shift;
+    my $db = new PRFdb;
+    my $motifs = new RNAMotif_Search;
+    my $accession_species_ref = $db->Id_to_AccessionSpecies($id);
+    my $accession = $accession_species_ref->[0];
+    my $species = $accession_species_ref->[1];
+    ## First see that there is rna motif information
+    my $bootlaces = undef;
+    my $motif_info = $db->Get_RNAmotif($id);
+    if ($motif_info) {  ## If the motif information _does_ exist, check the folding information
+	## For every slippery start site in the sequence
+	foreach my $start (keys %{$motif_info}) {
+	    print "Doing Genomeid: $id locus: $accession start: $start\n";
+	    my $fdata = $motif_info->{$start}{filedata};
+	    my $folding = undef;
+	    my $nupack_folding = undef;
+	    my $pknots_folding = undef;
+	    my $mfold_folding = undef;
+	    my $filename = undef;
+	    
+	    if ($config->{do_nupack}) {  ## Check the configuration file for nupack
+		$nupack_folding = $db->Get_Num_RNAfolds('nupack', $id);
+		if ($nupack_folding ne '0') {  ## Both have motif and folding
+		    PRF_Out("HAVE NUPACK FOLDING AND MOTIF for $accession");
+		    return(1);
+		}
+		else { ## Want nupack, have motif, no folding, so need to make a tmp
+		    ## file for nupack.  First thing: create a fasta file with the
+		    ## sequence from rnamotif  The rnamotif table has the motif start
+		    ## position with respect to the first base pair in the sequence
+		    $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
+		    ### Some of these parameters are not used by
+		    ### The various folders, but the information
+		    ### will be saved into $nupack_info and thus
+		    ### find its way into the database
+		    ### Alternately we could make these arguments for Put_Nupack
+		    my $fold_search = new RNAFolders(
+						     file => $filename,
+						     genome_id => $id,
+						     species => $species,
+						     accession => $accession,
+						     start => $start,
+						     );
+		    my $nupack_info = $fold_search->Nupack();
+		    $db->Put_Nupack($nupack_info);
         }  ## Else checking for folding and motif information
       }  ## End do_nupack
 
-      if ($PRFConfig::config->{do_pknots}) {  ## Check to see if pknots should be run
-        $pknots_folding = $db->Get_Num_RNAfolds('pknots', $datum->{accession}, $start);
+      if ($config->{do_pknots}) {  ## Check to see if pknots should be run
+	  $pknots_folding = $db->Get_Num_RNAfolds('pknots', $id);
         if ($pknots_folding ne '0') {  ## Both have motif and folding
-          PRF_Out("HAVE PKNOTS FOLDING AND MOTIF for $datum->{species} $datum->{accession}");
+          PRF_Out("HAVE PKNOTS FOLDING AND MOTIF for $species $accession");
           return(1);
         }
         else {  ## Want pknots, have motif, no folding, so make a tempfile
           $filename = $db->Motif_to_Fasta($motif_info->{$start}{filedata});
-          my $orf_sequence = $db->Get_ORF($datum->{accession});
+          my $orf_sequence = $db->Get_ORF($accession);
 	  print "Want pknots, have notif, no folding\n";
           my $fold_search = new RNAFolders(
-                                           file => $filename,
-                                           accession => $datum->{accession},
-                                           start => $start,
-                                           species => $datum->{species},);
+					   file => $filename,
+					   genome_id => $id,
+					   species => $species,
+					   accession => $accession,
+					   start => $start,
+					   );
           my $pknots_info = $fold_search->Pknots();
           $db->Put_Pknots($pknots_info);
         }  ## End checking for folding and motif information
@@ -123,17 +134,15 @@ sub Check_Db {
       ### Now we wish to see if there is bootstrap informaiton for mfold
       ### FIXME: This will need to be reworked to deal with different
       ### randomization schemes and may need to store different data
-      if ($PRFConfig::config->{do_boot}) {
-        my $species = $datum->{species};
-        my $accession = $datum->{accession};
+      if ($config->{do_boot}) {
         my $boot = new Bootlace(
                                 inputfile => $filename,
                                 species => $species,
                                 accession => $accession,
                                 start => $start,
-                                iterations => $PRFConfig::config->{boot_iterations},
-                                boot_mfe_algorithms => $PRFConfig::config->{boot_mfe_algorithms},
-                                randomizers => $PRFConfig::config->{boot_randomizers},
+                                iterations => $config->{boot_iterations},
+                                boot_mfe_algorithms => $config->{boot_mfe_algorithms},
+                                randomizers => $config->{boot_randomizers},
                                );
         $bootlaces = $boot->Go();
         $bootlaces->{species} = $species;
@@ -159,35 +168,36 @@ sub Check_Db {
   }  ## End checking if there is %motif_info
 
   else { ## No rnamotif information
-    my ($sequence, $orf_start) = $db->Get_ORF($datum->{accession});
-    ## Get_ORF should return a piece of sequence starting with the ATG
-    ## End ending with the stop codon as well as the start position
-    my $slipsites = $motifs->Search($sequence, $orf_start);
-    $db->Put_RNAmotif($datum->{species}, $datum->{accession}, $slipsites);
-    PRF_Out("NO MOTIF, NO FOLDING for $datum->{species} $datum->{accession}");
+      ### FIXME!!!
+      my ($sequence, $orf_start) = $db->Get_ORF($accession);
+      ## Get_ORF should return a piece of sequence starting with the ATG
+      ## End ending with the stop codon as well as the start position
+      my $slipsites = $motifs->Search($sequence, $orf_start);
+    $db->Put_RNAmotif($id, $species, $accession, $slipsites);
+    PRF_Out("NO MOTIF, NO FOLDING for $species $accession");
     my $success = scalar(%{$slipsites});
     if ($success eq '0') {
-      PRF_Out("$datum->{species} $datum->{accession} has no slippery sites.");
+      PRF_Out("$species $accession has no slippery sites.");
     }
     foreach my $start (keys %{$slipsites}) {
       my $filename = $slipsites->{$start}{filename};
-      my $accession = $datum->{accession};
-      my $species = $datum->{species};
-      PRF_Out("STARTING FOLD FOR $start in $datum->{accession}");
+      PRF_Out("STARTING FOLD FOR $start in $accession");
       ### We are now reading the orf sequence, thus we need to look from
       ### the start position of the slippery site.
-      my $fold_search = new RNAFolders(file => $filename,
-                                       accession => $accession,
-                                       start => $start,
-                                       species => $species,);
-
+      my $fold_search = new RNAFolders(
+				       file => $filename,
+				       genome_id => $id,
+				       species => $species,
+				       accession => $accession,
+				       start => $start,
+				       );
       ### Perform fold predictions here.
       my ($nupack_info, $pknots_info);
-      if ($PRFConfig::config->{do_nupack}) {
+      if ($config->{do_nupack}) {
 	  $nupack_info = $fold_search->Nupack();
 	  $db->Put_Nupack($nupack_info);
       }
-      if ($PRFConfig::config->{do_pknots}) {
+      if ($config->{do_pknots}) {
         $pknots_info = $fold_search->Pknots();
         $db->Put_Pknots($pknots_info);
       }
@@ -195,15 +205,15 @@ sub Check_Db {
       ### in which case there there is no folding/motif info
       ### Now we wish to see if there is bootstrap informaiton for mfold
 
-      if ($PRFConfig::config->{do_boot}) {
+      if ($config->{do_boot}) {
         my $boot = new Bootlace(
 				inputfile => $filename,
 				species => $species,
                                 accession => $accession,
                                 start => $start,
-                                iterations => $PRFConfig::config->{boot_iterations},
-				boot_mfe_algorithms => $PRFConfig::config->{boot_mfe_algorithms},
-				randomizers => $PRFConfig::config->{boot_randomizers},
+                                iterations => $config->{boot_iterations},
+				boot_mfe_algorithms => $config->{boot_mfe_algorithms},
+				randomizers => $config->{boot_randomizers},
 			       );
 	$bootlaces = $boot->Go();
 	$bootlaces->{species} = $species;
@@ -218,20 +228,28 @@ sub Check_Db {
 }
 
 sub Check_Environment {
-  die("No rnamotif descriptor file set.") unless(defined($PRFConfig::config->{descriptor_file}));
-  die("Tmpdir must be executable: $!") unless(-x $PRFConfig::config->{tmpdir});
-  die("Tmpdir must be writable: $!") unless(-w $PRFConfig::config->{tmpdir});
-  die("Database not defined") unless(defined($PRFConfig::config->{db}));
-  die("Database host not defined") unless(defined($PRFConfig::config->{host}));
-  die("Database user not defined") unless(defined($PRFConfig::config->{user}));
-  die("Database pass not defined") unless(defined($PRFConfig::config->{pass}));
-  unless(-r $PRFConfig::config->{descriptor_file}) {
-	RNAMotif_Search::Descriptor();
-	die("Unable to read the rnamotif descriptor file: $!") unless(-r $PRFConfig::config->{descriptor_file});
+  die("No rnamotif descriptor file set.") unless(defined($config->{descriptor_file}));
+  die("Tmpdir must be executable: $!") unless(-x $config->{tmpdir});
+  die("Tmpdir must be writable: $!") unless(-w $config->{tmpdir});
+  die("Database not defined") unless($config->{db} ne 'prfconfigdefault_db');
+  die("Database host not defined") unless($config->{host} ne 'prfconfigdefault_host');
+  die("Database user not defined") unless($config->{user} ne 'prfconfigdefault_user');
+  die("Database pass not defined") unless($config->{pass} ne 'prfconfigdefault_pass');
+  ## Now we should be able to connect to the database, so check that all the tables exist.
+  $db->Create_Genome() unless($db->Tablep('genome'));
+  $db->Create_Rnamotif() unless($db->Tablep('rnamotif'));
+  $db->Create_Pknots() unless($db->Tablep('pknots'));
+  $db->Create_Nupack() unless($db->Tablep('nupack'));
+  $db->Create_Boot() unless($db->Tablep('boot'));
+#  Create_Derived() unless(PRFdb::Tablep('derived'));
+
+  unless(-r $config->{descriptor_file}) {
+      RNAMotif_Search::Descriptor();
+	die("Unable to read the rnamotif descriptor file: $!")
+	    unless(-r $config->{descriptor_file});
   }
 }
 
 sub signal_handler {
   $time_to_die = 1;
 }
-

@@ -4,11 +4,14 @@ use IO::Handle;
 use lib 'lib';
 use PkParse;
 use PRFConfig qw / PRF_Error /;
+my $config = $PRFConfig::config;
 
 sub new {
   my ($class, %arg) = @_;
   my $me = bless {
                   file => $arg{file},
+		  genome_id => $arg{genome_id},
+		  species => $arg{species},
                   accession => $arg{accession},
                   start => $arg{start},
                   slippery => $arg{slippery},
@@ -21,63 +24,54 @@ sub Nupack {
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
-  my $config = $PRFConfig::config;
   print "NUPACK: infile: $inputfile accession: $accession start: $start\n";
-  open(SLIP, "<$inputfile");
-  my ($slippery, $crap);
-  while(my $line = <SLIP>) {
-      chomp $line;
-      if ($line =~ /^\>/) {
-	  ($slippery, $crap) = split(/ /, $line);
-	  $slippery =~ tr/actgTu/ACUGUU/;
-	  $slippery =~ s/\>//g;
-      }
-      else {next;}
-  }
-  close(SLIP);
+  my $slipsite = Get_Slipsite_From_Input($inputfile);
   my $return = {
-      accession => $accession,
       start => $start,
-      slippery => $slippery,
+      slipsite => $slipsite,
       knotp => 0,
+      genome_id => $me->{genome_id},
+      species => $me->{species},
+      accession => $me->{accession},
   };
   chdir($config->{tmpdir});
-  my $command = qq(sh -c "time $config->{nupack} $inputfile" 2>nupack.err);
+  my $command = qq($config->{nupack} $inputfile 2>nupack.err);
   my $nupack_pid = open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $accession);
   my $count = 0;
   while (my $line = <NU>) {
-	$count++;
-	## The first 15 lines of nupack output are worthless.
-	next unless($count > 14);
-	chomp $line;
-	if ($count == 15) {
+      $count++;
+      ## The first 15 lines of nupack output are worthless.
+      next unless($count > 14);
+      chomp $line;
+      if ($count == 15) {
 	  my ($crap, $len) = split(/\ \=\ /, $line);
 	  $return->{seqlength} = $len;
-	}
-	elsif ($count == 17) {
+      }
+      elsif ($count == 17) { ## Line 17 returns the input sequence
 	  $return->{sequence} = $line;
-	}
-	elsif ($count == 18) {
-	  $return->{paren_output} = $line;
-	}
-	elsif ($count == 19) {
+      }
+      elsif ($count == 18) { ## Line 18 returns paren output
+	  $return->{output} = $line;
+	  $return->{parens} = $line;
+      }
+      elsif ($count == 19) { ## Get the MFE here
 	  my $tmp = $line;
 	  $tmp =~ s/^mfe\ \=\ //g;
 	  $tmp =~ s/\ kcal\/mol//g;
 	  $return->{mfe} = $tmp;
-	}
-	elsif ($count == 20) {
+      }
+      elsif ($count == 20) { ## Is it a pseudoknot?
 	  if ($line eq 'pseudoknotted!') {
-		$return->{knotp} = 1;
+	      $return->{knotp} = 1;
 	  }
 	  else {
-		$return->{knotp} = 0;
+	      $return->{knotp} = 0;
 	  }
-	}
+      }
   }  ## End of the line reading the nupack output.
   close(NU);
   my $nupack_return = $?;
-  unless ($nupack_return eq '0') {
+  unless ($nupack_return eq '0' or $nupack_return eq '256') {
       PRFConfig::PRF_Error("Nupack Error: $!", $accession);
       die("Nupack Error!");
   }
@@ -85,32 +79,37 @@ sub Nupack {
   my $pairs = 0;
   my @nupack_output = ();
   while(my $line = <PAIRS>) {
-	chomp $line;
-	$pairs++;
-	my ($fiveprime, $threeprime) = split(/\s+/, $line);
-	$nupack_output[$threeprime] = $fiveprime;
-	$nupack_output[$fiveprime] = $threeprime;
+      chomp $line;
+      $pairs++;
+      my ($fiveprime, $threeprime) = split(/\s+/, $line);
+      $nupack_output[$threeprime] = $fiveprime;
+      $nupack_output[$fiveprime] = $threeprime;
   }
   for my $c (0 .. $#nupack_output) {
-	$nupack_output[$c] = '.' unless(defined $nupack_output[$c]);
+      $nupack_output[$c] = '.' unless(defined $nupack_output[$c]);
   }
   close(PAIRS);
   unlink("out.pair");
   $return->{pairs} = $pairs;
   my $parser;
-  if (defined($PRFConfig::config->{max_spaces})) {
-      my $max_spaces = $PRFConfig::config->{max_spaces};
+  if (defined($config->{max_spaces})) {
+      my $max_spaces = $config->{max_spaces};
       $parser = new PkParse(debug => 0, max_spaces => $max_spaces);
   }
   else {
       $parser = new PkParse(debug => 0);
   }
   my $out = $parser->Unzip(\@nupack_output);
+  my $new_struc = PkParse::ReBarcoder($out);
+  my $barcode = PkParse::Condense($new_struc);
+  print "TESTME BARCODE: $barcode\n";
   my $parsed = '';
   foreach my $char (@{$out}) {
-	$parsed .= $char . ' ';
+      $parsed .= $char . ' ';
   }
   $return->{parsed} = $parsed;
+  $return->{barcode} = $barcode;
+  print "TESTME: $return->{barcode}\n";
   chdir($config->{basedir});
   return($return);
 }
@@ -120,29 +119,35 @@ sub Pknots {
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
-  my $config = $PRFConfig::config;
   print "PKNOTS: infile: $inputfile accession: $accession start: $start\n";
+  my $slipsite = Get_Slipsite_From_Input($inputfile);
+  my $seq = Get_Sequence_From_Input($inputfile);
   my $return = {
-      accession => $accession,
       start => $start,
-      slippery => '',
+      slipsite => $slipsite,
       knotp => 0,
+      genome_id => $me->{genome_id},
+      species => $me->{species},
+      accession => $me->{accession},
+      sequence => $seq,
+      seqlength => length($seq),
   };
   chdir($config->{tmpdir});
-  my $command = qq(sh -c "time $config->{pknots} -k $inputfile" 2>pknots.err);
-  print "PKNOTS: $command\n";
-  open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $accession);
+  my $command = qq($config->{pknots} -k $inputfile 2>pknots.err);
+  open(PK, "$command |") or PRF_Error("Could not run pknots: $!", $accession);
   my $counter = 0;
   my ($line_to_read, $crap) = undef;
   my $string = '';
   my $uninteresting = undef;
+  my $parser;
   while (my $line = <PK>) {
 	$counter++;
 	chomp $line;
 	### The NAM field prints out the name of the sequence
 	### Which is set to the slippery site in RNAMotif
 	if ($line =~ /^NAM/) {
-	  ($crap, $return->{slippery}) = split(/NAM\s+/, $line);
+	  ($crap, $return->{slipsite}) = split(/NAM\s+/, $line);
+	  $return->{slipsite} =~ tr/actgTu/ACUGUU/;
 	}
 	elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
 	   $line_to_read = $counter + 2;
@@ -164,9 +169,9 @@ sub Pknots {
 	}
   } ## For every line of pknots
   $string =~ s/\s+/ /g;
-  $return->{pk_output} = $string;
-  if (defined($PRFConfig::config->{max_spaces})) {
-      my $max_spaces = $PRFConfig::config->{max_spaces};
+  $return->{output} = $string;
+  if (defined($config->{max_spaces})) {
+      my $max_spaces = $config->{max_spaces};
       $parser = new PkParse(debug => 0, max_spaces => $max_spaces);
   }
   else {
@@ -174,11 +179,16 @@ sub Pknots {
   }
   my @struct_array = split(/ /, $string);
   my $out = $parser->Unzip(\@struct_array);
+  my $new_struc = PkParse::ReBarcoder($out);
+  my $barcode = PkParse::Condense($new_struc);
+  print "TESTME BARCODE: $barcode\n";
   my $parsed = '';
   foreach my $char (@{$out}) {
 	$parsed .= $char . ' ';
   }
   $return->{parsed} = $parsed;
+  $return->{barcode} = $barcode;
+  $return->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
   if ($parser->{pseudoknot} == 0) {
       $return->{knotp} = 0;
   }
@@ -189,11 +199,44 @@ sub Pknots {
   return($return);
 }
 
+sub Get_Sequence_From_Input {
+    my $inputfile = shift;
+    open(SEQ, "<$inputfile");
+    my $seq;
+    while(my $line = <SEQ>) {
+	chomp $line;
+	if ($line =~ /^\>/) {
+	    next;
+	}
+	else {
+	    $seq .= $line;
+	}
+    }
+    close(SEQ);
+    return($seq);
+}
+
+
+sub Get_Slipsite_From_Input {
+    my $inputfile = shift;
+    open(SLIP, "<$inputfile");
+    my ($slipsite, $crap);
+    while(my $line = <SLIP>) {
+	chomp $line;
+	if ($line =~ /^\>/) {
+	    ($slipsite, $crap) = split(/ /, $line);
+	    $slipsite =~ tr/actgTu/ACUGUU/;
+	    $slipsite =~ s/\>//g;
+	}
+	else {next;}
+    }
+    close(SLIP);
+    return($slipsite);
+}
 
 sub Mfold {
   my $me = shift;
   my $inputfile = $me->{file};
-  my $config = $PRFConfig::config;
   $ENV{MFOLDLIB} = $config->{mfoldlib};
 
   my $accession = $me->{accession};
@@ -206,8 +249,8 @@ sub Mfold {
                 slippery => $slippery,
                };
   chdir($config->{tmpdir});
-  my $command = qq(sh -c "time $config->{mfold} SEQ=$inputfile MAX=1" 2>mfold.err);
-  open(MF, "$command 2>mfold.err |") or PRF_Error("Could not run mfold: $!", $accession);
+  my $command = qq($config->{mfold} SEQ=$inputfile MAX=1 2>mfold.err);
+  open(MF, "$command |") or PRF_Error("Could not run mfold: $!", $accession);
 #  open(MF, "/bin/true |");
 #  print "Running mfold\n";
 #  sleep(2);
@@ -243,7 +286,6 @@ sub Pknots_Boot {
     my $inputfile = shift;
     my $accession = shift;
     my $start = shift;
-    my $config = $PRFConfig::config;
 #    print "BOOT: infile: $inputfile accession: $accession start: $start\n";
     my $return = {
 	accession => $accession,
@@ -251,7 +293,7 @@ sub Pknots_Boot {
     };
 
     chdir($config->{tmpdir});
-    my $command = qq(sh -c "time $config->{pknots} $inputfile" 2>pknots_boot.err);
+    my $command = qq($config->{pknots} $inputfile 2>pknots_boot.err);
     open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $accession);
     my $counter = 0;
     my ($line_to_read, $crap) = undef;
@@ -292,7 +334,6 @@ sub Mfold_Boot {
   my $inputfile = shift;
   my $accession = shift;
   my $start = shift;
-  my $config = $PRFConfig::config;
 #  $ENV{MFOLDLIB} = $config->{tmpdir} . '/dat';
   $ENV{MFOLDLIB} = '/home/trey/browser/work/dat';
   my $return;
@@ -304,7 +345,7 @@ sub Mfold_Boot {
 
   $inputfile = `basename $inputfile`;
   chomp $inputfile;
-  my $command = qq(sh -c "time $config->{mfold} SEQ=$inputfile MAX=1" 2>mfold_boot.err);
+  my $command = qq($config->{mfold} SEQ=$inputfile MAX=1 2>mfold_boot.err);
   open(MF, "$command |") or PRF_Error("Could not run mfold: $!", $accession);
 #  open(MF, "/bin/true |");
 #  print "Running mfold $command\n";
