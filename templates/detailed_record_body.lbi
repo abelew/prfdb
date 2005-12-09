@@ -1,54 +1,53 @@
 <p><font size="-1">You have requested detailed information on structure #[% id %]. This structure
     is associated with a putative slippery site at position [% slipstart %] in
     [% genename %] from [% species %]. The structure you have requested was folded
-    by [% algorithm %]. The predicted
-    structure
-    has
-    a minimum
-    free
-    energy value of [% mfe %] kcal/mol and comprises [% pairs %] base pairs.
-    The &quot;barcode&quot; for this structure is <strong>&quot;<font face="Courier New, Courier, mono">[%
+    by [% algorithm %]. The predicted structure has a minimum free energy value
+    of [% mfe %] kcal/mol and comprises [% pairs %] base pairs. The &quot;barcode&quot; for
+    this structure is <strong>&quot;<font face="Courier New, Courier, mono">[%
     barcode %]</font>&quot;</strong>. Finally, this structure is predicted to
     have a <em><font face="Times New Roman, Times, serif">Z </font></em>score
     of [% zscore %] (mean MFE = [% mean %] &plusmn; [% stderr %]).</font></p>
-<table width="350" border="0" align="center" cellpadding="2" cellspacing="1">
-  <tr bgcolor="#CCCCCC">
-    <td><div align="right"><em><font size="-1">Structure ID: </font></em></div>
+<table width="450" border="0" align="center" cellpadding="2" cellspacing="1">
+  <tr valign="top" bgcolor="#CCCCCC">
+    <td width="120"><div align="right"><em><font size="-1">Structure ID: </font></em></div>
     </td>
     <td><strong><font size="-1" face="Courier New, Courier, mono">#[% id %]</font></strong></td>
   </tr>
-  <tr bgcolor="#CCCCCC">
-    <td><div align="right"><em><font size="-1">Algorithm Used: </font></em></div>
+  <tr valign="top" bgcolor="#CCCCCC">
+    <td width="120"><div align="right"><em><font size="-1">Algorithm Used: </font></em></div>
     </td>
     <td><strong><font size="-1" face="Courier New, Courier, mono">[% algorithm
           %]</font></strong></td>
   </tr>
-  <tr bgcolor="#CCCCCC">
-    <td><div align="right"><em><font size="-1">Barcode: </font></em></div>
+  <tr valign="top" bgcolor="#CCCCCC">
+    <td width="120"><div align="right"><em><font size="-1">Barcode: </font></em></div>
     </td>
     <td><strong><font size="-1" face="Courier New, Courier, mono">[% barcode
           %]</font></strong></td>
   </tr>
-  <tr bgcolor="#CCCCCC">
-    <td><div align="right"><em><font size="-1">MFE: </font></em></div>
-    </td>
-    <td><strong><font size="-1" face="Courier New, Courier, mono">[% mfe %]</font></strong></td>
-  </tr>
-  <tr bgcolor="#CCCCCC">
-    <td><div align="right"><em><font size="-1">Z score: </font></em></div>
-    </td>
-    <td><strong><font size="-1" face="Courier New, Courier, mono">[% zscore %]</font></strong></td>
-  </tr>
-  <tr bgcolor="#CCCCCC">
-    <td><div align="right"><em><font size="-1">Randomized Mean MFE: </font></em></div>
-    </td>
-    <td><strong><font size="-1" face="Courier New, Courier, mono">[% mean %] &plusmn; [%
-          stderr %]</font></strong></td>
-  </tr>
-  <tr bgcolor="#CCCCCC">
-    <td><div align="right"><em><font size="-1">Number of Base Pairs:</font></em></div>
+  <tr valign="top" bgcolor="#CCCCCC">
+    <td width="120"><div align="right"><em><font size="-1"> Base Pairs:</font></em></div>
     </td>
     <td><strong><font size="-1" face="Courier New, Courier, mono">[% pairs %]</font></strong></td>
+  </tr>
+</table>
+<table width="450" border="0" align="center" cellpadding="2" cellspacing="1">
+  <tr bgcolor="#CCCCCC">
+    <td width="120" valign="top"><div align="right"><em><font size="-1">MFE:</font></em></div>
+    </td>
+    <td valign="top"><font size="-1" face="Courier New, Courier, mono"><strong>[% mfe %]</strong></font></td>
+    <td width="200" rowspan="3" valign="top"><div align="left"><img src="temp/graph.gif" width="200" height="150" border="2"></div></td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td width="120" valign="top"><div align="right"><em><font size="-1">Z score</font></em></div>
+    </td>
+    <td valign="top"><font size="-1" face="Courier New, Courier, mono"><strong>[% zscore %]</strong></font></td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td width="120" valign="top"><div align="right"><em><font size="-1">Randomized Mean MFE</font></em></div>
+    </td>
+    <td valign="top"><font size="-1" face="Courier New, Courier, mono"><strong>[% mean %] &plusmn; [%
+          stderr %]</strong></font></td>
   </tr>
 </table>
 <p><font size="-1">Below you will find 1) the input sequence in FASTA format;
