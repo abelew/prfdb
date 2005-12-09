@@ -3,6 +3,7 @@ TODO
 1. Fix Parser (PkParse.pm) 20051207
     a bug was found where the parser was incrementing stems when it should not have been. Check out in the prfdb05 database, pknots table, compare ID#'s 122193 and 122577. They should be the same (i.e. the parsed structures should be the same; hence the barcodes should be as well).
 2. For CDS entries, instead of only examining start to end of ORF, examine start of ORF to end of sequence; primarily for viral sequence compatibility and other rare genomic situtations where you bypass zero-frame termination signal.
+3. Add randomization data to the prfdb05 and then fix the graphing function so that it is tied to that data.
 
 IDEAS
 
