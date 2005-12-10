@@ -103,7 +103,7 @@ sub Check_Db {
 						     accession => $accession,
 						     start => $start,
 						     );
-		    my $nupack_info = $fold_search->Nupack();
+		    my $nupack_info = $fold_search->Nupack_NOPAIRS();
 		    $db->Put_Nupack($nupack_info);
         }  ## Else checking for folding and motif information
       }  ## End do_nupack
@@ -195,7 +195,7 @@ sub Check_Db {
       ### Perform fold predictions here.
       my ($nupack_info, $pknots_info);
       if ($config->{do_nupack}) {
-	  $nupack_info = $fold_search->Nupack();
+	  $nupack_info = $fold_search->Nupack_NOPAIRS();
 	  $db->Put_Nupack($nupack_info);
       }
       if ($config->{do_pknots}) {

@@ -112,6 +112,94 @@ sub Nupack {
   return($return);
 }
 
+sub Nupack_NOPAIRS {
+  my $me = shift;
+  my $inputfile = $me->{file};
+  my $accession = $me->{accession};
+  my $start = $me->{start};
+  print "NUPACK: infile: $inputfile accession: $accession start: $start\n";
+  my $slipsite = Get_Slipsite_From_Input($inputfile);
+  my $return = {
+      start => $start,
+      slipsite => $slipsite,
+      knotp => 0,
+      genome_id => $me->{genome_id},
+      species => $me->{species},
+      accession => $me->{accession},
+  };
+  chdir($config->{tmpdir});
+  my $command = qq($config->{nupack} $inputfile 2>nupack.err);
+  my $nupack_pid = open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $accession);
+  my $count = 0;
+  my @nupack_output = ();
+  while (my $line = <NU>) {
+      $count++;
+      ## The first 15 lines of nupack output are worthless.
+      next unless($count > 14);
+      chomp $line;
+      if ($count == 15) {
+	  my ($crap, $len) = split(/\ \=\ /, $line);
+	  $return->{seqlength} = $len;
+      }
+      elsif ($count == 17) { ## Line 17 returns the input sequence
+	  $return->{sequence} = $line;
+      }
+      elsif ($line =~ /^\d+\s\d+/$/) {
+	  my ($fiveprime, $threeprime) = split(/\s+/, $line);
+	  $nupack_output[$threeprime] = $fiveprime;
+	  $nupack_output[$fiveprime] = $threeprime;
+	  $count--;
+      }
+      elsif ($count == 18) { ## Line 18 returns paren output
+	  $return->{output} = $line;
+	  $return->{parens} = $line;
+      }
+      elsif ($count == 19) { ## Get the MFE here
+	  my $tmp = $line;
+	  $tmp =~ s/^mfe\ \=\ //g;
+	  $tmp =~ s/\ kcal\/mol//g;
+	  $return->{mfe} = $tmp;
+      }
+      elsif ($count == 20) { ## Is it a pseudoknot?
+	  if ($line eq 'pseudoknotted!') {
+	      $return->{knotp} = 1;
+	  }
+	  else {
+	      $return->{knotp} = 0;
+	  }
+      }
+  }  ## End of the line reading the nupack output.
+  close(NU);
+  my $nupack_return = $?;
+  unless ($nupack_return eq '0' or $nupack_return eq '256') {
+      PRFConfig::PRF_Error("Nupack Error: $!", $accession);
+      die("Nupack Error!");
+  }
+  for my $c (0 .. $#nupack_output) {
+      $nupack_output[$c] = '.' unless(defined $nupack_output[$c]);
+  }
+  $return->{pairs} = $pairs;
+  my $parser;
+  if (defined($config->{max_spaces})) {
+      my $max_spaces = $config->{max_spaces};
+      $parser = new PkParse(debug => 0, max_spaces => $max_spaces);
+  }
+  else {
+      $parser = new PkParse(debug => 0);
+  }
+  my $out = $parser->Unzip(\@nupack_output);
+  my $new_struc = PkParse::ReBarcoder($out);
+  my $barcode = PkParse::Condense($new_struc);
+  my $parsed = '';
+  foreach my $char (@{$out}) {
+      $parsed .= $char . ' ';
+  }
+  $return->{parsed} = $parsed;
+  $return->{barcode} = $barcode;
+  chdir($config->{basedir});
+  return($return);
+}
+
 sub Pknots {
   my $me = shift;
   my $inputfile = $me->{file};
