@@ -1,11 +1,7 @@
 #PBS -S [% pbs_shell %]
-#PBS -l pvmem=[% pbs_memory %]
+#PBS -l pvmem=[% pbs_memory %]mb
 #PBS -l ncpus=[% pbs_cpu %]
 #PBS -l arch=[% pbs_arch %]
 #PBS -N [% pbs_name %]
-WORKDIR=[% prefix %]
-PERL=[% perl %]
-INCDIR=[% incdir %]
-DAEMON=[% daemon_name %]
-cd ${WORKDIR}
-${PERL} -I ${INCDIR} ${DAEMON}
+cd [% prefix %]
+[% perl %] -I [% incdir %] [% daemon_name %]
