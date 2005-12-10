@@ -2,7 +2,7 @@
 use strict;
 use CGI qw/:standard :html3/;
 use CGI::Carp qw(fatalsToBrowser carpout);
-use GD::Graph::bars;
+
 use GD::Graph::mixed;
 use Statistics::Basic::Mean;
 use Statistics::Basic::Variance;
