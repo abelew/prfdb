@@ -153,12 +153,15 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
 
   if ($arch =~ /IRIX/) {
     $PRFConfig::config->{nupack} .= ".irix";
+    $PRFConfig::config->{nupack_boot} .= ".irix";
   }
   elsif ($arch =~ /AIX/) {
     $PRFConfig::config->{nupack} .= ".aix";
+    $PRFConfig::config->{nupack_boot} .= ".aix";
   }
   elsif ($arch =~ /Linux/) {
     $PRFConfig::config->{nupack} .= ".linux";
+    $PRFConfig::config->{nupack_boot} .= ".linux";
   }
 }  ## End checking if multiple architectures are in use
 
