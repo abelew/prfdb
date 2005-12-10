@@ -340,7 +340,7 @@ sub FINDGAPS{
     my @gaps = ();
     for(my $i = 0; $i < @$strREF; $i++){
 	if($$strREF[$i] eq '.'){
-	    $gaps[$i] = ':';
+	    $gaps[$i] = '.';
 	} else {
 	    $gaps[$i] = '?';
 	}
@@ -415,8 +415,8 @@ sub SETDEFAULTBRACKETS{
 }
 
 sub SETALTERNATIVEBRACKETS{
-    $leftG = "[";
-    $rightG = "]";
+    $leftG = "{";
+    $rightG = "}";
 }
 
 sub ReBarcoder{
