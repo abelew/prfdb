@@ -447,7 +447,6 @@ sub ReBarcoder{
         unless($order =~ m/$x/) { $order .= $x; }
     }
     
-    print "$str\n";
     $_ = $str;
     eval "tr/$order/$stems/"; # or die $@;
     $str = $_;

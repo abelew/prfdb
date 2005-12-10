@@ -102,14 +102,12 @@ sub Nupack {
   my $out = $parser->Unzip(\@nupack_output);
   my $new_struc = PkParse::ReBarcoder($out);
   my $barcode = PkParse::Condense($new_struc);
-  print "TESTME BARCODE: $barcode\n";
   my $parsed = '';
   foreach my $char (@{$out}) {
       $parsed .= $char . ' ';
   }
   $return->{parsed} = $parsed;
   $return->{barcode} = $barcode;
-  print "TESTME: $return->{barcode}\n";
   chdir($config->{basedir});
   return($return);
 }
@@ -181,7 +179,6 @@ sub Pknots {
   my $out = $parser->Unzip(\@struct_array);
   my $new_struc = PkParse::ReBarcoder($out);
   my $barcode = PkParse::Condense($new_struc);
-  print "TESTME BARCODE: $barcode\n";
   my $parsed = '';
   foreach my $char (@{$out}) {
 	$parsed .= $char . ' ';
@@ -287,11 +284,12 @@ sub Pknots_Boot {
     my $accession = shift;
     my $start = shift;
 #    print "BOOT: infile: $inputfile accession: $accession start: $start\n";
+##  This expected for a bootlace include:
+##  MFE, PAIRS
     my $return = {
 	accession => $accession,
 	start => $start,
     };
-
     chdir($config->{tmpdir});
     my $command = qq($config->{pknots} $inputfile 2>pknots_boot.err);
     open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $accession);
@@ -305,9 +303,6 @@ sub Pknots_Boot {
 	chomp $line;
 	if ($line =~ /^NAM/) {
 	    my ($crap, $name) = split(/NAM\s+/, $line);
-	}
-	elsif ($line =~ /Log odds/) {
-	    my ($crap, $logodds) = split(/score\:\s+/, $line);
 	}
 	elsif ($line =~ m/\/mol\)\:\s+/) {
 	    ($crap, $return->{mfe}) = split(/\/mol\)\:\s+/, $line);
@@ -325,8 +320,53 @@ sub Pknots_Boot {
 	    $string .= $line;
 	}
     } ## For every line of pknots
-    $string =~ s/\s+/ /g;
-    $return->{pkout} = $string;
+    return($return);
+}
+
+sub Nupack_Boot {
+    ## The caller of this function is in Bootlace.pm and does not expect it to be
+    ## In an OO fashion.
+    my $inputfile = shift;
+    my $accession = shift;
+    my $start = shift;
+#    print "BOOT: infile: $inputfile accession: $accession start: $start\n";
+    my $return = {
+	accession => $accession,
+	start => $start,
+    };
+    chdir($config->{tmpdir});
+    my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
+    open(NU, "$command |") or PRF_Error("Failed to run nupack: $!", $accession);
+    my $count = 0;
+    while (my $line = <NU>) {
+	chomp $line;
+	$count++;
+	if ($count == 19) {
+	    my $tmp = $line;
+	    $tmp =~ s/^mfe\ \=\ //g;
+	    $tmp =~ s/\ kcal\/mol//g;
+	    $return->{mfe} = $tmp;
+	}
+	else {
+	    next;
+	}
+    }  ## End of the output from nupack_boot
+    open(PAIRS, "<out.pair") or PRF_Error("Could not open the nupack pairs file: $!", $accession);
+    my $pairs = 0;
+    my @nupack_output = ();
+    while(my $line = <PAIRS>) {
+	chomp $line;
+	$pairs++;
+	my ($fiveprime, $threeprime) = split(/\s+/, $line);
+	$nupack_output[$threeprime] = $fiveprime;
+	$nupack_output[$fiveprime] = $threeprime;
+    }  ## End of the pairs file
+    for my $c (0 .. $#nupack_output) {
+	$nupack_output[$c] = '.' unless(defined $nupack_output[$c]);
+    }
+    close(PAIRS);
+    unlink("out.pair");
+    $return->{pairs} = $pairs;
     return($return);
 }
 

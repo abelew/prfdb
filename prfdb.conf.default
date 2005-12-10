@@ -15,6 +15,7 @@ tmpdir = "$(prefix)/work"                 ## Temporary directory, fasta files li
 bindir = "$(prefix)/work"
 nupack_dir = "$(prefix)/work"             ## Where does nupack live?
 nupack = "Fold.out"
+nupack_boot = "Fold.out.boot"
 rnamotif_dir = "$(prefix)/work"
 rnamotif = 'rnamotif'
 rmprune_dir = "$(prefix)/work"
@@ -66,3 +67,12 @@ sql_timestamp = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 #### Change the number of bases allowed in a loop before making a new stem
 #### In the PkParser
 #max_spaces = 4
+pbs_template = 'pbs_template'
+pbs_arches = 'aix4 irix6 linux'
+pbs_shell = '/bin/bash'
+pbs_memory = '1400'
+pbs_cpu = '1'
+pbs_partialname = 'fold'
+perl = '/usr/local/bin/perl'
+daemon_name = 'folder_daemon.pl'
+num_daemons = '20'

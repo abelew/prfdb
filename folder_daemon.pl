@@ -136,6 +136,7 @@ sub Check_Db {
       ### randomization schemes and may need to store different data
       if ($config->{do_boot}) {
         my $boot = new Bootlace(
+				genome_id => $id,
                                 inputfile => $filename,
                                 species => $species,
                                 accession => $accession,
@@ -207,6 +208,7 @@ sub Check_Db {
 
       if ($config->{do_boot}) {
         my $boot = new Bootlace(
+				genome_id => $id,
 				inputfile => $filename,
 				species => $species,
                                 accession => $accession,

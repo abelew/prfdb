@@ -16,7 +16,7 @@ sub new {
       dsn => $config->{dsn},
       user => $config->{user},
   }, $class;
-  $me->{dbh} = DBI->connect($me->{dsn}, $PRFConfig::config->{user}, $PRFConfig::config->{pass});
+  $me->{dbh} = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
   $me->Create_Genome() unless($me->Tablep('genome'));
   $me->Create_Queue() unless($me->Tablep('queue'));
   $me->Create_Rnamotif() unless($me->Tablep('rnamotif'));
@@ -88,7 +88,7 @@ sub Motif_to_Fasta {
 }
 
 sub MakeTempfile {
-  my $fh = new File::Temp(DIR => $PRFConfig::config->{tmpdir},
+  my $fh = new File::Temp(DIR => $config->{tmpdir},
                           TEMPLATE => 'slip_XXXXX',
                           UNLINK => 0,
                           SUFFIX => '.fasta');
@@ -102,7 +102,7 @@ sub Get_Nupack {
   my $species = shift;
   my $accession = shift;
   my $start  = shift;
-  PRFConfig::PRF_Error("Undefined value in Get_Nupack", $species, $accession) unless (defined($species) and defined($accession));
+  PRF_Error("Undefined value in Get_Nupack", $species, $accession) unless (defined($species) and defined($accession));
   my $table = 'nupack_' . $species;
   my $statement;
   if (defined($start)) {
@@ -138,7 +138,7 @@ sub Get_Boot {
   my $species = shift;
   my $accession = shift;
   my $start = shift;
-  PRFConfig::PRF_Error("Undefined value in Get_Boot", $species, $accession) unless (defined($species) and defined($accession));
+  PRF_Error("Undefined value in Get_Boot", $species, $accession) unless (defined($species) and defined($accession));
   my $table = 'boot_' . $species;
   my $statement;
   if (defined($start)) {
@@ -165,7 +165,7 @@ sub Id_to_AccessionSpecies {
   my $me = shift;
   my $id = shift;
   my $start  = shift;
-  PRFConfig::PRF_Error("Undefined value in Id_to_AccessionSpecies", $id) unless (defined($id));
+  PRF_Error("Undefined value in Id_to_AccessionSpecies", $id) unless (defined($id));
   my $statement = qq(SELECT accession, species from genome where id='$id');
   my $dbh = $me->{dbh};
   my ($accession, $species) = $dbh->selectrow_array($statement);
@@ -202,7 +202,7 @@ sub Set_Pubqueue {
   $statement = qq(INSERT INTO queue (id, public, params, out, done) VALUES ('$id', '1', '', 0, 0));
   print "ST: $statement\n";
   my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute or PRFConfig::PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
+  $sth->execute or PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
 }
 
 sub Set_Privqueue {
@@ -218,10 +218,10 @@ sub Set_Privqueue {
 sub Clean_Table {
   my $me = shift;
   my $type = shift;
-  my $table = $type . '_' . $PRFConfig::config->{species};
+  my $table = $type . '_' . $config->{species};
   my $statement = "DELETE from $table";
   my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute or PRFConfig::PRF_Error("Could not execute statement: $statement in Create_Genome");
+  $sth->execute or PRF_Error("Could not execute statement: $statement in Create_Genome");
 }
 
 sub Drop_All {
@@ -232,17 +232,17 @@ sub Drop_All {
 	my $t_name = $tab . $genus_species;
 	my $statement = "DROP table $t_name";
 	my $sth = $me->{dbh}->prepare("$statement");
-	$sth->execute or PRFConfig::PRF_Error("Could not execute \"$statement\" in Drop_All");
+	$sth->execute or PRF_Error("Could not execute \"$statement\" in Drop_All");
   }
 }
 
 sub Drop_Table {
   my $me = shift;
   my $type = shift;
-  my $table = $type . '_' . $PRFConfig::config->{species};
+  my $table = $type . '_' . $config->{species};
   my $statement = "DROP table $table";
   my $sth = $me->{dbh}->prepare("$statement");
-  $sth->execute or PRFConfig::PRF_Error("Could not execute statement: $statement in Create_Genome");
+  $sth->execute or PRF_Error("Could not execute statement: $statement in Create_Genome");
 }
 
 sub FillQueue {
@@ -272,18 +272,17 @@ sub Grab_Queue {
 sub Done_Queue {
   my $me = shift;
   my $id = shift;
-  my $update = qq(update queue set done='1' and donetime=current_timestamp() where id='$id');
+  my $update = qq(update queue set done='1', donetime=current_timestamp() where id='$id');
   $me->Execute($update);
 }
 
 sub Load_Genome_Table {
   my $me = shift;
-  print "HERE!\n";
-  if ($PRFConfig::config->{input} =~ /gz$/ or $PRFConfig::config->{input} =~ /Z$/) {
-	open(IN, "$PRFConfig::config->{zcat} $PRFConfig::config->{input} |") or die "Could not open the fasta file\n $!\n";
+  if ($config->{input} =~ /gz$/ or $config->{input} =~ /Z$/) {
+	open(IN, "$config->{zcat} $config->{input} |") or die "Could not open the fasta file\n $!\n";
   }
   else {
-	open(IN, "<$PRFConfig::config->{input}") or die "Could not open the fasta file\n $!\n";
+	open(IN, "<$config->{input}") or die "Could not open the fasta file\n $!\n";
   }
   my %datum = (accession => undef, genename => undef, version => undef, comment => undef, mrna_seq => undef);
   while(my $line = <IN>) {
@@ -339,11 +338,11 @@ sub Load_ORF_Data {
   my $me = shift;
   my $species = shift;
   my $misc = new SeqMisc;
-  if ($PRFConfig::config->{input} =~ /gz$/ or $PRFConfig::config->{input} =~ /Z$/) {
-	open(IN, "$PRFConfig::config->{zcat} $PRFConfig::config->{input} |") or die "Could not open the fasta file\n $!\n";
+  if ($config->{input} =~ /gz$/ or $config->{input} =~ /Z$/) {
+	open(IN, "$config->{zcat} $config->{input} |") or die "Could not open the fasta file\n $!\n";
   }
   else {
-	open(IN, "<$PRFConfig::config->{input}") or die "Could not open the fasta file\n $!\n";
+	open(IN, "<$config->{input}") or die "Could not open the fasta file\n $!\n";
   }
   my %datum = (
                accession => undef,
@@ -431,7 +430,7 @@ sub Import_CDS {
   my ($genus, $species) = split(/ /, $binomial_species);
   my $full_species = qq(${genus}_${species});
   $full_species =~ tr/[A-Z]/[a-z]/;
-  $PRFConfig::config->{species} = $full_species;
+  $config->{species} = $full_species;
   my $full_comment = $seq->desc();
   my ($genename, $desc) = split(/\,/, $full_comment);
   my $mrna_sequence = $seq->seq();
@@ -495,7 +494,7 @@ sub Import_Accession {
   my ($genus, $species) = split(/ /, $binomial_species);
   my $full_species = qq(${genus}_${species});
   $full_species =~ tr/[A-Z]/[a-z]/;
-  $PRFConfig::config->{species} = $full_species;
+  $config->{species} = $full_species;
   my $full_comment = $seq->desc();
   my ($genename, $desc) = split(/\,/, $full_comment);
 
@@ -716,31 +715,33 @@ sub Put_MFE {
 sub Put_Boot {
   my $me = shift;
   my $data = shift;
-  foreach my $mfe_method (keys%{$PRFConfig::config->{boot_mfe_algorithms}}) {
-  #foreach my $mfe_method (keys %{$data}) {
-      foreach my $rand_method (keys %{$PRFConfig::config->{boot_randomizers}}) {
-      #foreach my $rand_method (keys %{$data->{$mfe_method}}) {
-      my $num_iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{num_iterations};
-      my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
-      my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
-      my $mfe_se = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_se};
-      my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
-      my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
-      my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
-      my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
+  my $id = $data->{genome_id};
+  ## What fields are required?
+  foreach my $mfe_method (keys%{$config->{boot_mfe_algorithms}}) {
+      #foreach my $mfe_method (keys %{$data}) {
+      foreach my $rand_method (keys %{$config->{boot_randomizers}}) {
+	  #foreach my $rand_method (keys %{$data->{$mfe_method}}) {
+	  my $iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{iterations};
+	  my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
+	  my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
+	  my $mfe_se = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_se};
+	  my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
+	  my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
+	  my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
+	  my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
 
-      my $statement = qq(INSERT INTO boot (id, species, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('', '$data->{species}', '$data->{accession}', '$data->{start}', '$num_iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
-      if ($PRFConfig::config->{dboutput} eq 'dbi') {
+	  my @boot = ('genome_id','species','accession','start');
+	  my $errorstring = Check_Insertion(\@boot, $data);
+	  if (defined($errorstring)) {
+	      $errorstring = "Undefined value(s) in Put_Boot: $errorstring";
+	      PRF_Error($errorstring, $data->{species}, $data->{accession});
+	  }
 
-        my $sth = $me->{dbh}->prepare($statement);
-        $sth->execute()
-      }
-      else {
-        print DBOUT "$statement\n";
-      } ## End if dboutput test
-    }  ### Foreach random method
+	  my $statement = qq(INSERT INTO boot (genome_id, species, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$data->{species}', '$data->{accession}', '$data->{start}', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
+	  $me->Execute($statement);
+      }  ### Foreach random method
   } ## Foreach mfe method
-}
+}  ## End of Put_Boot
 
 #################################################
 ### Functions used to create the prfdb tables
@@ -748,17 +749,17 @@ sub Put_Boot {
 sub Create_Genome {
   my $me = shift;
   my $statement = "CREATE table genome (
-id $PRFConfig::config->{sql_id},
-accession $PRFConfig::config->{sql_accession},
-species $PRFConfig::config->{sql_species},
-genename $PRFConfig::config->{sql_genename},
+id $config->{sql_id},
+accession $config->{sql_accession},
+species $config->{sql_species},
+genename $config->{sql_genename},
 version int,
-comment $PRFConfig::config->{sql_comment},
+comment $config->{sql_comment},
 mrna_seq text not null,
 protein_seq text,
 orf_start int,
 orf_stop int,
-lastupdate $PRFConfig::config->{sql_timestamp},
+lastupdate $config->{sql_timestamp},
 primary key (id),
 UNIQUE(accession),
 INDEX(genename))";
@@ -768,16 +769,16 @@ INDEX(genename))";
 sub Create_Rnamotif {
   my $me = shift;
   my $statement = "CREATE table rnamotif (
-id $PRFConfig::config->{sql_id},
+id $config->{sql_id},
 genome_id int,
-species $PRFConfig::config->{sql_species},
-accession $PRFConfig::config->{sql_accession},
+species $config->{sql_species},
+accession $config->{sql_accession},
 start int,
 total int,
 permissable int,
 filedata blob,
 output blob,
-lastupdate $PRFConfig::config->{sql_timestamp},
+lastupdate $config->{sql_timestamp},
 primary key (id))";
   $me->Execute($statement);
 }
@@ -785,14 +786,14 @@ primary key (id))";
 sub Create_Queue {
   my $me = shift;
   my $statement = "CREATE table queue (
-id $PRFConfig::config->{sql_id},
+id $config->{sql_id},
 genome_id int,
 public bool,
 params blob,
 out bool,
-outtime timestamp,
+outtime timestamp default '',
 done bool,
-donetime timestamp,
+donetime timestamp default '',
 primary key (id))";
   $me->Execute($statement);
 }
@@ -811,10 +812,10 @@ sub Create_MFE {
   my $me = shift;
   my $name = shift;
   my $statement = "CREATE TABLE $name (
-id $PRFConfig::config->{sql_id},
+id $config->{sql_id},
 genome_id int,
-species $PRFConfig::config->{sql_species},
-accession $PRFConfig::config->{sql_accession},
+species $config->{sql_species},
+accession $config->{sql_accession},
 start int,
 slipsite char(7),
 seqlength int,
@@ -826,7 +827,7 @@ mfe float,
 pairs int,
 knotp bool,
 barcode text,
-lastupdate $PRFConfig::config->{sql_timestamp},
+lastupdate $config->{sql_timestamp},
 primary key(id))";
   $me->Execute($statement);
 }
@@ -834,10 +835,10 @@ primary key(id))";
 sub Create_Boot {
   my $me = shift;
   my $statement = "CREATE TABLE boot (
-id $PRFConfig::config->{sql_id},
+id $config->{sql_id},
 genome_id int,
-species $PRFConfig::config->{sql_species},
-accession $PRFConfig::config->{sql_accession},
+species $config->{sql_species},
+accession $config->{sql_accession},
 start int,
 iterations int,
 rand_method varchar(20),
@@ -849,7 +850,7 @@ pairs_mean float,
 pairs_sd float,
 pairs_se float,
 mfe_values text,
-lastupdate $PRFConfig::config->{sql_timestamp},
+lastupdate $config->{sql_timestamp},
 primary key(id))";
   $me->Execute($statement);
 }
@@ -857,14 +858,14 @@ primary key(id))";
 sub Create_Analysis {
     my $me = shift;
     my $statement = "CREATE TABLE analysis (
-id $PRFConfig::config->{sql_id},
+id $config->{sql_id},
 mfe_source varchar(20) not null,
 mfe_id int,
 boot_id int,
-accession $PRFConfig::config->{sql_accession},
+accession $config->{sql_accession},
 image blob,
 z_score float,
-lastupdate $PRFConfig::config->{sql_timestamp},
+lastupdate $config->{sql_timestamp},
 primary key(id))";
     $me->Execute($statement);
 }
@@ -872,10 +873,10 @@ primary key(id))";
 sub Create_Errors {
   my $me = shift;
   my $statement = "CREATE table errors (
-id $PRFConfig::config->{sql_id},
-time $PRFConfig::config->{sql_timestamp},
+id $config->{sql_id},
+time $config->{sql_timestamp},
 message blob,
-accession $PRFConfig::config->{sql_accession},
+accession $config->{sql_accession},
 primary key(id))";
   $me->Execute($statement);
 }
@@ -894,9 +895,9 @@ sub DBI_Connect {
     my $dbh;
     my $conn_error;
     if (!defined($datasource)) {
-      $datasource = "dbi:mysql:" . $PRFConfig::config->{db} . ":hostname=" . $PRFConfig::config->{host};
-      $username = $PRFConfig::config->{user};
-      $password = $PRFConfig::config->{pass};
+      $datasource = "dbi:mysql:" . $config->{db} . ":hostname=" . $config->{host};
+      $username = $config->{user};
+      $password = $config->{pass};
       $attr = {RaiseError => 1, AutoCommit => 1 };
     }
 	
