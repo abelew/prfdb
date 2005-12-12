@@ -609,10 +609,13 @@ sub Get_ORF {
   my $start = $info->{orf_start} - 1;
   my $stop = $info->{orf_stop} - 1;
   my $offset = $stop - $start;
-  my $sequence = substr($mrna_seq, $start, $offset);
+#  my $sequence = substr($mrna_seq, $start, $offset);  ## If I remove the substring
+  ## Then it should return from the start codon to the end of the mRNA which is good
+  ## For searching over viral sequence!
+  my $sequence = substr($mrna_seq, $start);
   ### DONT SCAN THE ENTIRE MRNA, ONLY THE ORF
   if ($sequence) {
-	return($sequence, $start);
+	return($sequence, $start, $stop);
   }
   else {
 	return(undef);
@@ -958,9 +961,16 @@ sub Execute {
     my $dbh = $me->{dbh};
     my $errorstr;
     my $sth = $dbh->prepare($statement) or
-	$errorstr = "Could not prepare: $statement " . $dbh->errstr , PRF_Error($errorstr);
+	$errorstr = "Could not prepare: $statement " . $dbh->errstr , Write_SQL($statement),  PRF_Error($errorstr);
     $sth->execute() or
-	$errorstr = "Could not execute: $statement " . $dbh->errstr , PRF_Error($errorstr);
+	$errorstr = "Could not execute: $statement " . $dbh->errstr , Write_SQL($statement), PRF_Error($errorstr);
+}
+
+sub Write_SQL {
+    my $statement = shift;
+    open(SQL, ">>failed_sql_statements.txt");
+    print SQL $statement;
+    close(SQL);
 }
 
 sub Get_Last_Id {

@@ -32,6 +32,7 @@ $PRFConfig::config->{max_struct_length} = 99;
 $PRFConfig::config->{do_nupack} = 1;
 $PRFConfig::config->{do_pknots} = 1;
 $PRFConfig::config->{do_boot} = 1;
+$PRFConfig::config->{nupack_nopairs_hack} = 0;
 $PRFConfig::config->{arch_specific_exe} = 0;
 $PRFConfig::config->{boot_iterations} = 100;
 $PRFConfig::config->{boot_mfe_algorithms} = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, };

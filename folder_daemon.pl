@@ -102,7 +102,13 @@ sub Check_Db {
 						     accession => $accession,
 						     start => $start,
 						     );
-		    my $nupack_info = $fold_search->Nupack_NOPAIRS();
+		    my $nupack_info;
+		    if ($config->{nupack_nopairs_hack}) {
+			$nupack_info = $fold_search->Nupack_NOPAIRS();
+		    }
+		    else {
+			$nupack_info = $fold_search->Nupack();
+		    }
 		    $db->Put_Nupack($nupack_info);
         }  ## Else checking for folding and motif information
       }  ## End do_nupack
@@ -169,7 +175,7 @@ sub Check_Db {
 
   else { ## No rnamotif information
       ### FIXME!!!
-      my ($sequence, $orf_start) = $db->Get_ORF($accession);
+      my ($sequence, $orf_start, $orf_stop) = $db->Get_ORF($accession);
       ## Get_ORF should return a piece of sequence starting with the ATG
       ## End ending with the stop codon as well as the start position
       my $slipsites = $motifs->Search($sequence, $orf_start);
@@ -180,50 +186,57 @@ sub Check_Db {
       PRF_Out("$species $accession has no slippery sites.");
     }
     foreach my $start (keys %{$slipsites}) {
-      my $filename = $slipsites->{$start}{filename};
-      PRF_Out("STARTING FOLD FOR $start in $accession");
-      ### We are now reading the orf sequence, thus we need to look from
-      ### the start position of the slippery site.
-      my $fold_search = new RNAFolders(
-				       file => $filename,
-				       genome_id => $id,
-				       species => $species,
-				       accession => $accession,
-				       start => $start,
-				       );
-      ### Perform fold predictions here.
-      my ($nupack_info, $pknots_info);
-      if ($config->{do_nupack}) {
-	  $nupack_info = $fold_search->Nupack_NOPAIRS();
-	  $db->Put_Nupack($nupack_info);
-      }
-      if ($config->{do_pknots}) {
-        $pknots_info = $fold_search->Pknots();
-        $db->Put_Pknots($pknots_info);
-      }
-      ### At this point pknot and nupack should both have output for the case
-      ### in which case there there is no folding/motif info
-      ### Now we wish to see if there is bootstrap informaiton for mfold
+	next if ($orf_stop <= $start);  ## If the slippery site is after the STOP codon
+	### Then move on to the next
+	my $filename = $slipsites->{$start}{filename};
+	PRF_Out("STARTING FOLD FOR $start in $accession");
+	### We are now reading the orf sequence, thus we need to look from
+	### the start position of the slippery site.
+	my $fold_search = new RNAFolders(
+					 file => $filename,
+					 genome_id => $id,
+					 species => $species,
+					 accession => $accession,
+					 start => $start,
+					 );
+	### Perform fold predictions here.
+	my ($nupack_info, $pknots_info);
+	if ($config->{do_nupack}) {
+	    if ($config->{nupack_nopairs_hack}) {
+		$nupack_info = $fold_search->Nupack_NOPAIRS();
+	    }
+	    else {
+		$nupack_info = $fold_search->Nupack();
+	    }
+	    $db->Put_Nupack($nupack_info);
+	}
+	if ($config->{do_pknots}) {
+	    $pknots_info = $fold_search->Pknots();
+	    $db->Put_Pknots($pknots_info);
+	}
+	### At this point pknot and nupack should both have output for the case
+	### in which case there there is no folding/motif info
+	### Now we wish to see if there is bootstrap informaiton for mfold
 
-      if ($config->{do_boot}) {
-        my $boot = new Bootlace(
-				genome_id => $id,
-				inputfile => $filename,
-				species => $species,
-                                accession => $accession,
-                                start => $start,
-                                iterations => $config->{boot_iterations},
-				boot_mfe_algorithms => $config->{boot_mfe_algorithms},
-				randomizers => $config->{boot_randomizers},
-			       );
-	$bootlaces = $boot->Go();
-	$bootlaces->{species} = $species;
-	$bootlaces->{accession} = $accession;
-	$bootlaces->{start} = $start;
-	$db->Put_Boot($bootlaces);
-      }  # End if do_bootlace
-      ## Remove the fasta file used for nupack/pknots
-      unlink($slipsites->{$start}{filename});
+	if ($config->{do_boot}) {
+	    my $boot = new Bootlace(
+				    genome_id => $id,
+				    inputfile => $filename,
+				    species => $species,
+				    accession => $accession,
+				    start => $start,
+				    iterations => $config->{boot_iterations},
+				    boot_mfe_algorithms => $config->{boot_mfe_algorithms},
+				    randomizers => $config->{boot_randomizers},
+				    );
+	    $bootlaces = $boot->Go();
+	    $bootlaces->{species} = $species;
+	    $bootlaces->{accession} = $accession;
+	    $bootlaces->{start} = $start;
+	    $db->Put_Boot($bootlaces);
+	}  # End if do_bootlace
+	## Remove the fasta file used for nupack/pknots
+	unlink($slipsites->{$start}{filename});
     } ##End checking slipsites for a locus when have not motif nor folding information
   } ## End no motif nor folding information.
 }
