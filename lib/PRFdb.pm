@@ -180,7 +180,7 @@ sub Error_Db {
   $species = '' if (!defined($species));
   $accession = '' if (!defined($accession));
   print "Error: '$message'\n";
-  my $statement = qq(INSERT into errors VALUES('', now(), '$message', '$species', '$accession'));
+  my $statement = qq(INSERT into errors (message, accession) VALUES('$message', '$accession'));
   ## Don't call Execute here or you may run into circular crazyness
   my $sth = $me->{dbh}->prepare($statement);
   $sth->execute();

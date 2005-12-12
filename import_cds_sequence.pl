@@ -6,12 +6,12 @@ use PRFdb;
 
 my $config = $PRFConfig::config;
 my $db = new PRFdb;
-my $accession = $ARGV[0];
-die("NEED ACCESSION") unless defined($accession);
+my $accession_file = $ARGV[0];
+die("NEED ACCESSION") unless defined($accession_file);
 
-print "Importing: <$accession>\n";
-#if (!defined($db->Get_mRNA05($accession))) {
-    $db->Import_CDS($accession);
-    my $params = '';
-    $db->Set_Pubqueue($accession, $params);
-#}
+open(AC, "<$accession_file");
+while (my $accession = <AC>) {
+  chomp $accession;
+  print "Importing Accession: $accession\n";
+  $db->Import_CDS($accession);
+}

@@ -132,6 +132,7 @@ sub Nupack_NOPAIRS {
   my $nupack_pid = open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $accession);
   my $count = 0;
   my @nupack_output = ();
+  my $pairs = 0;
   while (my $line = <NU>) {
       $count++;
       ## The first 15 lines of nupack output are worthless.
@@ -144,10 +145,11 @@ sub Nupack_NOPAIRS {
       elsif ($count == 17) { ## Line 17 returns the input sequence
 	  $return->{sequence} = $line;
       }
-      elsif ($line =~ /^\d+\s\d+/$/) {
+      elsif ($line =~ /^\d+\s\d+$/) {
 	  my ($fiveprime, $threeprime) = split(/\s+/, $line);
 	  $nupack_output[$threeprime] = $fiveprime;
 	  $nupack_output[$fiveprime] = $threeprime;
+          $pairs++;
 	  $count--;
       }
       elsif ($count == 18) { ## Line 18 returns paren output
@@ -457,6 +459,49 @@ sub Nupack_Boot {
     $return->{pairs} = $pairs;
     return($return);
 }
+
+sub Nupack_Boot_NOPAIRS {
+    ## The caller of this function is in Bootlace.pm and does not expect it to be
+    ## In an OO fashion.
+    my $inputfile = shift;
+    my $accession = shift;
+    my $start = shift;
+#    print "BOOT: infile: $inputfile accession: $accession start: $start\n";
+    my $return = {
+	accession => $accession,
+	start => $start,
+    };
+    chdir($config->{tmpdir});
+    my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
+    my @nupack_output;
+    open(NU, "$command |") or PRF_Error("Failed to run nupack: $!", $accession);
+    my $count = 0;
+    my $pairs = 0;
+    while (my $line = <NU>) {
+	chomp $line;
+	$count++;
+	if ($line =~ /^\d+\s\d+$/) {
+	    my ($fiveprime, $threeprime) = split(/\s+/, $line);
+	    $nupack_output[$threeprime] = $fiveprime;
+	    $nupack_output[$fiveprime] = $threeprime;
+	    $pairs++;
+	    $count--;
+	}
+	elsif ($count == 19) {
+	    my $tmp = $line;
+	    $tmp =~ s/^mfe\ \=\ //g;
+	    $tmp =~ s/\ kcal\/mol//g;
+	    $return->{mfe} = $tmp;
+	}
+	else {
+	    next;
+	}
+    }  ## End of the output from nupack_boot
+    return->{pairs} = $pairs;
+    return($return);
+}
+
+
 
 sub Mfold_Boot {
   my $inputfile = shift;

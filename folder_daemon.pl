@@ -14,7 +14,6 @@ use Bootlace;
 use MoreRandom;
 
 $^W=1;
-print "GOT HERE!\n";
 my $config = $PRFConfig::config;
 my $db = new PRFdb;
 chdir($config->{basedir});
