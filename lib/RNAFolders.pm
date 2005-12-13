@@ -419,7 +419,7 @@ sub Nupack_Boot {
     my $inputfile = shift;
     my $accession = shift;
     my $start = shift;
-#    print "BOOT: infile: $inputfile accession: $accession start: $start\n";
+#    print "Nupack_BOOT: infile: $inputfile accession: $accession start: $start\n";
     my $return = {
 	accession => $accession,
 	start => $start,
@@ -466,7 +466,7 @@ sub Nupack_Boot_NOPAIRS {
     my $inputfile = shift;
     my $accession = shift;
     my $start = shift;
-#    print "BOOT: infile: $inputfile accession: $accession start: $start\n";
+#    print "Nupack_BOOT: infile: $inputfile accession: $accession start: $start\n";
     my $return = {
 	accession => $accession,
 	start => $start,
@@ -475,19 +475,20 @@ sub Nupack_Boot_NOPAIRS {
     my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
     my @nupack_output;
     open(NU, "$command |") or PRF_Error("Failed to run nupack: $!", $accession);
-    my $count = 0;
+    my $counter = 0;
     my $pairs = 0;
     while (my $line = <NU>) {
 	chomp $line;
-	$count++;
+	$counter++;
 	if ($line =~ /^\d+\s\d+$/) {
 	    my ($fiveprime, $threeprime) = split(/\s+/, $line);
 	    $nupack_output[$threeprime] = $fiveprime;
 	    $nupack_output[$fiveprime] = $threeprime;
 	    $pairs++;
-	    $count--;
+	    $counter--;
+#            print "GOT LINE: $line pairs: $pairs\n";
 	}
-	elsif ($count == 19) {
+	elsif ($counter == 19) {
 	    my $tmp = $line;
 	    $tmp =~ s/^mfe\ \=\ //g;
 	    $tmp =~ s/\ kcal\/mol//g;
@@ -497,7 +498,7 @@ sub Nupack_Boot_NOPAIRS {
 	    next;
 	}
     }  ## End of the output from nupack_boot
-    return->{pairs} = $pairs;
+    $return->{pairs} = $pairs;
     return($return);
 }
 

@@ -12,13 +12,15 @@ use RNAMotif_Search;
 use RNAFolders;
 use Bootlace;
 use MoreRandom;
+use Data::Dumper;
 
 $^W=1;
 my $config = $PRFConfig::config;
 my $db = new PRFdb;
 chdir($config->{basedir});
 Check_Environment();
-
+Print_Config();
+sleep(10);
 my $time_to_die = 0;
 
 until ($time_to_die) {
@@ -262,6 +264,56 @@ sub Check_Environment {
 	die("Unable to read the rnamotif descriptor file: $!")
 	    unless(-r $config->{descriptor_file});
   }
+}
+
+sub Print_Config {
+    ### This is a little function designed to give the user a chance to abort
+    if ($config->{do_nupack}) {
+	my $nupack = $config->{nupack};
+	print "I AM doing a nupack fold using the program: $nupack\n";
+    }
+    else {
+	print "I AM NOT doing a nupack fold\n";
+    }
+
+    if ($config->{do_pknots}) {
+	my $pknots = $config->{pknots};
+	print "I AM doing a pknots fold using the program: $pknots\n";
+    }
+    else {
+	print "I AM NOT doing a pknots fold\n";
+    }
+$Data::Dumper::Purity = 1;
+    if ($config->{do_boot}) {
+	my $randomizers = $config->{boot_randomizers};
+	my $mfes = $config->{boot_mfe_algorithms};
+	my $nu_boot = $config->{nupack_boot};
+	print "I AM doing a boot using the following randomizers\n";
+	foreach my $k (keys %{$randomizers}) {
+		 print "$k\n";
+	 }
+	print "and the following mfe algorithms:\n";
+	foreach my $k (keys %{$mfes}) { print "$k\n"; }
+        $Data::Dumper::Purity=1;
+	$Data::Dumper::Deepcopy=1;
+        print Dumper($config->{boot_mfe_algorithms});
+	print "nupack is using the following program for bootstrap:
+$nu_boot
+and running: $config->{boot_iterations} times\n";
+    }
+    else {
+	print "I AM NOT doing a boot.\n";
+    }
+
+    if ($config->{arch_specific_exe}) {
+	print "I AM USING ARCH SPECIFIC EXECUTABLES\n";
+    }
+    else {
+	print "I am not using arch specific executables\n";
+    }
+
+    print "The default structure length in this run is: $config->{max_struct_length}\n";
+    print "I am using the database: $config->{db} and user: $config->{user}\n";
 }
 
 sub signal_handler {
