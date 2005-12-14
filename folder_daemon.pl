@@ -25,16 +25,16 @@ my $time_to_die = 0;
 
 until ($time_to_die) {
   Time::HiRes::usleep(100);
-  my $genome_id = $db->Grab_Queue('public');
-  if (defined($genome_id)) {  ## The public queue is not empty
-    my $existsp = Check_Db($genome_id);
-    $db->Done_Queue($genome_id);
+  my $ids = $db->Grab_Queue('public');
+  if (defined($ids)) {  ## The public queue is not empty
+    my $existsp = Check_Db($ids->[1]);
+    $db->Done_Queue($ids->[0]);
   }
   else {  ## The public queue is empty
-    my $genome_id = $db->Grab_Queue('private');
-    if (defined($genome_id)) {  # The queue is not empty
-      my $existsp = Check_Db($genome_id);
-      $db->Done_Queue($genome_id);
+    my $ids = $db->Grab_Queue('private');
+    if (defined($ids)) {  # The queue is not empty
+      my $existsp = Check_Db($ids->[1]);
+      $db->Done_Queue($ids->[0]);
     }
     else {  ## Both queues are empty
       sleep(10);

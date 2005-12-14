@@ -260,14 +260,12 @@ sub Grab_Queue {
   ## This id is the same id which uniquely identifies a sequence in the genome database
   my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
   my @id = $me->{dbh}->selectrow_array($single_id);
-  my $return_id = $id[0];
-  my $genome_id = $id[1];
-  if (!defined($return_id) or $return_id eq '' or !defined($genome_id) or $genome_id eq '') {
+  if (!defined(@id) or $id[0] eq '' or $id[1] eq '') {
       return(undef);
   }
   my $update = qq(UPDATE queue SET out='1', outtime=current_timestamp() WHERE id='$return_id' and public='$type');
   $me->Execute($update);
-  return($genome_id);
+  return(\@id);
 }
 
 sub Done_Queue {
