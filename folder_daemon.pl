@@ -25,16 +25,16 @@ my $time_to_die = 0;
 
 until ($time_to_die) {
   Time::HiRes::usleep(100);
-  my $public_id = $db->Grab_Queue('public');
-  if (defined($public_id)) {  ## The public queue is not empty
-    my $existsp = Check_Db($public_id);
-    $db->Done_Queue($public_id);
+  my $genome_id = $db->Grab_Queue('public');
+  if (defined($genome_id)) {  ## The public queue is not empty
+    my $existsp = Check_Db($genome_id);
+    $db->Done_Queue($genome_id);
   }
   else {  ## The public queue is empty
-    my $private_id = $db->Grab_Queue('private');
-    if (defined($private_id)) {  # The queue is not empty
-      my $existsp = Check_Db($private_id);
-      $db->Done_Queue($private_id);
+    my $genome_id = $db->Grab_Queue('private');
+    if (defined($genome_id)) {  # The queue is not empty
+      my $existsp = Check_Db($genome_id);
+      $db->Done_Queue($genome_id);
     }
     else {  ## Both queues are empty
       sleep(10);
@@ -67,6 +67,10 @@ sub Check_Db {
     my $accession_species_ref = $db->Id_to_AccessionSpecies($id);
     my $accession = $accession_species_ref->[0];
     my $species = $accession_species_ref->[1];
+    if (!defined($accession) or !($accession)) {
+      PRF_Error("No accession for $id", $id);
+      next;
+    }
     ## First see that there is rna motif information
     my $bootlaces = undef;
     my $motif_info = $db->Get_RNAmotif($id);
@@ -176,11 +180,20 @@ sub Check_Db {
   }  ## End checking if there is %motif_info
 
   else { ## No rnamotif information
-      ### FIXME!!!
-      my ($sequence, $orf_start, $orf_stop) = $db->Get_ORF($accession);
-      ## Get_ORF should return a piece of sequence starting with the ATG
-      ## End ending with the stop codon as well as the start position
-      my $slipsites = $motifs->Search($sequence, $orf_start);
+    ### FIXME!!!
+    my ($sequence, $orf_start, $orf_stop) = $db->Get_ORF($accession);
+    if (!defined($sequence) or !($sequence)) {
+      PRF_Error("No sequence for $accession!", $accession);
+    }
+    elsif (!defined($orf_start) or !($orf_start)) {
+      PRF_Error("No orf_start for $accession!", $accession);
+    }
+    elsif (!defined($orf_stop) or !($orf_stop)) {
+      PRF_Error("No orf_stop for $accession!", $accession);
+    }
+    ## Get_ORF should return a piece of sequence starting with the ATG
+    ## End ending with the stop codon as well as the start position
+    my $slipsites = $motifs->Search($sequence, $orf_start);
     $db->Put_RNAmotif($id, $species, $accession, $slipsites);
     PRF_Out("NO MOTIF, NO FOLDING for $species $accession");
     my $success = scalar(%{$slipsites});

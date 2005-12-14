@@ -258,15 +258,16 @@ sub Grab_Queue {
   $type = ($type eq 'public' ? 1 : 0);
   my $return;
   ## This id is the same id which uniquely identifies a sequence in the genome database
-  my $single_id = qq(select id from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
+  my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
   my @id = $me->{dbh}->selectrow_array($single_id);
   my $return_id = $id[0];
-  if (!defined($return_id) or $return_id eq '') {
+  my $genome_id = $id[1];
+  if (!defined($return_id) or $return_id eq '' or !defined($genome_id) or $genome_id eq '') {
       return(undef);
   }
   my $update = qq(UPDATE queue SET out='1', outtime=current_timestamp() WHERE id='$return_id' and public='$type');
   $me->Execute($update);
-  return($return_id);
+  return($genome_id);
 }
 
 sub Done_Queue {
