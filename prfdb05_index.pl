@@ -8,6 +8,8 @@ use CGI::Carp qw(fatalsToBrowser carpout);
 use DBI;
 use Template;
 use lib "lib";
+use PRFAnalysis;
+
 #use PRFConfig;
 #use PRFdb;
 #use RNAMotif_Search;
@@ -92,6 +94,10 @@ sub DETAILEDLIST{
         # fix pknots output and put in some HTML breaks...
         $$r2[5] = &REFORMATPKNOTS( $$r2[5] );
         
+        # RIght now this is just defualt values...
+        # filled this constructer later.
+        my $chart = new PRFAnalysis();
+        
         $vars ={
             id => $id,
             species => $$r2[0],
@@ -111,7 +117,8 @@ sub DETAILEDLIST{
             zscore => "UNDEF",
             mean => "UNDEF",
             stderr => "UNDEF",
-            genename => $$row[1] # from previous query
+            genename => $$row[1], # from previous query
+            chart => $chart->GET_CHART_URL(),
         };
         
         # this gets printed straight out as a pop-up window.
