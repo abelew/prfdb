@@ -36,7 +36,8 @@ my $state = {
 Print_Config();
 
 until (defined($state->{time_to_die})) {
-  Time::HiRes::usleep(100);
+#  Time::HiRes::usleep(100);
+  sleep(1);
   ### You can set a configuration variable 'master' so that it will not die
   if ($state->{done_count} > 60 and !defined($config->{master})) { $state->{time_to_die} = 1 };
 
@@ -70,6 +71,7 @@ sub Gather {
   return(0) unless(defined($state->{rnamotif_information})); ## If rnamotif_information is null
   my $rnamotif_information = $state->{rnamotif_information};
   ## Now I should have 1 or more start sites
+  my $number_rnamotif_information = Get_Num($rnamotif_information);
   foreach my $slipsite_start (keys %{$rnamotif_information}) {
     $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
     my $fold_search = new RNAFolders(
@@ -79,7 +81,6 @@ sub Gather {
 				     accession => $state->{accession},
 				     start => $slipsite_start,
 				    );
-    print "TESTME: species: $state->{species}\n";
     my $boot = new Bootlace(
 			    genome_id => $state->{genome_id},
 			    inputfile => $state->{fasta_file},
@@ -90,21 +91,26 @@ sub Gather {
 			    boot_mfe_algorithms => $config->{boot_mfe_algorithms},
 			    randomizers => $config->{boot_randomizers},
 			   );
-
     if ($config->{do_nupack}) { ### Do we run a nupack fold?
       my $nupack_folds = $db->Get_Num_RNAfolds('nupack', $state->{genome_id});
-      if ($nupack_folds > 0) {
-	print "$state->{genome_id} already has nupack_folds\n";
+      if ($nupack_folds >= $number_rnamotif_information) {
+	print "$state->{genome_id} already has $num_rnamotif_information nupack_folds\n";
       }
       else { ### If there are no existing folds...
-	my $nupack_info = $fold_search->Nupack_NOPAIRS();
+	my $nupack_info;
+	if ($config->{nupack_nopairs_hack}) {
+	  $nupack_info = $fold_search->Nupack_NOPAIRS();
+	}
+	else {
+	  $nupack_info = $fold_search->Nupack();
+	}
 	$db->Put_Nupack($nupack_info);
       }  ### Done checking for nupack folds
     } ### End check if we should do a nupack fold
 
     if ($config->{do_pknots}) { ### Do we run a pknots fold?
       my $pknots_folds = $db->Get_Num_RNAfolds('pknots', $state->{genome_id});
-      if ($pknots_folds > 0) { ### If there are no existing folds...
+      if ($pknots_folds >= $number_rnamotif_information) { ### If there are no existing folds...
 	print "$state->{genome_id} already has pknots folds\n";
       }
       else {
@@ -116,7 +122,6 @@ sub Gather {
     if ($config->{do_boot}) {
       my $boot_folds = $db->Get_Num_RNAfolds('boot', $state->{genome_id}); ## CHECKME!
       my $number_boot_algos = Get_Num($config->{boot_mfe_algorithms});
-      my $number_rnamotif_information = Get_Num($rnamotif_information);
       my $needed_boots = $number_boot_algos * $number_rnamotif_information;
       if ($boot_folds == $needed_boots) {
 	print "Already have $boot_folds pieces of boot information for $state->{genome_id}\n";
@@ -132,7 +137,7 @@ sub Gather {
     }  ### End if we are to do a boot
     unlink($state->{fasta_file});  ## Get rid of each fasta file
   } ### End foreach slipsite_start
-  foreach my $k (keys %{$state}) { $state->{$k} = undef unless ($k eq 'done_count'); } 
+  foreach my $k (keys %{$state}) { $state->{$k} = undef unless ($k eq 'done_count'); }
   ## Clean out state
 }  ## End Gather
 

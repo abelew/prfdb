@@ -79,11 +79,11 @@ sub Nupack {
   my $pairs = 0;
   my @nupack_output = ();
   while(my $line = <PAIRS>) {
-      chomp $line;
-      $pairs++;
-      my ($fiveprime, $threeprime) = split(/\s+/, $line);
-      $nupack_output[$threeprime] = $fiveprime;
-      $nupack_output[$fiveprime] = $threeprime;
+    chomp $line;
+    $pairs++;
+    my ($fiveprime, $threeprime) = split(/\s+/, $line);
+    $nupack_output[$threeprime] = $fiveprime;
+    $nupack_output[$fiveprime] = $threeprime;
   }
   for my $c (0 .. $#nupack_output) {
       $nupack_output[$c] = '.' unless(defined $nupack_output[$c]);
