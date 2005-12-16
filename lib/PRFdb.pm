@@ -169,7 +169,8 @@ sub Id_to_AccessionSpecies {
   my $statement = qq(SELECT accession, species from genome where id='$id');
   my $dbh = $me->{dbh};
   my ($accession, $species) = $dbh->selectrow_array($statement);
-  return([$accession, $species]);
+  my $return = {accession => $accession, species => $species,};
+  return($return);
 }
 
 sub Error_Db {
@@ -256,16 +257,22 @@ sub Grab_Queue {
   my $me = shift;
   my $type = shift;  ## public or private
   $type = ($type eq 'public' ? 1 : 0);
-  my $return;
   ## This id is the same id which uniquely identifies a sequence in the genome database
-  my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
-  my @id = $me->{dbh}->selectrow_array($single_id);
-  if (!defined(@id) or $id[0] eq '' or $id[1] eq '') {
-      return(undef);
+#  my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
+  my $single_id = qq(select id, genome_id from queue where genome_id='207');
+  my $ids = $me->{dbh}->selectrow_arrayref($single_id);
+  my $id = $ids->[0];
+  my $genome_id = $ids->[1];
+  if (!defined($id) or $id eq ''
+      or !defined($genome_id) or $genome_id eq '') {
+    return(undef);
   }
-  my $update = qq(UPDATE queue SET out='1', outtime=current_timestamp() WHERE id='$return_id' and public='$type');
+  my $update = qq(UPDATE queue SET out='1', outtime=current_timestamp() WHERE id='$id' and public='$type');
   $me->Execute($update);
-  return(\@id);
+  my $return = { queue_id => $id,
+		 genome_id => $genome_id,
+		 };
+  return($return);
 }
 
 sub Done_Queue {
@@ -559,23 +566,24 @@ sub Get_RNAmotif {
   my $me = shift;
   my $genome_id = shift;
   my $return = {};
-  my $statement = "SELECT total, start, permissable, filedata, output FROM rnamotif WHERE genome_id = '$genome_id'";
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_arrayref($statement);
-#  return(0) if (scalar(@{$info}) == 0);
-  return(0) if (scalar(@{$info}) == 0);
+  my $statement = "SELECT start, total, permissable, filedata, output FROM rnamotif WHERE genome_id = '$genome_id'";
+  my $info = $me->{dbh}->selectall_arrayref($statement);
   my @data = @{$info};
+  my $records = scalar(@data);
+  return(undef) if (scalar(@data) <= 0);
   foreach my $start (@data) {
-	my $total = $start->[0];
-	my $st = $start->[1];
-	my $permissable = $start->[2];
-	my $filedata = $start->[3];
-	my $output = $start->[4];
-	$return->{$st}{total} = $total;
-	$return->{$st}{start} = $st;
-	$return->{$st}{permissable} = $permissable;
-	$return->{$st}{filedata} = $filedata;
-	$return->{$st}{output} = $output;
+    my @tmp = @{$start};
+    if (!defined($start->[0])) {
+      $return->{NONE} = undef;
+    }
+    else {
+      my $st = $start->[0];
+      $return->{$st}{start} = $st;
+      $return->{$st}{total} = $start->[1];
+      $return->{$st}{permissable} = $start->[2];
+      $return->{$st}{filedata} = $start->[3];
+      $return->{$st}{output} = $start->[4];
+    }
   }
   return($return);
 }
@@ -731,15 +739,18 @@ sub Put_Boot {
 	  my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
 	  my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
 	  my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
+	  my $species = $data->{$mfe_method}->{$rand_method}->{stats}->{species};
+	  my $accession = $data->{$mfe_method}->{$rand_method}->{stats}->{accession};
+	  my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
 
-	  my @boot = ('genome_id','species','accession','start');
+	  my @boot = ('genome_id');
 	  my $errorstring = Check_Insertion(\@boot, $data);
 	  if (defined($errorstring)) {
 	      $errorstring = "Undefined value(s) in Put_Boot: $errorstring";
-	      PRF_Error($errorstring, $data->{species}, $data->{accession});
+	      PRF_Error($errorstring, $species, $accession);
 	  }
 
-	  my $statement = qq(INSERT INTO boot (genome_id, species, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$data->{species}', '$data->{accession}', '$data->{start}', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
+	  my $statement = qq(INSERT INTO boot (genome_id, species, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$species', '$accession', '$start', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
 	  $me->Execute($statement);
       }  ### Foreach random method
   } ## Foreach mfe method

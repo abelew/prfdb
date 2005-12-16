@@ -26,7 +26,7 @@ sub new {
       fasta_arrayref => [],
   }, $class;
   my $inputfile = $me->{inputfile};
-  open(IN, "<$inputfile") or PRF_Error("Could not open the Bootlace input file.", $arg{species}, $arg{accession});
+  open(IN, "<$inputfile") or PRFConfig::PRF_Error("Could not open the Bootlace input file.", $arg{species}, $arg{accession});
   while (my $line = <IN>) {
     chomp $line;
     if ($line =~ /^\>/) {
