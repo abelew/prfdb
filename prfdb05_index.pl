@@ -87,7 +87,7 @@ sub DETAILEDLIST{
     
     if( $id ){
         $template->process("detailed_record_header.lbi", $vars, \$body) || die $template->error();
-        my $sql2 = "select species, accession, start, slipsite, pk_input, pk_output, parsed, barcode, brackets, mfe, pairs, knotp, lastupdate from pknots where id = $id";
+        my $sql2 = "select species, accession, start, slipsite, sequence, pk_output, parsed, barcode, parens, mfe, pairs, knotp, lastupdate from pknots where id = $id";
         my $q2 = DBI_doSQL( $dbh, $sql2);
         my $r2 = shift(@$q2);
         

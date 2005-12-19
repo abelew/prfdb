@@ -1,10 +1,63 @@
 TODO
 
-1. Fix Parser (PkParse.pm) 20051207
-    a bug was found where the parser was incrementing stems when it should not have been. Check out in the prfdb05 database, pknots table, compare ID#'s 122193 and 122577. They should be the same (i.e. the parsed structures should be the same; hence the barcodes should be as well).
-2. For CDS entries, instead of only examining start to end of ORF, examine start of ORF to end of sequence; primarily for viral sequence compatibility and other rare genomic situtations where you bypass zero-frame termination signal.
-3. Add randomization data to the prfdb05 and then fix the graphing function so that it is tied to that data.
+* Make prfdb05 and whatever ATB is using is the same; or they share the same schema. [in progress]
+* BOIL THE DATA DOWN using some SQL magic.
+* populate fields that added to prfdb05 tables with data so that scripts dont break.
+* Add randomization, nupack, whatever data to the prfdb05 for the entries that are already there then fix the graphing function so that it is tied to that data.
+* import data from external sources
+* develop a 2nd CGI that uses the same .lbi templating scheme that is for users to add/remove/edit entries in the queue.
+* Add Gene Ontology data. (find paper on SAMBA algorithm for GO analysis).
+* DyAlign algorithm can used in conjuction with (guttell?) MWM fucntion to align/fold/compare 2 RNA structure that are pseudoknots. THis gives similarity score=>ability ot cluster=>find groups interesting candidates. (Matthews, 2005)
+* Fix Parser (PkParse.pm) 20051207: a bug was found where the parser was incrementing stems when it should not have been. Check out in the prfdb05 database, pknots table, compare ID#'s 122193 and 122577. They should be the same (i.e. the parsed structures should be the same; hence the barcodes should be as well).
+* For CDS entries, instead of only examining start to end of ORF, examine start of ORF to end of sequence; primarily for viral sequence compatibility and other rare genomic situtations where you bypass zero-frame termination signal.
+
 
 IDEAS
 
 1. maybe the randomization windows not be fixed on the input sequence window that pknots or NUPACK uses to fold, but... instead, the randomization sequence windows should be the "trimmed" sequence window that corresponds to the structure plus 1 base on either side. What do you think? The expect result would be IMHO z-scores will generally increase.
+
+BOILER mySQL [NOT RUN, and NOT finished... work in progress...]
+
+select distinct
+    a.id,
+    a.accession,
+    a.start,
+    a.slipsite,
+    a.seqLength,
+    a.pairs,
+    a.mfe,
+    a.barcode
+from
+    pknots as a
+where
+    a.accession = 'SGDID:S0000002' and
+    a.seqLength = (
+        select max(seqLength)
+        from pknots
+        where 
+            accession = a.accession and
+            slipsite = a.slipsite and
+            start = a.start and 
+            pairs = a.pairs and 
+            barcode = a.barcode and
+            abs(round(mfe,2) - round(a.mfe,2)) < 5    
+   ) 
+group by 
+    a.accession,
+    a.start,
+    a.slipsite,
+    a.pairs,
+    a.seqLength
+order by 
+    a.accession,
+    a.start, 
+    a.slipsite, 
+    a.pairs asc,
+    a.seqLength asc
+;
+
+
+
+select id,accession,start,seqLength,sequence,mfe,pairs,barcode  from pknots where accession regexp 'S0000002' and start = 507 order by start, seqLength, pairs, mfe;
+
+    b.seqLength < a.seqLength and
