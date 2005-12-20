@@ -1,9 +1,6 @@
 TODO
 
 * Make prfdb05 and whatever ATB is using is the same; or they share the same schema. [in progress]
-* BOIL THE DATA DOWN using some SQL magic.
-    STEP ONE is DONE.
-    NEXT Step: remove and condense even further, namely by removing "tandem" structures, like 112233 should probably be just 11; chop the 2233 part and refold the sequence if it's not already there.... 
 * populate fields that added to prfdb05 tables with data so that scripts dont break.
 * Add randomization, nupack, whatever data to the prfdb05 for the entries that are already there then fix the graphing function so that it is tied to that data.
 * import data from external sources
@@ -18,59 +15,5 @@ IDEAS
 
 1. maybe the randomization windows not be fixed on the input sequence window that pknots or NUPACK uses to fold, but... instead, the randomization sequence windows should be the "trimmed" sequence window that corresponds to the structure plus 1 base on either side. What do you think? The expect result would be IMHO z-scores will generally increase.
 
-BOILER mySQL
 
-STEP ONE::::
-############
-insert into pknots_temp1 
-select distinct
-         a.*
-     from
-         pknots as a
-     where
-         a.seqLength = (
-             select max(seqLength)
-             from pknots
-             where 
-                 accession = a.accession and
-                 slipsite = a.slipsite and
-                 start = a.start and 
-                 pairs = a.pairs and 
-                 barcode = a.barcode and
-                 abs(round(mfe,2) - round(a.mfe,2)) < 5    
-        ) 
-     group by 
-         a.accession,
-         a.start,
-         a.slipsite,
-         a.pairs,
-         a.seqLength
-     ;
-     
-Query OK, 80208 rows affected (7 min 15.03 sec)
-Records: 80208  Duplicates: 0  Warnings: 0
-
-
-STEP TWO####
-############
-create temporary table tempid ( id int );
-
-insert into tempid (id)
-select a.id
-from pknots_temp1 as a, pknots_temp1 as b 
-where
-    a.id != b.id and 
-    a.accession = b.accession and 
-    a.start = b.start and 
-    INSTR(
-        a.parsed,
-        trim(TRAILING '.' from b.parsed)
-    )!= 0 and
-    LEFT(a.parsed,length(trim(TRAILING "." from b.parsed))) = trim(TRAILING "." from b.parsed) 
-order by a.id;
-Query OK, 3957 rows affected (1 min 3.36 sec)
-Records: 3957  Duplicates: 0  Warnings: 0
-
-delete p.*,t.* from pknots_temp1 as p, tempid as t where p.id = t.id;
-Query OK, 7825 rows affected (1.16 sec)
 
