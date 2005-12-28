@@ -1,7 +1,62 @@
-BOILER mySQL
+20051222
+select
+g.mrna_seq, 
+g.accession,
+p.slipsite,
+p.sequence, 
+p.parsed,
+p.start,
+p.start+7,
+instr(g.mrna_seq,p.sequence),
+length(p.sequence),
+round((instr(p.parsed,trim(LEADING ". " from p.parsed)))/2,0)-1 as offset,
+round(
+    instr(g.mrna_seq,p.sequence)
+    - p.start
+    - 7
+    + round(instr( p.parsed, trim(LEADING ". " from p.parsed) ),0) / 2
+    - .5
+,0) as spacer
+from genome as g, pknots_temp1 as p
+where p.genome_id = g.id
+and (
+    instr(g.mrna_seq,p.sequence)
+    - p.start
+    - 7
+    + round(instr( p.parsed, trim(LEADING ". " from p.parsed) ),0) / 2
+    - .5
+) = 52
+\G
 
-STEP ONE::::
-############
+select
+round(
+    instr(g.mrna_seq,p.sequence)
+    - p.start
+    - 7
+    + round(instr( p.parsed, trim(LEADING ". " from p.parsed) ),0) / 2
+    - .5
+,0) as spacer,
+    count(p.id) as number
+from genome as g, pknots_temp1 as p
+where p.genome_id = g.id
+group by spacer
+order by spacer asc;
+
+
+20051220
+mysql> update
+    ->     pknots_temp1 as p,
+    ->     genome as g
+    -> set
+    ->     p.genome_id = g.id
+    -> where
+    ->     p.accession = g.accession
+    -> ;
+Query OK, 0 rows affected (3.39 sec)
+Rows matched: 76340  Changed: 0  Warnings: 0
+
+20051219
+
 insert into pknots_temp1 
 select distinct
          a.*
@@ -26,13 +81,9 @@ select distinct
          a.pairs,
          a.seqLength
      ;
-     
 Query OK, 80208 rows affected (7 min 15.03 sec)
 Records: 80208  Duplicates: 0  Warnings: 0
 
-
-STEP TWO####
-############
 create temporary table tempid ( id int );
 
 insert into tempid (id)
@@ -44,9 +95,9 @@ where
     a.start = b.start and 
     INSTR(
         a.parsed,
-        trim(TRAILING '.' from b.parsed)
+        trim(TRAILING ' .' from b.parsed)
     )!= 0 and
-    LEFT(a.parsed,length(trim(TRAILING "." from b.parsed))) = trim(TRAILING "." from b.parsed) 
+    LEFT(a.parsed,length(trim(TRAILING ' .' from b.parsed))) = trim(TRAILING ' .' from b.parsed) 
 order by a.id;
 Query OK, 3957 rows affected (1 min 3.36 sec)
 Records: 3957  Duplicates: 0  Warnings: 0

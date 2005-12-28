@@ -37,8 +37,8 @@ my $dbhost = "prfdb.no-ip.org";
 my $user = "apacheuser";
 my $pass = "2vjwotuhew";
 my $dsn = "dbi:mysql:$db:hostname=$dbhost";
-my %attr = { RaiseError => 1, AutoCommit => 1};
-my $dbh = &DBI_Connect($dsn, $user, $pass, \%attr);
+my $attr = {RaiseError => 1, AutoCommit => 1};
+my $dbh = &DBI_Connect($dsn, $user, $pass, $attr);
 
 # get parameters
 if($cgi->param('browse')){ &BROWSE; }

@@ -917,8 +917,8 @@ sub DBI_Connect {
     # Try connecting to the database, as usual.  If that fails, print
     # an error message and exit.
     unless ($dbh = DBI->connect($datasource, $username, $password, $attr)) {
-	$conn_error = DBI->errstr();
-	die("Failed to connect to $datasource: $conn_error");
+        $conn_error = DBI->errstr();
+        die("Failed to connect to $datasource: $conn_error");
     }	
     return $dbh;
 }
@@ -942,15 +942,15 @@ sub DBI_doSQL {
     }
     
     if( $returncode = $sth -> execute() ) {
-	while(@record = $sth -> fetchrow_array() ){
-	    push(@resultSet, [@record] );
-	}
-	$sth -> finish();
+        while(@record = $sth -> fetchrow_array() ){
+            push(@resultSet, [@record] );
+        }
+        $sth -> finish();
     } else {
-	$data_error = $dbh->errstr;
-	print "SQL execution error!\n\n$data_error\n\n
-			Your statement was \n\n$statement\n\n";
-	exit();
+        $data_error = $dbh->errstr;
+        print "SQL execution error!\n\n$data_error\n\n
+                Your statement was \n\n$statement\n\n";
+        exit();
     }
     return \@resultSet;
 }
