@@ -1,33 +1,12 @@
-20051222
-select
-g.mrna_seq, 
-g.accession,
-p.slipsite,
-p.sequence, 
-p.parsed,
-p.start,
-p.start+7,
-instr(g.mrna_seq,p.sequence),
-length(p.sequence),
-round((instr(p.parsed,trim(LEADING ". " from p.parsed)))/2,0)-1 as offset,
-round(
-    instr(g.mrna_seq,p.sequence)
-    - p.start
-    - 7
-    + round(instr( p.parsed, trim(LEADING ". " from p.parsed) ),0) / 2
-    - .5
-,0) as spacer
-from genome as g, pknots_temp1 as p
-where p.genome_id = g.id
-and (
-    instr(g.mrna_seq,p.sequence)
-    - p.start
-    - 7
-    + round(instr( p.parsed, trim(LEADING ". " from p.parsed) ),0) / 2
-    - .5
-) = 52
-\G
+20051228
+mysql> alter table pknots rename to pknots_old;
+Query OK, 0 rows affected (0.05 sec)
 
+mysql> alter table pknots_temp1 rename to pknots;
+Query OK, 0 rows affected (0.04 sec)
+
+
+20051222
 select
 round(
     instr(g.mrna_seq,p.sequence)
@@ -37,7 +16,7 @@ round(
     - .5
 ,0) as spacer,
     count(p.id) as number
-from genome as g, pknots_temp1 as p
+from genome as g, pknots as p
 where p.genome_id = g.id
 group by spacer
 order by spacer asc;
