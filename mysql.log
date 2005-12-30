@@ -1,12 +1,20 @@
-20051228
+##########
+#20051228
+
 mysql> alter table pknots rename to pknots_old;
 Query OK, 0 rows affected (0.05 sec)
 
 mysql> alter table pknots_temp1 rename to pknots;
 Query OK, 0 rows affected (0.04 sec)
 
+mysql> alter table boot add column structureID int after id;
+Query OK, 0 rows affected (0.06 sec)
+Records: 0  Duplicates: 0  Warnings: 0
 
-20051222
+
+##########
+#20051222
+
 select
 round(
     instr(g.mrna_seq,p.sequence)

@@ -94,11 +94,29 @@ sub DETAILEDLIST{
         # fix pknots output and put in some HTML breaks...
         $$r2[5] = &REFORMATPKNOTS( $$r2[5] );
         
-        # RIght now this is just defualt values...
-        # filled this constructer later.
-        my $chart = new PRFAnalysis();
+        # Get the randomized MFE data from boot.
+        my $sql3 = "select mfe_values,mfe_mean,mfe_sd,mfe_se from boot where structureID = $id";
+        my $q3 = DBI_doSQL( $dbh, $sql3 );
+        my $r3 = shift(@$q3);
         
-        $vars ={
+        # if there's MFE data, then make a chart and give us the URL.
+        my $chartURL = "images/no_data.gif";
+        my $zscore = "UNDEF";
+        my $randMean = "UNDEF";
+        my $randSE = "UNDEF";
+        my $ppcc = "UNDEF";
+        
+        if( defined($$r3[0]) ){
+        	my @randomMFE = split(/\s+/,$$r3[0]);
+        	my $chart = new PRFAnalysis( {list_data => \@randomMFE} );
+        	$chartURL = $chart->GET_CHART_URL();
+        	$zscore = sprintf("%.2f",($$r2[9] - $$r3[1])/$$r3[2]); #hehe.... ugly... (x-xbar)/sd
+        	$randMean = sprintf("%.1f",$$r3[1]);
+        	$randSE = sprintf("%.1f",$$r3[3]);
+        	$ppcc = sprintf("%.4f",$chart->GET_PPCC());
+        }   
+        
+        $vars = {
             id => $id,
             species => $$r2[0],
             accession => $$r2[1],
@@ -114,13 +132,14 @@ sub DETAILEDLIST{
             knotp => $$r2[11],
             lastupdate => $$r2[12],
             algorithm => "pknots",
-            zscore => "UNDEF",
-            mean => "UNDEF",
-            stderr => "UNDEF",
+            zscore => $zscore,
+            mean => $randMean,
+            stderr => $randSE,
             genename => $$row[1], # from previous query
-            chart => $chart->GET_CHART_URL(),
+            chart => $chartURL,
+            ppcc => $ppcc
         };
-        
+                
         # this gets printed straight out as a pop-up window.
         $template->process("detailed_record_body.lbi", $vars, \$body) || die $template->error();        
     }else{
