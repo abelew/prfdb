@@ -1,5 +1,5 @@
 package PRFConfig;
-## Time-stamp: <Mon Nov 14 18:47:31 2005 Ashton Trey Belew (abelew@wesleyan.edu)>
+## Time-stamp: <Tue Jan 10 09:22:37 2006 Ashton Trey Belew (abelew@wesleyan.edu)>
 use strict;
 use AppConfig qw/:argcount :expand/;
 require      Exporter;
@@ -79,8 +79,9 @@ $PRFConfig::config->{pknots} = 'pknots';
 $PRFConfig::config->{nupack} = 'Fold.out';
 $PRFConfig::config->{nupack_boot} = 'Fold.out.boot';
 $PRFConfig::config->{sql_id} = 'int not null auto_incremenent';
-$PRFConfig::config->{sql_species} = 'varchar(40) not null';
-$PRFConfig::config->{sql_genename} = 'varchar(80)';
+$PRFConfig::config->{sql_species} = 'varchar(80)';
+$PRFConfig::config->{sql_accession} = 'varchar(40)';
+$PRFConfig::config->{sql_genename} = 'varchar(90)';
 $PRFConfig::config->{sql_comment} = 'text not null';
 $PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
 $PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';

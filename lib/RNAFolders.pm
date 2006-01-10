@@ -51,7 +51,7 @@ sub Nupack {
 	  $return->{sequence} = $line;
       }
       elsif ($count == 18) { ## Line 18 returns paren output
-	  $return->{output} = $line;
+#	  $return->{output} = $line;
 	  $return->{parens} = $line;
       }
       elsif ($count == 19) { ## Get the MFE here
@@ -90,6 +90,9 @@ sub Nupack {
   }
   close(PAIRS);
   unlink("out.pair");
+  my $nupack_output_string = '';
+  foreach my $char (@nupack_output) { $nupack_output_string .= "$char "; }
+  $return->{output} = $nupack_output_string;
   $return->{pairs} = $pairs;
   my $parser;
   if (defined($config->{max_spaces})) {
@@ -153,7 +156,6 @@ sub Nupack_NOPAIRS {
 	  $count--;
       }
       elsif ($count == 18) { ## Line 18 returns paren output
-	  $return->{output} = $line;
 	  $return->{parens} = $line;
       }
       elsif ($count == 19) { ## Get the MFE here
@@ -174,27 +176,30 @@ sub Nupack_NOPAIRS {
   close(NU);
   my $nupack_return = $?;
   unless ($nupack_return eq '0' or $nupack_return eq '256') {
-      PRFConfig::PRF_Error("Nupack Error: $!", $accession);
-      die("Nupack Error! $!");
+    PRFConfig::PRF_Error("Nupack Error: $!", $accession);
+    die("Nupack Error! $!");
   }
   for my $c (0 .. $#nupack_output) {
-      $nupack_output[$c] = '.' unless(defined $nupack_output[$c]);
+    $nupack_output[$c] = '.' unless(defined $nupack_output[$c]);
   }
+  my $nupack_output_string = '';
+  foreach my $char (@nupack_output) { $nupack_output_string .= "$char "; }
+  $return->{output} = $nupack_output_string;
   $return->{pairs} = $pairs;
   my $parser;
   if (defined($config->{max_spaces})) {
-      my $max_spaces = $config->{max_spaces};
-      $parser = new PkParse(debug => 0, max_spaces => $max_spaces);
+    my $max_spaces = $config->{max_spaces};
+    $parser = new PkParse(debug => 0, max_spaces => $max_spaces);
   }
   else {
-      $parser = new PkParse(debug => 0);
+    $parser = new PkParse(debug => 0);
   }
   my $out = $parser->Unzip(\@nupack_output);
   my $new_struc = PkParse::ReBarcoder($out);
   my $barcode = PkParse::Condense($new_struc);
   my $parsed = '';
   foreach my $char (@{$out}) {
-      $parsed .= $char . ' ';
+    $parsed .= $char . ' ';
   }
   $return->{parsed} = $parsed;
   $return->{barcode} = $barcode;
@@ -420,13 +425,7 @@ sub Nupack_Boot {
   while(my $line = <PAIRS>) {
     chomp $line;
     $pairs++;
-    my ($fiveprime, $threeprime) = split(/\s+/, $line);
-    $nupack_output[$threeprime] = $fiveprime;
-    $nupack_output[$fiveprime] = $threeprime;
   }  ## End of the pairs file
-  for my $c (0 .. $#nupack_output) {
-    $nupack_output[$c] = '.' unless(defined $nupack_output[$c]);
-  }
   close(PAIRS);
   unlink("out.pair");
   $return->{pairs} = $pairs;
@@ -454,9 +453,6 @@ sub Nupack_Boot_NOPAIRS {
 	chomp $line;
 	$counter++;
 	if ($line =~ /^\d+\s\d+$/) {
-	    my ($fiveprime, $threeprime) = split(/\s+/, $line);
-	    $nupack_output[$threeprime] = $fiveprime;
-	    $nupack_output[$fiveprime] = $threeprime;
 	    $pairs++;
 	    $counter--;
 #            print "GOT LINE: $line pairs: $pairs\n";

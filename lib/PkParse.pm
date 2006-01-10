@@ -336,16 +336,17 @@ sub FINDHELIX {
 }
 
 sub FINDGAPS{
-    my($strREF) = @_;
-    my @gaps = ();
-    for(my $i = 0; $i < @$strREF; $i++){
-	if($$strREF[$i] eq '.'){
-	    $gaps[$i] = '.';
-	} else {
-	    $gaps[$i] = '?';
-	}
+  my($strREF) = @_;
+  my @gaps = ();
+  for(my $i = 0; $i < @$strREF; $i++){
+    if($$strREF[$i] eq '.'){
+      $gaps[$i] = '.';
+    } else {
+#       next;
+       $gaps[$i] = '';
     }
-    return \@gaps;
+  }
+  return \@gaps;
 }
 
 sub ZIPHELIX{

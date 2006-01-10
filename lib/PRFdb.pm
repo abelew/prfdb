@@ -6,24 +6,27 @@ use SeqMisc;
 use File::Temp qw / tmpnam /;
 use Fcntl ':flock'; # import LOCK_* constants
 use Bio::DB::Universal;
-#use Bio::DB::GenBank;
 
-my $config = $PRFConfig::config;
+#my $config = $PRFConfig::config;
+my $config;
 
 sub new {
   my ($class, %arg) = @_;
+  if (defined($arg{config})) {
+    $config = $arg{config};
+  }
   my $me = bless {
       dsn => $config->{dsn},
       user => $config->{user},
   }, $class;
+
   $me->{dbh} = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
   $me->Create_Genome() unless($me->Tablep('genome'));
   $me->Create_Queue() unless($me->Tablep('queue'));
   $me->Create_Rnamotif() unless($me->Tablep('rnamotif'));
-  $me->Create_Pknots() unless($me->Tablep('pknots'));
-  $me->Create_Nupack() unless($me->Tablep('nupack'));
   $me->Create_Boot() unless($me->Tablep('boot'));
-  $me->Create_Analysis() unless($me->Tablep('analysis'));
+  $me->Create_MFE() unless($me->Tablep('mfe'));
+#  $me->Create_Analysis() unless($me->Tablep('analysis'));
   $me->Create_Errors() unless($me->Tablep('errors'));
   return ($me);
 }
@@ -51,33 +54,6 @@ sub Keyword_Search {
   return($return);
 }
 
-sub Get_Mfold {
-  my $me = shift;
-  my $species = shift;
-  my $accession = shift;
-  my $start = shift;
-  my $return;
-  my $statement = "SELECT total, start, permissable, filedata, output FROM mfold WHERE accession = '$accession'";
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_arrayref($statement);
-#  return(0) if (scalar(@{$info}) == 0);
-  return(0) if (scalar(@{$info}) == 0);
-  my @data = @{$info};
-  foreach my $start (@data) {
-	my $total = $start->[0];
-	my $st = $start->[1];
-	my $permissable = $start->[2];
-	my $filedata = $start->[3];
-	my $output = $start->[4];
-	$return->{$st}{total} = $total;
-	$return->{$st}{start} = $st;
-	$return->{$st}{permissable} = $permissable;
-	$return->{$st}{filedata} = $filedata;
-	$return->{$st}{output} = $output;
-  }
-  return($return);
-}
-
 sub Motif_to_Fasta {
   my $me = shift;
   my $data = shift;
@@ -95,42 +71,6 @@ sub MakeTempfile {
 }
 
 ####
-### Get and Set Nupack data
-####
-sub Get_Nupack {
-  my $me = shift;
-  my $species = shift;
-  my $accession = shift;
-  my $start  = shift;
-  PRF_Error("Undefined value in Get_Nupack", $species, $accession) unless (defined($species) and defined($accession));
-  my $table = 'nupack_' . $species;
-  my $statement;
-  if (defined($start)) {
-    $statement = qq(SELECT * FROM $table WHERE accession='$accession' AND start='$start' ORDER BY start);
-  }
-  else {
-    $statement = qq(SELECT * from $table where accession='$accession' ORDER BY start);
-  }
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_hashref($statement, 1);
-  return($info);
-}
-
-####
-### Get and Set Pknots data
-####
-sub Get_Pknots {
-  my $me = shift;
-  my $species = shift;
-  my $accession = shift;
-  my $table = 'pknots_' . $species;
-  my $statement = qq(SELECT * from $table where accession='$accession');
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_hashref($statement, 'id');
-  return($info);
-}
-
-####
 ### Get and Set Bootstrap data
 ####
 sub Get_Boot {
@@ -139,13 +79,12 @@ sub Get_Boot {
   my $accession = shift;
   my $start = shift;
   PRF_Error("Undefined value in Get_Boot", $species, $accession) unless (defined($species) and defined($accession));
-  my $table = 'boot_' . $species;
   my $statement;
   if (defined($start)) {
-    $statement = qq(SELECT * FROM $table WHERE accession='$accession' AND start='$start' ORDER BY start);
+    $statement = qq(SELECT * FROM boot WHERE accession='$accession' AND start='$start' ORDER BY start);
   }
   else {
-    $statement = qq(SELECT * from $table where accession='$accession' ORDER BY start);
+    $statement = qq(SELECT * from boot where accession='$accession' ORDER BY start);
   }
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_hashref($statement, 1);
@@ -225,22 +164,9 @@ sub Clean_Table {
   $sth->execute or PRF_Error("Could not execute statement: $statement in Create_Genome");
 }
 
-sub Drop_All {
-  my $me = shift;
-  my $genus_species = shift;
-  my @tables = ('genome_', 'rnamotif_', 'pknots_', 'nupack_');
-  foreach my $tab (@tables) {
-	my $t_name = $tab . $genus_species;
-	my $statement = "DROP table $t_name";
-	my $sth = $me->{dbh}->prepare("$statement");
-	$sth->execute or PRF_Error("Could not execute \"$statement\" in Drop_All");
-  }
-}
-
 sub Drop_Table {
   my $me = shift;
-  my $type = shift;
-  my $table = $type . '_' . $config->{species};
+  my $table = shift;
   my $statement = "DROP table $table";
   my $sth = $me->{dbh}->prepare("$statement");
   $sth->execute or PRF_Error("Could not execute statement: $statement in Create_Genome");
@@ -259,7 +185,8 @@ sub Grab_Queue {
   $type = ($type eq 'public' ? 1 : 0);
   ## This id is the same id which uniquely identifies a sequence in the genome database
 #  my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
-  my $single_id = qq(select id, genome_id from queue where genome_id='207');
+#  my $single_id = qq(select id, genome_id from queue where genome_id='207');
+  my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' ORDER BY LIMIT 1);
   my $ids = $me->{dbh}->selectrow_arrayref($single_id);
   my $id = $ids->[0];
   my $genome_id = $ids->[1];
@@ -443,29 +370,47 @@ sub Import_CDS {
   my $counter = 0;
   my $num_cds = scalar(@cds);
   foreach my $feature (@cds) {
+    my $tmp_mrna_sequence = $mrna_sequence;
     $counter++;
-    ### This is a short term solution FIXME FIXME
-    ### The real solution is to remove the uniqueness of accession
-    ### In the genome table and introduce an int index
-    my $tmp_accession;
-    if ($num_cds > 1) {
-      $tmp_accession = "$accession.$counter";
-    }
-    else {
-      $tmp_accession = $accession;
-    }
     my $primary_tag = $feature->primary_tag();
     $protein_sequence =  $feature->seq->translate->seq();
     $orf_start = $feature->start();
-    ### Don't change me, this is provided by genbank
     $orf_stop = $feature->end();
+    ### $feature->{_location}{_strand} == -1 or 1 depending on the strand.
+    my $direction;
+    if ($feature->{_location}{_strand} == 1) {
+      $direction = 'forward';
+    }
+    elsif ($feature->{_location}{_strand} == -1) {
+      $direction = 'reverse';
+      my $tmp_start = $orf_start;
+      $orf_start = $orf_stop - 1;
+      $orf_stop = $tmp_start - 2;
+      my $fake_orf_stop = 0;
+      undef $tmp_start;
+      my @tmp_sequence = split(//, $tmp_mrna_sequence);
+      my $tmp_length = scalar(@tmp_sequence);
+      my $sub_sequence = '';
+      while ($orf_start > $fake_orf_stop) {
+	$sub_sequence .= $tmp_sequence[$orf_start];
+	$orf_start--;
+      }
+      $sub_sequence =~ tr/ATGCatgcuU/TACGtacgaA/;
+      $tmp_mrna_sequence = $sub_sequence;
+    }
+    else {
+      print PRF_Error("WTF: Direction is not forward or reverse\n");
+    }
+    ### Don't change me, this is provided by genbank
+#    print "TESTME: $orf_start $orf_stop\n\n";
     my %datum = (
                  ### FIXME
-                 accession => $tmp_accession,
-                 mrna_seq => $mrna_sequence,
-		 protein_seq => $protein_sequence,
+                 accession => $accession,
+                 mrna_seq => $tmp_mrna_sequence,
+                 protein_seq => $protein_sequence,
                  orf_start => $orf_start,
                  orf_stop => $orf_stop,
+                 direction => $direction,
                  species => $full_species,
                  genename => $genename,
                  version => $seq->{_seq_version},
@@ -475,6 +420,11 @@ sub Import_CDS {
     $me->Set_Privqueue($genome_id, \%datum);
   }
 }
+#363-581
+#ctagacgt ggaaaacgag cggcggtaga aacgtaggaa taggtgtacc gtcgtaccct
+#ctggacgacc taggtctgtc tatgtattct atctcctccg gtagacgtag aaaaacgaat
+#actcggtcta tcctcgggca gacatagacg cgtccacctc cgaatctaaa cagacgggta
+#tacgataaat ctacgtcgtc ggagacccga cgaacgacca t
 
 sub mRNA_subsequence {
   my $me = shift;
@@ -516,6 +466,38 @@ sub Import_Accession {
     $me->Create_Genome($full_species);
   }
   $me->Insert_Genome_Entry(\%datum);
+}
+
+sub Get_OMIM {
+  my $me = shift;
+  my $accession = id;
+  my $statement = qq(SELECT omim_id FROM genome where id='$id');
+  my $info = $me->{dbh}->selectall_arrayref($statement);
+  my $omim = $info->[0]->[0];
+  if (!defined($omim) or $omim eq 'none') {
+    return(undef);
+  }
+  elsif ($omim =~ /\d+/) {
+    return($omim);
+  }
+  else {
+    my $uni = new Bio::DB::Universal;
+    my $seq = $uni->get_Seq_by_id($accession);
+    my @cds = grep { $_->primary_tag eq 'CDS' } $seq->get_SeqFeatures();
+    my $omim_id = '';
+    foreach my $feature (@cds) {
+      my $db_xref_list = $feature->{_gsf_tag_hash}->{db_xref};
+      foreach my $db (@{$db_xref_list}) {
+        if ($db =~ /^MIM\:/) {
+          $db =~ s/^MIM\://g;
+          $omim_id .= "$db ";
+        } ## Is it in omim?
+      }   ## Possible databases
+    }     ## CDS features
+    my $statement = "UPDATE genome SET omim_id='$omim_id' WHERE id='$id'";
+    $me->Execute($statement);
+    return($omim_id);
+  }
 }
 
 sub Check_Genome_Table {
@@ -650,16 +632,23 @@ sub Get_Slippery_From_RNAMotif {
 sub Insert_Genome_Entry {
   my $me = shift;
   my $datum = shift;
-  my $qa = $me->{dbh}->quote($datum->{accession});
-  my $qsp = $me->{dbh}->quote($datum->{species});
-  my $qn = $me->{dbh}->quote($datum->{genename});
-  my $qv = $me->{dbh}->quote($datum->{version});
-  my $qc = $me->{dbh}->quote($datum->{comment});
-  my $qs = $me->{dbh}->quote($datum->{mrna_seq});
-  my $qp = $me->{dbh}->quote($datum->{protein_seq});
-  my $qos = $me->{dbh}->quote($datum->{orf_start});
-  my $qoe = $me->{dbh}->quote($datum->{orf_stop});
-  my $statement = "INSERT INTO genome (id, accession, species, genename, version, comment, mrna_seq, protein_seq, orf_start, orf_stop) VALUES('', $qa, $qsp, $qn, $qv, $qc, $qs, $qp, $qos, $qoe)";
+  my $dbh = $me->{dbh};
+  my $accession = $dbh->quote($datum->{accession});
+  my $species = $dbh->quote($datum->{species});
+  my $genename = $dbh->quote($datum->{genename});
+  my $version = $dbh->quote($datum->{version});
+  my $comment = $dbh->quote($datum->{comment});
+  my $mrna_seq = $dbh->quote($datum->{mrna_seq});
+  my $prot_seq = $dbh->quote($datum->{protein_seq});
+  my $orf_start = $dbh->quote($datum->{orf_start});
+  my $orf_stop = $dbh->quote($datum->{orf_stop});
+  my $orf_direction = '';
+  if (defined($datum->{direction})) {
+    $orf_direction = $dbh->quote($datum->{direction});
+  }
+  my $statement = "INSERT INTO genome
+(accession, species, genename, version, comment, mrna_seq, protein_seq, orf_start, orf_stop, direction)
+VALUES($accession, $species, $genename, $version, $comment, $mrna_seq, $prot_seq, $orf_start, $orf_stop, $orf_direction)";
   ## The following line is very important to ensure that multiple calls to this don't end up with
   ## Increasingly long sequences
   foreach my $k (keys %{$datum}) { $datum->{$k} = undef; }
@@ -700,6 +689,21 @@ sub Put_Nupack {
     $me->Put_MFE('nupack', $data);
 }
 
+sub Get_Pknots {
+  my $me = shift;
+  my $identifier = shift;  ## { genome_id => #, species => #, accession => #, start => # }
+  my $statement = '';
+  if (defined($identifier->{genome_id})) {
+    $statement = "SELECT id, genome_id, species, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode FROM mfe where genome_id = '$identidier->{genome_id}'";
+  }
+  elsif (defined($identifier->{accession} and defined($identifier->{start}))) {
+    $statement = "SELECT id, genome_id, species, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode FROM mfe where accession = '$identidier->{accession}' and start = '$identifier->{start}'";
+  }
+  my $dbh = $me->{dbh};
+  my $info = $dbh->selectall_hashref($statement, [ qw(id genome_id species accession start slipsite seqlength sequence output parsed parens mfe pairs knotp barcode) ]);
+  return($info);
+}
+
 sub Put_Pknots {
     my $me = shift;
     my $data = shift;
@@ -708,7 +712,7 @@ sub Put_Pknots {
 
 sub Put_MFE {
   my $me = shift;
-  my $table = shift;
+  my $algo = shift;
   my $data = shift;
   ## What fields do we want to fill in this MFE table?
   my @pknots = ('genome_id','species','accession','start','slipsite','seqlength','sequence','output','parsed','parens','mfe','pairs','knotp','barcode');
@@ -717,7 +721,7 @@ sub Put_MFE {
       $errorstring = "Undefined value(s) in Put_MFE $table: $errorstring";
       PRF_Error($errorstring, $data->{species}, $data->{accession});
     }
-    my $statement = qq(INSERT INTO $table (genome_id, species, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES ('$data->{genome_id}', '$data->{species}', '$data->{accession}', '$data->{start}', '$data->{slipsite}', '$data->{seqlength}', '$data->{sequence}', '$data->{output}', '$data->{parsed}', '$data->{parens}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}', '$data->{barcode}'));
+    my $statement = qq(INSERT INTO mfe (genome_id, species, algo, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES ('$data->{genome_id}', '$data->{species}', '$algo', '$data->{accession}', '$data->{start}', '$data->{slipsite}', '$data->{seqlength}', '$data->{sequence}', '$data->{output}', '$data->{parsed}', '$data->{parens}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}', '$data->{barcode}'));
   #  print "MFE: $statement\n";
   $me->Execute($statement);
 }  ## End of Put_MFE
@@ -759,6 +763,8 @@ sub Put_Boot {
 #################################################
 ### Functions used to create the prfdb tables
 #################################################
+
+### FIXME The prfdb05 does not have the direction field and omim_id
 sub Create_Genome {
   my $me = shift;
   my $statement = "CREATE table genome (
@@ -768,10 +774,12 @@ species $config->{sql_species},
 genename $config->{sql_genename},
 version int,
 comment $config->{sql_comment},
-mrna_seq text not null,
+mrna_seq longblob not null,
 protein_seq text,
 orf_start int,
 orf_stop int,
+direction char(7) DEFAULT 'forward',                  /* forward or reverse */
+omim_id varchar(30),
 lastupdate $config->{sql_timestamp},
 primary key (id),
 UNIQUE(accession),
@@ -779,6 +787,7 @@ INDEX(genename))";
   $me->Execute($statement);
 }
 
+### FIXME Recreate rnamotif table for prfdb05
 sub Create_Rnamotif {
   my $me = shift;
   my $statement = "CREATE table rnamotif (
@@ -796,6 +805,7 @@ primary key (id))";
   $me->Execute($statement);
 }
 
+### prfdb05 queue should be recreated.
 sub Create_Queue {
   my $me = shift;
   my $statement = "CREATE table queue (
@@ -811,16 +821,9 @@ primary key (id))";
   $me->Execute($statement);
 }
 
-sub Create_Pknots {
-  my $me = shift;
-  $me->Create_MFE('pknots');
-}
-
-sub Create_Nupack {
-  my $me = shift;
-  $me->Create_MFE('nupack');
-}
-
+### FIXME The Prfdb05 has different columns from nupack 
+### (- genome_id, s/paren_output/output/, - parens, - barcode
+### FIXME pknots table: s/seqLength/seqlength/, +pk_output
 sub Create_MFE {
   my $me = shift;
   my $name = shift;
@@ -829,6 +832,7 @@ id $config->{sql_id},
 genome_id int,
 species $config->{sql_species},
 accession $config->{sql_accession},
+algorithm char(10),
 start int,
 slipsite char(7),
 seqlength int,
@@ -845,6 +849,7 @@ primary key(id))";
   $me->Execute($statement);
 }
 
+### FIXME Jonathan has changed genome_id to structureID in prfdb05
 sub Create_Boot {
   my $me = shift;
   my $statement = "CREATE TABLE boot (
@@ -872,7 +877,8 @@ sub Create_Analysis {
     my $me = shift;
     my $statement = "CREATE TABLE analysis (
 id $config->{sql_id},
-mfe_source varchar(20) not null,
+genome_id int,
+mfe_source varchar(20),
 mfe_id int,
 boot_id int,
 accession $config->{sql_accession},
