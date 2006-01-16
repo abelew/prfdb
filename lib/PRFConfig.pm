@@ -1,5 +1,5 @@
 package PRFConfig;
-## Time-stamp: <Tue Jan 10 09:22:37 2006 Ashton Trey Belew (abelew@wesleyan.edu)>
+## Time-stamp: <Tue Jan 10 09:34:29 2006 Ashton Trey Belew (abelew@wesleyan.edu)>
 use strict;
 use AppConfig qw/:argcount :expand/;
 require      Exporter;
@@ -85,9 +85,10 @@ $PRFConfig::config->{sql_genename} = 'varchar(90)';
 $PRFConfig::config->{sql_comment} = 'text not null';
 $PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
 $PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
+$PRFConfig::config->{sql_index} = $PRFConfig::config->{sql_id};
+
 my $open = $appconfig->file('prfdb.conf');
 my %data = $appconfig->varlist("^.*");
-$PRFConfig::config->{sql_index} = $PRFConfig::config->{sql_id};
 for my $config_option (keys %data) {
 #  $PRFConfig::config->{$config_option} = $data{$config_option};
   $PRFConfig::config->{$config_option} = $data{$config_option};

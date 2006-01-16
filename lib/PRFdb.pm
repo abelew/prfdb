@@ -470,7 +470,7 @@ sub Import_Accession {
 
 sub Get_OMIM {
   my $me = shift;
-  my $accession = id;
+  my $id = shift;;
   my $statement = qq(SELECT omim_id FROM genome where id='$id');
   my $info = $me->{dbh}->selectall_arrayref($statement);
   my $omim = $info->[0]->[0];
@@ -482,7 +482,7 @@ sub Get_OMIM {
   }
   else {
     my $uni = new Bio::DB::Universal;
-    my $seq = $uni->get_Seq_by_id($accession);
+    my $seq = $uni->get_Seq_by_id($id);
     my @cds = grep { $_->primary_tag eq 'CDS' } $seq->get_SeqFeatures();
     my $omim_id = '';
     foreach my $feature (@cds) {
@@ -694,10 +694,10 @@ sub Get_Pknots {
   my $identifier = shift;  ## { genome_id => #, species => #, accession => #, start => # }
   my $statement = '';
   if (defined($identifier->{genome_id})) {
-    $statement = "SELECT id, genome_id, species, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode FROM mfe where genome_id = '$identidier->{genome_id}'";
+    $statement = "SELECT id, genome_id, species, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode FROM mfe where genome_id = '$identifier->{genome_id}'";
   }
   elsif (defined($identifier->{accession} and defined($identifier->{start}))) {
-    $statement = "SELECT id, genome_id, species, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode FROM mfe where accession = '$identidier->{accession}' and start = '$identifier->{start}'";
+    $statement = "SELECT id, genome_id, species, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode FROM mfe where accession = '$identifier->{accession}' and start = '$identifier->{start}'";
   }
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_hashref($statement, [ qw(id genome_id species accession start slipsite seqlength sequence output parsed parens mfe pairs knotp barcode) ]);
@@ -718,7 +718,7 @@ sub Put_MFE {
   my @pknots = ('genome_id','species','accession','start','slipsite','seqlength','sequence','output','parsed','parens','mfe','pairs','knotp','barcode');
   my $errorstring = Check_Insertion(\@pknots, $data);
   if (defined($errorstring)) {
-      $errorstring = "Undefined value(s) in Put_MFE $table: $errorstring";
+      $errorstring = "Undefined value(s) in Put_MFE: $errorstring";
       PRF_Error($errorstring, $data->{species}, $data->{accession});
     }
     my $statement = qq(INSERT INTO mfe (genome_id, species, algo, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES ('$data->{genome_id}', '$data->{species}', '$algo', '$data->{accession}', '$data->{start}', '$data->{slipsite}', '$data->{seqlength}', '$data->{sequence}', '$data->{output}', '$data->{parsed}', '$data->{parens}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}', '$data->{barcode}'));

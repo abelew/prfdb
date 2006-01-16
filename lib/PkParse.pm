@@ -19,21 +19,24 @@ sub Unzip {
   my $me = shift;
   my $pattern = shift;
   for my $pos (0 .. $#$pattern) {
-	if ($pattern->[$pos] eq '.') {
-	  $me->{out_pattern}->[$pos] = '.';
-	}
-	else {
-	  $me->{out_pattern}->[$pos] = -1;
-	  $me->{positions_remaining}++;
-	}
+    ### FIXME
+    next if (!defined($pattern->[$pos]));
+    if (!defined($pattern->[$pos])) { next; }
+    if ($pattern->[$pos] eq '.') {
+      $me->{out_pattern}->[$pos] = '.';
+    }
+    else {
+      $me->{out_pattern}->[$pos] = -1;
+      $me->{positions_remaining}++;
+    }
   }
   while ($me->{positions_remaining} > 0) {
-	if ($me->{debug}) {
-	  print "STARTING THE WIND LOOP with:
+    if ($me->{debug}) {
+      print "STARTING THE WIND LOOP with:
 @{$me->{out_pattern}}!\n\n";
-	}
-	$me->UnWind($pattern);
-	$me->{positions_remaining} = $me->Missing_p();
+    }
+    $me->UnWind($pattern);
+    $me->{positions_remaining} = $me->Missing_p();
   }
 
   $me->{recursion_count} = 0;
@@ -120,6 +123,10 @@ sub Handle_Front {
   $state->{placement} = 'back';
 
   ## Already examined
+  ### FIXME
+#  next if (!defined($pat) or !defined($me->{out_pattern}->[$current]));
+  next if (!defined($me->{out_pattern}->[$current]));
+
   if ($pat =~ /\d/  and $me->{out_pattern}->[$current] != -1) {
 	$state->{true} = 'bf';
 	$state->{next} = $state->{back_pos};
@@ -209,6 +216,8 @@ sub Handle_Back {
   $state->{placement} = 'front';
 
   ## Already examined
+  ### FIXME
+  next if (!defined($pat) or !defined($me->{out_pattern}->[$current]));
   if ($pat =~ /\d/  and $me->{out_pattern}->[$current] ne '-1') {
 	$state->{true} = 'bb';
 	$state->{next} = $state->{front_pos};
@@ -497,6 +506,77 @@ sub Condense{
     
     return $str;  
 }
+
+sub Parsed_to_Barcode {
+  my $knotref = shift;
+  my $string = '';
+  foreach my $char (@{$knotref}) { $string = $string . $char if (defined($char)); }
+  $string =~ tr/0-9//s;
+  print "TEST: $string\n";
+  my @almost = split(//, $string);
+  my $finished = '';
+  print "How many times does @almost have $almost[0]?\n";
+  if (Single_p($almost[0], \@almost)) {
+	$finished = $almost [0] . $almost[0];
+	shift(@almost);
+  }
+ LOOP:   for my $c (0 .. $#almost) {
+	my $char = $almost[$c];
+	my $count = 0;
+	### If $char is in what is left of @almost 1 time...
+	foreach my $test (@almost) {
+	  $count++ if ($test eq $char);
+	  if ($count > 1) {
+		print "Adding $char one time because it exists $count times\n";
+		$finished = $finished . $char;
+		$count = 0;
+		next LOOP;
+	  }
+	}
+	print "ADDING $char twice because it exists $count times\n";
+	$finished = $finished . $char . $char;
+  }
+  print "The reduced string is: $string\n";
+  return($finished);
+}
+
+sub Parsed_to_Barcode2 {
+  my $knotref = shift;
+  my $string = '';
+  foreach my $char (@{$knotref}) { $string = $string . $char if (defined($char)); }
+  $string =~ tr/0-9//s;
+  print "TEST: $string\n";
+  my @almost = split(//, $string);
+  my $finished = '';
+  print "How many times does @almost have $almost[0]?\n";
+  if (Single_p($almost[0], \@almost)) {
+    $finished = $almost [0] . $almost[0];
+    shift(@almost);
+  }
+ LOOP:   for my $c (0 .. $#almost) {
+    my $char = $almost[$c];
+    my $count = 0;
+    ### If $char is in what is left of @almost 1 time...
+    foreach my $test (@almost) {
+      $count++ if ($test eq $char);
+      if ($count > 1) {
+        print "Adding $char one time because it exists $count times\n";
+        $finished = $finished . $char;
+        $count = 0;
+        next LOOP;
+      }
+      elsif ($count == 1) {
+        print "ADDING $char twice because it exists $count times\n";
+        $finished = $finished . $char . $char;
+        $count = 0;
+        next LOOP;
+      }
+    }
+    print "The reduced string is: $string\n";
+    return($finished);
+}
+}
+
 1;
 
 __END__
