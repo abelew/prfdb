@@ -105,7 +105,7 @@ sub Gather {
     if ($config->{do_nupack}) { ### Do we run a nupack fold?
       my $nupack_folds = $db->Get_Num_RNAfolds('nupack', $state->{genome_id});
       if ($nupack_folds >= $number_rnamotif_information) {
-	print "$state->{genome_id} already has $num_rnamotif_information nupack_folds\n";
+	print "$state->{genome_id} already has $number_rnamotif_information nupack_folds\n";
       }
       else { ### If there are no existing folds...
 	my $nupack_info;
@@ -187,13 +187,6 @@ sub Check_Environment {
   die("Database host not defined") unless($config->{host} ne 'prfconfigdefault_host');
   die("Database user not defined") unless($config->{user} ne 'prfconfigdefault_user');
   die("Database pass not defined") unless($config->{pass} ne 'prfconfigdefault_pass');
-  ## Now we should be able to connect to the database, so check that all the tables exist.
-  $db->Create_Genome() unless($db->Tablep('genome'));
-  $db->Create_Rnamotif() unless($db->Tablep('rnamotif'));
-  $db->Create_Pknots() unless($db->Tablep('pknots'));
-  $db->Create_Nupack() unless($db->Tablep('nupack'));
-  $db->Create_Boot() unless($db->Tablep('boot'));
-  #  Create_Derived() unless(PRFdb::Tablep('derived'));
 
   unless(-r $config->{descriptor_file}) {
     RNAMotif_Search::Descriptor();
