@@ -102,7 +102,7 @@ $string
         my $total = 0;
         my $rnamotif_output = '';
         while(my $line = <RNAMOT>) {
-	print $line;
+#	print $line;
           next if ($line =~ /^\>/);
           next if ($line =~ /^ss/);
           next if ($line =~ /^\#+/);
