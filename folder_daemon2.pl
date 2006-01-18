@@ -202,11 +202,14 @@ sub signal_handler {
 
 sub Print_Config {
   ### This is a little function designed to give the user a chance to abort
+  if ($config->{nupack_nopairs_hack}) { print "I AM using a hacked version of nupack!\n"; }
+  else { print "I AM NOT using a hacked version of nupack!\n"; }
   if ($config->{do_nupack}) { print "I AM doing a nupack fold using the program: $config->{nupack}\n"; }
   else { print "I AM NOT doing a nupack fold\n"; }
   if ($config->{do_pknots}) { print "I AM doing a pknots fold using the program: $config->{pknots}\n"; }
   else { print "I AM NOT doing a pknots fold\n"; }
   if ($config->{do_boot}) {
+    print "PLEASE CHECK THE prfdb.conf to see if you are using NOPAIRS\n";
     my $randomizers = $config->{boot_randomizers};
     my $mfes = $config->{boot_mfe_algorithms};
     my $nu_boot = $config->{nupack_boot};

@@ -9,7 +9,8 @@ do_boot = 1               ## Perform our faux bootstrap
 nupack_nopairs_hack = 0   ## For the NCI systems I had to hack nupack
 arch_specific_exe = 1     ## Architecture specific executables (used for a pbs environment)
 boot_iterations = 100
-boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, }
+boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot_NOPAIRS, }
+#boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, }
 boot_randomizers = { array => \&MoreRandom::ArrayShuffle, }
 errorfile = "$(prefix)/prfdb.err"         ## Location of error file
 logfile = "$(prefix)/prfdb.log"           ## Location of output file
