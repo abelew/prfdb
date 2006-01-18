@@ -91,26 +91,28 @@ sub Go {
           my @stats_pairs;
 	  my $iteration_count = 1;	  
           while ($iteration_count <= $me->{iterations}) {
-	      $iteration_count++;
-	      my $boot_mfe_algo = $me->{boot_mfe_algorithms}->{$boot_mfe_algo_name};
-	      #my $rand_algo = $me->{randomizers}->{$rand_name}($inputfile, $species, $accession);
-	      my $rand_algo = $me->{randomizers}->{$rand_name};
-	      my $array_reference = $me->{fasta_arrayref};
-	      my $randomized_sequence = &{$rand_algo}($array_reference);
-	      $me->Overwrite_Inputfile($randomized_sequence);
-#	      my $mfe = &{$boot_mfe_algo}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
-	      my $mfe = &{$boot_mfe_algo}($me->{inputfile}, $me->{accession}, $me->{start});
-	      foreach my $k (keys %{$mfe}) {
-		  $return->{$boot_mfe_algo_name}->{$rand_name}->{$iteration_count}->{$k} = $mfe->{$k};
-	      }
+            my $num = sprintf("%3f", $iteration_count);
+            print "$iteration_count\b\b\b";
+            $iteration_count++;
+            my $boot_mfe_algo = $me->{boot_mfe_algorithms}->{$boot_mfe_algo_name};
+            #my $rand_algo = $me->{randomizers}->{$rand_name}($inputfile, $species, $accession);
+            my $rand_algo = $me->{randomizers}->{$rand_name};
+            my $array_reference = $me->{fasta_arrayref};
+            my $randomized_sequence = &{$rand_algo}($array_reference);
+            $me->Overwrite_Inputfile($randomized_sequence);
+            #	      my $mfe = &{$boot_mfe_algo}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
+            my $mfe = &{$boot_mfe_algo}($me->{inputfile}, $me->{accession}, $me->{start});
+            foreach my $k (keys %{$mfe}) {
+              $return->{$boot_mfe_algo_name}->{$rand_name}->{$iteration_count}->{$k} = $mfe->{$k};
+            }
 
-	      if (defined($mfe->{mfe})) {
-		  push(@stats_mfe, $mfe->{mfe});
-		  $ret->{iterations}++;
-		  $ret->{mfe_values} .= "$mfe->{mfe} ";
-	      }
-	      push(@stats_pairs, $mfe->{pairs}) if (defined($mfe->{pairs}));
-	  }  ## Foreach repetition
+            if (defined($mfe->{mfe})) {
+              push(@stats_mfe, $mfe->{mfe});
+              $ret->{iterations}++;
+              $ret->{mfe_values} .= "$mfe->{mfe} ";
+            }
+            push(@stats_pairs, $mfe->{pairs}) if (defined($mfe->{pairs}));
+          }  ## Foreach repetition
 	  ## Now have collected every repetition, so we can calculate the means
 	  my $mfe_stat = new Math::Stat(\@stats_mfe, {AutoClean => 1});
 	  $ret->{mfe_mean} = sprintf("%.2f", $mfe_stat->average());

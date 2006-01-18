@@ -109,6 +109,7 @@ sub Gather {
 	}
         my $nupack_mfe_id = $db->Put_Nupack($nupack_info);
         $state->{mfe_ids}->{nupack} = $nupack_mfe_id;
+        print "TESTME: $state->{mfe_ids}->{nupack}\n";
       }  ### Done checking for nupack folds
     } ### End check if we should do a nupack fold
 
