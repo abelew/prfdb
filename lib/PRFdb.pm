@@ -729,6 +729,9 @@ sub Put_MFE {
     my $statement = qq(INSERT INTO mfe (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES ('$data->{genome_id}', '$data->{species}', '$algo', '$data->{accession}', '$data->{start}', '$data->{slipsite}', '$data->{seqlength}', '$data->{sequence}', '$data->{output}', '$data->{parsed}', '$data->{parens}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}', '$data->{barcode}'));
   #  print "MFE: $statement\n";
   $me->Execute($statement);
+  my $st2 = qq(SELECT LAST_INSERT_ID());
+  my $id = $me->{dbh}->selectall_arrayref($st2);
+  return($id->[0]->[0]);
 }  ## End of Put_MFE
 
 sub Put_Boot {
@@ -740,26 +743,27 @@ sub Put_Boot {
       #foreach my $mfe_method (keys %{$data}) {
       foreach my $rand_method (keys %{$config->{boot_randomizers}}) {
 	  #foreach my $rand_method (keys %{$data->{$mfe_method}}) {
-	  my $iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{iterations};
-	  my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
-	  my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
-	  my $mfe_se = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_se};
-	  my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
-	  my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
-	  my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
-	  my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
-	  my $species = $data->{$mfe_method}->{$rand_method}->{stats}->{species};
-	  my $accession = $data->{$mfe_method}->{$rand_method}->{stats}->{accession};
-	  my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
+        my $mfe_id = $data->{$mfe_method}->{$rand_method}->{mfe_id};
+        my $iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{iterations};
+        my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
+        my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
+        my $mfe_se = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_se};
+        my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
+        my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
+        my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
+        my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
+        my $species = $data->{$mfe_method}->{$rand_method}->{stats}->{species};
+        my $accession = $data->{$mfe_method}->{$rand_method}->{stats}->{accession};
+        my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
 
-	  my @boot = ('genome_id');
-	  my $errorstring = Check_Insertion(\@boot, $data);
-	  if (defined($errorstring)) {
+        my @boot = ('genome_id');
+        my $errorstring = Check_Insertion(\@boot, $data);
+        if (defined($errorstring)) {
 	      $errorstring = "Undefined value(s) in Put_Boot: $errorstring";
 	      PRF_Error($errorstring, $species, $accession);
-	  }
+        }
 
-	  my $statement = qq(INSERT INTO boot (genome_id, species, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$species', '$accession', '$start', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
+        my $statement = qq(INSERT INTO boot (genome_id, mfe_id, species, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$mfe_id', '$species', '$accession', '$start', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
 	  $me->Execute($statement);
       }  ### Foreach random method
   } ## Foreach mfe method

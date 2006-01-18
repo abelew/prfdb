@@ -22,6 +22,7 @@ my $state = {
 	     time_to_die => undef,
 	     queue_id => undef,
 	     genome_id => undef,
+             mfe_ids => undef,
 	     accession => undef,
 	     species => undef,
 	     fasta_file => undef,
@@ -93,30 +94,21 @@ sub Gather {
 				     accession => $state->{accession},
 				     start => $slipsite_start,
 				    );
-    my $boot = new Bootlace(
-			    genome_id => $state->{genome_id},
-			    inputfile => $state->{fasta_file},
-			    species => $state->{species},
-			    accession => $state->{accession},
-			    start => $slipsite_start,
-			    iterations => $config->{boot_iterations},
-			    boot_mfe_algorithms => $config->{boot_mfe_algorithms},
-			    randomizers => $config->{boot_randomizers},
-			   );
     if ($config->{do_nupack}) { ### Do we run a nupack fold?
       my $nupack_folds = $db->Get_Num_RNAfolds('nupack', $state->{genome_id});
       if ($nupack_folds >= $number_rnamotif_information) {
 	print "$state->{genome_id} already has $number_rnamotif_information nupack_folds\n";
       }
       else { ### If there are no existing folds...
-	my $nupack_info;
-	if ($config->{nupack_nopairs_hack}) {
-	  $nupack_info = $fold_search->Nupack_NOPAIRS();
+        my  $nupack_info;
+        if ($config->{nupack_nopairs_hack}) {
+          $nupack_info = $fold_search->Nupack_NOPAIRS();
 	}
 	else {
 	  $nupack_info = $fold_search->Nupack();
 	}
-	$db->Put_Nupack($nupack_info);
+        my $nupack_mfe_id = $db->Put_Nupack($nupack_info);
+        $state->{mfe_ids}->{nupack} = $nupack_mfe_id;
       }  ### Done checking for nupack folds
     } ### End check if we should do a nupack fold
 
@@ -126,10 +118,23 @@ sub Gather {
 	print "$state->{genome_id} already has pknots folds\n";
       }
       else {
-	my $pknots_info = $fold_search->Pknots();
-	$db->Put_Pknots($pknots_info);
+        my $pknots_info = $fold_search->Pknots();
+        my $pknots_mfe_id = $db->Put_Pknots($pknots_info);
+        $state->{mfe_ids}->{pknots} = $pknots_mfe_id;
       }  ### Done checking for pknots folds
     } ### End check if we should do a pknots fold
+
+    my $boot = new Bootlace(
+                            mfe_ids => $state->{mfe_ids},
+			    genome_id => $state->{genome_id},
+			    inputfile => $state->{fasta_file},
+			    species => $state->{species},
+			    accession => $state->{accession},
+			    start => $slipsite_start,
+			    iterations => $config->{boot_iterations},
+			    boot_mfe_algorithms => $config->{boot_mfe_algorithms},
+			    randomizers => $config->{boot_randomizers},
+			   );
 
     if ($config->{do_boot}) {
       my $boot_folds = $db->Get_Num_RNAfolds('boot', $state->{genome_id}); ## CHECKME!
