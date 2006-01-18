@@ -173,7 +173,7 @@ sub Drop_Table {
 
 sub FillQueue {
   my $me = shift;
-  my $best_statement = "INSERT into queue (id, public, params, out, done) SELECT id, 0, '', 0, 0 from genome";
+  my $best_statement = "INSERT into queue (genome_id, public, params, out, done) SELECT id, 0, '', 0, 0 from genome";
   my $sth = $me->{dbh}->prepare($best_statement);
   $sth->execute;
 }

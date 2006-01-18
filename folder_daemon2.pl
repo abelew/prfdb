@@ -39,7 +39,8 @@ if (defined($ARGV[0])) {
   if ($ARGV[0] eq '-q') {
     $db->FillQueue();
   }
-  elsif ($ARGV[0] eq '-r') {
+  elsif ($ARGV[0] eq '-v') {
+    print "This is version: 1.77 from cvs\n";
     exit();
   }
 exit();
