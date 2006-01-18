@@ -1,5 +1,5 @@
 package PRFConfig;
-## Time-stamp: <Tue Jan 10 09:34:29 2006 Ashton Trey Belew (abelew@wesleyan.edu)>
+## Time-stamp: <Wed Jan 18 14:54:08 2006 Ashton Trey Belew (abelew@wesleyan.edu)>
 use strict;
 use AppConfig qw/:argcount :expand/;
 require      Exporter;
@@ -107,7 +107,7 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
 
   ## If we have architecture specific executables, then
   ## They should live in directories named after their architecture
-  my @modified_exes = ('rnamotif', 'rmprune', 'mfold', 'pknots', 'zcat');
+  my @modified_exes = ('rnamotif', 'rmprune', 'pknots', 'zcat');
   open(UNAME, "/usr/bin/env uname -a |");
   my $arch;
   while (my $line = <UNAME>) {

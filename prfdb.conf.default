@@ -1,4 +1,7 @@
 prefix = "${HOME}/browser"
+basedir = $(prefix)                       ## The base directory of this crap
+tmpdir = "$(prefix)/work"                 ## Temporary directory, fasta files live there
+bindir = "$(prefix)/work"
 max_struct_length = 99    ## The maximum structure size to be examined
 do_nupack = 1             ## Run nupack on sequences?
 do_pknots = 0             ## Run pknots on sequence?
@@ -10,9 +13,6 @@ boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFold
 boot_randomizers = { array => \&MoreRandom::ArrayShuffle, }
 errorfile = "$(prefix)/prfdb.err"         ## Location of error file
 logfile = "$(prefix)/prfdb.log"           ## Location of output file
-basedir = $(prefix)                       ## The base directory of this crap
-tmpdir = "$(prefix)/work"                 ## Temporary directory, fasta files live there
-bindir = "$(prefix)/work"
 nupack_dir = "$(prefix)/work"             ## Where does nupack live?
 nupack = "Fold.out"
 nupack_boot = "Fold.out.boot"
@@ -61,9 +61,6 @@ sql_accession = 'varchar(80) not null'
 sql_genename = 'varchar(120)'
 sql_comment = 'text not null'
 sql_timestamp = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
-#### Change the number of bases allowed in a loop before making a new stem
-#### In the PkParser
-#max_spaces = 4
 pbs_template = 'pbs_template'
 pbs_arches = 'aix4 irix6 linux'
 pbs_shell = '/bin/bash'

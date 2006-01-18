@@ -7,8 +7,7 @@ use File::Temp qw / tmpnam /;
 use Fcntl ':flock'; # import LOCK_* constants
 use Bio::DB::Universal;
 
-#my $config = $PRFConfig::config;
-my $config;
+my $config = $PRFConfig::config;
 
 sub new {
   my ($class, %arg) = @_;

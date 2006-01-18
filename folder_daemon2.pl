@@ -34,6 +34,17 @@ my $state = {
 	    };
 
 Print_Config();
+## Put some helper functions here
+if (defined($ARGV[0])) {
+  if ($ARGV[0] eq '-q') {
+    $db->FillQueue();
+  }
+  elsif ($ARGV[0] eq '-r') {
+    exit();
+  }
+exit();
+}
+
 
 until (defined($state->{time_to_die})) {
 #  Time::HiRes::usleep(100);
@@ -94,7 +105,7 @@ sub Gather {
     if ($config->{do_nupack}) { ### Do we run a nupack fold?
       my $nupack_folds = $db->Get_Num_RNAfolds('nupack', $state->{genome_id});
       if ($nupack_folds >= $number_rnamotif_information) {
-	print "$state->{genome_id} already has $num_rnamotif_information nupack_folds\n";
+	print "$state->{genome_id} already has $number_rnamotif_information nupack_folds\n";
       }
       else { ### If there are no existing folds...
 	my $nupack_info;
