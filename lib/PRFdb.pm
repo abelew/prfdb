@@ -185,7 +185,7 @@ sub Grab_Queue {
   ## This id is the same id which uniquely identifies a sequence in the genome database
 #  my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
 #  my $single_id = qq(select id, genome_id from queue where genome_id='207');
-  my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' ORDER BY LIMIT 1);
+  my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' LIMIT 1);
   my $ids = $me->{dbh}->selectrow_arrayref($single_id);
   my $id = $ids->[0];
   my $genome_id = $ids->[1];
@@ -533,10 +533,10 @@ sub Get_Sequence {
 
 sub Get_Num_RNAfolds {
   my $me = shift;
-  my $table = shift;
+  my $algo = shift;
   my $genome_id = shift;
   my $return = {};
-  my $statement = "SELECT count(id) FROM $table WHERE genome_id = '$genome_id'";
+  my $statement = "SELECT count(id) FROM mfe WHERE genome_id = '$genome_id' and algorithm = '$algo'";
   my $dbh = $me->{dbh};
   my $info = $dbh->selectall_arrayref($statement);
   my $count = $info->[0]->[0];
@@ -601,9 +601,15 @@ sub Get_ORF {
   ## Then it should return from the start codon to the end of the mRNA which is good
   ## For searching over viral sequence!
   my $sequence = substr($mrna_seq, $start);
+#	print "PRFDB TEST: $sequence\n";
   ### DONT SCAN THE ENTIRE MRNA, ONLY THE ORF
   if ($sequence) {
-	return($sequence, $start, $stop);
+	my $return = {
+          sequence => "$sequence",
+          orf_start => $start,
+          orf_stop => $stop,
+        };
+	return($return);
   }
   else {
 	return(undef);
@@ -720,7 +726,7 @@ sub Put_MFE {
       $errorstring = "Undefined value(s) in Put_MFE: $errorstring";
       PRF_Error($errorstring, $data->{species}, $data->{accession});
     }
-    my $statement = qq(INSERT INTO mfe (genome_id, species, algo, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES ('$data->{genome_id}', '$data->{species}', '$algo', '$data->{accession}', '$data->{start}', '$data->{slipsite}', '$data->{seqlength}', '$data->{sequence}', '$data->{output}', '$data->{parsed}', '$data->{parens}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}', '$data->{barcode}'));
+    my $statement = qq(INSERT INTO mfe (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES ('$data->{genome_id}', '$data->{species}', '$algo', '$data->{accession}', '$data->{start}', '$data->{slipsite}', '$data->{seqlength}', '$data->{sequence}', '$data->{output}', '$data->{parsed}', '$data->{parens}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}', '$data->{barcode}'));
   #  print "MFE: $statement\n";
   $me->Execute($statement);
 }  ## End of Put_MFE
@@ -854,6 +860,7 @@ sub Create_Boot {
   my $statement = "CREATE TABLE boot (
 id $config->{sql_id},
 genome_id int,
+mfe_id int,
 species $config->{sql_species},
 accession $config->{sql_accession},
 start int,

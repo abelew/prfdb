@@ -173,7 +173,12 @@ sub Gather_Rnamotif {
   }  ### End if rnamotif_information is defined
   else {
     $state->{genome_information} = $db->Get_ORF($state->{accession});
-    my ($sequence, $orf_start, $orf_stop) = $state->{genome_information};
+     my $return = $state->{genome_information};
+#    my ($sequence, $orf_start, $orf_stop) = $state->{genome_information};
+     my $sequence = $return->{sequence};
+     my $orf_start = $return->{orf_start};
+     my $orf_stop = $return->{orf_stop};
+#	print "TESTME: $sequence\n";
     my $motifs = new RNAMotif_Search;
     $state->{rnamotif_information} = $motifs->Search($sequence, $orf_start);
     $db->Put_RNAmotif($id, $state->{species}, $state->{accession}, $state->{rnamotif_information});
