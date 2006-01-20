@@ -87,7 +87,7 @@ sub DETAILEDLIST{
     
     if( $id ){
         $template->process("detailed_record_header.lbi", $vars, \$body) || die $template->error();
-        my $sql2 = "select species, accession, start, slipsite, sequence, pk_output, parsed, barcode, parens, mfe, pairs, knotp, lastupdate from pknots where id = $id";
+        my $sql2 = "select species, accession, start, slipsite, sequence, \" \", parsed, barcode, parens, mfe, pairs, knotp, lastupdate from mfe where id = $id";
         my $q2 = DBI_doSQL( $dbh, $sql2);
         my $r2 = shift(@$q2);
         
@@ -95,7 +95,7 @@ sub DETAILEDLIST{
         $$r2[5] = &REFORMATPKNOTS( $$r2[5] );
         
         # Get the randomized MFE data from boot.
-        my $sql3 = "select mfe_values,mfe_mean,mfe_sd,mfe_se from boot where structureID = $id";
+        my $sql3 = "select mfe_values,mfe_mean,mfe_sd,mfe_se from boot where mfe_id = $id";
         my $q3 = DBI_doSQL( $dbh, $sql3 );
         my $r3 = shift(@$q3);
         
@@ -146,7 +146,7 @@ sub DETAILEDLIST{
         $template->process("detail_list_header.lbi", $vars, \$body) || die $template->error();
         # get all the different structures 3' of the currently selected slippery site.
         # and build the rest of the page body.
-        my $q2 = DBI_doSQL($dbh, "select id, slipsite, barcode, mfe, pairs from pknots where accession = \"$query\" and start = $slipstart order by mfe" );
+        my $q2 = DBI_doSQL($dbh, "select id, slipsite, barcode, mfe, pairs from mfe where accession = \"$query\" and start = $slipstart order by mfe" );
         while(my $r = shift(@$q2)){
             my $temp_seq = $$r[1];
             my $detail_vars = {
@@ -224,7 +224,7 @@ sub MULTIMATCH{
         my $row = $$q1[$i];
         
         #count the number of slippery sites for this accession
-        my $q2= &DBI_doSQL($dbh,"select count(distinct start) from pknots where accession=\'$$row[1]\'");
+        my $q2= &DBI_doSQL($dbh,"select count(distinct start) from mfe where accession=\'$$row[1]\'");
         my $r2 = shift(@$q2);
         
         my $vars = {
@@ -282,7 +282,7 @@ sub SLIPLIST{
     # find the number of slippery sites, there position, etc.
     # we could add direct links here for each slippery site.
     # also, this next block is very close to similar block in &PRETTY_MRNA; fix later.
-    my $q2 = DBI_doSQL($dbh, "select distinct start,slipsite,count(id) from pknots where accession = \'$accession\' group by start order by start" );
+    my $q2 = DBI_doSQL($dbh, "select distinct start,slipsite,count(id) from mfe where accession = \'$accession\' group by start order by start" );
     my $sliplist = "";
     $template->process("sliplist_header.lbi","",\$sliplist) || die $template->error();
     while(my $r = shift(@$q2)){ 
@@ -315,7 +315,7 @@ sub PRETTY_MRNA{
     my $prefont_ss = "<font color=\"#FF0000\"><strong>";
     my $postfont_ss = "</strong></font>";
     
-    my $resultset = DBI_doSQL($dbh, "select distinct start from pknots where accession = \'$accession\' order by start" );
+    my $resultset = DBI_doSQL($dbh, "select distinct start from mfe where accession = \'$accession\' order by start" );
     my $slips = " ";
     while(my $r = shift(@$resultset)){ $slips .= " $$r[0] "; }
     
