@@ -1,19 +1,16 @@
 TODO
 
-* Make prfdb05 and whatever ATB is using is the same; or they share the same schema. [in progress]
-* populate fields that added to prfdb05 tables with data so that scripts dont break.
-* Add randomization, nupack, whatever data to the prfdb05 for the entries that are already there then fix the graphing function so that it is tied to that data.
+* Make prfdb05 and whatever ATB is using is the same; or they share the same schema. [in progress].
+* Add nupack data and whatever data to the prfdb05 for the entries that are already there.
 * import data from external sources
 * develop a 2nd CGI that uses the same .lbi templating scheme that is for users to add/remove/edit entries in the queue.
 * Add Gene Ontology data. (find paper on SAMBA algorithm for GO analysis).
-* DyAlign algorithm can used in conjuction with (guttell?) MWM fucntion to align/fold/compare 2 RNA structure that are pseudoknots. THis gives similarity score=>ability ot cluster=>find groups interesting candidates. (Matthews, 2005)
-* Fix Parser (PkParse.pm) 20051207: a bug was found where the parser was incrementing stems when it should not have been. Check out in the prfdb05 database, pknots table, compare ID#'s 122193 and 122577. They should be the same (i.e. the parsed structures should be the same; hence the barcodes should be as well).
+* Fix Parser (PkParse.pm) 20051207: a bug was found where the parser was incrementing stems when it should not have been. Check out in the prfdb05 database, pknots table, compare ID#'s 122193 and 122577. They should be the same (i.e. the parsed structures should be the same; hence the barcodes should be as well). A similar pair of oddities was found in the EST2 data set. REBOIL after this fix is applied.
 * For CDS entries, instead of only examining start to end of ORF, examine start of ORF to end of sequence; primarily for viral sequence compatibility and other rare genomic situtations where you bypass zero-frame termination signal.
 
 
 IDEAS
-
-1. maybe the randomization windows not be fixed on the input sequence window that pknots or NUPACK uses to fold, but... instead, the randomization sequence windows should be the "trimmed" sequence window that corresponds to the structure plus 1 base on either side. What do you think? The expect result would be IMHO z-scores will generally increase.
-
+* Maybe the randomization windows not be fixed on the input sequence window that pknots or NUPACK uses to fold, but... instead, the randomization sequence windows should be the "trimmed" sequence window that corresponds to the structure plus 1 base on either side. What do you think? The expect result would be IMHO z-scores will generally increase.
+* DyAlign algorithm can used in conjuction with (guttell?) MWM fucntion to align/fold/compare 2 RNA structure that are pseudoknots. THis gives similarity score=>ability ot cluster=>find groups interesting candidates. (Matthews, 2005)
 
 

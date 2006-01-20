@@ -59,8 +59,8 @@ sub DETAILEDLIST{
     my $id = $cgi-> param('id');
     
     # clean offending badness
-    $select =~ s/[^\w\s-:]/_/g;
-    $query =~ s/[^\w\s-:]/_/g;
+    $select =~ s/[^\w\s\-:]/_/g;
+    $query =~ s/[^\w\s\-:]/_/g;
     $slipstart =~ s/[^\d]/_/g;
     $id =~ s/[^\d]/_/g;
     
@@ -171,12 +171,15 @@ sub DETAILEDLIST{
 
 sub BROWSE{
     my $body = "";
-    my $select = $cgi->param('select');
-    my $query = $cgi->param('query');
+    my $select = "";
+    my $query = "";
+    
+    if($cgi->param('select')){ $select = $cgi->param('select'); }
+    if($cgi->param('query')){ $query = $cgi->param('query'); }
     
     # clean offending badness
-    $select =~ s/[^\w\s-:]/_/g;
-    $query =~ s/[^\w\s-:]/_/g;
+    $select =~ s/[^\w\s\-:]/ /g;
+    $query =~ s/[^\w\s\-:]/ /g;
     
     my $q1 = ""; # 1st query; a reference to a 2D-array representing all the rows of the result set.
     my $sql = "";
