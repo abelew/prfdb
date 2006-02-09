@@ -293,6 +293,9 @@ sub Pknots {
   else {
       $return->{knotp} = 1;
   }
+  if ($return->{parens} =~ /\{/) {
+      $return->{knotp} = 1;
+  }
   chdir($config->{basedir});
   return($return);
 }

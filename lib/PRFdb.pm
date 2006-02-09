@@ -789,7 +789,7 @@ sub Put_MFE {
     }
     my $statement = qq(INSERT INTO mfe (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES ('$data->{genome_id}', '$data->{species}', '$algo', '$data->{accession}', '$data->{start}', '$data->{slipsite}', '$data->{seqlength}', '$data->{sequence}', '$data->{output}', '$data->{parsed}', '$data->{parens}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}', '$data->{barcode}'));
   #  print "MFE: $statement\n";
-  $me->Execute($statement);
+  $me->Execute($statement, $data->{genome_id});
   my $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
   my $get_inserted_id = qq(SELECT LAST_INSERT_ID());
   my $id = $me->MySelect($get_inserted_id);
@@ -1045,20 +1045,27 @@ sub Check_Insertion {
 sub Execute {
     my $me = shift;
     my $statement = shift;
-    my $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
+    my $genome_id = shift;
+    $dbh = $me->MyConnect($statement);
+#    my $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
     my $errorstr;
     my $sth = $dbh->prepare($statement) or
-	$errorstr = "Could not prepare: $statement " . $dbh->errstr , Write_SQL($statement),  PRF_Error($errorstr);
+	$errorstr = "Could not prepare: $statement " . $dbh->errstr , Write_SQL($statement, $genome_id),  PRF_Error($errorstr);
     $sth->execute() or
-	$errorstr = "Could not execute: $statement " . $dbh->errstr , Write_SQL($statement), PRF_Error($errorstr);
-    $dbh->disconnect();
+	$errorstr = "Could not execute: $statement " . $dbh->errstr , Write_SQL($statement, $genome_id), PRF_Error($errorstr);
 }
 
 sub Write_SQL {
     my $statement = shift;
+    my $genome_id = shift;
     open(SQL, ">>failed_sql_statements.txt");
     my $string = "$statement" . ";\n";
     print SQL "$string";
+
+    if (defined($genome_id)) {
+	my $second_statement = "UPDATE queue set done='0', out='0' where genome_id = '$genome_id';\n";
+	print SQL "$second_statement";
+    }
     close(SQL);
 }
 
