@@ -7,7 +7,10 @@ use File::Temp qw / tmpnam /;
 use Fcntl ':flock'; # import LOCK_* constants
 use Bio::DB::Universal;
 
+### Holy crap global variables!
 my $config = $PRFConfig::config;
+my $dbh;
+###
 
 sub new {
   my ($class, %arg) = @_;
@@ -19,7 +22,8 @@ sub new {
       user => $config->{user},
   }, $class;
 
-  $me->{dbh} = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
+  $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
+  $me->{dbh}->{mysql_auto_reconnect} = 1;
   $me->Create_Genome() unless($me->Tablep('genome'));
   $me->Create_Queue() unless($me->Tablep('queue'));
   $me->Create_Rnamotif() unless($me->Tablep('rnamotif'));
@@ -30,10 +34,68 @@ sub new {
   return ($me);
 }
 
+sub MySelect {
+    my $me = shift;
+    my $statement = shift;
+    my $type = shift;  
+    my $descriptor = shift;
+    my $return = 'null';
+    if (!defined($statement)) {
+	die("WTF, no statement in MySelect");
+    }
+    $me->MyConnect($statement);
+    my $selecttype;
+
+    ## If $type AND $descriptor are defined, do selectall_hashref
+    if (defined($type) and defined($descriptor)) {
+	$return = $dbh->selectall_hashref($statement, $descriptor);
+	$selecttype = 'selectall_hashref';
+    }
+
+    ## If $type is defined, AND if you ask for a row, do a selectrow_arrayref
+    elsif (defined($type) and $type eq 'row') {
+	$return = $dbh->selectrow_arrayref($statement);
+	$selecttype = 'selectrow_arrayref';
+    }
+
+    ## If only $type is defined, do a selectrow_hashref
+    elsif (defined($type)) {
+	$return = $dbh->selectrow_hashref($statement);
+	$selecttype = 'selectrow_hashref';
+    }
+
+    ## The default is to do a selectall_arrayref
+    else {
+	$return = $dbh->selectall_arrayref($statement);
+	$selecttype = 'selectall_arrayref';
+    }
+
+    if ($return eq 'null') {
+	Write_SQL($statement);
+	my $errorstring = "$selecttype return is undefined in MySelect: $statement, " . $DBI::errstr;
+	die($errorstring);
+    }
+    return($return);
+}
+
+sub MyConnect {
+    my $me = shift;
+    my $statement = shift;
+    $dbh = DBI->connect_cached($me->{dsn}, $config->{user}, $config->{pass});
+    if (!defined($dbh)) {
+	if (defined($statement)) {
+	    Write_SQL($statement);
+	}
+	my $error = "Could not open cached connection: $me->{dsn}, " . $DBI::err . ", " . $DBI::errstr;
+	die("$error");
+    }
+}
+
 sub Get_All_Sequences {
   my $me = shift;
   my $statement = "SELECT accession, mrna_seq from genome";
-  my $sth = $me->{dbh}->prepare($statement);
+  $me->MyConnect($statement);
+  my $sth = $dbh->prepare($statement);
   return($sth);
 }
 
@@ -42,8 +104,7 @@ sub Keyword_Search {
   my $species = shift;
   my $keyword = shift;
   my $statement = qq(SELECT accession, comment FROM genome WHERE comment like '%$keyword%' ORDER BY accession);
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_arrayref($statement);
+  my $info = $me->MySelect($statement);
   my $return = {};
   foreach my $accession (@{$info}) {
     my $accession_id = $accession->[0];
@@ -85,8 +146,7 @@ sub Get_Boot {
   else {
     $statement = qq(SELECT * from boot where accession='$accession' ORDER BY start);
   }
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_hashref($statement, 1);
+  my $info = $me->MySelect($statement, 'hash', 1);
   return($info);
 }
 
@@ -105,8 +165,9 @@ sub Id_to_AccessionSpecies {
   my $start  = shift;
   PRF_Error("Undefined value in Id_to_AccessionSpecies", $id) unless (defined($id));
   my $statement = qq(SELECT accession, species from genome where id='$id');
-  my $dbh = $me->{dbh};
-  my ($accession, $species) = $dbh->selectrow_array($statement);
+  my $data = $me->MySelect($statement);
+  my $accession = $data->[0]->[0];
+  my $species = $data->[0]->[1];
   my $return = {accession => $accession, species => $species,};
   return($return);
 }
@@ -121,7 +182,8 @@ sub Error_Db {
   print "Error: '$message'\n";
   my $statement = qq(INSERT into errors (message, accession) VALUES('$message', '$accession'));
   ## Don't call Execute here or you may run into circular crazyness
-  my $sth = $me->{dbh}->prepare($statement);
+  $me->MyConnect($statement);
+  my $sth = $dbh->prepare($statement);
   $sth->execute();
 }
 
@@ -129,7 +191,7 @@ sub Get_Entire_Pubqueue {
   my $me = shift;
   my $return;
   my $statement = qq(SELECT id FROM queue WHERE public='1' and  out='0');
-  my $ids = $me->{dbh}->selectall_arrayref($statement);
+  my $ids = $me->MySelect($statement);
   return($ids);
 }
 
@@ -139,8 +201,8 @@ sub Set_Pubqueue {
   my $params = shift;
   my $statement;
   $statement = qq(INSERT INTO queue (id, public, params, out, done) VALUES ('$id', '1', '', 0, 0));
-  print "ST: $statement\n";
-  my $sth = $me->{dbh}->prepare("$statement");
+  $me->MyConnect($statement);
+  my $sth = $dbh->prepare("$statement");
   $sth->execute or PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
 }
 
@@ -159,7 +221,8 @@ sub Clean_Table {
   my $type = shift;
   my $table = $type . '_' . $config->{species};
   my $statement = "DELETE from $table";
-  my $sth = $me->{dbh}->prepare("$statement");
+  $me->MyConnect($statement);
+  my $sth = $dbh->prepare("$statement");
   $sth->execute or PRF_Error("Could not execute statement: $statement in Create_Genome");
 }
 
@@ -167,14 +230,16 @@ sub Drop_Table {
   my $me = shift;
   my $table = shift;
   my $statement = "DROP table $table";
-  my $sth = $me->{dbh}->prepare("$statement");
+  $me->MyConnect($statement);
+  my $sth = $dbh->prepare("$statement");
   $sth->execute or PRF_Error("Could not execute statement: $statement in Create_Genome");
 }
 
 sub FillQueue {
   my $me = shift;
   my $best_statement = "INSERT into queue (genome_id, public, params, out, done) SELECT id, 0, '', 0, 0 from genome";
-  my $sth = $me->{dbh}->prepare($best_statement);
+  $me->MyConnect($best_statement);
+  my $sth = $dbh->prepare($best_statement);
   $sth->execute;
 }
 
@@ -186,7 +251,7 @@ sub Grab_Queue {
 #  my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
 #  my $single_id = qq(select id, genome_id from queue where genome_id='207');
   my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' LIMIT 1);
-  my $ids = $me->{dbh}->selectrow_arrayref($single_id);
+  my $ids = $me->MySelect($single_id, 'row');
   my $id = $ids->[0];
   my $genome_id = $ids->[1];
   if (!defined($id) or $id eq ''
@@ -471,7 +536,7 @@ sub Get_OMIM {
   my $me = shift;
   my $id = shift;;
   my $statement = qq(SELECT omim_id FROM genome where id='$id');
-  my $info = $me->{dbh}->selectall_arrayref($statement);
+  my $info = $me->MySelect($statement);
   my $omim = $info->[0]->[0];
   if (!defined($omim) or $omim eq 'none') {
     return(undef);
@@ -503,9 +568,8 @@ sub Check_Genome_Table {
   my $me = shift;
   my $species = shift;
   my $table = 'genome_' . $species;
-  my $statement = "SHOW TABLES like '$table'";
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_arrayref($statement);
+  my $statement = "SHOW TABLES like '$table'";  
+  my $info = $me->MySelect($statement);
   if (scalar(@{$info}) == 0) {
     return(0);
   }
@@ -521,7 +585,7 @@ sub Get_Sequence {
   my $me = shift;
   my $accession = shift;
   my $statement = qq(SELECT mrna_seq FROM genome WHERE accession = '$accession');
-  my $info = $me->{dbh}->selectall_arrayref($statement);
+  my $info = $me->MySelect($statement);
   my $sequence = $info->[0]->[0];
   if ($sequence) {
 	return($sequence);
@@ -536,9 +600,10 @@ sub Get_Num_RNAfolds {
   my $algo = shift;
   my $genome_id = shift;
   my $return = {};
-  my $statement = "SELECT count(id) FROM mfe WHERE genome_id = '$genome_id' and algorithm = '$algo'";
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_arrayref($statement);
+  my $sequence_length = $PRFConfig::config->{max_struct_length} + 1;
+  my $statement = "SELECT count(id) FROM mfe WHERE seqlength = '$sequence_length' and genome_id = '$genome_id' and algorithm = '$algo'";
+  print "TESTING: $statement\n";
+  my $info = $me->MySelect($statement);
   my $count = $info->[0]->[0];
   return($count);
 }
@@ -548,7 +613,7 @@ sub Get_RNAmotif {
   my $genome_id = shift;
   my $return = {};
   my $statement = "SELECT start, total, permissable, filedata, output FROM rnamotif WHERE genome_id = '$genome_id'";
-  my $info = $me->{dbh}->selectall_arrayref($statement);
+  my $info = $me->MySelect($statement);
   my @data = @{$info};
   my $records = scalar(@data);
   return(undef) if (scalar(@data) <= 0);
@@ -573,9 +638,7 @@ sub Get_mRNA {
   my $me = shift;
   my $accession = shift;
   my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession='$accession');
-#  my $info = $me->{dbh}->selectall_arrayref($statement);
-  my $info = $me->{dbh}->selectrow_hashref($statement);
-#  my $sequence = $info->[0]->[0];
+  my $info = $me->MySelect($statement, 'hash');
   my $mrna_seq = $info->{mrna_seq};
   if ($mrna_seq) {
 	return($mrna_seq);
@@ -589,9 +652,7 @@ sub Get_ORF {
   my $me = shift;
   my $accession = shift;
   my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession='$accession');
-#  my $info = $me->{dbh}->selectall_arrayref($statement);
-  my $info = $me->{dbh}->selectrow_hashref($statement);
-#  my $sequence = $info->[0]->[0];
+  my $info = $me->MySelect($statement, 'hash');
   my $mrna_seq = $info->{mrna_seq};
   ### A PIECE OF CODE TO HANDLE PULLING SUBSEQUENCES FROM CDS
   my $start = $info->{orf_start} - 1;
@@ -637,7 +698,7 @@ sub Get_Slippery_From_RNAMotif {
 sub Insert_Genome_Entry {
   my $me = shift;
   my $datum = shift;
-  my $dbh = $me->{dbh};
+  my $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
   my $accession = $dbh->quote($datum->{accession});
   my $species = $dbh->quote($datum->{species});
   my $genename = $dbh->quote($datum->{genename});
@@ -657,6 +718,7 @@ VALUES($accession, $species, $genename, $version, $comment, $mrna_seq, $prot_seq
   ## The following line is very important to ensure that multiple calls to this don't end up with
   ## Increasingly long sequences
   foreach my $k (keys %{$datum}) { $datum->{$k} = undef; }
+  $dbh->disconnect();
   $me->Execute($statement);
   my $last_id = $me->Get_Last_Id();
   return($last_id);
@@ -704,8 +766,7 @@ sub Get_Pknots {
   elsif (defined($identifier->{accession} and defined($identifier->{start}))) {
     $statement = "SELECT id, genome_id, species, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode FROM mfe where accession = '$identifier->{accession}' and start = '$identifier->{start}'";
   }
-  my $dbh = $me->{dbh};
-  my $info = $dbh->selectall_hashref($statement, [ qw(id genome_id species accession start slipsite seqlength sequence output parsed parens mfe pairs knotp barcode) ]);
+  my $info = $me->MySelect($statement, [qq(id genome_id species accession start slipsite seqlength sequence output parsed parens mfe pairs knotp barcode)]);
   return($info);
 }
 
@@ -729,8 +790,9 @@ sub Put_MFE {
     my $statement = qq(INSERT INTO mfe (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES ('$data->{genome_id}', '$data->{species}', '$algo', '$data->{accession}', '$data->{start}', '$data->{slipsite}', '$data->{seqlength}', '$data->{sequence}', '$data->{output}', '$data->{parsed}', '$data->{parens}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}', '$data->{barcode}'));
   #  print "MFE: $statement\n";
   $me->Execute($statement);
-  my $st2 = qq(SELECT LAST_INSERT_ID());
-  my $id = $me->{dbh}->selectall_arrayref($st2);
+  my $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
+  my $get_inserted_id = qq(SELECT LAST_INSERT_ID());
+  my $id = $me->MySelect($get_inserted_id);
   return($id->[0]->[0]);
 }  ## End of Put_MFE
 
@@ -743,27 +805,27 @@ sub Put_Boot {
       #foreach my $mfe_method (keys %{$data}) {
       foreach my $rand_method (keys %{$config->{boot_randomizers}}) {
 	  #foreach my $rand_method (keys %{$data->{$mfe_method}}) {
-        my $mfe_id = $data->{$mfe_method}->{$rand_method}->{mfe_id};
-        my $iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{iterations};
-        my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
-        my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
-        my $mfe_se = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_se};
-        my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
-        my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
-        my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
-        my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
-        my $species = $data->{$mfe_method}->{$rand_method}->{stats}->{species};
-        my $accession = $data->{$mfe_method}->{$rand_method}->{stats}->{accession};
-        my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
+	  my $mfe_id = $data->{$mfe_method}->{$rand_method}->{mfe_id};
+	  my $iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{iterations};
+	  my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
+	  my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
+	  my $mfe_se = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_se};
+	  my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
+	  my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
+	  my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
+	  my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
+	  my $species = $data->{$mfe_method}->{$rand_method}->{stats}->{species};
+	  my $accession = $data->{$mfe_method}->{$rand_method}->{stats}->{accession};
+	  my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
 
-        my @boot = ('genome_id');
-        my $errorstring = Check_Insertion(\@boot, $data);
-        if (defined($errorstring)) {
+	  my @boot = ('genome_id');
+	  my $errorstring = Check_Insertion(\@boot, $data);
+	  if (defined($errorstring)) {
 	      $errorstring = "Undefined value(s) in Put_Boot: $errorstring";
 	      PRF_Error($errorstring, $species, $accession);
-        }
+	  }
 
-        my $statement = qq(INSERT INTO boot (genome_id, mfe_id, species, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$mfe_id', '$species', '$accession', '$start', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
+	  my $statement = qq(INSERT INTO boot (genome_id, mfe_id, species, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$mfe_id', '$species', '$accession', '$start', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
 	  $me->Execute($statement);
       }  ### Foreach random method
   } ## Foreach mfe method
@@ -914,8 +976,7 @@ sub Tablep {
     my $me = shift;
     my $table = shift;
     my $statement = qq(SHOW TABLES LIKE '$table');
-    my $dbh = DBI_Connect();
-    my $info = $dbh->selectall_arrayref($statement);
+    my $info = $me->MySelect($statement);
     return(scalar(@{$info}));
 }
 
@@ -984,24 +1045,27 @@ sub Check_Insertion {
 sub Execute {
     my $me = shift;
     my $statement = shift;
-    my $dbh = $me->{dbh};
+    my $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
     my $errorstr;
     my $sth = $dbh->prepare($statement) or
 	$errorstr = "Could not prepare: $statement " . $dbh->errstr , Write_SQL($statement),  PRF_Error($errorstr);
     $sth->execute() or
 	$errorstr = "Could not execute: $statement " . $dbh->errstr , Write_SQL($statement), PRF_Error($errorstr);
+    $dbh->disconnect();
 }
 
 sub Write_SQL {
     my $statement = shift;
     open(SQL, ">>failed_sql_statements.txt");
-    print SQL $statement;
+    my $string = "$statement" . ";\n";
+    print SQL "$string";
     close(SQL);
 }
 
 sub Get_Last_Id {
     my $me = shift;
-    my $id = $me->{dbh}->selectall_arrayref('select last_insert_id()');
+    my $statement = 'select last_insert_id()';
+    my $id = $me->MySelect($statement);
     return($id->[0]->[0]);
 }
 

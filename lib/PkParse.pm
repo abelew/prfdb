@@ -259,4 +259,312 @@ sub UnWind {
   return($state);
 }
 
+
+sub MAKEBRACKETS {
+    my($strREF) = @_;
+    my @helixLIST = ();
+    push(@helixLIST, FINDHELIX($strREF) );
+    push(@helixLIST, FINDGAPS($strREF) );
+    my @brackets = ();
+    while( my $helixREF = pop(@helixLIST) ){
+	for(my $i=0; $i < @$helixREF; $i++){
+	    unless($$helixREF[$i] eq '-'){
+		$brackets[$i] = $$helixREF[$i];
+	    }
+	}
+    }
+    return join("",@brackets);
+}
+
+sub FINDHELIX {
+    my( $strREF ) = @_;
+    my $helixREF = "";
+    my @helixLIST = ();
+    my $last3 = 0;
+    my $limit = @$strREF;
+
+    for(my $i = 0; $i < @$strREF; $i++ ){
+	if(( $$strREF[$i] =~ /\d+/) and
+	   ( $i < $$strREF[$i] )) {
+	    SETDEFAULTBRACKETS();
+	    if(($i < $last3 ) and
+	       ($limit < @$strREF)) {
+		SETALTERNATIVEBRACKETS();
+	    }
+	    ( $i, $last3, $limit, $helixREF) = ZIPHELIX( $strREF, $i, $limit );
+	    # print @$helixREF,"\n";
+	    push( @helixLIST, $helixREF );
+	}
+    }
+    return @helixLIST;
+}
+
+sub FINDGAPS{
+  my($strREF) = @_;
+  my @gaps = ();
+  for(my $i = 0; $i < @$strREF; $i++){
+    if($$strREF[$i] eq '.'){
+      $gaps[$i] = '.';
+    } else {
+#       next;
+       $gaps[$i] = '';
+    }
+  }
+  return \@gaps;
+}
+
+sub ZIPHELIX{
+    my( $strREF, $b5, $limit ) = @_;
+    my @helix = ();
+
+    my $b3 = $$strREF[ $b5 ];
+    my $last5 = $b5;
+    my $last3 = $b3;
+    my $knot5 = "";
+    my $knotted = 0;
+    my $helixCrown = 0;
+    my $nextLimit = @$strREF;
+
+    for(my $i = 0; $i < $b5; $i++){
+	$helix[$i] = "-";
+    }
+
+    for(my $i = $b5; $i < $b3; $i++ ){
+	if( defined($helix[$i]) ){
+	    if( $helix[$i] =~ /[\)\]]/ ){
+		$helixCrown = 1;
+	    }
+	}
+
+	if(( $$strREF[$i] =~ /\d+/ ) and
+	   ( $i < $$strREF[$i] ) and
+	   ( $$strREF[$i] <= $b3 ) and
+	   ( $i < $limit ) and
+	   ( not $knotted ) and
+	   ( not $helixCrown ) and
+	   ( not $helix[$i] )) {
+	    $helix[$i] = $leftG;
+	    $helix[ $$strREF[$i] ] = $rightG;
+	    $last3 = $$strREF[$i];
+	    $last5 = $i;
+	}
+	elsif (( $$strREF[$i] =~ /\d+/ ) and
+	       ( $i < $$strREF[$i] ) and
+	       ( $$strREF[$i] > $b3 ) and
+	       ( not $helix[$i] )) {
+	    $helix[$i] = "-";
+	    $nextLimit = $i+1;
+	    unless( $knotted ) {
+		$knot5 = $i-1;
+		$knotted = 1;
+	    }
+	} elsif( $$strREF[$i] =~ /\./  ) {
+	    $helix[$i] = "-";
+	    $helix[$i] = "-";
+	} elsif( not $helix[$i] ) {
+	    $helix[$i] = "-";
+	}
+    }
+
+    if( $knot5 ){
+	$last5 = $knot5;
+    }else{
+	$nextLimit = @$strREF;
+    }
+    return ($last5, $last3, $nextLimit, \@helix);
+}
+
+sub SETDEFAULTBRACKETS{
+    $leftG = "(";
+    $rightG = ")";
+}
+
+sub SETALTERNATIVEBRACKETS{
+    $leftG = "{";
+    $rightG = "}";
+}
+
+sub ReBarcoder{
+    # Added by JLJ.
+    my $strREF = shift;
+    my $str = "";
+    if (ref($strREF) eq "ARRAY") {
+        $str = "@{$strREF}";
+    } 
+    else {
+        $str = $strREF;
+    }
+    
+    my $x = "";
+    my $max = 0;
+    my $stems = "";
+    my $order = "";
+    
+    while ($str =~ m/(\d)/g) {
+        $x = $1;
+        if($x > $max) { $max = $x }
+    }
+    
+    for(my $i=1; $i <= $max; $i++) { $stems .= $i }
+    
+    while ($str =~ m/(\d)/g) {
+        $x = $1;
+        unless($order =~ m/$x/) { $order .= $x; }
+    }
+    
+    $_ = $str;
+    eval "tr/$order/$stems/"; # or die $@;
+    $str = $_;
+        
+    if(ref($strREF) eq "ARRAY") {
+        my @duh = split(/ /,$str);
+        return \@duh;
+    } else {
+        return $str;
+    }
+    die "WHAT THE HELLL!?!?!?!?!?!\n";
+}
+
+sub Condense{
+    # Added JLJ.
+    my $strREF = shift;
+    my $str = "";
+    if( ref($strREF) eq "ARRAY" ){
+        $str = "@{$strREF}";
+    }else{
+        $str = $strREF;
+    }
+    
+    my $x = "";
+    my $max = 0;    
+    while($str =~ m/(\d)/g){
+        $x = $1;
+        if( $x > $max ){ $max = $x }
+    }
+    
+    for(my $i = 1; $i <= $max; $i++){
+        $str =~ s/\s?($i)(?:\s[$i\.])*?\s?/$1/g;
+        $str =~ s/\.|\s//g;
+        $str =~ s/$i+/$i/g;
+    }
+    #print $str,"\n";
+    
+    my $count = 0;
+    for(my $i = 1; $i <= $max; $i++){
+       $count++ while $str =~ m/$i/g;
+       #print "$i $count\n";
+       if($count < 2){ $str =~ s/($i)/$1$1/; }
+       $count = 0;
+    }
+    #print $str,"\n";
+ 
+    
+    return $str;  
+}
+
+sub Parsed_to_Barcode {
+  my $knotref = shift;
+  my $string = '';
+  foreach my $char (@{$knotref}) { $string = $string . $char if (defined($char)); }
+  $string =~ tr/0-9//s;
+  print "TEST: $string\n";
+  my @almost = split(//, $string);
+  my $finished = '';
+  print "How many times does @almost have $almost[0]?\n";
+  if (Single_p($almost[0], \@almost)) {
+	$finished = $almost [0] . $almost[0];
+	shift(@almost);
+  }
+ LOOP:   for my $c (0 .. $#almost) {
+	my $char = $almost[$c];
+	my $count = 0;
+	### If $char is in what is left of @almost 1 time...
+	foreach my $test (@almost) {
+	  $count++ if ($test eq $char);
+	  if ($count > 1) {
+		print "Adding $char one time because it exists $count times\n";
+		$finished = $finished . $char;
+		$count = 0;
+		next LOOP;
+	  }
+	}
+	print "ADDING $char twice because it exists $count times\n";
+	$finished = $finished . $char . $char;
+  }
+  print "The reduced string is: $string\n";
+  return($finished);
+}
+
+sub Parsed_to_Barcode2 {
+    my $knotref = shift;
+    my $string = '';
+    foreach my $char (@{$knotref}) { $string = $string . $char if (defined($char)); }
+    $string =~ tr/0-9//s;
+    print "TEST: $string\n";
+    my @almost = split(//, $string);
+    my $finished = '';
+    print "How many times does @almost have $almost[0]?\n";
+    if (Single_p($almost[0], \@almost)) {
+	$finished = $almost [0] . $almost[0];
+	shift(@almost);
+    }
+  LOOP:   for my $c (0 .. $#almost) {
+      my $char = $almost[$c];
+      my $count = 0;
+      ### If $char is in what is left of @almost 1 time...
+      foreach my $test (@almost) {
+	  $count++ if ($test eq $char);
+	  if ($count > 1) {
+	      print "Adding $char one time because it exists $count times\n";
+	      $finished = $finished . $char;
+	      $count = 0;
+	      next LOOP;
+	  }
+	  elsif ($count == 1) {
+	      print "ADDING $char twice because it exists $count times\n";
+	      $finished = $finished . $char . $char;
+	      $count = 0;
+	      next LOOP;
+	  }
+      }
+      print "The reduced string is: $string\n";
+      return($finished);
+  }
+}
+
 1;
+
+
+__END__
+
+=head1 NAME
+
+PkParse - A (hopefully) functional parser for the output from pknots.
+
+=head1 SYNOPSIS
+
+ use PkParse;
+ my $parser = new PkParse();
+ my $structure = $parser->Unzip(\@Pknots_structure);
+ print "@{$structure}\n";
+
+=head1 Unzip
+
+ Unzip is the top level loop which handles some number of
+ increasingly inner stem loops.   It completes only when there are no
+ more unaccounted bound bases
+
+=head1 UnWind
+
+ UnWind does the real work, maintaining a small state machine and
+ wandering the given structure from the outside in until the 'front
+ pos' passes the 'back pos' which should occur either at the center
+ of a sequence _or_ after completing an off center stem structure.
+
+=head1 Handle_Front and Handle_Back
+
+ These functions are essentially a long list of conditions which
+ define when to increment the current stem id for a given position
+ along the given sequence.  In each case the conditions between
+ Handle_Front and Handle_Back are symmetric; so they could presumably
+ be merged at a potential cost of clarity.

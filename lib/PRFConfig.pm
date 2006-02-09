@@ -96,6 +96,7 @@ for my $config_option (keys %data) {
 }
 $PRFConfig::config->{boot_mfe_algorithms} = eval($PRFConfig::config->{boot_mfe_algorithms});
 $PRFConfig::config->{boot_randomizers} = eval($PRFConfig::config->{boot_randomizers});
+$PRFConfig::config->{pbs_shell} = eval($PRFConfig::config->{pbs_shell});
 
 $PRFConfig::config->{dsn} = "DBI:mysql:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host}";
 my $err = $PRFConfig::config->{errorfile};

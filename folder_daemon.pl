@@ -34,6 +34,18 @@ my $state = {
 	    };
 
 Print_Config();
+## Put some helper functions here
+if (defined($ARGV[0])) {
+  if ($ARGV[0] eq '-q') {
+    $db->FillQueue();
+  }
+  elsif ($ARGV[0] eq '-v') {
+    print "This is version: 1.77 from cvs\n";
+    exit();
+  }
+exit();
+}
+
 
 until (defined($state->{time_to_die})) {
 #  Time::HiRes::usleep(100);
@@ -94,7 +106,7 @@ sub Gather {
     if ($config->{do_nupack}) { ### Do we run a nupack fold?
       my $nupack_folds = $db->Get_Num_RNAfolds('nupack', $state->{genome_id});
       if ($nupack_folds >= $number_rnamotif_information) {
-	print "$state->{genome_id} already has $num_rnamotif_information nupack_folds\n";
+	print "$state->{genome_id} already has $number_rnamotif_information nupack_folds\n";
       }
       else { ### If there are no existing folds...
 	my $nupack_info;
@@ -161,7 +173,12 @@ sub Gather_Rnamotif {
   }  ### End if rnamotif_information is defined
   else {
     $state->{genome_information} = $db->Get_ORF($state->{accession});
-    my ($sequence, $orf_start, $orf_stop) = $state->{genome_information};
+     my $return = $state->{genome_information};
+#    my ($sequence, $orf_start, $orf_stop) = $state->{genome_information};
+     my $sequence = $return->{sequence};
+     my $orf_start = $return->{orf_start};
+     my $orf_stop = $return->{orf_stop};
+#	print "TESTME: $sequence\n";
     my $motifs = new RNAMotif_Search;
     $state->{rnamotif_information} = $motifs->Search($sequence, $orf_start);
     $db->Put_RNAmotif($id, $state->{species}, $state->{accession}, $state->{rnamotif_information});
@@ -176,13 +193,6 @@ sub Check_Environment {
   die("Database host not defined") unless($config->{host} ne 'prfconfigdefault_host');
   die("Database user not defined") unless($config->{user} ne 'prfconfigdefault_user');
   die("Database pass not defined") unless($config->{pass} ne 'prfconfigdefault_pass');
-  ## Now we should be able to connect to the database, so check that all the tables exist.
-  $db->Create_Genome() unless($db->Tablep('genome'));
-  $db->Create_Rnamotif() unless($db->Tablep('rnamotif'));
-  $db->Create_Pknots() unless($db->Tablep('pknots'));
-  $db->Create_Nupack() unless($db->Tablep('nupack'));
-  $db->Create_Boot() unless($db->Tablep('boot'));
-  #  Create_Derived() unless(PRFdb::Tablep('derived'));
 
   unless(-r $config->{descriptor_file}) {
     RNAMotif_Search::Descriptor();
@@ -197,11 +207,14 @@ sub signal_handler {
 
 sub Print_Config {
   ### This is a little function designed to give the user a chance to abort
+  if ($config->{nupack_nopairs_hack}) { print "I AM using a hacked version of nupack!\n"; }
+  else { print "I AM NOT using a hacked version of nupack!\n"; }
   if ($config->{do_nupack}) { print "I AM doing a nupack fold using the program: $config->{nupack}\n"; }
   else { print "I AM NOT doing a nupack fold\n"; }
   if ($config->{do_pknots}) { print "I AM doing a pknots fold using the program: $config->{pknots}\n"; }
   else { print "I AM NOT doing a pknots fold\n"; }
   if ($config->{do_boot}) {
+    print "PLEASE CHECK THE prfdb.conf to see if you are using NOPAIRS\n";
     my $randomizers = $config->{boot_randomizers};
     my $mfes = $config->{boot_mfe_algorithms};
     my $nu_boot = $config->{nupack_boot};
