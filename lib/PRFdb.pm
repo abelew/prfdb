@@ -39,7 +39,7 @@ sub MySelect {
     my $statement = shift;
     my $type = shift;  
     my $descriptor = shift;
-    my $return = 'null';
+    my $return = undef;
     if (!defined($statement)) {
 	die("WTF, no statement in MySelect");
     }
@@ -55,6 +55,7 @@ sub MySelect {
     ## If $type is defined, AND if you ask for a row, do a selectrow_arrayref
     elsif (defined($type) and $type eq 'row') {
 	$return = $dbh->selectrow_arrayref($statement);
+	print "TESTME: $return\n";
 	$selecttype = 'selectrow_arrayref';
     }
 
@@ -70,9 +71,9 @@ sub MySelect {
 	$selecttype = 'selectall_arrayref';
     }
 
-    if ($return eq 'null') {
+    if (!defined($return) or $return eq 'null') {
 	Write_SQL($statement);
-	my $errorstring = "$selecttype return is undefined in MySelect: $statement, " . $DBI::errstr;
+	my $errorstring = "DBH: <$dbh> $selecttype return is undefined in MySelect: $statement, " . $DBI::errstr;
 	die($errorstring);
     }
     return($return);
@@ -81,6 +82,9 @@ sub MySelect {
 sub MyConnect {
     my $me = shift;
     my $statement = shift;
+    if (!defined($statement) or $statement eq '') {
+	die("Statement is not defined in MyConnect!");
+    }
     $dbh = DBI->connect_cached($me->{dsn}, $config->{user}, $config->{pass});
     if (!defined($dbh)) {
 	if (defined($statement)) {
@@ -89,6 +93,7 @@ sub MyConnect {
 	my $error = "Could not open cached connection: $me->{dsn}, " . $DBI::err . ", " . $DBI::errstr;
 	die("$error");
     }
+    return($dbh);
 }
 
 sub Get_All_Sequences {
@@ -241,6 +246,14 @@ sub FillQueue {
   $me->MyConnect($best_statement);
   my $sth = $dbh->prepare($best_statement);
   $sth->execute;
+}
+
+sub Reset_Queue {
+    my $me = shift;
+    my $statement = "UPDATE queue set out = '0' where done = '0' and out = '1'";
+    $me->MyConnect($statement);
+    my $sth = $dbh->prepare($statement);
+    $sth->execute;
 }
 
 sub Grab_Queue {
@@ -1046,9 +1059,9 @@ sub Execute {
     my $me = shift;
     my $statement = shift;
     my $genome_id = shift;
-    $dbh = $me->MyConnect($statement);
-#    my $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
+    $me->MyConnect($statement);
     my $errorstr;
+
     my $sth = $dbh->prepare($statement) or
 	$errorstr = "Could not prepare: $statement " . $dbh->errstr , Write_SQL($statement, $genome_id),  PRF_Error($errorstr);
     $sth->execute() or

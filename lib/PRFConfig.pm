@@ -117,6 +117,7 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
       $arch = $line;
     }
   }
+  close(UNAME);
   chomp $arch;
   if ($arch =~ /IRIX/) {
     $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/irix';

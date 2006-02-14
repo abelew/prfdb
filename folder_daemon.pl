@@ -17,6 +17,7 @@ my $config = $PRFConfig::config;
 my $db = new PRFdb;
 chdir($config->{basedir});
 Check_Environment();
+$db->Reset_Queue();  ## For anything which sets out = '1' and is not finished (done != '1'
 
 my $state = {
 	     time_to_die => undef,
