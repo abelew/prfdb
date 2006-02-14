@@ -279,6 +279,26 @@ sub Grab_Queue {
   return($return);
 }
 
+sub Grab_Overlap_Queue {
+    my $me = shift;
+    ## This id is the same id which uniquely identifies a sequence in the genome database
+    my $single_id = qq(select id, genome_id from overlap_queue where out='0' LIMIT 1);
+    my $ids = $me->{dbh}->selectrow_arrayref($single_id);
+    my $id = $ids->[0];
+    my $genome_id = $ids->[1];
+    if (!defined($id) or $id eq ''
+	or !defined($genome_id) or $genome_id eq '') {
+        return(undef);
+    }
+    my $update = qq(UPDATE overlap_queue SET out='1', outtime=current_timestamp() WHERE id='$id');
+    $me->Execute($update);
+    my $return = {
+	queue_id => $id,
+	genome_id => $genome_id,
+    };
+    return($return);
+}
+
 sub Done_Queue {
   my $me = shift;
   my $id = shift;
@@ -608,6 +628,21 @@ sub Get_Sequence {
   }
 }
 
+sub Get_Sequence_from_id {
+    my $me = shift;
+    my $id = shift;
+    my $statement = qq(SELECT mrna_seq FROM genome WHERE id = '$id');
+    my $info = $me->{dbh}->selectall_arrayref($statement);
+    my $sequence = $info->[0]->[0];
+    if ($sequence) {
+	return($sequence);
+    }
+    else {
+	return(undef);
+    }
+}
+
+
 sub Get_Num_RNAfolds {
   my $me = shift;
   my $algo = shift;
@@ -844,6 +879,15 @@ sub Put_Boot {
   } ## Foreach mfe method
 }  ## End of Put_Boot
 
+sub Put_Overlap {
+    my $me = shift;
+    my $data = shift;
+    my $statement = qq(INSERT INTO overlap (genome_id, species, accession, start, plus_length, plus_orf, minus_length, minus_orf) VALUES ('$data->{genome_id}', '$data->{species}', '$data->{accession}', '$data->{start}', '$data->{plus_length}', '$data->{plus_orf}', '$data->{minus_length}', '$data->{minus_orf}'));
+    $me->Execute($statement);
+    my $id = $data->{overlap_id};
+    return($id);
+}  ## End of Put_Overlap
+
 #################################################
 ### Functions used to create the prfdb tables
 #################################################
@@ -869,6 +913,23 @@ primary key (id),
 UNIQUE(accession),
 INDEX(genename))";
   $me->Execute($statement);
+}
+
+sub Create_Overlap {
+    my $me = shift;
+    my $statement = "CREATE table overlap (
+id $config->{sql_id},
+genome_id int,
+species $config->{sql_species},
+accession $config->{sql_accession},
+start int,
+plus_length int,
+plus_orf text,
+minus_length int,
+minus_orf text,
+lastupdate $config->{sql_timestamp},
+primary key (id))";
+    $me->Execute($statement);
 }
 
 ### FIXME Recreate rnamotif table for prfdb05
@@ -903,6 +964,24 @@ done bool,
 donetime timestamp default '',
 primary key (id))";
   $me->Execute($statement);
+}
+
+sub Create_Overlap_Queue {
+    my $me = shift;
+    my $statement = "CREATE table overlap_queue (
+id $config->{sql_id},
+genome_id int,
+public bool,
+params blob,
+out bool,
+outtime timestamp default '',
+done bool,
+donetime timestamp default '',
+primary key (id))";
+    $me->Execute($statement);
+    my $best_statement = "INSERT into overlap_queue (genome_id, public, params, out, done) SELECT id, 0, '', 0, 0 from genome where species = 'homo_sapiens'";
+    my $sth = $me->{dbh}->prepare($best_statement);
+    $sth->execute;
 }
 
 ### FIXME The Prfdb05 has different columns from nupack 

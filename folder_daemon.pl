@@ -11,6 +11,7 @@ use PRFdb;
 use RNAMotif_Search;
 use RNAFolders;
 use Bootlace;
+use Overlap;
 use MoreRandom;
 
 my $config = $PRFConfig::config;
@@ -94,16 +95,7 @@ sub Gather {
 				     accession => $state->{accession},
 				     start => $slipsite_start,
 				    );
-    my $boot = new Bootlace(
-			    genome_id => $state->{genome_id},
-			    inputfile => $state->{fasta_file},
-			    species => $state->{species},
-			    accession => $state->{accession},
-			    start => $slipsite_start,
-			    iterations => $config->{boot_iterations},
-			    boot_mfe_algorithms => $config->{boot_mfe_algorithms},
-			    randomizers => $config->{boot_randomizers},
-			   );
+
     if ($config->{do_nupack}) { ### Do we run a nupack fold?
       my $nupack_folds = $db->Get_Num_RNAfolds('nupack', $state->{genome_id});
       if ($nupack_folds >= $number_rnamotif_information) {
@@ -133,6 +125,17 @@ sub Gather {
     } ### End check if we should do a pknots fold
 
     if ($config->{do_boot}) {
+	my $boot = new Bootlace(
+				genome_id => $state->{genome_id},
+				inputfile => $state->{fasta_file},
+				species => $state->{species},
+				accession => $state->{accession},
+				start => $slipsite_start,
+				iterations => $config->{boot_iterations},
+				boot_mfe_algorithms => $config->{boot_mfe_algorithms},
+				randomizers => $config->{boot_randomizers},
+				);
+
       my $boot_folds = $db->Get_Num_RNAfolds('boot', $state->{genome_id}); ## CHECKME!
       my $number_boot_algos = Get_Num($config->{boot_mfe_algorithms});
       my $needed_boots = $number_boot_algos * $number_rnamotif_information;
@@ -148,6 +151,19 @@ sub Gather {
 	print "WTF!\n";
       } ### End if there are no bootlaces
     }  ### End if we are to do a boot
+
+    if ($config->{do_overlap}) {
+	my $overlap = new Overlap(
+				  genome_id => $state->{genome_id},
+				  species => $state->{species},
+				  accession => $state->{accession},
+				  sequence => $db->Get_Sequence_from_id($state->{genome_id}),
+				  );
+	my $overlap_info = $overlap->Alts($slipsite_start);
+	$db->Put_Overlap($overlap_info);
+    } ## End check to do an overlap
+
+
     unlink($state->{fasta_file});  ## Get rid of each fasta file
   } ### End foreach slipsite_start
   foreach my $k (keys %{$state}) { $state->{$k} = undef unless ($k eq 'done_count'); }

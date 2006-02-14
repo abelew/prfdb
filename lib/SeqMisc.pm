@@ -5,9 +5,14 @@ sub new {
   my ($class, %arg) = @_;
   $arg{sequence} = [] if (!defined($arg{sequence}));
   srand();
+  my $seqstring = '';
+  foreach my $char (@{$arg{sequence}}) {
+      $seqstring .= $char;
+  }
   my $me = bless {
 				  nt => {0 => 'A', 1 => 'U', 2 => 'C', 3=> 'G',},
 				  sequence => $arg{sequence},
+				  seqstring => $seqstring,
 				  length => scalar(@{$arg{sequence}}),
 				  aaseq => [],
 				  dint12seq => [],
@@ -340,7 +345,7 @@ sub Find_Alternates {
 
 sub Translate {
   my $me = shift;
-  my $sequence = shift;
+  my $sequence = $me->{seqstring};
   $sequence =~ tr/atgcT/AUGCU/;
   if ((! $me->{sequence}) and (!defined($sequence))) {
     die("Nothing to work with");
