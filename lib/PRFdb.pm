@@ -55,7 +55,7 @@ sub MySelect {
     ## If $type is defined, AND if you ask for a row, do a selectrow_arrayref
     elsif (defined($type) and $type eq 'row') {
 	$return = $dbh->selectrow_arrayref($statement);
-	print "TESTME: $return\n";
+#	print "TESTME: $return\n";
 	$selecttype = 'selectrow_arrayref';
     }
 
@@ -642,6 +642,18 @@ sub Get_Sequence_from_id {
     }
 }
 
+sub Get_MFE_ID {
+    my $me = shift;
+    my $genome_id = shift;
+    my $start = shift;
+    my $seqlength = shift;
+    my $algorithm = shift;
+    my $statement = qq(SELECT id FROM mfe WHERE genome_id = '$genome_id' AND start = '$start' AND seqlength = '$seqlength' AND algorithm = '$algorithm');
+#    print "TESTMEL $statement\n";
+    my $info = $me->MySelect($statement);
+    my $mfe = $info->[0]->[0];
+    return($mfe);
+}
 
 sub Get_Num_RNAfolds {
   my $me = shift;
@@ -650,7 +662,19 @@ sub Get_Num_RNAfolds {
   my $return = {};
   my $sequence_length = $PRFConfig::config->{max_struct_length} + 1;
   my $statement = "SELECT count(id) FROM mfe WHERE seqlength = '$sequence_length' and genome_id = '$genome_id' and algorithm = '$algo'";
-  print "TESTING: $statement\n";
+#  print "TESTING: $statement\n";
+  my $info = $me->MySelect($statement);
+  my $count = $info->[0]->[0];
+  return($count);
+}
+
+sub Get_Num_Bootfolds {
+  my $me = shift;
+  my $genome_id = shift;
+  my $start = shift;
+  my $return = {};
+  my $sequence_length = $PRFConfig::config->{max_struct_length} + 1;
+  my $statement = "SELECT count(id) FROM boot WHERE genome_id = '$genome_id' and start = '$start'";
   my $info = $me->MySelect($statement);
   my $count = $info->[0]->[0];
   return($count);
@@ -850,10 +874,10 @@ sub Put_Boot {
   my $id = $data->{genome_id};
   ## What fields are required?
   foreach my $mfe_method (keys%{$config->{boot_mfe_algorithms}}) {
+      my $mfe_id = $data->{mfe_id};
       #foreach my $mfe_method (keys %{$data}) {
       foreach my $rand_method (keys %{$config->{boot_randomizers}}) {
 	  #foreach my $rand_method (keys %{$data->{$mfe_method}}) {
-	  my $mfe_id = $data->{$mfe_method}->{$rand_method}->{mfe_id};
 	  my $iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{iterations};
 	  my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
 	  my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
@@ -864,8 +888,9 @@ sub Put_Boot {
 	  my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
 	  my $species = $data->{$mfe_method}->{$rand_method}->{stats}->{species};
 	  my $accession = $data->{$mfe_method}->{$rand_method}->{stats}->{accession};
+	  my $mfe_id = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_id};
+#	  print "LAST HERE: $mfe_id\n";
 	  my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
-
 	  my @boot = ('genome_id');
 	  my $errorstring = Check_Insertion(\@boot, $data);
 	  if (defined($errorstring)) {
@@ -874,6 +899,7 @@ sub Put_Boot {
 	  }
 
 	  my $statement = qq(INSERT INTO boot (genome_id, mfe_id, species, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$mfe_id', '$species', '$accession', '$start', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
+#	print "TEST: $statement\n";
 	  $me->Execute($statement);
       }  ### Foreach random method
   } ## Foreach mfe method
