@@ -11,7 +11,7 @@ arch_specific_exe = 1     ## Architecture specific executables (used for a pbs e
 boot_iterations = 100
 boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot_NOPAIRS, }
 #boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, }
-boot_randomizers = { array => \&MoreRandom::ArrayShuffle, }
+boot_randomizers = { array => \&MoreRandom::ArrayShuffle, dinuc => \&MoreRandom::Squid_Dinuc, }
 errorfile = "$(prefix)/prfdb.err"         ## Location of error file
 logfile = "$(prefix)/prfdb.log"           ## Location of output file
 nupack_dir = "$(prefix)/work"             ## Where does nupack live?
