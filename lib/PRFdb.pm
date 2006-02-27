@@ -24,6 +24,7 @@ sub new {
 
   $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
   $me->{dbh}->{mysql_auto_reconnect} = 1;
+  $me->{dbh}->{Inactive_Destroy} = 1;
   $me->Create_Genome() unless($me->Tablep('genome'));
   $me->Create_Queue() unless($me->Tablep('queue'));
   $me->Create_Rnamotif() unless($me->Tablep('rnamotif'));
@@ -665,6 +666,9 @@ sub Get_Num_RNAfolds {
 #  print "TESTING: $statement\n";
   my $info = $me->MySelect($statement);
   my $count = $info->[0]->[0];
+  if (!defined($count) or $count eq '') {
+      $count = 0;
+  }
   return($count);
 }
 
@@ -675,6 +679,7 @@ sub Get_Num_Bootfolds {
   my $return = {};
   my $sequence_length = $PRFConfig::config->{max_struct_length} + 1;
   my $statement = "SELECT count(id) FROM boot WHERE genome_id = '$genome_id' and start = '$start'";
+  print "TEST: $statement\n";
   my $info = $me->MySelect($statement);
   my $count = $info->[0]->[0];
   return($count);
