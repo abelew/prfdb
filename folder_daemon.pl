@@ -27,6 +27,7 @@ my $state = {
 	     genome_id => undef,
 	     accession => undef,
 	     species => undef,
+	     seqlength => $config->{max_struct_length} + 1,
 	     fasta_file => undef,
 	     genome_information => undef,
 	     rnamotif_information => undef,
@@ -52,7 +53,7 @@ exit();
 
 until (defined($state->{time_to_die})) {
 #  Time::HiRes::usleep(100);
-  sleep(1);
+#  sleep(1);
   ### You can set a configuration variable 'master' so that it will not die
   if ($state->{done_count} > 60 and !defined($config->{master})) { $state->{time_to_die} = 1 };
 
@@ -89,6 +90,7 @@ sub Gather {
   my $number_rnamotif_information = Get_Num($rnamotif_information);
   foreach my $slipsite_start (keys %{$rnamotif_information}) {
     $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
+    Check_Sequence_Length($state->{fasta_file});
     my $fold_search = new RNAFolders(
 				     file => $state->{fasta_file},
 				     genome_id => $state->{genome_id},
@@ -114,6 +116,7 @@ sub Gather {
 				species => $state->{species},
 				accession => $state->{accession},
 				start => $slipsite_start,
+				seqlength => $state->{seqlength},
 				iterations => $config->{boot_iterations},
 				boot_mfe_algorithms => $config->{boot_mfe_algorithms},
 				randomizers => $config->{boot_randomizers},
@@ -263,8 +266,8 @@ sub Check_Boot_Connectivity {
 	my $mfe_method = $boot->[1];
 	my $boot_id = $boot->[2];
 	my $genome_id = $boot->[3];
-	if ($mfe_id == '0' or !defined($mfe_id)) {
-	    ## The reconnect it using $mfe_method and $boot_id and $genome_id
+	if (!defined($mfe_id) or $mfe_id == '0') {
+	    ## Then reconnect it using $mfe_method and $boot_id and $genome_id
 	    my $new_mfe_id_stmt = qq(SELECT id FROM mfe where genome_id = '$genome_id' and start = '$slipsite_start' and algorithm = '$mfe_method');
 #	    print "Second TEST: $new_mfe_id_stmt\n";
 #	    sleep(5);
@@ -356,4 +359,33 @@ sub Check_Pknots {
 sub Clean_Up {
     $db->Done_Queue($state->{genome_id});
     foreach my $k (keys %{$state}) { $state->{$k} = undef unless ($k eq 'done_count'); }
+}
+
+sub Check_Sequence_Length {
+    my $filename = shift;
+    my $sequence_length = $config->{max_struct_length};
+    open(IN, "<$filename") or die ("Couldn't open $filename $!");
+    my $output = '';
+    my @out = ();
+    while (my $line = <IN>) {
+	print $line;
+	chomp $line;
+	if ($line =~ /^\>/) {
+	    $output .= $line;
+	}
+	else {
+	    my @tmp = split(//, $line);
+	    push(@out, @tmp);
+	}
+    }
+    close(IN);
+    my $current_length = scalar(@out);
+    if ($current_length <= $sequence_length) { return(undef); }
+    open(OUT, ">$filename") or die("Could not open $filename $!");
+    print OUT "$output\n";
+    foreach my $char (0 .. $sequence_length) {
+	print OUT $out[$char];
+    }
+    print OUT "\n";
+    close(OUT);
 }

@@ -261,10 +261,14 @@ sub Grab_Queue {
   my $me = shift;
   my $type = shift;  ## public or private
   $type = ($type eq 'public' ? 1 : 0);
+  my $table = 'queue';
+  if (defined($config->{queue_table})) {
+      $table = $config->{queue_table};
+  }
   ## This id is the same id which uniquely identifies a sequence in the genome database
-#  my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' ORDER BY rand() LIMIT 1);
-#  my $single_id = qq(select id, genome_id from queue where genome_id='207');
-  my $single_id = qq(select id, genome_id from queue where public='$type' and out='0' LIMIT 1);
+#  my $single_id = qq(select id, genome_id from $table where public='$type' and out='0' ORDER BY rand() LIMIT 1);
+#  my $single_id = qq(select id, genome_id from $table where genome_id='207');
+  my $single_id = qq(select id, genome_id from $table where public='$type' and out='0' LIMIT 1);
   my $ids = $me->MySelect($single_id, 'row');
   my $id = $ids->[0];
   my $genome_id = $ids->[1];
@@ -272,7 +276,7 @@ sub Grab_Queue {
       or !defined($genome_id) or $genome_id eq '') {
     return(undef);
   }
-  my $update = qq(UPDATE queue SET out='1', outtime=current_timestamp() WHERE id='$id' and public='$type');
+  my $update = qq(UPDATE $table SET out='1', outtime=current_timestamp() WHERE id='$id' and public='$type');
   $me->Execute($update);
   my $return = { queue_id => $id,
 		 genome_id => $genome_id,
@@ -280,30 +284,14 @@ sub Grab_Queue {
   return($return);
 }
 
-sub Grab_Overlap_Queue {
-    my $me = shift;
-    ## This id is the same id which uniquely identifies a sequence in the genome database
-    my $single_id = qq(select id, genome_id from overlap_queue where out='0' LIMIT 1);
-    my $ids = $me->{dbh}->selectrow_arrayref($single_id);
-    my $id = $ids->[0];
-    my $genome_id = $ids->[1];
-    if (!defined($id) or $id eq ''
-	or !defined($genome_id) or $genome_id eq '') {
-        return(undef);
-    }
-    my $update = qq(UPDATE overlap_queue SET out='1', outtime=current_timestamp() WHERE id='$id');
-    $me->Execute($update);
-    my $return = {
-	queue_id => $id,
-	genome_id => $genome_id,
-    };
-    return($return);
-}
-
 sub Done_Queue {
   my $me = shift;
   my $id = shift;
-  my $update = qq(update queue set done='1', donetime=current_timestamp() where id='$id');
+  my $table = 'queue';
+  if (defined($config->{queue_table})) {
+      $table = $config->{queue_table};
+  }
+  my $update = qq(update $table set done='1', donetime=current_timestamp() where id='$id');
   $me->Execute($update);
 }
 
@@ -678,8 +666,8 @@ sub Get_Num_Bootfolds {
   my $start = shift;
   my $return = {};
   my $sequence_length = $PRFConfig::config->{max_struct_length} + 1;
-  my $statement = "SELECT count(id) FROM boot WHERE genome_id = '$genome_id' and start = '$start'";
-  print "TEST: $statement\n";
+  my $statement = qq(SELECT count(id) FROM boot WHERE genome_id = '$genome_id' and start = '$start' and seqlength = '$sequence_length');
+#  print "Get_Num_Bootfolds TEST: $statement\n";
   my $info = $me->MySelect($statement);
   my $count = $info->[0]->[0];
   return($count);
@@ -896,14 +884,34 @@ sub Put_Boot {
 	  my $mfe_id = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_id};
 #	  print "LAST HERE: $mfe_id\n";
 	  my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
+	  my $seqlength = $data->{$mfe_method}->{$rand_method}->{stats}->{seqlength};
 	  my @boot = ('genome_id');
 	  my $errorstring = Check_Insertion(\@boot, $data);
 	  if (defined($errorstring)) {
 	      $errorstring = "Undefined value(s) in Put_Boot: $errorstring";
 	      PRF_Error($errorstring, $species, $accession);
 	  }
-
-	  my $statement = qq(INSERT INTO boot (genome_id, mfe_id, species, accession, start, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$mfe_id', '$species', '$accession', '$start', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
+#	  my $undef_errstring = 'Undefined values(s) in Put_Boot:';
+#	  my $undef_num = 0;
+#	  no strict 'refs';
+#	  my @varlist = ('mfe_id','species','accession','start','seqlength','iterations','rand_method','mfe_method','mfe_mean','mfe_sd','pairs_mean','pairs_sd','pairs_se','mfe_values');
+#	  if (!defined($mfe_id)) {
+#	      print "TESTMETESTMETESTME: mfe_id IS NOT DEFINED\n";
+#	  }
+#	  foreach my $var (@varlist) {
+#	      print "TESTMETESTME: var is: $var value is: $$var\n";
+#	      if (!defined($$var)) {
+#		  $undef_errstring .= "$var, ";
+#		  $undef_num++;
+#		  $$var = '';
+#	      }
+#	  }
+#	  use strict 'refs';
+	  my $statement = qq(INSERT INTO boot (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$mfe_id', '$species', '$accession', '$start', '$seqlength', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
+	  if ($undef_num > 0) {
+	      PRF_Error($undef_errstring, $species, $accession);
+#	      PRF_Error($statement, $species, $accession);
+	  }
 #	print "TEST: $statement\n";
 	  $me->Execute($statement);
       }  ### Foreach random method
@@ -983,8 +991,12 @@ primary key (id))";
 
 ### prfdb05 queue should be recreated.
 sub Create_Queue {
-  my $me = shift;
-  my $statement = "CREATE table queue (
+    my $me = shift;
+    my $table = 'queue';
+    if (defined($config->{queue_table})) {
+	$table = $config->{queue_table};
+    }
+    my $statement = "CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,
 public bool,
@@ -995,24 +1007,6 @@ done bool,
 donetime timestamp default '',
 primary key (id))";
   $me->Execute($statement);
-}
-
-sub Create_Overlap_Queue {
-    my $me = shift;
-    my $statement = "CREATE table overlap_queue (
-id $config->{sql_id},
-genome_id int,
-public bool,
-params blob,
-out bool,
-outtime timestamp default '',
-done bool,
-donetime timestamp default '',
-primary key (id))";
-    $me->Execute($statement);
-    my $best_statement = "INSERT into overlap_queue (genome_id, public, params, out, done) SELECT id, 0, '', 0, 0 from genome where species = 'homo_sapiens'";
-    my $sth = $me->{dbh}->prepare($best_statement);
-    $sth->execute;
 }
 
 ### FIXME The Prfdb05 has different columns from nupack 
@@ -1053,6 +1047,7 @@ mfe_id int,
 species $config->{sql_species},
 accession $config->{sql_accession},
 start int,
+seqlength int,
 iterations int,
 rand_method varchar(20),
 mfe_method varchar(20),

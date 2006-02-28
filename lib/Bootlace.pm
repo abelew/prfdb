@@ -4,6 +4,7 @@ use RNAFolders;
 use PRFdb;
 use Randomize;
 use Math::Stat;
+use PRFConfig qw / PRF_Error PRF_Out /;
 
 sub new {
   my ($class, %arg) = @_;
@@ -22,6 +23,7 @@ sub new {
       species => $arg{species},
       accession => $arg{accession},
       start => $arg{start},
+      seqlength => $arg{seqlength},
       fasta_comment => undef,
       fasta_data => undef,
       fasta_arrayref => [],
@@ -51,6 +53,8 @@ sub Go {
   my $species = $me->{species};
   my $accession = $me->{accession};
   my $start = $me->{start};
+  my $seqlength = $me->{seqlength};
+  print "Boot: infile: $inputfile accession: $accession start: $start\n";
   ## randomizer should be a reference to a function which takes as input
   ## the array reference of the sequence window of interest.  Thus allowing us to
   ## change which function randomizes the sequence
@@ -71,6 +75,7 @@ sub Go {
 	      accession => $accession,
 	      species => $species,
 	      start => $start,
+	      seqlength => $seqlength,
 	      iterations => 0,
 	      mfe_mean => 0.0,
 	      pairs_mean => 0.0,
@@ -149,6 +154,5 @@ $string
 ";
   close OUT;
 }
-
 
 1;
