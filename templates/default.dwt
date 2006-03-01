@@ -20,9 +20,8 @@
   <tr>
     <td width="125" align="center" valign="top">
       <p><b><a href="index.htm">Home</a></b></p>
-      <p><b><a href="information.htm" target="_top">Information</a></b></p>
-      <p><b><a href="database.htm" target="_top">Database Tools</a></b></p>
-      <p><b><a href="resources.htm" target="_top">Resources</a></b></p>
+      <p><b><a href="prfdb05_index.pl">Search</a></b></p>
+      <p><b><a href="download.htm">Download</a></b></p>
       <hr>
       <p align="center"><a href="http://www.umd.edu" target="_blank">The University
           of Maryland</a></p>
@@ -38,7 +37,7 @@
   <tr>
     <td width="125"> <!-- #BeginEditable "rightFooter" -->
       <p> Last page edit: <br>
-        <!-- #BeginDate format:Am1 -->November 21, 2005<!-- #EndDate -->
+        <!-- #BeginDate format:Am1 -->March 1, 2006<!-- #EndDate -->
         <br>
         by <a href="mailto:jacobsjo@wam.umd.edu">Jonathan Jacobs</a> </p>
       <!-- #EndEditable --> </td>
