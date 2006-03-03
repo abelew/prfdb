@@ -1,12 +1,10 @@
-package PkParse;
+package PkParse3;
 
 sub new {
   my ($class, %args) = @_;
   my $me = bless {
-                  out_pattern => [],
-                  stemid => 0,
                   debug => 0,
-                  max_spaces => defined($args{max_spaces}) ? $args{max_spaces} : 6,
+                  max_spaces => defined($args{max_spaces}) ? $args{max_spaces} : 12,
                   pseudoknot => 0,
                   positions_remaining => 0,
                  }, $class;
@@ -14,251 +12,256 @@ sub new {
   return($me);
 }
 
+### STATE INFORMATION
+my $stemid = 0;
+## The current stemid;
+my $out_pattern = [];
+## The output
+my $three_back = 0;
+my $two_back = 0;
+my $last = 0;
+## The last position visited
+my $current = 0;
+## The current position visited
+my $next = 0;
+## The next position to visit
+my $front_pos = 0;
+## How far from the font?
+my $back_pos ='initializeme';
+## How far from the back?
+my $placement = 'f';
+## Front or Back
+my $spaces = 1000;
+## If this is greater than max_spaces then increment the stemid
+my $last_pos = -1000;
+ ## ??? Where was I last
+my $filled_positions = 0;
+## This should be a signal that it is time to restart
+my $positions_remaining = 0;
+## How many positions are left.
+my $times_in_stem = 0;
+## How many times Have I been in the current stem?
+
+
 sub Unzip {
   my $me = shift;
   my $in_pattern = shift;
-  my @out_pattern = ();
   ## First pass, fill with .s and -1s
   for my $pos (0 .. $#$in_pattern) {
     if ($in_pattern->[$pos] eq '.') {
-      $out_pattern[$pos] = '.';
+      $out_pattern->[$pos] = '.';
     }
     else {
-      $out_pattern[$pos] = -1; ### Placeholders
-      $me->{positions_remaining}++;    ### Counter of how many places need to be filled.
+      $out_pattern->[$pos] = -1; ### Placeholders
+      $positions_remaining++;    ### Counter of how many places need to be filled.
     }
   }  ### Finished filling the state with initial values.
-#  print "HERE: $me->{positions_remaining}\n";
-  while ($me->{positions_remaining} > 0) {  ### As long as there are unfilled values.
-    $me->UnWind($in_pattern, \@out_pattern);  ### Every time you fill a position, decrement positions_remaining
+  my $len = $#$in_pattern;
+  $back_pos = $#$out_pattern;
+  die("NOT EQUAL $len $back_pos") unless($len == $back_pos);
+
+  while ($positions_remaining > 0) {  ### As long as there are unfilled values.
+    $me->UnWind($in_pattern);  ### Every time you fill a position, decrement positions_remaining
   }
-  return(\@out_pattern);
+  $stemid = 0;
+  Clean_State();
+  my $return = $out_pattern;
+  $out_pattern = [];
+  return($return);
 }
 
 sub UnWind {
   my $me = shift;
   my $in_pattern = shift; ## The pknots output
-  my $out_pattern = shift;
-  return($out_pattern) if ($me->{positions_remaining} == 0);
-#  print "BLAH @{$in_pattern}\n @{$out_pattern}\n\n";
-#  print <STDIN>;
-  my $state = {
-               st_length => 0, ## The length of the current stem
-               last => 0, ## The last position visited
-               current => 0, ## The current position visited
-               next => 0,  ## The next position to visit
-               front_pos => 0, ## How far from the font?
-               back_pos => $#$in_pattern, ## How far from the back?
-               placement => 'f', ## Front or Back
-               spaces => 1000,  ## If this is greater than max_spaces then increment the stemid
-               last_pos => -1000, ## ???
-               positions_filled => 0, ## This should be a signal that it is time to restart
-               times_in_stem => 0,
-               };
-  my $current;
-  while ($state->{front_pos} < $state->{back_pos}) {
-    $current = $state->{current};
-#    print "$current $in_pattern->[$current] $out_pattern->[$current] $state->{placement}\n";
-    if (!defined($in_pattern->[$current])) {
-      $in_pattern->[$current] = '.'; }
-    ### Imagine a 100 base structure, this will iterate f=0,b=99  f=1,b=98  f=2 b=97... until f=50,b=49
-    if ($state->{placement} eq 'f') { ### At the 5' end
-      $state->{placement} = 'b';
+  Clean_State();
+  return($out_pattern) if ($positions_remaining == 0);
+  if ($me->{debug}) {
+    print "Start Unwind:
+@{$in_pattern}
+__________________________
+@{$out_pattern}\n";
+  print <STDIN>;
+  }
+  while ($front_pos < $back_pos) {
+    if ($me->{debug}) {
+      print "$current,$in_pattern->[$current],$out_pattern->[$current]\t";
+    }
+    if ($placement eq 'f') {
+      ### NOW AT THE 5' END
+      $placement = 'b';
 
-      if ($in_pattern->[$current] eq '.' and $state->{spaces} > $me->{max_spaces}) {
-        ### The current position is a dot and one has surpassed the number of max_spaces
-        ## Remember -- we are in the front
-        $state->{next} = $state->{back_pos};  ## So move to the back
-        $state->{front_pos}++;  ## The next time we jump to front, jump to next
-        $state->{spaces}++;
-        $state->{times_in_stem} = 0;
-      }
-      elsif ($in_pattern->[$current] eq '.' and $state->{spaces} <= $me->{max_spaces}) {
-        $state->{next} = $state->{back_pos}; ## Jump to the back
-        $state->{front_pos}++;
-        $state->{spaces}++;
+      if ($in_pattern->[$current] eq '.') {
+        if ($spaces > $me->{max_spaces}) {
+          ### The current position is a dot and one has surpassed the number of max_spaces
+          $next = $back_pos;  ## So move to the back
+          $front_pos++;  ## The next time we jump to front, jump to next
+          $spaces++;
+          $times_in_stem = 0;
+        }
+
+        elsif ($spaces <= $me->{max_spaces}) {
+          ## The current position is a dot and we have not passed max_spaces -- this may be a bulge of an existing stem
+          $next = $back_pos; ## Jump to the back
+          $front_pos++;
+          $spaces++;
+        }
       }
 
-      elsif ($in_pattern->[$current] ne '.' and $out_pattern->[$current] ne '.') {
-        my $out_num = int($out_pattern->[$current]);
-        my $in_num = int($in_pattern->[$current]);
-        my $positions_filled = int($state->{positions_filled});
-        my $times_in_stem = int($state->{times_in_stem});
-#        if ($out_num > 0 and $state->{positions_filled} > 0 and $state->{times_in_stem} == 0) {
-        if ($out_num > 0 and $positions_filled > 0 and $times_in_stem > 0) {
-#        print "F In is num, positions filled == 0 times in stem == 0 -- returning state\n";
-          ### If we hit an already used number and have already been in a stem
-          return($state);
-        }
-        elsif ($out_num > 0) {  ## Then this is an already filled position
-          ### If the current position is already filled out
-          $state->{next} = $state->{back_pos}; ## Then jump to the back position
-          $state->{front_pos}++; ## The next time we jump to front, jump to the next front
-          $state->{spaces}++;    ## Treat it as if it were a . in all instances
-          $state->{times_in_stem} = 0;
-        }
-        ### For the first time we will fill out a piece of out_pattern
-        elsif ($times_in_stem == 0) {
-          $me->{stemid}++;
-          $state->{positions_filled}++;
-          $state->{next} = $in_pattern->[$current];
-          $state->{times_in_stem}++;
-          $state->{spaces} = 0;
-          $state->{front_pos}++;
-          $out_pattern->[$current] = $me->{stemid}; ## YAY FILLED IT!
-          $me->{positions_remaining}--;
-        }
-        elsif ($times_in_stem == 1) {
-          $state->{positions_filled}++;
-          $state->{next} = $state->{back_pos};
-          $state->{times_in_stem}++;
-          $state->{spaces} = 0;
-          $state->{front_pos} = $current + 1;
-          $out_pattern->[$current] = $me->{stemid}; ## YAY FILLED IT!
-          $me->{positions_remaining}--;
-        }
-        elsif ($times_in_stem == 2) {
-          $state->{positions_filled}++;
-          $state->{next} = $in_pattern->[$current];
-          $state->{times_in_stem}++;
-          $state->{spaces} = 0;
-          $state->{front_pos}++;
-          $out_pattern->[$current] = $me->{stemid}; ## YAY
-          $me->{positions_remaining}--;
-        }
-        elsif ($times_in_stem == 3) {
-          $state->{positions_filled}++;
-          $state->{next} = $state->{back_pos};
-          $state->{times_in_stem}++;
-          $state->{spaces} = 0;
-          $state->{front_pos} = $current + 1; ## Different from PkParse
-          $out_pattern->[$current] = $me->{stemid};
-          $me->{positions_remaining}--;
-        }
-        elsif ($times_in_stem == 4) {
-#          if ($in_pattern->[$current] < $state->{current}) { return('pseudo'); }
-          if (abs($state->{last} - $in_pattern->[$current]) > 4) {
-            $me->{stemid}++;
+      ## This is a number AND the output has already been filled out for this position
+      elsif ($out_pattern->[$current] > 0) {
+        $next = $back_pos; ## Then jump to the back position
+        $front_pos++; ## The next time we jump to front, jump to the next front
+        $spaces++;    ## Treat it as if it were a . in all instances
+        $times_in_stem = 0;
+      }
+
+      ### For the first time we will fill out a piece of out_pattern
+      elsif ($out_pattern->[$current] == -1) {
+#        print "\ttimes: $times_in_stem filled: $filled_positions\t";
+        if (($times_in_stem % 2) == 0) {
+          if ($times_in_stem == 0) {
+            $stemid++;
+            if ($filled_positions > 0) {
+              return($out_pattern);
+            }
           }
-          $state->{positions_filled}++;
-          $state->{next} = $in_pattern->[$current];
-          $state->{times_in_stem}--;
-          $state->{spaces} = 0;
-          $state->{front_pos}++;
-          $out_pattern->[$current] = $me->{stemid};
-          $me->{positions_remaining}--;
+          elsif (abs($last - $in_pattern->[$current]) > $me->{max_spaces}) {
+            return($out_pattern);
+          }
+
+          $positions_filled++;
+          $next = $in_pattern->[$current];
+          $times_in_stem++;
+          $spaces = 0;
+          $front_pos++;
+          if ($me->{debug}) {
+            print "\t$current -> $stemid\t";
+          }
+          $out_pattern->[$current] = $stemid; ## YAY FILLED IT!
+          $positions_remaining--;
+        } ## End elsif times_in_stem is even
+
+        elsif (($times_in_stem % 2) == 1) {
+          $positions_filled++;
+          $next = $back_pos;
+          $times_in_stem++;
+          $spaces = 0;
+          $front_pos = $current + 1;
+          if ($me->{debug}) {
+            print "\t$current -> $stemid\t";
+          }
+          $out_pattern->[$current] = $stemid; ## YAY FILLED IT!
+          $positions_remaining--;
         }
-      } ### A position not equal to '.'
+      }
+
       else {
-        print "HIT ELSE\n";
+        die("WTF?");
       }
     } ### Back to the if facing forward
-    elsif ($state->{placement} eq 'b') { ### At the 3' end
-      $state->{placement} = 'f';
-#      if ($pattern->[$current] =~ /\d/ and $me->{out_pattern}->[$current] != -1) {
 
-      if ($in_pattern->[$current] eq '.' and $state->{spaces} > $me->{max_spaces}) {
-        ### The current position is a dot and one has surpassed the number of max_spaces
-        ## Remember -- we are in the back
-        $state->{next} = $state->{front_pos};  ## So move to the back
-        $state->{back_pos}--;  ## The next time we jump to front, jump to next
-        $state->{spaces}++;
-        $state->{times_in_stem} = 0;
-      }
-      elsif ($in_pattern->[$current] eq '.' and $state->{spaces} <= $me->{max_spaces}) {
-        $state->{next} = $state->{front_pos}; ## Jump to the back
-        $state->{back_pos}--;
-        $state->{spaces}++;
+    ### NOW ON THE 3' END
+    elsif ($placement eq 'b') {
+      $placement = 'f';
+
+      if ($in_pattern->[$current] eq '.') {
+        if ($spaces > $me->{max_spaces}) {
+          ### The current position is a dot and one has surpassed the number of max_spaces
+          $next = $front_pos;  ## So move to the front
+          $back_pos--;  ## The next time we jump to front, jump to next
+          $spaces++;
+          $times_in_stem = 0;
+        }
+        elsif ($spaces <= $me->{max_spaces}) {
+          ### The current position is a dot, but this may just be a bulge
+          $next = $front_pos; ## Jump to the back
+          $back_pos--;
+          $spaces++;
+        }
       }
 
-      elsif ($in_pattern->[$current] ne '.' and $out_pattern->[$current] ne '.') {
-        my $out_num = int($out_pattern->[$current]);
-        my $in_num = int($in_pattern->[$current]);
-        my $positions_filled = int($state->{positions_filled});
-        my $times_in_stem = int($state->{times_in_stem});
-#        print "TESTME: $out_num $in_num $positions_filled $times_in_stem\n";
-#        if ($out_num > 0 and $state->{positions_filled} > 0 and $state->{times_in_stem} == 0) {
-        if ($out_num > 0 and $positions_filled > 0 and $times_in_stem > 0) {
-#        print "B In is num, positions filled == 0 times in stem == 0 -- returning state\n";
-          ## For when we hit a new stem after completing one -- drop out and restart the loop
-          return($state);
-        }
-        elsif ($out_num > 0) { ### Then this is an already filled position
-          ### If the current position is already filled out
-          $state->{next} = $state->{front_pos}; ## Then jump to the back position
-          $state->{back_pos}--; ## The next time we jump to front, jump to the next front
-          $state->{spaces}++;    ## Treat it as if it were a . in all instances
-          $state->{times_in_stem} = 0;
-        }
+      elsif ($out_pattern->[$current] > 0) {
+        ### Then this is an already filled position
+        $next = $front_pos; ## Then jump to the back position
+        $back_pos--; ## The next time we jump to front, jump to the next front
+        $spaces++;    ## Treat it as if it were a . in all instances
+        $times_in_stem = 0;
+      }
+
         ### For the first time we will fill out a piece of out_pattern
-        elsif ($times_in_stem == 0) {
-          $me->{stemid}++;
-          $state->{positions_filled}++;
-          $state->{next} = $in_pattern->[$current];
-          $state->{times_in_stem}++;
-          $state->{spaces} = 0;
-          $state->{back_pos}--;
-          $out_pattern->[$current] = $me->{stemid}; ## YAY FILLED IT!
-          $me->{positions_remaining}--;
+      elsif ($out_pattern->[$current] == -1) {
+        if (($times_in_stem % 2) == 0) {
+          if ($times_in_stem == 0) {
+            $stemid++;
+            if ($filled_positions > 0) {
+              return($out_pattern);
+            }
+          }
+          elsif (abs($last - $in_pattern->[$current]) > $me->{max_spaces}) {
+            if ($me->{debug}) {
+              print "\tBHERE\t";
+            }
+            return($out_pattern);
+          }
+
+#          $stemid++ if ($times_in_stem == 0);
+#          $stemid++, $time_in_stem-- if (abs($last - $in_pattern->[$current]) > 4);
+          $positions_filled++;
+          $next = $in_pattern->[$current];
+          $times_in_stem++;
+          $spaces = 0;
+          $back_pos--;
+          if ($me->{debug}) {
+            print "\t$current -> $stemid\t";
+          }
+          $out_pattern->[$current] = $stemid; ## YAY FILLED IT!
+          $positions_remaining--;
         }
-        elsif ($times_in_stem == 1) {
-          $state->{positions_filled}++;
-          $state->{next} = $state->{front_pos};
-          $state->{times_in_stem}++;
-          $state->{spaces} = 0;
-          $state->{back_pos} = $current - 1;
-          $out_pattern->[$current] = $me->{stemid}; ## YAY FILLED IT!
-          $me->{positions_remaining}--;
+
+        elsif (($times_in_stem % 2) == 1) {
+          $positions_filled++;
+          $next = $front_pos;
+          $times_in_stem++;
+          $spaces = 0;
+          $back_pos = $current - 1;
+          if ($me->{debug}) {
+            print "\t$current -> $stemid\t";
+          }
+          $out_pattern->[$current] = $stemid; ## YAY FILLED IT!
+          $positions_remaining--;
         }
-        elsif ($times_in_stem == 2) {
-          $state->{positions_filled}++;
-          $state->{next} = $in_pattern->[$current];
-          $state->{times_in_stem}++;
-          $state->{spaces} = 0;
-          $state->{back_pos}--;
-          $out_pattern->[$current] = $me->{stemid}; ## YAY
-          $me->{positions_remaining}--;
-        }
-        elsif ($times_in_stem == 3) {
-          $state->{positions_filled}++;
-          $state->{next} = $state->{front_pos};
-          $state->{times_in_stem}++;
-          $state->{spaces} = 0;
-          $state->{back_pos} = $current - 1; ## Different from PkParse
-          $out_pattern->[$current] = $me->{stemid};
-          $me->{positions_remaining}--;
-        }
-        elsif ($times_in_stem == 4) {
-#          print "HERE!\n";
-          if (abs($state->{last} - $in_pattern->[$current]) > 4) { $me->{stemid}++; }
-          $state->{positions_filled}++;
-          $state->{next} = $in_pattern->[$current];
-          $state->{times_in_stem}--;
-          $state->{spaces} = 0;
-          $state->{back_pos}--;
-          $out_pattern->[$current] = $me->{stemid};
-          $me->{positions_remaining}--;
-#          if ($in_pattern->[$current] < $state->{current}) { return('pseudo'); }
-        }
-        else {
-          print "HIT ELSE\n";
-        }
-      } ### End of the non '.' positions of the in pattern
-    } ## End if facing the back
-    $state->{old} = $state->{last};
-    $state->{last} = $state->{current};
-    $state->{current} = $state->{next};
-  }   ## End the while loop
-  if ($out_pattern->[$current] =~ /\d/ and $out_pattern > -1) {
-    $out_pattern->[$state->{last}] = -1;
-#    $out_pattern->[$state->{current}] = -1;
-#    $out_pattern->[$state->{next}] = -1;
-    $out_pattern->[$state->{old}] = -1;
-    $me->{stemid}--;
-  }
-  return($state);
+      }
+
+      else {
+        die("WTF?");
+      }
+    } ## End facing the back
+    if ($me->{debug}) {
+      print "$next,$in_pattern->[$next],$out_pattern->[$current]\n";
+      print <STDIN>;
+    }
+    $three_back = $two_back;
+    $two_back = $last;
+    $last = $current;
+    $current = $next;
+  } ## End the while loop
+
+  return($out_pattern);
 }
 
+sub Clean_State {
+  $last = 0;
+  $current = 0;
+  $next = 0;
+  $front_pos = 0;
+  $back_pos = $#$out_pattern;
+  $placement = 'f';
+  $spaces = 1000;
+  $last_pos = -1000;
+  $positions_filled = 0;
+  $times_in_stem = 0;
+  $old = 0;
+}
 
 sub MAKEBRACKETS {
     my($strREF) = @_;
@@ -385,81 +388,82 @@ sub SETALTERNATIVEBRACKETS{
 }
 
 sub ReBarcoder{
-    # Added by JLJ.
-    my $strREF = shift;
-    my $str = "";
-    if (ref($strREF) eq "ARRAY") {
-        $str = "@{$strREF}";
-    } 
-    else {
-        $str = $strREF;
-    }
-    
-    my $x = "";
-    my $max = 0;
-    my $stems = "";
-    my $order = "";
-    
-    while ($str =~ m/(\d)/g) {
-        $x = $1;
-        if($x > $max) { $max = $x }
-    }
-    
-    for(my $i=1; $i <= $max; $i++) { $stems .= $i }
-    
-    while ($str =~ m/(\d)/g) {
-        $x = $1;
-        unless($order =~ m/$x/) { $order .= $x; }
-    }
-    
-    $_ = $str;
-    eval "tr/$order/$stems/"; # or die $@;
-    $str = $_;
-        
-    if(ref($strREF) eq "ARRAY") {
-        my @duh = split(/ /,$str);
-        return \@duh;
-    } else {
-        return $str;
-    }
-    die "WHAT THE HELLL!?!?!?!?!?!\n";
+  # Added by JLJ.
+  my $strREF = shift;
+  my $str = "";
+  if (ref($strREF) eq "ARRAY") {
+    $str = "@{$strREF}";
+  }
+  else {
+    $str = $strREF;
+  }
+
+  my $x = "";
+  my $max = 0;
+  my $stems = "";
+  my $order = "";
+
+  while ($str =~ m/(\d)/g) {
+    $x = $1;
+    if ($x > $max) { $max = $x }
+  }
+
+  for (my $i=1; $i <= $max; $i++) { $stems .= $i }
+
+  while ($str =~ m/(\d)/g) {
+    $x = $1;
+    unless($order =~ m/$x/) { $order .= $x; }
+  }
+
+  $_ = $str;
+  eval "tr/$order/$stems/"; # or die $@;
+  $str = $_;
+
+  if (ref($strREF) eq "ARRAY") {
+    my @duh = split(/ /,$str);
+    return \@duh;
+  }
+  else {
+    return $str;
+  }
+  die "WHAT THE HELLL!?!?!?!?!?!\n";
 }
 
-sub Condense{
-    # Added JLJ.
-    my $strREF = shift;
-    my $str = "";
-    if( ref($strREF) eq "ARRAY" ){
-        $str = "@{$strREF}";
-    }else{
-        $str = $strREF;
-    }
-    
-    my $x = "";
-    my $max = 0;    
-    while($str =~ m/(\d)/g){
-        $x = $1;
-        if( $x > $max ){ $max = $x }
-    }
-    
-    for(my $i = 1; $i <= $max; $i++){
-        $str =~ s/\s?($i)(?:\s[$i\.])*?\s?/$1/g;
-        $str =~ s/\.|\s//g;
-        $str =~ s/$i+/$i/g;
-    }
+sub Condense {
+  # Added JLJ.
+  my $strREF = shift;
+  my $str = "";
+  if(ref($strREF) eq "ARRAY") {
+    $str = "@{$strREF}";
+  }
+  else {
+    $str = $strREF;
+  }
+
+  my $x = "";
+  my $max = 0;
+  while ($str =~ m/(\d)/g) {
+    $x = $1;
+    if ($x > $max) { $max = $x }
+  }
+
+  for (my $i = 1; $i <= $max; $i++) {
+    $str =~ s/\s?($i)(?:\s[$i\.])*?\s?/$1/g;
+    $str =~ s/\.|\s//g;
+    $str =~ s/$i+/$i/g;
+  }
     #print $str,"\n";
-    
-    my $count = 0;
-    for(my $i = 1; $i <= $max; $i++){
-       $count++ while $str =~ m/$i/g;
-       #print "$i $count\n";
-       if($count < 2){ $str =~ s/($i)/$1$1/; }
-       $count = 0;
-    }
-    #print $str,"\n";
- 
-    
-    return $str;  
+
+  my $count = 0;
+  for (my $i = 1; $i <= $max; $i++) {
+    $count++ while $str =~ m/$i/g;
+    #print "$i $count\n";
+    if ($count < 2) { $str =~ s/($i)/$1$1/; }
+    $count = 0;
+  }
+  #print $str,"\n";
+
+  return $str;
 }
 
 sub Parsed_to_Barcode {
@@ -467,10 +471,8 @@ sub Parsed_to_Barcode {
   my $string = '';
   foreach my $char (@{$knotref}) { $string = $string . $char if (defined($char)); }
   $string =~ tr/0-9//s;
-  print "TEST: $string\n";
   my @almost = split(//, $string);
   my $finished = '';
-  print "How many times does @almost have $almost[0]?\n";
   if (Single_p($almost[0], \@almost)) {
 	$finished = $almost [0] . $almost[0];
 	shift(@almost);
@@ -496,44 +498,43 @@ sub Parsed_to_Barcode {
 }
 
 sub Parsed_to_Barcode2 {
-    my $knotref = shift;
-    my $string = '';
-    foreach my $char (@{$knotref}) { $string = $string . $char if (defined($char)); }
-    $string =~ tr/0-9//s;
-    print "TEST: $string\n";
-    my @almost = split(//, $string);
-    my $finished = '';
-    print "How many times does @almost have $almost[0]?\n";
-    if (Single_p($almost[0], \@almost)) {
-	$finished = $almost [0] . $almost[0];
-	shift(@almost);
-    }
-  LOOP:   for my $c (0 .. $#almost) {
-      my $char = $almost[$c];
-      my $count = 0;
-      ### If $char is in what is left of @almost 1 time...
-      foreach my $test (@almost) {
-	  $count++ if ($test eq $char);
-	  if ($count > 1) {
-	      print "Adding $char one time because it exists $count times\n";
-	      $finished = $finished . $char;
-	      $count = 0;
-	      next LOOP;
-	  }
-	  elsif ($count == 1) {
-	      print "ADDING $char twice because it exists $count times\n";
-	      $finished = $finished . $char . $char;
-	      $count = 0;
-	      next LOOP;
-	  }
-      }
-      print "The reduced string is: $string\n";
-      return($finished);
+  my $knotref = shift;
+  my $string = '';
+  foreach my $char (@{$knotref}) { $string = $string . $char if (defined($char)); }
+  $string =~ tr/0-9//s;
+  print "TEST: $string\n";
+  my @almost = split(//, $string);
+  my $finished = '';
+  print "How many times does @almost have $almost[0]?\n";
+  if (Single_p($almost[0], \@almost)) {
+    $finished = $almost [0] . $almost[0];
+    shift(@almost);
   }
+ LOOP:   for my $c (0 .. $#almost) {
+    my $char = $almost[$c];
+    my $count = 0;
+    ### If $char is in what is left of @almost 1 time...
+    foreach my $test (@almost) {
+      $count++ if ($test eq $char);
+      if ($count > 1) {
+        print "Adding $char one time because it exists $count times\n";
+        $finished = $finished . $char;
+        $count = 0;
+        next LOOP;
+      }
+      elsif ($count == 1) {
+        print "ADDING $char twice because it exists $count times\n";
+        $finished = $finished . $char . $char;
+        $count = 0;
+        next LOOP;
+      }
+    }
+    print "The reduced string is: $string\n";
+    return($finished);
+}
 }
 
 1;
-
 
 __END__
 

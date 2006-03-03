@@ -122,8 +122,11 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
   if ($arch =~ /IRIX/) {
     $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/irix';
   }
-  if ($arch =~ /Linux/) {
+  elsif ($arch =~ /Linux/) {
     $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/linux';
+  }
+  elsif ($arch =~ /Darwin/) {
+    $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/osx';
   }
   elsif ($arch =~ /AIX/) {
     $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/aix';
@@ -140,6 +143,13 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
     elsif ($arch =~ /AIX/) {
       my $dir = $PRFConfig::config->{$dirvar};
       $dir .= '/aix';
+      $PRFConfig::config->{$dirvar} = $dir;
+      my $exe_path = join('', $dir, '/', $PRFConfig::config->{$exe});
+      $PRFConfig::config->{$exe} = $exe_path;
+    }
+    elsif ($arch =~ /Darwin/) {
+      my $dir = $PRFConfig::config->{$dirvar};
+      $dir .= '/osx';
       $PRFConfig::config->{$dirvar} = $dir;
       my $exe_path = join('', $dir, '/', $PRFConfig::config->{$exe});
       $PRFConfig::config->{$exe} = $exe_path;
@@ -167,6 +177,10 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
   elsif ($arch =~ /Linux/) {
     $PRFConfig::config->{nupack} .= ".linux";
     $PRFConfig::config->{nupack_boot} .= ".linux";
+  }
+  elsif ($arch =~ /Darwin/) {
+    $PRFConfig::config->{nupack} .= ".osx";
+    $PRFConfig::config->{nupack_boot} .= ".osx";
   }
 }  ## End checking if multiple architectures are in use
 

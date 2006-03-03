@@ -908,10 +908,10 @@ sub Put_Boot {
 #	  }
 #	  use strict 'refs';
 	  my $statement = qq(INSERT INTO boot (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$mfe_id', '$species', '$accession', '$start', '$seqlength', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
-	  if ($undef_num > 0) {
-	      PRF_Error($undef_errstring, $species, $accession);
+#	  if ($undef_num > 0) {
+#	      PRF_Error($undef_errstring, $species, $accession);
 #	      PRF_Error($statement, $species, $accession);
-	  }
+#	  }
 #	print "TEST: $statement\n";
 	  $me->Execute($statement);
       }  ### Foreach random method
