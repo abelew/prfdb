@@ -4,10 +4,6 @@ use File::Temp qw / tmpnam /;
 ## Every function here should take as input an array reference
 ## containing the sequence to be shuffled.
 
-# make the seed _really_ random. from "perldoc -f srand"
-#srand (time ^ $$ ^ unpack "%L*", `ps axww | gzip`);
-srand (time ^ $$ ^ unpack "%L*", `ps -ef | gzip`);
-
 ## Coin_Random
 ## 
 ## Expect $me to be the MoreRandom obj. It's a place holder for now.

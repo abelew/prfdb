@@ -143,11 +143,12 @@ sub Gather {
     }  ### End if we are to do a boot
 
     if ($config->{do_overlap}) {
+	my $sequence_information = $db->Get_Sequence_from_id($state->{genome_id});
 	my $overlap = new Overlap(
 				  genome_id => $state->{genome_id},
 				  species => $state->{species},
 				  accession => $state->{accession},
-				  sequence => $db->Get_Sequence_from_id($state->{genome_id}),
+				  sequence => $sequence_information,
 				  );
 	my $overlap_info = $overlap->Alts($slipsite_start);
 	$db->Put_Overlap($overlap_info);

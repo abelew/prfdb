@@ -1,4 +1,4 @@
-package PkParse3;
+package PkParse;
 
 sub new {
   my ($class, %args) = @_;

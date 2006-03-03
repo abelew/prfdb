@@ -621,7 +621,7 @@ sub Get_Sequence_from_id {
     my $me = shift;
     my $id = shift;
     my $statement = qq(SELECT mrna_seq FROM genome WHERE id = '$id');
-    my $info = $me->{dbh}->selectall_arrayref($statement);
+    my $info = $me->MySelect($statement);
     my $sequence = $info->[0]->[0];
     if ($sequence) {
 	return($sequence);
@@ -891,28 +891,13 @@ sub Put_Boot {
 	      $errorstring = "Undefined value(s) in Put_Boot: $errorstring";
 	      PRF_Error($errorstring, $species, $accession);
 	  }
-#	  my $undef_errstring = 'Undefined values(s) in Put_Boot:';
-#	  my $undef_num = 0;
-#	  no strict 'refs';
-#	  my @varlist = ('mfe_id','species','accession','start','seqlength','iterations','rand_method','mfe_method','mfe_mean','mfe_sd','pairs_mean','pairs_sd','pairs_se','mfe_values');
-#	  if (!defined($mfe_id)) {
-#	      print "TESTMETESTMETESTME: mfe_id IS NOT DEFINED\n";
-#	  }
-#	  foreach my $var (@varlist) {
-#	      print "TESTMETESTME: var is: $var value is: $$var\n";
-#	      if (!defined($$var)) {
-#		  $undef_errstring .= "$var, ";
-#		  $undef_num++;
-#		  $$var = '';
-#	      }
-#	  }
-#	  use strict 'refs';
 	  my $statement = qq(INSERT INTO boot (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values) VALUES ('$data->{genome_id}', '$mfe_id', '$species', '$accession', '$start', '$seqlength', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_se', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
-#	  if ($undef_num > 0) {
-#	      PRF_Error($undef_errstring, $species, $accession);
-#	      PRF_Error($statement, $species, $accession);
-#	  }
-#	print "TEST: $statement\n";
+	my $undefined_values = Check_Defined({genome_id=>$data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values});
+        if ($undefined_values) {
+	  my $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
+	  PRF_Error($errorstring, $species, $accession);
+ 	  print "$errorstring, $species, $accession\n";
+         }  
 	  $me->Execute($statement);
       }  ### Foreach random method
   } ## Foreach mfe method
@@ -1192,6 +1177,17 @@ sub Get_Last_Id {
     my $statement = 'select last_insert_id()';
     my $id = $me->MySelect($statement);
     return($id->[0]->[0]);
+}
+
+sub Check_Defined {
+    my $args = shift;
+    my $return = '';
+    foreach my $k (keys %{$args}) {
+	if (!defined($args->{$k})) {
+		$return .= "$k,";
+	}
+    }
+    return($return);
 }
 
 1;
