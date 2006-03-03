@@ -41,6 +41,8 @@ my $positions_remaining = 0;
 ## How many positions are left.
 my $times_in_stem = 0;
 ## How many times Have I been in the current stem?
+my $num_loops = 0;
+## How many times has Unwind been called? if too many, error out
 
 
 sub Unzip {
@@ -58,12 +60,13 @@ sub Unzip {
   }  ### Finished filling the state with initial values.
   my $len = $#$in_pattern;
   $back_pos = $#$out_pattern;
-  die("NOT EQUAL $len $back_pos") unless($len == $back_pos);
+  PkParse_Error($in_pattern, 'mismatch'), return(undef) unless($len == $back_pos);
 
   while ($positions_remaining > 0) {  ### As long as there are unfilled values.
     $me->UnWind($in_pattern);  ### Every time you fill a position, decrement positions_remaining
   }
   $stemid = 0;
+  $num_loops = 0;
   Clean_State();
   my $return = $out_pattern;
   $out_pattern = [];
@@ -74,6 +77,8 @@ sub UnWind {
   my $me = shift;
   my $in_pattern = shift; ## The pknots output
   Clean_State();
+  $num_loops++;
+  PkParse_Error($in_pattern, 'loop'), $positions_remaining = 0 if ($num_loops > 100);
   return($out_pattern) if ($positions_remaining == 0);
   if ($me->{debug}) {
     print "Start Unwind:
@@ -532,6 +537,24 @@ sub Parsed_to_Barcode2 {
     print "The reduced string is: $string\n";
     return($finished);
 }
+}
+
+sub PkParse_Error {
+    my $input = shift;
+    my $string = shift;
+    my $input_string = '';
+    foreach my $c (@{$input}) { $input_string .= $c };
+    open(ERROR, ">>pkparse_error.txt") or die("Could not open the pkparse_error file $!");
+    if ($string eq 'loop') {
+	print ERROR "Too many loops for $input_string\n";
+    }
+    elsif($string eq 'mismatch') {
+	print ERROR "There was a mismatch between the input and output sizes for $input_string\n";
+    }
+    else {
+	print ERROR "There was an error for $input_string\n";
+    }
+    close(ERROR);
 }
 
 1;
