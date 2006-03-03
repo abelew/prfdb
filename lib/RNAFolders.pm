@@ -112,6 +112,7 @@ sub Nupack {
   $return->{parsed} = $parsed;
   $return->{barcode} = $barcode;
   chdir($config->{basedir});
+  $return->{sequence} = Sequence_T_U($return->{sequence});
   return($return);
 }
 
@@ -204,6 +205,7 @@ sub Nupack_NOPAIRS {
   $return->{parsed} = $parsed;
   $return->{barcode} = $barcode;
   chdir($config->{basedir});
+  $return->{sequence} = Sequence_T_U($return->{sequence});
   return($return);
 }
 
@@ -297,6 +299,7 @@ sub Pknots {
       $return->{knotp} = 1;
   }
   chdir($config->{basedir});
+  $return->{sequence} = Sequence_T_U($return->{sequence});
   return($return);
 }
 
@@ -478,6 +481,12 @@ sub Nupack_Boot_NOPAIRS {
     }
     $return->{pairs} = $pairs;
     return($return);
+}
+
+sub Sequence_T_U {
+  my $sequence = shift;
+  $sequence =~ tr/T/U/;
+  return($sequence);
 }
 
 1;
