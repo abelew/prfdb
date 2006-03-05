@@ -91,7 +91,6 @@ sub Search {
         my $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
 $string
 ";
-#        print "PRE DATA: $data\n";
         print $fh $data;
         close($fh);
         ### End of the fasta file.
@@ -102,7 +101,6 @@ $string
         my $total = 0;
         my $rnamotif_output = '';
         while(my $line = <RNAMOT>) {
-#	print $line;
           next if ($line =~ /^\>/);
           next if ($line =~ /^ss/);
           next if ($line =~ /^\#+/);
@@ -118,7 +116,6 @@ $string
             $nonpermissable++;
           }
           $total++;
-#		  print "$line<br>\n";
         }  ## End the while loop
         ## Close the pipe to rnamotif
         close(RNAMOT);
@@ -129,7 +126,6 @@ $string
         $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
 $no_slip_string
 ";
-#        print "POS DATA: $data\n";
         print $fh $data;
         ## This non-slippery-site-containing data will be used throughout the database
         $return{$start_in_full_sequence}{total} = $total;

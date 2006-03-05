@@ -67,7 +67,6 @@ sub Go {
       elsif ($boot_mfe_algo_name =~ /pknot/) {
 	  $mfe_id = $me->{mfe_ids}->{pknots};
       }
-#      print "HERE: $mfe_id\n";
       my @randers = keys(%{$me->{randomizers}});
       foreach my $rand_name (keys %{$me->{randomizers}}) {
 	  my $ret = {
@@ -116,7 +115,7 @@ sub Go {
 		  $ret->{mfe_values} .= "$mfe->{mfe} ";
 	      }
 	      push(@stats_pairs, $mfe->{pairs}) if (defined($mfe->{pairs}));
-	      
+	
 	  }  ## Foreach repetition
 	  ## Now have collected every repetition, so we can calculate the means
 	  my $mfe_stat = new Math::Stat(\@stats_mfe, {AutoClean => 1});

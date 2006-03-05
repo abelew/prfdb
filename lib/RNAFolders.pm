@@ -248,14 +248,10 @@ sub Pknots {
 	   $line_to_read = $counter + 2;
 	 }
 	elsif (defined($line_to_read) and $line_to_read == $counter) {
-#	  print "TEST: $line\n";
 	  $line =~ s/^\s+//g;
 	  $line =~ s/$/ /g;
 	  $string .= $line;
 	}
-#	elsif ($line =~ /Log odds/) {
-#	  ($crap, $return->{logodds}) = split(/score\:\s+/, $line);
-#	}
 	elsif ($line =~ /\/mol\)\:\s+/) {
 	  ($crap, $return->{mfe}) = split(/\/mol\)\:\s+/, $line);
 	}
@@ -344,9 +340,8 @@ sub Pknots_Boot {
     my $inputfile = shift;
     my $accession = shift;
     my $start = shift;
-#    print "BOOT: infile: $inputfile accession: $accession start: $start\n";
-##  This expected for a bootlace include:
-##  MFE, PAIRS
+    ##  This expected for a bootlace include:
+    ##  MFE, PAIRS
     my $return = {
 	accession => $accession,
 	start => $start,
@@ -396,7 +391,6 @@ sub Nupack_Boot {
   my $inputfile = shift;
   my $accession = shift;
   my $start = shift;
-  #    print "Nupack_BOOT: infile: $inputfile accession: $accession start: $start\n";
   my $return = {
 		accession => $accession,
 		start => $start,
@@ -444,7 +438,6 @@ sub Nupack_Boot_NOPAIRS {
     my $inputfile = shift;
     my $accession = shift;
     my $start = shift;
-#    print "Nupack_BOOT: infile: $inputfile accession: $accession start: $start\n";
     my $return = {
 	accession => $accession,
 	start => $start,
@@ -461,7 +454,6 @@ sub Nupack_Boot_NOPAIRS {
 	if ($line =~ /^\d+\s\d+$/) {
 	    $pairs++;
 	    $counter--;
-#            print "GOT LINE: $line pairs: $pairs\n";
 	}
 	elsif ($counter == 19) {
 	    my $tmp = $line;

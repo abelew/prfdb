@@ -56,7 +56,6 @@ sub MySelect {
     ## If $type is defined, AND if you ask for a row, do a selectrow_arrayref
     elsif (defined($type) and $type eq 'row') {
 	$return = $dbh->selectrow_arrayref($statement);
-#	print "TESTME: $return\n";
 	$selecttype = 'selectrow_arrayref';
     }
 
@@ -124,7 +123,6 @@ sub Motif_to_Fasta {
   my $me = shift;
   my $data = shift;
   my $fh = MakeTempfile();
-#  print "TEST: $data\n";
   print $fh $data;
   return($fh->filename);
 }
@@ -488,7 +486,6 @@ sub Import_CDS {
       print PRF_Error("WTF: Direction is not forward or reverse\n");
     }
     ### Don't change me, this is provided by genbank
-#    print "TESTME: $orf_start $orf_stop\n\n";
     my %datum = (
                  ### FIXME
                  accession => $accession,
@@ -638,7 +635,6 @@ sub Get_MFE_ID {
     my $seqlength = shift;
     my $algorithm = shift;
     my $statement = qq(SELECT id FROM mfe WHERE genome_id = '$genome_id' AND start = '$start' AND seqlength = '$seqlength' AND algorithm = '$algorithm');
-#    print "TESTMEL $statement\n";
     my $info = $me->MySelect($statement);
     my $mfe = $info->[0]->[0];
     return($mfe);
@@ -651,7 +647,6 @@ sub Get_Num_RNAfolds {
   my $return = {};
   my $sequence_length = $PRFConfig::config->{max_struct_length} + 1;
   my $statement = "SELECT count(id) FROM mfe WHERE seqlength = '$sequence_length' and genome_id = '$genome_id' and algorithm = '$algo'";
-#  print "TESTING: $statement\n";
   my $info = $me->MySelect($statement);
   my $count = $info->[0]->[0];
   if (!defined($count) or $count eq '') {
@@ -667,7 +662,6 @@ sub Get_Num_Bootfolds {
   my $return = {};
   my $sequence_length = $PRFConfig::config->{max_struct_length} + 1;
   my $statement = qq(SELECT count(id) FROM boot WHERE genome_id = '$genome_id' and start = '$start' and seqlength = '$sequence_length');
-#  print "Get_Num_Bootfolds TEST: $statement\n";
   my $info = $me->MySelect($statement);
   my $count = $info->[0]->[0];
   return($count);
@@ -727,7 +721,6 @@ sub Get_ORF {
   ## Then it should return from the start codon to the end of the mRNA which is good
   ## For searching over viral sequence!
   my $sequence = substr($mrna_seq, $start);
-#	print "PRFDB TEST: $sequence\n";
   ### DONT SCAN THE ENTIRE MRNA, ONLY THE ORF
   if ($sequence) {
 	my $return = {
@@ -809,7 +802,6 @@ sub Put_RNAmotif {
 	  my $filedata = $slipsites_data->{$start}{filedata};
 	  my $output = $slipsites_data->{$start}{output};
 	  my $statement = qq(INSERT INTO rnamotif (genome_id, species, accession, start, total, permissable, filedata, output) VALUES ('$id', '$species', '$accession', '$start', '$total', '$permissable', '$filedata', '$output'));
-      #    print "RNAMOTIF: $statement\n";
 	  $me->Execute($statement);
       } ## End looking at every slipsite for a locus
   }  ## End checking for a null set
@@ -853,7 +845,6 @@ sub Put_MFE {
       PRF_Error($errorstring, $data->{species}, $data->{accession});
     }
     my $statement = qq(INSERT INTO mfe (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES ('$data->{genome_id}', '$data->{species}', '$algo', '$data->{accession}', '$data->{start}', '$data->{slipsite}', '$data->{seqlength}', '$data->{sequence}', '$data->{output}', '$data->{parsed}', '$data->{parens}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}', '$data->{barcode}'));
-  #  print "MFE: $statement\n";
   $me->Execute($statement, $data->{genome_id});
   my $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
   my $get_inserted_id = qq(SELECT LAST_INSERT_ID());
@@ -882,7 +873,6 @@ sub Put_Boot {
 	  my $species = $data->{$mfe_method}->{$rand_method}->{stats}->{species};
 	  my $accession = $data->{$mfe_method}->{$rand_method}->{stats}->{accession};
 	  my $mfe_id = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_id};
-#	  print "LAST HERE: $mfe_id\n";
 	  my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
 	  my $seqlength = $data->{$mfe_method}->{$rand_method}->{stats}->{seqlength};
 	  my @boot = ('genome_id');

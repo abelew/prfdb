@@ -48,7 +48,7 @@ sub Alt_Orf {
       my $error_string = "Alt_Orf: sequence is not defined!";
       PRF_Error($error_string, $me->{species}, $me->{accession});
       print "$me->{species} $me->{accession}: $error_string\n";
-  }   
+  }
   my @seq = split(//, $sequence);
   my $return = {
                 orf => '',

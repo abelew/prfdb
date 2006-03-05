@@ -108,7 +108,6 @@ sub Gather {
     }
 
     if ($config->{do_boot}) {
-#	print "TESTME: NU: $state->{mfe_ids}->{nupack} PK: $state->{mfe_ids}->{pknots}\n";
 	my $boot = new Bootlace(
 				genome_id => $state->{genome_id},
 				mfe_ids => $state->{mfe_ids},
@@ -175,7 +174,6 @@ sub Gather_Rnamotif {
       }
       else {
 	$rnamotif_information->{$start}{filename} = $db->Motif_to_Fasta($rnamotif_information->{$start}{filedata});
-#	print "TESTME: $rnamotif_information->{$start}{filename} $start\n";
       }
       $state->{rnamotif_information} = $rnamotif_information;
     }
@@ -183,11 +181,9 @@ sub Gather_Rnamotif {
   else {
     $state->{genome_information} = $db->Get_ORF($state->{accession});
      my $return = $state->{genome_information};
-#    my ($sequence, $orf_start, $orf_stop) = $state->{genome_information};
      my $sequence = $return->{sequence};
      my $orf_start = $return->{orf_start};
      my $orf_stop = $return->{orf_stop};
-#	print "TESTME: $sequence\n";
     my $motifs = new RNAMotif_Search;
     $state->{rnamotif_information} = $motifs->Search($sequence, $orf_start);
     $db->Put_RNAmotif($id, $state->{species}, $state->{accession}, $state->{rnamotif_information});
@@ -258,8 +254,6 @@ sub Check_Boot_Connectivity {
     my $slipsite_start = shift;
     my $genome_id = $state->{genome_id};
     my $check_statement = qq(SELECT mfe_id, mfe_method, id, genome_id FROM boot WHERE genome_id = '$genome_id' and start = '$slipsite_start');
-#    print "First TEST: $check_statement\n";
-#    sleep 2;
     my $answer = $db->MySelect($check_statement);
     my $num_fixed = 0;
     foreach my $boot (@{$answer}) {
@@ -270,8 +264,6 @@ sub Check_Boot_Connectivity {
 	if (!defined($mfe_id) or $mfe_id == '0') {
 	    ## Then reconnect it using $mfe_method and $boot_id and $genome_id
 	    my $new_mfe_id_stmt = qq(SELECT id FROM mfe where genome_id = '$genome_id' and start = '$slipsite_start' and algorithm = '$mfe_method');
-#	    print "Second TEST: $new_mfe_id_stmt\n";
-#	    sleep(5);
 	    my $new_mfe_id_arrayref = $db->MySelect($new_mfe_id_stmt);
 	    my $new_mfe_id = $new_mfe_id_arrayref->[0]->[0];
 	    if ((!defined($new_mfe_id) 
@@ -293,7 +285,6 @@ sub Check_Boot_Connectivity {
 		    or $new_mfe_id == '0'
 		    or $new_mfe_id eq '')
 		   and $mfe_method eq 'pknots') {
-#		print "No pknots information!\n";
 		### Then there is no pknots information :(
 		my $fold_search = new RNAFolders(
 						 file => $state->{fasta_file},
@@ -306,8 +297,6 @@ sub Check_Boot_Connectivity {
 	    } ### End if there is no mfe_id and pknots was the algorithm
 	    my $update_mfe_id_statement = qq(UPDATE boot SET mfe_id = '$new_mfe_id' WHERE id = '$boot_id');
 	$db->Execute($update_mfe_id_statement);
-#	    print "Third MOST IMPORTANT: $update_mfe_id_statement\n";
-#	    sleep(2);
 	    $num_fixed++;
 	} ### End if there is no mfe_id
     } ### End foreach boot in the list
@@ -369,7 +358,6 @@ sub Check_Sequence_Length {
     my $output = '';
     my @out = ();
     while (my $line = <IN>) {
-	print $line;
 	chomp $line;
 	if ($line =~ /^\>/) {
 	    $output .= $line;
