@@ -52,8 +52,6 @@ exit();
 
 
 until (defined($state->{time_to_die})) {
-#  Time::HiRes::usleep(100);
-#  sleep(1);
   ### You can set a configuration variable 'master' so that it will not die
   if ($state->{done_count} > 60 and !defined($config->{master})) { $state->{time_to_die} = 1 };
 
@@ -236,8 +234,8 @@ $nu_boot and running: $config->{boot_iterations} times\n";
   if ($config->{arch_specific_exe}) { print "I AM USING ARCH SPECIFIC EXECUTABLES\n"; }
   else { print "I am not using arch specific executables\n"; }
   print "The default structure length in this run is: $config->{max_struct_length}\n";
-  print "I am using the database: $config->{db} and user: $config->{user}\n";
-  sleep(2);
+  print "I am using the database: $config->{db} and user: $config->{user}\n\n\n";
+  sleep(1);
 }
 
 sub Get_Num {
