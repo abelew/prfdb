@@ -31,7 +31,7 @@ sub Alts {
     $info->{plus_length} = $plus->{length};
     $info->{plus_orf} = $plus->{orf};
   }
-  my $minus = Alt_Orf($start, 6);
+  my $minus = $me->Alt_Orf($start, 6);
   if (defined($minus)) {
     $info->{minus_length} = $minus->{length};
     $info->{minus_orf} = $minus->{orf};
