@@ -9,25 +9,26 @@ use PRFConfig qw / PRF_Error PRF_Out /;
 sub new {
   my ($class, %arg) = @_;
   my $me = bless {
-      genome_id => $arg{genome_id},
-      mfe_ids => $arg{mfe_ids},
-      inputfile => $arg{inputfile},
-      ## Expect an array reference of sequence
-      iterations => $arg{iterations},  ## How many repetitions
-      ## Expect an int
-      boot_mfe_algorithms => $arg{boot_mfe_algorithms},  ## What to calculate mfe from
-      ## Expect a hash ref of algorithms
-      randomizers => $arg{randomizers},  ## What randomization algorithm to use
-      ## Expect a hash ref of randomizers
-      fasta_comment => undef,
-      species => $arg{species},
-      accession => $arg{accession},
-      start => $arg{start},
-      seqlength => $arg{seqlength},
-      fasta_comment => undef,
-      fasta_data => undef,
-      fasta_arrayref => [],
-  }, $class;
+                  genome_id => $arg{genome_id},
+                  nupack_mfe_id => $arg{nupack_mfe_id},
+                  pknots_mfe_id => $arg{pknots_mfe_id},
+                  inputfile => $arg{inputfile},
+                  ## Expect an array reference of sequence
+                  iterations => $arg{iterations},  ## How many repetitions
+                  ## Expect an int
+                  boot_mfe_algorithms => $arg{boot_mfe_algorithms},  ## What to calculate mfe from
+                  ## Expect a hash ref of algorithms
+                  randomizers => $arg{randomizers},  ## What randomization algorithm to use
+                  ## Expect a hash ref of randomizers
+                  fasta_comment => undef,
+                  species => $arg{species},
+                  accession => $arg{accession},
+                  start => $arg{start},
+                  seqlength => $arg{seqlength},
+                  fasta_comment => undef,
+                  fasta_data => undef,
+                  fasta_arrayref => [],
+                 }, $class;
   my $inputfile = $me->{inputfile};
   open(IN, "<$inputfile") or PRFConfig::PRF_Error("Could not open the Bootlace input file.", $arg{species}, $arg{accession});
   while (my $line = <IN>) {
@@ -54,18 +55,18 @@ sub Go {
   my $accession = $me->{accession};
   my $start = $me->{start};
   my $seqlength = $me->{seqlength};
-  print "Boot: infile: $inputfile accession: $accession start: $start\n";
+  print "Boot: infile: $inputfile accession: $accession start: $start seqlength: $seqlength\n";
   ## randomizer should be a reference to a function which takes as input
   ## the array reference of the sequence window of interest.  Thus allowing us to
   ## change which function randomizes the sequence
   my @algos = keys(%{$me->{boot_mfe_algorithms}});
   foreach my $boot_mfe_algo_name (keys %{$me->{boot_mfe_algorithms}}) {
       my $mfe_id;
-      if ($boot_mfe_algo_name =~ /nupack/) {
-	  $mfe_id = $me->{mfe_ids}->{nupack};
+      if ($boot_mfe_algo_name eq 'nupack') {
+	  $mfe_id = $me->{nupack_mfe_id},
       }
-      elsif ($boot_mfe_algo_name =~ /pknot/) {
-	  $mfe_id = $me->{mfe_ids}->{pknots};
+      elsif ($boot_mfe_algo_name eq 'pknots') {
+	  $mfe_id = $me->{pknots_mfe_id},
       }
       my @randers = keys(%{$me->{randomizers}});
       foreach my $rand_name (keys %{$me->{randomizers}}) {

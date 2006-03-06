@@ -614,6 +614,20 @@ sub Get_Sequence {
   }
 }
 
+sub Get_Seqlength {
+  my $me = shift;
+  my $mfe_id = shift;
+  my $statement = qq(SELECT seqlength FROM mfe where id = '$mfe_id');
+  my $info = $me->MySelect($statement);
+  my $seqlength = $info->[0]->[0];
+  if ($seqlength) {
+	return($seqlength);
+  }
+  else {
+	return(undef);
+  }
+}
+
 sub Get_Sequence_from_id {
     my $me = shift;
     my $id = shift;
