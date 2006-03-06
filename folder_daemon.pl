@@ -86,7 +86,6 @@ sub Gather {
   return(0) unless(defined($state->{rnamotif_information})); ## If rnamotif_information is null
   my $rnamotif_information = $state->{rnamotif_information};
   ## Now I should have 1 or more start sites
-  my $number_rnamotif_information = Get_Num($rnamotif_information);
   foreach my $slipsite_start (keys %{$rnamotif_information}) {
     my $nupack_mfe_id;
     my $pknots_mfe_id;
@@ -102,12 +101,12 @@ sub Gather {
 				    );
 
     if ($config->{do_nupack}) { ### Do we run a nupack fold?
-      $nupack_mfe_id = Check_Nupack($fold_search, $number_rnamotif_information, $slipsite_start);
+      $nupack_mfe_id = Check_Nupack($fold_search, $slipsite_start);
       $seqlength = $db->Get_Seqlength($nupack_mfe_id);
     } ### End check if we should do a nupack fold
 
     if ($config->{do_pknots}) { ### Do we run a pknots fold?
-      $pknots_mfe_id = Check_Pknots($fold_search, $number_rnamotif_information, $slipsite_start);
+      $pknots_mfe_id = Check_Pknots($fold_search, $slipsite_start);
       $seqlength = $db->Get_Seqlength($pknots_mfe_id);
     }
 
@@ -132,7 +131,7 @@ sub Gather {
 	#my $needed_boots = $number_boot_algos * $number_rnamotif_information;
 	my $needed_boots = $number_boot_algos;
       if ($boot_folds == $needed_boots) {
-        print "Already have $boot_folds pieces of boot information for $state->{genome_id} and $slipsite_start\n";
+        print "Already have $boot_folds pieces of boot information for $state->{genome_id} and start:$slipsite_start\n";
 	Check_Boot_Connectivity($state, $slipsite_start);
       }
       elsif ($boot_folds < $needed_boots) {
@@ -141,7 +140,7 @@ sub Gather {
 	$db->Put_Boot($bootlaces);
       }
       else {
-	  print "Already have $boot_folds pieces of boot information for $state->{genome_id} and $slipsite_start -- only needed $needed_boots\n";
+	  print "Already have $boot_folds pieces of boot information for $state->{genome_id} and start:$slipsite_start -- only needed $needed_boots\n";
 	  Check_Boot_Connectivity($state, $slipsite_start);
       } ### End if there are no bootlaces
     }  ### End if we are to do a boot
@@ -271,8 +270,8 @@ sub Check_Boot_Connectivity {
         my $new_mfe_id_stmt = qq(SELECT id FROM mfe where genome_id = '$genome_id' and start = '$slipsite_start' and algorithm = '$mfe_method');
         my $new_mfe_id_arrayref = $db->MySelect($new_mfe_id_stmt);
         my $new_mfe_id = $new_mfe_id_arrayref->[0]->[0];
-        if ((!defined($new_mfe_id) 
-             or $new_mfe_id == '0' 
+        if ((!defined($new_mfe_id)
+             or $new_mfe_id == '0'
              or $new_mfe_id eq '')
             and $mfe_method eq 'nupack') {
           ### Then there is no nupack information :(
@@ -284,9 +283,9 @@ sub Check_Boot_Connectivity {
                                            accession => $state->{accession},
                                            start => $slipsite_start,
                                           );
-          $new_mfe_id = Check_Nupack($fold_search, 100, $slipsite_start);
+          $new_mfe_id = Check_Nupack($fold_search, $slipsite_start);
         }
-        elsif ((!defined($new_mfe_id) 
+        elsif ((!defined($new_mfe_id)
                 or $new_mfe_id == '0'
                 or $new_mfe_id eq '')
                and $mfe_method eq 'pknots') {
@@ -298,7 +297,7 @@ sub Check_Boot_Connectivity {
                                            accession => $state->{accession},
                                            start => $slipsite_start,
                                           );
-          $new_mfe_id = Check_Pknots($fold_search, 100, $slipsite_start);
+          $new_mfe_id = Check_Pknots($fold_search, $slipsite_start);
         } ### End if there is no mfe_id and pknots was the algorithm
         my $update_mfe_id_statement = qq(UPDATE boot SET mfe_id = '$new_mfe_id' WHERE id = '$boot_id');
         $db->Execute($update_mfe_id_statement);
@@ -307,19 +306,19 @@ sub Check_Boot_Connectivity {
     } ### End foreach boot in the list
     return($num_fixed);
 }
-	
+
 sub Check_Nupack {
     my $fold_search = shift;
-    my $number_rnamotif_information = shift;
     my $slipsite_start = shift;
     my $nupack_mfe_id;
-    my $nupack_folds = $db->Get_Num_RNAfolds('nupack', $state->{genome_id});
-    if ($nupack_folds >= $number_rnamotif_information) {
-      print "$state->{genome_id} already has $number_rnamotif_information nupack_folds\n";
+    my $nupack_folds = $db->Get_Num_RNAfolds('nupack', $state->{genome_id}, $slipsite_start);
+    if ($nupack_folds > 0) {
+      print "$state->{genome_id} has $nupack_folds > 0 nupack_folds\n";
       my $seqlen = $config->{max_struct_length} + 1;
+      print "TEST seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
       $state->{nupack_mfe_id} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start, $seqlen, 'nupack');
       $nupack_mfe_id = $state->{nupack_mfe_id};
-      #print "Check_nupack - already done: state: $state->{nupack_mfe_id} var: $nupack_mfe_id\n";
+      print "Check_nupack - already done: state: $state->{nupack_mfe_id} var: $nupack_mfe_id\n";
     }
     else { ### If there are no existing folds...
 	my $nupack_info;
@@ -332,29 +331,30 @@ sub Check_Nupack {
 	$nupack_mfe_id = $db->Put_Nupack($nupack_info);
         $state->{nupack_mfe_id} = $nupack_mfe_id;
     }  ### End if there are no existing folds
-    #print "Check_Nupack Test: state:$state->{nupack_mfe_id} var: $nupack_mfe_id\n";
+    print "Check_Nupack Test: state:$state->{nupack_mfe_id} var: $nupack_mfe_id\n";
     return($nupack_mfe_id);
 }  ## End Check_Nupack
 
 sub Check_Pknots {
     my $fold_search = shift;
-    my $number_rnamotif_information = shift;
     my $slipsite_start = shift;
     my $pknots_mfe_id;
-    my $pknots_folds = $db->Get_Num_RNAfolds('pknots', $state->{genome_id});
-    if ($pknots_folds >= $number_rnamotif_information) { ### If there are no existing folds...
-      #print "$state->{genome_id} already has $number_rnamotif_information pknots folds\n";
+    my $pknots_folds = $db->Get_Num_RNAfolds('pknots', $state->{genome_id}, $slipsite_start);
+    if ($pknots_folds > 0) {### If there ARE existing folds...
+      print "$state->{genome_id} has $pknots_folds > 0 pknots_folds\n";
       my $seqlen = $config->{max_struct_length} + 1;
+      print "TEST seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
       $state->{pknots_mfe_id} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start, $seqlen, 'pknots');
       $pknots_mfe_id = $state->{pknots_mfe_id};
-      #print "Check_nupack - already done: state: $state->{nupack_mfe_id}\n";
+      print "Check_pknots - already done: state: $state->{pknots_mfe_id}\n";
     }
-    else { ### If there are no existing folds...
+    else { ### If there are NO existing folds...
+      print "$state->{genome_id} has only $pknots_folds <= 0 pknots_folds\n";
       my $pknots_info = $fold_search->Pknots();
       $pknots_mfe_id = $db->Put_Pknots($pknots_info);
       $state->{pknots_mfe_id} = $pknots_mfe_id;
     }  ### Done checking for pknots folds
-    #print "Check_Pknots Test: state:$state->{pknots_mfe_id} var: $pknots_mfe_id\n";
+    print "Check_Pknots Test: state:$state->{pknots_mfe_id} var: $pknots_mfe_id\n";
     return($pknots_mfe_id);
 } ## End Check_Pknots
 

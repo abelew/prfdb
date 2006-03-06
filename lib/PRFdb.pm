@@ -23,8 +23,8 @@ sub new {
   }, $class;
 
   $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
-  $me->{dbh}->{mysql_auto_reconnect} = 1;
-  $me->{dbh}->{Inactive_Destroy} = 1;
+  $dbh->{mysql_auto_reconnect} = 1;
+  $dbh->{InactiveDestroy} = 1;
   $me->Create_Genome() unless($me->Tablep('genome'));
   $me->Create_Queue() unless($me->Tablep('queue'));
   $me->Create_Rnamotif() unless($me->Tablep('rnamotif'));
@@ -86,6 +86,8 @@ sub MyConnect {
 	die("Statement is not defined in MyConnect!");
     }
     $dbh = DBI->connect_cached($me->{dsn}, $config->{user}, $config->{pass});
+    $dbh->{mysql_auto_reconnect} = 1;
+    $dbh->{InactiveDestroy} = 1;
     if (!defined($dbh)) {
 	if (defined($statement)) {
 	    Write_SQL($statement);
@@ -648,7 +650,7 @@ sub Get_MFE_ID {
     my $start = shift;
     my $seqlength = shift;
     my $algorithm = shift;
-    my $statement = qq(SELECT id FROM mfe WHERE genome_id = '$genome_id' AND start = '$start' AND seqlength = '$seqlength' AND algorithm = '$algorithm');
+    my $statement = qq(SELECT id FROM mfe WHERE genome_id = '$genome_id' AND start = '$start' AND seqlength = '$seqlength' AND algorithm = '$algorithm' LIMIT 1);
     my $info = $me->MySelect($statement);
     my $mfe = $info->[0]->[0];
     return($mfe);
@@ -658,9 +660,10 @@ sub Get_Num_RNAfolds {
   my $me = shift;
   my $algo = shift;
   my $genome_id = shift;
+  my $slipsite_start = shift;
   my $return = {};
   my $sequence_length = $PRFConfig::config->{max_struct_length} + 1;
-  my $statement = "SELECT count(id) FROM mfe WHERE seqlength = '$sequence_length' and genome_id = '$genome_id' and algorithm = '$algo'";
+  my $statement = "SELECT count(id) FROM mfe WHERE seqlength = '$sequence_length' AND genome_id = '$genome_id' AND algorithm = '$algo' AND start = '$slipsite_start'";
   my $info = $me->MySelect($statement);
   my $count = $info->[0]->[0];
   if (!defined($count) or $count eq '') {
