@@ -25,17 +25,18 @@ foreach my $arch (@arches) {
   	my $pbs_fullname = "${name}${daemon}_${arch}";
 	my $incdir = "${base}/usr/perl.${arch}/lib";
 	my $vars = {
-	    pbs_shell => $template_config->{pbs_shell}->{$arch},
-	    pbs_memory => $template_config->{pbs_memory},
-	    pbs_cpu => $template_config->{pbs_cpu},
-	    pbs_arch => $arch,
-	    pbs_name => $pbs_fullname,
-            pbs_cput => $template_config->{pbs_cput},
-	    prefix => $prefix,
-	    perl => $template_config->{perl},
-	    incdir => $incdir,
-	    daemon_name => $template_config->{daemon_name},
-	};
+                pbs_shell => $template_config->{pbs_shell}->{$arch},
+                pbs_memory => $template_config->{pbs_memory},
+                pbs_cpu => $template_config->{pbs_cpu},
+                pbs_arch => $arch,
+                pbs_name => $pbs_fullname,
+                pbs_cput => $template_config->{pbs_cput},
+                prefix => $prefix,
+                perl => $template_config->{perl},
+                incdir => $incdir,
+                daemon_name => $template_config->{daemon_name},
+                job_num => $daemon,
+               };
 	$template->process($input_file, $vars, $output_file) or die $template->error();
     }
 }

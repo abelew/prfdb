@@ -5,4 +5,4 @@
 #PBS -l arch=[% pbs_arch %]
 #PBS -N [% pbs_name %]
 cd [% prefix %]
-[% perl %] -I [% incdir %] [% daemon_name %]
+[% perl %] -I [% incdir %] [% daemon_name %] [% job_num %]

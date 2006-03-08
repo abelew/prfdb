@@ -858,10 +858,10 @@ sub Put_MFE {
   my @pknots = ('genome_id','species','accession','start','slipsite','seqlength','sequence','output','parsed','parens','mfe','pairs','knotp','barcode');
   my $errorstring = Check_Insertion(\@pknots, $data);
   if (defined($errorstring)) {
-      $errorstring = "Undefined value(s) in Put_MFE: $errorstring";
-      PRF_Error($errorstring, $data->{species}, $data->{accession});
-    }
-    my $statement = qq(INSERT INTO mfe (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES ('$data->{genome_id}', '$data->{species}', '$algo', '$data->{accession}', '$data->{start}', '$data->{slipsite}', '$data->{seqlength}', '$data->{sequence}', '$data->{output}', '$data->{parsed}', '$data->{parens}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}', '$data->{barcode}'));
+    $errorstring = "Undefined value(s) in Put_MFE: $errorstring";
+    PRF_Error($errorstring, $data->{species}, $data->{accession});
+  }
+  my $statement = qq(INSERT INTO mfe (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES ('$data->{genome_id}', '$data->{species}', '$algo', '$data->{accession}', '$data->{start}', '$data->{slipsite}', '$data->{seqlength}', '$data->{sequence}', '$data->{output}', '$data->{parsed}', '$data->{parens}', '$data->{mfe}', '$data->{pairs}', '$data->{knotp}', '$data->{barcode}'));
   $me->Execute($statement, $data->{genome_id});
   my $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
   my $get_inserted_id = qq(SELECT LAST_INSERT_ID());

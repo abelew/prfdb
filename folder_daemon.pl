@@ -14,11 +14,16 @@ use Bootlace;
 use Overlap;
 use MoreRandom;
 
+my $arg = $ARGV[0];
 my $config = $PRFConfig::config;
 my $db = new PRFdb;
 chdir($config->{basedir});
 Check_Environment();
-$db->Reset_Queue();  ## For anything which sets out = '1' and is not finished (done != '1'
+if (defined($arg)) {
+  if ($arg eq '01') {
+    $db->Reset_Queue();  ## For anything which sets out = '1' and is not finished (done != '1'
+  }
+}
 
 my $state = {
 	     time_to_die => undef,
@@ -321,15 +326,16 @@ sub Check_Nupack {
       print "Check_nupack - already done: state: $state->{nupack_mfe_id} var: $nupack_mfe_id\n";
     }
     else { ### If there are no existing folds...
-	my $nupack_info;
-	if ($config->{nupack_nopairs_hack}) {
-	    $nupack_info = $fold_search->Nupack_NOPAIRS();
-	}
-	else {
-	    $nupack_info = $fold_search->Nupack();
-	}
-	$nupack_mfe_id = $db->Put_Nupack($nupack_info);
-        $state->{nupack_mfe_id} = $nupack_mfe_id;
+      print "$state->{genome_id} has only $nupack_folds <= nupack_folds\n";
+      my $nupack_info;
+      if ($config->{nupack_nopairs_hack}) {
+        $nupack_info = $fold_search->Nupack_NOPAIRS();
+      }
+      else {
+        $nupack_info = $fold_search->Nupack();
+      }
+      $nupack_mfe_id = $db->Put_Nupack($nupack_info);
+      $state->{nupack_mfe_id} = $nupack_mfe_id;
     }  ### End if there are no existing folds
     print "Check_Nupack Test: state:$state->{nupack_mfe_id} var: $nupack_mfe_id\n";
     return($nupack_mfe_id);
@@ -367,7 +373,7 @@ sub Clean_Up {
 sub Check_Sequence_Length {
     my $filename = shift;
     my $sequence_length = $config->{max_struct_length};
-    open(IN, "<$filename") or die ("Couldn't open $filename $!");
+    open(IN, "<$filename") or die ("Couldn't open $filename in Check_Sequence_Length: $!");
     my $output = '';
     my @out = ();
     while (my $line = <IN>) {
