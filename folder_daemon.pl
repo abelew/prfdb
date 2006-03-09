@@ -175,13 +175,12 @@ sub Gather {
 
 sub Gather_Rnamotif {
   my $state = shift;
-  my $id = $state->{genome_id};
   ### First, get the accession and species
-  my $rnamotif_information = $db->Get_RNAmotif($id);
+  my $rnamotif_information = $db->Get_RNAmotif($state->{genome_id}, $state->{seqlength});
   if (defined($rnamotif_information)) {
     foreach my $start (keys %{$rnamotif_information}) {
       if ($start eq 'NONE') {
-	print "$id has no slippery sites.\n";
+	print "$state->{genome_id} has no slippery sites.\n";
 	Clean_Up();
 	next;
       }
@@ -199,7 +198,7 @@ sub Gather_Rnamotif {
      my $orf_stop = $return->{orf_stop};
     my $motifs = new RNAMotif_Search;
     $state->{rnamotif_information} = $motifs->Search($sequence, $orf_start);
-    $db->Put_RNAmotif($id, $state->{species}, $state->{accession}, $state->{rnamotif_information});
+    $db->Put_RNAmotif($id, $state->{species}, $state->{accession}, $state->{rnamotif_information}, $state->{seqlength});
   }
 }
 

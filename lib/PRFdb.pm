@@ -687,8 +687,9 @@ sub Get_Num_Bootfolds {
 sub Get_RNAmotif {
   my $me = shift;
   my $genome_id = shift;
+  my $seqlength = shift;
   my $return = {};
-  my $statement = "SELECT start, total, permissable, filedata, output FROM rnamotif WHERE genome_id = '$genome_id'";
+  my $statement = "SELECT start, total, permissable, filedata, output FROM rnamotif WHERE genome_id = '$genome_id' AND seqlength = '$seqlength'";
   my $info = $me->MySelect($statement);
   my @data = @{$info};
   my $records = scalar(@data);
@@ -805,10 +806,11 @@ sub Put_RNAmotif {
   my $species = shift;
   my $accession = shift;
   my $slipsites_data = shift;
+  my $seqlength = shift;
   ## RNAMotif table
   ## id, genome_id, species, accession, start, total, permissable, filedata, output, lastupdate
   if (scalar %{$slipsites_data} eq '0') {
-      my $statement = qq(INSERT INTO rnamotif (genome_id, species, accession) VALUES ('$id', '$species', '$accession'));
+      my $statement = qq(INSERT INTO rnamotif (genome_id, species, accession, seqlength) VALUES ('$id', '$species', '$accession', '$seqlength'));
       $me->Execute($statement);
   }
   else {  ## There are some keys to play with
@@ -818,7 +820,7 @@ sub Put_RNAmotif {
 	  my $filename = $slipsites_data->{$start}{filename};
 	  my $filedata = $slipsites_data->{$start}{filedata};
 	  my $output = $slipsites_data->{$start}{output};
-	  my $statement = qq(INSERT INTO rnamotif (genome_id, species, accession, start, total, permissable, filedata, output) VALUES ('$id', '$species', '$accession', '$start', '$total', '$permissable', '$filedata', '$output'));
+	  my $statement = qq(INSERT INTO rnamotif (genome_id, species, accession, start, seqlength, total, permissable, filedata, output) VALUES ('$id', '$species', '$accession', '$start', '$seqlength', '$total', '$permissable', '$filedata', '$output'));
 	  $me->Execute($statement);
       } ## End looking at every slipsite for a locus
   }  ## End checking for a null set
@@ -972,6 +974,7 @@ genome_id int,
 species $config->{sql_species},
 accession $config->{sql_accession},
 start int,
+length int,
 total int,
 permissable int,
 filedata blob,
