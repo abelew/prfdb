@@ -33,7 +33,7 @@ my $state = {
 	     genome_id => undef,
 	     accession => undef,
 	     species => undef,
-	     seqlength => $config->{max_struct_length} + 1,
+	     seqlength => undef,
 	     fasta_file => undef,
 	     genome_information => undef,
 	     rnamotif_information => undef,
@@ -60,7 +60,12 @@ exit();
 until (defined($state->{time_to_die})) {
   ### You can set a configuration variable 'master' so that it will not die
   if ($state->{done_count} > 60 and !defined($config->{master})) { $state->{time_to_die} = 1 };
-
+  if (defined($config->{max_struct_length})) {
+      $state->{seqlength} = $config->{max_struct_length} + 1;
+  }
+  else {
+      $state->{seqlength} = 100;
+  }
   my $ids = $db->Grab_Queue('public');
   $state->{queue_id} = $ids->{queue_id};
   $state->{genome_id} = $ids->{genome_id};
