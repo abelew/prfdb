@@ -96,6 +96,10 @@ sub Gather {
     my $pknots_mfe_id;
     my $seqlength;
     $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
+    if (!defined($state->{fasta_file} or $state->{fasta_file} eq '')) {
+	print "The fasta file for: $state->{accession} $slipsite_start does not exist.\n";
+	print "You may expect this script to die momentarily.\n";
+    }
     Check_Sequence_Length($state->{fasta_file});
     my $fold_search = new RNAFolders(
 				     file => $state->{fasta_file},
@@ -373,7 +377,7 @@ sub Clean_Up {
 sub Check_Sequence_Length {
     my $filename = shift;
     my $sequence_length = $config->{max_struct_length};
-    open(IN, "<$filename") or die ("Couldn't open $filename in Check_Sequence_Length: $!");
+    open(IN, "<$filename") or die ("Check_Sequence_Length: Couldn't open $filename $!");
     my $output = '';
     my @out = ();
     while (my $line = <IN>) {
