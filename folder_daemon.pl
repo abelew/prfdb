@@ -198,7 +198,7 @@ sub Gather_Rnamotif {
      my $orf_stop = $return->{orf_stop};
     my $motifs = new RNAMotif_Search;
     $state->{rnamotif_information} = $motifs->Search($sequence, $orf_start);
-    $db->Put_RNAmotif($id, $state->{species}, $state->{accession}, $state->{rnamotif_information}, $state->{seqlength});
+    $db->Put_RNAmotif($state->{genome_id}, $state->{species}, $state->{accession}, $state->{rnamotif_information}, $state->{seqlength});
   }
 }
 
