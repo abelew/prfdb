@@ -125,7 +125,7 @@ $string
 	## CLOSE RNAMOT in Search
         ## Overwrite the fasta file with the same sequence minus the slippery site.
         unlink($filename);
-        $fh2 = PRFdb::MakeTempfile();
+        my $fh2 = PRFdb::MakeTempfile();
 	## OPEN $fh2 in Search
         my $filename2 = $fh2->filename;
         $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
