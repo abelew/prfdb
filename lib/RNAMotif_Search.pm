@@ -97,7 +97,7 @@ $string
 	## CLOSE $fh in Search
         ### End of the fasta file.
         my $command = "$PRFConfig::config->{rnamotif} -context -descr $PRFConfig::config->{descriptor_file} $filename 2>rnamotif.err | $PRFConfig::config->{rmprune}";
-        open(RNAMOT, "$command |") or PRF_Error("Unable to run rnamotif: $!", 'rnamotif', '');
+        open(RNAMOT, "$command |") or PRF_Error("RNAMotif_Search:: Search, Unable to run rnamotif: $!", 'rnamotif', '');
 	## OPEN RNAMOT in Search
         my $permissable = 0;
         my $nonpermissable = 0;

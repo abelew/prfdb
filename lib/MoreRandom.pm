@@ -53,20 +53,25 @@ sub Squid {
   my $out_text;
   {  ## Begin a File::Temp Block
     my $fh = new File::Temp(UNLINK => 1,);
+    ## OPEN $fh in Squid
     print $fh ">tmp
 $inseq
 ";
     my $infile = $fh->filename;
     my $command = 'shuffle_exe $infile';
     open(CMD, "$command |") or die("Could not execute shuffle. $!");
+    ## OPEN CMD in Squid
     while (my $line = <CMD>) {
       chomp $line;
       next if ($line =~ /^\>/);
       $out_text = join('', $out_text, $line);
     } ## End while
       close(CMD);
+      ## CLOSE CMD in Squid
   }  ## End a File::Temp Block -- the tempfile should now no longer exist.
   my @out_array = split(//, $out_text);
+  close($fh);
+  ## CLOSE $fh in Squid -- hopefully fixed now
   return(\@out_array);
 }
 
@@ -87,14 +92,17 @@ $inseq
     my $infile = $fh->filename;
     my $command = 'shuffle_exe -d $infile';
     open(CMD, "$command |") or die("Could not execute shuffle. $!");
+    ## OPEN CMD in Squid_Dinuc
     while (my $line = <CMD>) {
       chomp $line;
       next if ($line =~ /^\>/);
       $out_text = join('', $out_text, $line);
     } ## End while
       close(CMD);
+    ## CLOSE CMD in Squid_Dinuc
   }  ## End a File::Temp Block -- the tempfile should now no longer exist.
   my @out_array = split(//, $out_text);
+  close($fh);
   return(\@out_array);
 }
 

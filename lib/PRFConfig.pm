@@ -110,6 +110,7 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
   ## They should live in directories named after their architecture
   my @modified_exes = ('rnamotif', 'rmprune', 'pknots', 'zcat');
   open(UNAME, "/usr/bin/env uname -a |");
+  ## OPEN UNAME in PRFConfig
   my $arch;
   while (my $line = <UNAME>) {
     chomp $line;
@@ -118,6 +119,7 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
     }
   }
   close(UNAME);
+  ## CLOSE UNAME in PRFConfig
   chomp $arch;
   if ($arch =~ /IRIX/) {
     $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/irix';
@@ -187,18 +189,21 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
 sub PRF_Out {
   my $message = shift;
   open(OUTFH, ">>$out") or die "Unable to open the log file $out: $!\n";
+  ## OPEN OUTFH in PRF_Out
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
   my $month = $mon + 1;
   my $y = $year + 1900;
   my $datestring = "$hour:$min:$sec $mday/$month/$y";
   print OUTFH "$datestring\t$message\n";
   close(OUTFH);
+  ## CLOSE OUTFH in PRF_Out
 }
 
 sub PRF_Error {
   my $message = shift;
   my $accession = shift;
   open(ERRFH, ">>$err") or die "Unable to open the log file $err: $!\n";
+  ## OPEN ERRFH in PRF_Error
   my $db = new PRFdb;
   $db->Error_Db($message, $accession);
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
@@ -207,6 +212,7 @@ sub PRF_Error {
   my $datestring = "$hour:$min:$sec $mday/$month/$y";
   print ERRFH "$datestring\t$message\n";
   close(ERRFH);
+  ## CLOSE ERRFH in PRF_Err
 }
 
 sub Go_Away {

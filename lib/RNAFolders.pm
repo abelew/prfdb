@@ -36,7 +36,7 @@ sub Nupack {
   };
   chdir($config->{tmpdir});
   my $command = qq($config->{nupack} $inputfile 2>nupack.err);
-  my $nupack_pid = open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $accession);
+  my $nupack_pid = open(NU, "$command |") or PRF_Error("RNAFolders::Nupack, Could not run nupack: $!", $accession);
   ## OPEN NU in Nupack
   my $count = 0;
   while (my $line = <NU>) {
@@ -137,7 +137,7 @@ sub Nupack_NOPAIRS {
   };
   chdir($config->{tmpdir});
   my $command = qq($config->{nupack} $inputfile 2>nupack.err);
-  my $nupack_pid = open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $accession);
+  my $nupack_pid = open(NU, "$command |") or PRF_Error("RNAFolders::Nupack_NOPAIRS, Could not run nupack: $!", $accession);
   ## OPEN NU in Nupack_NOPAIRS
   my $count = 0;
   my @nupack_output = ();
@@ -235,7 +235,7 @@ sub Pknots {
   };
   chdir($config->{tmpdir});
   my $command = qq($config->{pknots} -k $inputfile 2>pknots.err);
-  open(PK, "$command |") or PRF_Error("Could not run pknots: $!", $accession);
+  open(PK, "$command |") or PRF_Error("RNAFolders::Pknots, Could not run pknots: $!", $accession);
   ## OPEN PK in Pknots
   my $counter = 0;
   my ($line_to_read, $crap) = undef;
@@ -360,7 +360,7 @@ sub Pknots_Boot {
     };
     chdir($config->{tmpdir});
     my $command = qq($config->{pknots} $inputfile 2>pknots_boot.err);
-    open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $accession);
+    open(PK, "$command |") or PRF_Error("RNAFolders::Pknots_Boot, Failed to run pknots: $!", $accession);
     ## OPEN PK in Pknots_Boot
     my $counter = 0;
     my ($line_to_read, $crap) = undef;
@@ -411,7 +411,7 @@ sub Nupack_Boot {
 	       };
   chdir($config->{tmpdir});
   my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
-  open(NU, "$command |") or PRF_Error("Failed to run nupack: $!", $accession);
+  open(NU, "$command |") or PRF_Error("RNAFolders::Nupack_Boot, Failed to run nupack: $!", $accession);
   ## OPEN NU in Nupack_Boot
   my $count = 0;
   while (my $line = <NU>) {
@@ -463,7 +463,7 @@ sub Nupack_Boot_NOPAIRS {
     chdir($config->{tmpdir});
     my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
     my @nupack_output;
-    open(NU, "$command |") or PRF_Error("Failed to run nupack: $!", $accession);
+    open(NU, "$command |") or PRF_Error("RNAFolders::Nupack_Boot_NOPAIRS, Failed to run nupack: $!", $accession);
     ## OPEN NU in Nupack_Boot_NOPAIRS
     my $counter = 0;
     my $pairs = 0;
