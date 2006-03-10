@@ -344,6 +344,7 @@ sub Load_Genome_Table {
 	$datum{mrna_seq} .= $line;
     }   ## Non accession line
   }  ## End every line
+  close(IN);
 #  $me->Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
   $me->Import_CDS($datum{accession});
 }
@@ -765,6 +766,7 @@ sub Get_Slippery_From_RNAMotif {
 	  return($slippery);
       }
   }
+  close(IN);
   return(undef);
 }
 
