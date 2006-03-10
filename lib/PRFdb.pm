@@ -126,11 +126,13 @@ sub Motif_to_Fasta {
   my $data = shift;
   my $fh = MakeTempfile();
   print $fh $data;
+  my $filename = $fh->filename;
   close($fh);
-  return($fh->filename);
+  return($filename);
 }
 
 sub MakeTempfile {
+  $KEEP_ALL = 1;
   my $fh = new File::Temp(DIR => $config->{tmpdir},
                           TEMPLATE => 'slip_XXXXX',
                           UNLINK => 0,
@@ -1095,6 +1097,16 @@ time $config->{sql_timestamp},
 message blob,
 accession $config->{sql_accession},
 primary key(id))";
+  $me->Execute($statement);
+}
+
+sub Create_TermCount {
+  my $me = shift;
+  my $statement = "CREATE table termcount (
+id $config->{sql_id},
+term text,
+count int,
+primary key (id))";
   $me->Execute($statement);
 }
 
