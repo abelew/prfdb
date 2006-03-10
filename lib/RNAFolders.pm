@@ -37,6 +37,7 @@ sub Nupack {
   chdir($config->{tmpdir});
   my $command = qq($config->{nupack} $inputfile 2>nupack.err);
   my $nupack_pid = open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $accession);
+  ## OPEN NU in Nupack
   my $count = 0;
   while (my $line = <NU>) {
       $count++;
@@ -70,12 +71,14 @@ sub Nupack {
       }
   }  ## End of the line reading the nupack output.
   close(NU);
+  ## CLOSE NU in Nupack
   my $nupack_return = $?;
   unless ($nupack_return eq '0' or $nupack_return eq '256') {
       PRFConfig::PRF_Error("Nupack Error: $!", $accession);
       die("Nupack Error! $!");
   }
   open(PAIRS, "<out.pair") or PRF_Error("Could not open the nupack pairs file: $!", $accession);
+  ## OPEN PAIRS in Nupack
   my $pairs = 0;
   my @nupack_output = ();
   while(my $line = <PAIRS>) {
@@ -89,6 +92,7 @@ sub Nupack {
       $nupack_output[$c] = '.' unless(defined $nupack_output[$c]);
   }
   close(PAIRS);
+  ## CLOSE PAIRS in Nupack
   unlink("out.pair");
   my $nupack_output_string = '';
   foreach my $char (@nupack_output) { $nupack_output_string .= "$char "; }
@@ -134,6 +138,7 @@ sub Nupack_NOPAIRS {
   chdir($config->{tmpdir});
   my $command = qq($config->{nupack} $inputfile 2>nupack.err);
   my $nupack_pid = open(NU, "$command |") or PRF_Error("Could not run nupack: $!", $accession);
+  ## OPEN NU in Nupack_NOPAIRS
   my $count = 0;
   my @nupack_output = ();
   my $pairs = 0;
@@ -175,6 +180,7 @@ sub Nupack_NOPAIRS {
       }
   }  ## End of the line reading the nupack output.
   close(NU);
+  ## CLOSE NU in Nupack_NOPAIRS
   my $nupack_return = $?;
   unless ($nupack_return eq '0' or $nupack_return eq '256') {
     PRFConfig::PRF_Error("Nupack Error: $!", $accession);
@@ -230,6 +236,7 @@ sub Pknots {
   chdir($config->{tmpdir});
   my $command = qq($config->{pknots} -k $inputfile 2>pknots.err);
   open(PK, "$command |") or PRF_Error("Could not run pknots: $!", $accession);
+  ## OPEN PK in Pknots
   my $counter = 0;
   my ($line_to_read, $crap) = undef;
   my $string = '';
@@ -260,6 +267,7 @@ sub Pknots {
 	}
   } ## For every line of pknots
   close(PK);
+  ## CLOSE PK in Pknots
   my $pknots_return = $?;
   unless ($pknots_return eq '0' or $pknots_return eq '256') {
       PRFConfig::PRF_Error("Pknots Error: $!", $accession);
@@ -302,6 +310,7 @@ sub Pknots {
 sub Get_Sequence_From_Input {
     my $inputfile = shift;
     open(SEQ, "<$inputfile");
+    ## OPEN SEQ in Get_Sequence_From_Input
     my $seq;
     while(my $line = <SEQ>) {
 	chomp $line;
@@ -313,6 +322,7 @@ sub Get_Sequence_From_Input {
 	}
     }
     close(SEQ);
+    ## CLOSE SEQ in Get_Sequence_From_Input
     return($seq);
 }
 
@@ -320,6 +330,7 @@ sub Get_Sequence_From_Input {
 sub Get_Slipsite_From_Input {
     my $inputfile = shift;
     open(SLIP, "<$inputfile");
+    ## OPEN SLIP in Get_Slipsite_From_Input
     my ($slipsite, $crap);
     while(my $line = <SLIP>) {
 	chomp $line;
@@ -331,6 +342,7 @@ sub Get_Slipsite_From_Input {
 	else {next;}
     }
     close(SLIP);
+    ## CLOSE SLIP in Get_Slipsite_From_Input
     return($slipsite);
 }
 
@@ -349,6 +361,7 @@ sub Pknots_Boot {
     chdir($config->{tmpdir});
     my $command = qq($config->{pknots} $inputfile 2>pknots_boot.err);
     open(PK, "$command |") or PRF_Error("Failed to run pknots: $!", $accession);
+    ## OPEN PK in Pknots_Boot
     my $counter = 0;
     my ($line_to_read, $crap) = undef;
     my $string = '';
@@ -377,6 +390,7 @@ sub Pknots_Boot {
 	}
     } ## For every line of pknots
     close(PK);
+    ## CLOSE PK in Pknots_Boot
     my $pknots_return = $?;
     unless ($pknots_return eq '0' or $pknots_return eq '256') {
       PRFConfig::PRF_Error("Pknots Error: $!", $accession);
@@ -398,6 +412,7 @@ sub Nupack_Boot {
   chdir($config->{tmpdir});
   my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
   open(NU, "$command |") or PRF_Error("Failed to run nupack: $!", $accession);
+  ## OPEN NU in Nupack_Boot
   my $count = 0;
   while (my $line = <NU>) {
     chomp $line;
@@ -413,6 +428,7 @@ sub Nupack_Boot {
     }
   }  ## End of the output from nupack_boot
   close(NU);
+  ## CLOSE NU in Nupack_Boot
   my $nupack_return = $?;
   unless ($nupack_return eq '0' or $nupack_return eq '256') {
     PRFConfig::PRF_Error("Nupack Error: $!", $accession);
@@ -420,6 +436,7 @@ sub Nupack_Boot {
   }
 
   open(PAIRS, "<out.pair") or PRF_Error("Could not open the nupack pairs file: $!", $accession);
+  ## OPEN PAIRS in Nupack_Boot
   my $pairs = 0;
   my @nupack_output = ();
   while(my $line = <PAIRS>) {
@@ -427,6 +444,7 @@ sub Nupack_Boot {
     $pairs++;
   }  ## End of the pairs file
   close(PAIRS);
+  ## CLOSE PAIRS in Nupack_Boot
   unlink("out.pair");
   $return->{pairs} = $pairs;
   return($return);
@@ -446,6 +464,7 @@ sub Nupack_Boot_NOPAIRS {
     my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
     my @nupack_output;
     open(NU, "$command |") or PRF_Error("Failed to run nupack: $!", $accession);
+    ## OPEN NU in Nupack_Boot_NOPAIRS
     my $counter = 0;
     my $pairs = 0;
     while (my $line = <NU>) {
@@ -466,6 +485,7 @@ sub Nupack_Boot_NOPAIRS {
 	}
     }  ## End of the output from nupack_boot
     close(NU);
+    ## CLOSE NU in Nupack_Boot_NOPAIRS
     my $nupack_return = $?;
     unless ($nupack_return eq '0' or $nupack_return eq '256') {
       PRFConfig::PRF_Error("Nupack Error: $!", $accession);

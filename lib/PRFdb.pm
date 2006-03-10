@@ -126,6 +126,7 @@ sub Motif_to_Fasta {
   my $data = shift;
   my $fh = MakeTempfile();
   print $fh $data;
+  close($fh);
   return($fh->filename);
 }
 
@@ -134,6 +135,7 @@ sub MakeTempfile {
                           TEMPLATE => 'slip_XXXXX',
                           UNLINK => 0,
                           SUFFIX => '.fasta');
+  return($fh);
 }
 
 ####
@@ -299,9 +301,11 @@ sub Load_Genome_Table {
   my $me = shift;
   if ($config->{input} =~ /gz$/ or $config->{input} =~ /Z$/) {
 	open(IN, "$config->{zcat} $config->{input} |") or die "Could not open the fasta file\n $!\n";
+	## OPEN IN in Load_Genome_Table
   }
   else {
 	open(IN, "<$config->{input}") or die "Could not open the fasta file\n $!\n";
+	## OPEN IN in Load_Genome_Table
   }
   my %datum = (accession => undef, genename => undef, version => undef, comment => undef, mrna_seq => undef);
   while(my $line = <IN>) {
@@ -345,6 +349,7 @@ sub Load_Genome_Table {
     }   ## Non accession line
   }  ## End every line
   close(IN);
+  ## CLOSE IN in Load_Genome_Table
 #  $me->Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
   $me->Import_CDS($datum{accession});
 }
@@ -360,9 +365,11 @@ sub Load_ORF_Data {
   my $misc = new SeqMisc;
   if ($config->{input} =~ /gz$/ or $config->{input} =~ /Z$/) {
 	open(IN, "$config->{zcat} $config->{input} |") or die "Could not open the fasta file\n $!\n";
+	## OPEN IN in Load_ORF_Data
   }
   else {
 	open(IN, "<$config->{input}") or die "Could not open the fasta file\n $!\n";
+	## OPEN IN in Load_ORF_Data
   }
   my %datum = (
                accession => undef,
@@ -434,6 +441,8 @@ sub Load_ORF_Data {
       $datum{mrna_seq} .= $line;
     }   ## Non accession line
   }  ## End every line
+  close(IN);
+  ## CLOSE IN in Load_ORF_Data
   $datum{protein_seq} = $misc->Translate($datum{mrna_seq});
   print "Submitting $datum{accession}\n";
   $me->Insert_Genome_Entry(\%datum);  ## Get the last entry into the database.
@@ -758,6 +767,7 @@ sub Get_Slippery_From_RNAMotif {
   my $me = shift;
   my $filename = shift;
   open(IN, "<$filename");
+  ## OPEN IN in Get_Slippery_From_RNAMotif
   while(my $line = <IN>) {
       chomp $line;
       if ($line =~ /^\>/) {
@@ -767,6 +777,7 @@ sub Get_Slippery_From_RNAMotif {
       }
   }
   close(IN);
+  ## CLOSE IN in Get_Slippery_From_RNAMotif
   return(undef);
 }
 
@@ -1174,6 +1185,7 @@ sub Write_SQL {
     my $statement = shift;
     my $genome_id = shift;
     open(SQL, ">>failed_sql_statements.txt");
+    ## OPEN SQL in Write_SQL
     my $string = "$statement" . ";\n";
     print SQL "$string";
 
@@ -1182,6 +1194,7 @@ sub Write_SQL {
 	print SQL "$second_statement";
     }
     close(SQL);
+    ## CLOSE SQL in Write_SQL
 }
 
 sub Get_Last_Id {

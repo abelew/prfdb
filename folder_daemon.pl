@@ -86,7 +86,8 @@ until (defined($state->{time_to_die})) {
   }    ### End else public queue is empty
 }      ### End waiting for time to die
 
-sub Gather {
+## Start Gather
+sub Gather {  
   my $state = shift;
   my $ref = $db->Id_to_AccessionSpecies($state->{genome_id});
   $state->{accession} = $ref->{accession};
@@ -176,8 +177,10 @@ sub Gather {
   } ### End foreach slipsite_start
   Clean_Up();
   ## Clean out state
-}  ## End Gather
+}
+## End Gather
 
+## Start Gather_Rnamotif
 sub Gather_Rnamotif {
   my $state = shift;
   ### First, get the accession and species
@@ -206,7 +209,9 @@ sub Gather_Rnamotif {
     $db->Put_RNAmotif($state->{genome_id}, $state->{species}, $state->{accession}, $state->{rnamotif_information}, $state->{seqlength});
   }
 }
+## End Gather_Rnamotif
 
+## Start Check_Environment
 sub Check_Environment {
   die("No rnamotif descriptor file set.") unless(defined($config->{descriptor_file}));
   die("Tmpdir must be executable: $!") unless(-x $config->{tmpdir});
@@ -222,11 +227,9 @@ sub Check_Environment {
       unless(-r $config->{descriptor_file});
   }
 }
+## End Check_Environment
 
-sub signal_handler {
-  $state->{time_to_die} = 1;
-}
-
+## Start Print_Config
 sub Print_Config {
   ### This is a little function designed to give the user a chance to abort
   if ($config->{nupack_nopairs_hack}) { print "I AM using a hacked version of nupack!\n"; }
@@ -256,7 +259,9 @@ $nu_boot and running: $config->{boot_iterations} times\n";
   print "I am using the database: $config->{db} and user: $config->{user}\n\n\n";
   sleep(1);
 }
+## End Print_Config
 
+## Start Get_Num
 sub Get_Num {
   my $data = shift;
   my $count = 0;
@@ -265,7 +270,9 @@ sub Get_Num {
   }
   return($count);
 }
+## End Get_Num
 
+## Start Check_Boot_Connectivity
 sub Check_Boot_Connectivity {
     my $state = shift;
     my $slipsite_start = shift;
@@ -319,7 +326,9 @@ sub Check_Boot_Connectivity {
     } ### End foreach boot in the list
     return($num_fixed);
 }
+## End Check_Boot_Connectivity
 
+## Start Check_Nupack
 sub Check_Nupack {
     my $fold_search = shift;
     my $slipsite_start = shift;
@@ -347,8 +356,10 @@ sub Check_Nupack {
     }  ### End if there are no existing folds
     print "Check_Nupack Test: state:$state->{nupack_mfe_id} var: $nupack_mfe_id\n";
     return($nupack_mfe_id);
-}  ## End Check_Nupack
+}
+## End Check_Nupack
 
+## Start Check_Pknots
 sub Check_Pknots {
     my $fold_search = shift;
     my $slipsite_start = shift;
@@ -370,18 +381,22 @@ sub Check_Pknots {
     }  ### Done checking for pknots folds
     print "Check_Pknots Test: state:$state->{pknots_mfe_id} var: $pknots_mfe_id\n";
     return($pknots_mfe_id);
-} ## End Check_Pknots
+}
+## End Check_Pknots
 
-
+## Start Clean_Up
 sub Clean_Up {
     $db->Done_Queue($state->{genome_id});
     foreach my $k (keys %{$state}) { $state->{$k} = undef unless ($k eq 'done_count'); }
 }
+## End Clean_Up
 
+## Start Check_Sequence_Length
 sub Check_Sequence_Length {
     my $filename = shift;
     my $sequence_length = $config->{max_struct_length};
     open(IN, "<$filename") or die ("Check_Sequence_Length: Couldn't open $filename $!");
+    ## OPEN IN in Check_Sequence_Length
     my $output = '';
     my @out = ();
     while (my $line = <IN>) {
@@ -395,13 +410,17 @@ sub Check_Sequence_Length {
 	}
     }
     close(IN);
+    ## CLOSE IN in Check_Sequence Length
     my $current_length = scalar(@out);
     if ($current_length <= $sequence_length) { return(undef); }
     open(OUT, ">$filename") or die("Could not open $filename $!");
+    ## OPEN OUT in Check_Sequence_Length
     print OUT "$output\n";
     foreach my $char (0 .. $sequence_length) {
 	print OUT $out[$char];
     }
     print OUT "\n";
     close(OUT);
+    ## CLOSE OUT in Check_Sequence_Length
 }
+## End Check_Sequence_length

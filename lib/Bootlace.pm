@@ -31,6 +31,7 @@ sub new {
                  }, $class;
   my $inputfile = $me->{inputfile};
   open(IN, "<$inputfile") or PRFConfig::PRF_Error("Could not open the Bootlace input file.", $arg{species}, $arg{accession});
+  ## OPEN IN in new
   while (my $line = <IN>) {
     chomp $line;
     if ($line =~ /^\>/) {
@@ -41,6 +42,7 @@ sub new {
     }
   }
   close(IN);
+  ## CLOSE IN in new
   my @fasta_array = split(//, $me->{fasta_data});
   $me->{fasta_arrayref} = \@fasta_array;
   return($me);
@@ -149,10 +151,12 @@ sub Overwrite_Inputfile {
   my $string;
   foreach my $char (@{$sequence}) { $string .= $char; }
   open(OUT, ">$me->{inputfile}") or PRF_Error("Could not open output file in Bootlace.", $me->{species}, $me->{accession});
+  ## OPEN OUT in Overwrite_Inputfile
   print OUT "$me->{fasta_comment}
 $string
 ";
   close OUT;
+  ## CLOSE OUT in Overwrite_Inputfile
 }
 
 1;

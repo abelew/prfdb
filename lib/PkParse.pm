@@ -545,6 +545,7 @@ sub PkParse_Error {
     my $input_string = '';
     foreach my $c (@{$input}) { $input_string .= $c };
     open(ERROR, ">>pkparse_error.txt") or die("Could not open the pkparse_error file $!");
+    ## OPEN ERROR in PkParse_Error
     if ($string eq 'loop') {
 	print ERROR "Too many loops for $input_string\n";
     }
@@ -555,6 +556,7 @@ sub PkParse_Error {
 	print ERROR "There was an error for $input_string\n";
     }
     close(ERROR);
+    ## CLOSE ERROR in PkParse_Error
 }
 
 1;

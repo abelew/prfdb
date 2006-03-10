@@ -66,6 +66,7 @@ sub Search {
         my $no_slip_site_start = $start + 7;
         my $end = $c + $me->{max_struct_length} + 7;
         my $fh = PRFdb::MakeTempfile();
+	## OPEN $fh in Search
         my $filename = $fh->filename;
         my $string = '';
         ### Move start up 7 nucleotides in the case of a description file which does not specify a slippery site
@@ -93,9 +94,11 @@ $string
 ";
         print $fh $data;
         close($fh);
+	## CLOSE $fh in Search
         ### End of the fasta file.
         my $command = "$PRFConfig::config->{rnamotif} -context -descr $PRFConfig::config->{descriptor_file} $filename 2>rnamotif.err | $PRFConfig::config->{rmprune}";
-        open(RNAMOT, "$command |") or PRF_Die("Unable to run rnamotif: $!", 'rnamotif', '');
+        open(RNAMOT, "$command |") or PRF_Error("Unable to run rnamotif: $!", 'rnamotif', '');
+	## OPEN RNAMOT in Search
         my $permissable = 0;
         my $nonpermissable = 0;
         my $total = 0;
@@ -119,14 +122,18 @@ $string
         }  ## End the while loop
         ## Close the pipe to rnamotif
         close(RNAMOT);
+	## CLOSE RNAMOT in Search
         ## Overwrite the fasta file with the same sequence minus the slippery site.
-        unlink($fh);
-        $fh = PRFdb::MakeTempfile();
-        $filename = $fh->filename;
+        unlink($filename);
+        $fh2 = PRFdb::MakeTempfile();
+	## OPEN $fh2 in Search
+        my $filename2 = $fh2->filename;
         $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
 $no_slip_string
 ";
-        print $fh $data;
+        print $fh2 $data;
+	close($fh2);
+	## CLOSE $fh2 in Search
         ## This non-slippery-site-containing data will be used throughout the database
         $return{$start_in_full_sequence}{total} = $total;
         $return{$start_in_full_sequence}{filename} = $filename;
