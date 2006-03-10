@@ -68,10 +68,10 @@ $inseq
     } ## End while
       close(CMD);
       ## CLOSE CMD in Squid
+  close($fh);
+  ## CLOSE $fh in Squid
   }  ## End a File::Temp Block -- the tempfile should now no longer exist.
   my @out_array = split(//, $out_text);
-  close($fh);
-  ## CLOSE $fh in Squid -- hopefully fixed now
   return(\@out_array);
 }
 
@@ -100,9 +100,10 @@ $inseq
     } ## End while
       close(CMD);
     ## CLOSE CMD in Squid_Dinuc
+      close($fh);
+      ## CLOSE $fh in Squid_Dinuc
   }  ## End a File::Temp Block -- the tempfile should now no longer exist.
   my @out_array = split(//, $out_text);
-  close($fh);
   return(\@out_array);
 }
 
