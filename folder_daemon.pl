@@ -14,17 +14,8 @@ use Bootlace;
 use Overlap;
 use MoreRandom;
 
-my $arg = $ARGV[0];
 my $config = $PRFConfig::config;
 my $db = new PRFdb;
-chdir($config->{basedir});
-Check_Environment();
-if (defined($arg)) {
-  if ($arg eq '01') {
-    $db->Reset_Queue();  ## For anything which sets out = '1' and is not finished (done != '1'
-  }
-}
-
 my $state = {
 	     time_to_die => undef,
 	     queue_id => undef,
@@ -43,6 +34,9 @@ my $state = {
 	     done_count => 0,
 	    };
 
+### START DOING WORK NOW
+chdir($config->{basedir});
+Check_Environment();
 Print_Config();
 ## Put some helper functions here
 if (defined($ARGV[0])) {
@@ -53,9 +47,10 @@ if (defined($ARGV[0])) {
     print "This is version: 1.77 from cvs\n";
     exit();
   }
-exit();
+  elsif ($ARGV[0] eq '01') {
+    $db->Reset_Queue();  ## For anything which sets out = '1' and is not finished (done != '1'
+  }
 }
-
 
 until (defined($state->{time_to_die})) {
   ### You can set a configuration variable 'master' so that it will not die

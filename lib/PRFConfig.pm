@@ -4,7 +4,7 @@ use strict;
 use AppConfig qw/:argcount :expand/;
 require      Exporter;
 our @ISA       = qw(Exporter);
-our @EXPORT    = qw(PRF_Out PRF_Error PRF_Die config);    # Symbols to be exported by default
+our @EXPORT    = qw(PRF_Out PRF_Error config);    # Symbols to be exported by default
 #our @EXPORT_OK = qw();  # Symbols to be exported on request
 our $VERSION   = 1.00;         # Version number
 

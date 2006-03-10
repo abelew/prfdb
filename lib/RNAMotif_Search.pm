@@ -124,16 +124,12 @@ $string
         close(RNAMOT);
 	## CLOSE RNAMOT in Search
         ## Overwrite the fasta file with the same sequence minus the slippery site.
-        unlink($filename);
-        my $fh2 = PRFdb::MakeTempfile();
-	## OPEN $fh2 in Search
-        my $filename2 = $fh2->filename;
+        open(NOSLIP, ">$filename") or die("Could not open $filename $!");
         $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
 $no_slip_string
 ";
-        print $fh2 $data;
-	close($fh2);
-	## CLOSE $fh2 in Search
+	print NOSLIP $data;
+	close(NOSLIP);
         ## This non-slippery-site-containing data will be used throughout the database
         $return{$start_in_full_sequence}{total} = $total;
         $return{$start_in_full_sequence}{filename} = $filename;

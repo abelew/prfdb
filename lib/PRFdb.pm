@@ -124,15 +124,16 @@ sub Keyword_Search {
 sub Motif_to_Fasta {
   my $me = shift;
   my $data = shift;
-  my $fh = MakeTempfile();
+  my $fh = PRFdb::MakeTempfile();
   print $fh $data;
   my $filename = $fh->filename;
   close($fh);
+  print "TEST: $filename\n";
   return($filename);
 }
 
 sub MakeTempfile {
-  $KEEP_ALL = 1;
+  $File::Temp::KEEP_ALL = 1;
   my $fh = new File::Temp(DIR => $config->{tmpdir},
                           TEMPLATE => 'slip_XXXXX',
                           UNLINK => 0,
