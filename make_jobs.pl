@@ -25,7 +25,7 @@ foreach my $arch (@arches) {
   	my $pbs_fullname = "${name}${daemon}_${arch}";
 	my $incdir = "${base}/usr/perl.${arch}/lib";
 	my $vars = {
-                pbs_shell => $template_config->{pbs_shell}->{$arch},
+                pbs_shell => $template_config->{pbs_shell},
                 pbs_memory => $template_config->{pbs_memory},
                 pbs_cpu => $template_config->{pbs_cpu},
                 pbs_arch => $arch,
