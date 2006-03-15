@@ -136,6 +136,7 @@ $no_slip_string
         $return{$start_in_full_sequence}{output} = $rnamotif_output;
         $return{$start_in_full_sequence}{permissable} = $permissable;
         $return{$start_in_full_sequence}{filedata} = $data;
+	$return{$start_in_full_sequence}{sequence} = $no_slip_string;
       } ## End checking for a slippery site
     }  ## End the reading frame check
   }  ## End searching over the sequence

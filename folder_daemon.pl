@@ -92,16 +92,31 @@ sub Gather {
   return(0) unless(defined($state->{rnamotif_information})); ## If rnamotif_information is null
   my $rnamotif_information = $state->{rnamotif_information};
   ## Now I should have 1 or more start sites
-  foreach my $slipsite_start (keys %{$rnamotif_information}) {
+  STARTSITE: foreach my $slipsite_start (keys %{$rnamotif_information}) {
     my $nupack_mfe_id;
     my $pknots_mfe_id;
     my $seqlength;
     $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
+    $state->{sequence} = $rnamotif_information->{$slipsite_start}{sequence};
     if (!defined($state->{fasta_file} or $state->{fasta_file} eq '')) {
 	print "The fasta file for: $state->{accession} $slipsite_start does not exist.\n";
 	print "You may expect this script to die momentarily.\n";
     }
-    Check_Sequence_Length($state->{fasta_file});
+
+    my $check_seq = Check_Sequence_Length();
+    print "The Sequence Length is: $check_seq\n";
+    print "The sequence is: $state->{sequence}\n";
+    if ($check_seq eq 'null') {
+	print "The sequence is null\n";
+	unlink($state->{fasta_file});
+	next STARTSITE;
+    }
+    elsif ($check_seq eq 'polya') {
+	print "The sequence is polya\n";
+	unlink($state->{fasta_file});  ## Get rid of each fasta file
+	next STARTSITE;
+    }
+
     my $fold_search = new RNAFolders(
 				     file => $state->{fasta_file},
 				     genome_id => $state->{genome_id},
@@ -388,8 +403,11 @@ sub Clean_Up {
 
 ## Start Check_Sequence_Length
 sub Check_Sequence_Length {
-    my $filename = shift;
-    my $sequence_length = $config->{max_struct_length};
+    my $filename = $state->{fasta_file};
+    my $sequence = $state->{sequence};
+    my @seqarray = split(//, $sequence);
+    my $sequence_length = $#seqarray;
+    my $wanted_sequence_length = $config->{max_struct_length};
     open(IN, "<$filename") or die ("Check_Sequence_Length: Couldn't open $filename $!");
     ## OPEN IN in Check_Sequence_Length
     my $output = '';
@@ -407,15 +425,35 @@ sub Check_Sequence_Length {
     close(IN);
     ## CLOSE IN in Check_Sequence Length
     my $current_length = scalar(@out);
-    if ($current_length <= $sequence_length) { return(undef); }
-    open(OUT, ">$filename") or die("Could not open $filename $!");
-    ## OPEN OUT in Check_Sequence_Length
-    print OUT "$output\n";
-    foreach my $char (0 .. $sequence_length) {
-	print OUT $out[$char];
+    if (!defined($sequence) or $sequence eq '') {
+	return('null');
     }
-    print OUT "\n";
-    close(OUT);
-    ## CLOSE OUT in Check_Sequence_Length
+    if ($sequence =~ /^a+$/) {
+	return('polya');
+    }
+    elsif ($sequence =~ /aaaaaaa$/ and $sequence_length < $wanted_sequence_length) {
+	return('polya');
+    }
+    elsif ($sequence_length > $wanted_sequence_length) {
+	open(OUT, ">$filename") or die("Could not open $filename $!");
+	## OPEN OUT in Check_Sequence_Length
+	print OUT "$output\n";
+	foreach my $char (0 .. $sequence_length) {
+	    print OUT $out[$char];
+	}
+	print OUT "\n";
+	close(OUT);
+	## CLOSE OUT in Check_Sequence_Length
+	return('longer than wanted');
+    }
+    elsif ($sequence_length == $wanted_sequence_length) {
+	return('equal');
+    }
+    elsif ($sequence_length < $wanted_sequence_length) {
+	return('shorter than wanted');
+    }
+    else {
+	return('unknown');
+    }
 }
 ## End Check_Sequence_length
