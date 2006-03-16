@@ -25,6 +25,7 @@ my $state = {
 	     accession => undef,
 	     species => undef,
 	     seqlength => undef,
+             sequence => undef,
 	     fasta_file => undef,
 	     genome_information => undef,
 	     rnamotif_information => undef,
@@ -98,11 +99,12 @@ sub Gather {
     my $seqlength;
     $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
     $state->{sequence} = $rnamotif_information->{$slipsite_start}{sequence};
-    if (!defined($state->{fasta_file} or $state->{fasta_file} eq '')) {
-	print "The fasta file for: $state->{accession} $slipsite_start does not exist.\n";
-	print "You may expect this script to die momentarily.\n";
+    if (!defined($state->{fasta_file} 
+                 or $state->{fasta_file} eq '' 
+                 or !-r $state->{fasta_file})) {
+      print "The fasta file for: $state->{accession} $slipsite_start does not exist.\n";
+      print "You may expect this script to die momentarily.\n";
     }
-
     my $check_seq = Check_Sequence_Length();
     print "The Sequence Length is: $check_seq\n";
     print "The sequence is: $state->{sequence}\n";
