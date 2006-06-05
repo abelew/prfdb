@@ -58,6 +58,10 @@ sub Go {
   my $start = $me->{start};
   my $seqlength = $me->{seqlength};
   print "Boot: infile: $inputfile accession: $accession start: $start seqlength: $seqlength\n";
+  if (!defined($seqlength) or $seqlength eq '' or $seqlength == 0) {
+    print "SEQLENGTH NOT DEFINED\n";
+    return(0);
+  }
   ## randomizer should be a reference to a function which takes as input
   ## the array reference of the sequence window of interest.  Thus allowing us to
   ## change which function randomizes the sequence
