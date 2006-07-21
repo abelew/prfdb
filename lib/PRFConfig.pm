@@ -85,7 +85,6 @@ $PRFConfig::config->{sql_accession} = 'varchar(40)';
 $PRFConfig::config->{sql_genename} = 'varchar(90)';
 $PRFConfig::config->{sql_comment} = 'text not null';
 $PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
-$PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
 $PRFConfig::config->{sql_index} = $PRFConfig::config->{sql_id};
 
 my $open = $appconfig->file('prfdb.conf');

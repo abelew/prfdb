@@ -49,7 +49,7 @@ if (defined($ARGV[0])) {
     exit();
   }
   elsif ($ARGV[0] eq '01') {
-    $db->Reset_Queue();  ## For anything which sets out = '1' and is not finished (done != '1'
+    $db->Reset_Queue();  ## For anything which sets checked_out = '1' and is not finished (done != '1'
   }
 }
 
@@ -105,6 +105,7 @@ sub Gather {
       print "The fasta file for: $state->{accession} $slipsite_start does not exist.\n";
       print "You may expect this script to die momentarily.\n";
     }
+    print "QUICKTEST: $rnamotif_information->{$slipsite_start}{sequence}\n";
     my $check_seq = Check_Sequence_Length();
     print "The Sequence Length is: $check_seq\n";
     print "The sequence is: $state->{sequence}\n";
@@ -205,20 +206,26 @@ sub Gather_Rnamotif {
 	next;
       }
       else {
-	$rnamotif_information->{$start}{filename} = $db->Motif_to_Fasta($rnamotif_information->{$start}{filedata});
+	  my $fasta_filename = $db->Motif_to_Fasta($rnamotif_information->{$start}{filedata});
+	  $rnamotif_information->{$start}{filename} = $fasta_filename;
+	  my ($file_info, $sequence_data) = split(/\n/, $rnamotif_information->{$start}{filedata});
+	  $rnamotif_information->{$start}{sequence} = $sequence_data;
+#	$rnamotif_information->{$start}{sequence} = $db->Get_Sequence_From_Fasta($rnamotif_information->{$start}{filename});
+	  print "TESTME: $rnamotif_information->{$start}{sequence}\n";
+	print "Filling: $rnamotif_information->{$start}{filename} with $rnamotif_information->{$start}{filedata}\n";
       }
       $state->{rnamotif_information} = $rnamotif_information;
     }
   }  ### End if rnamotif_information is defined
   else {
-    $state->{genome_information} = $db->Get_ORF($state->{accession});
-     my $return = $state->{genome_information};
-     my $sequence = $return->{sequence};
-     my $orf_start = $return->{orf_start};
-     my $orf_stop = $return->{orf_stop};
-    my $motifs = new RNAMotif_Search;
-    $state->{rnamotif_information} = $motifs->Search($sequence, $orf_start);
-    $db->Put_RNAmotif($state->{genome_id}, $state->{species}, $state->{accession}, $state->{rnamotif_information}, $state->{seqlength});
+      $state->{genome_information} = $db->Get_ORF($state->{accession});
+      my $return = $state->{genome_information};
+      my $sequence = $return->{sequence};
+      my $orf_start = $return->{orf_start};
+      my $orf_stop = $return->{orf_stop};
+      my $motifs = new RNAMotif_Search;
+      $state->{rnamotif_information} = $motifs->Search($sequence, $orf_start);
+      $db->Put_RNAmotif($state->{genome_id}, $state->{species}, $state->{accession}, $state->{rnamotif_information}, $state->{seqlength});
   }
 }
 ## End Gather_Rnamotif

@@ -38,7 +38,7 @@ sub new {
 sub MySelect {
     my $me = shift;
     my $statement = shift;
-    my $type = shift;  
+    my $type = shift;
     my $descriptor = shift;
     my $return = undef;
     if (!defined($statement)) {
@@ -60,8 +60,9 @@ sub MySelect {
     }
 
     ## If only $type is defined, do a selectrow_hashref
-    elsif (defined($type)) {
+    elsif (defined($type)) {  ## Usually defined as 'hash'
 	$return = $dbh->selectrow_hashref($statement);
+    print "TESTME: $return $statement\n";
 	$selecttype = 'selectrow_hashref';
     }
 
@@ -201,7 +202,7 @@ sub Error_Db {
 sub Get_Entire_Pubqueue {
   my $me = shift;
   my $return;
-  my $statement = qq(SELECT id FROM queue WHERE public='1' and  out='0');
+  my $statement = qq(SELECT id FROM queue WHERE public='1' and  checked_out='0');
   my $ids = $me->MySelect($statement);
   return($ids);
 }
@@ -211,7 +212,7 @@ sub Set_Pubqueue {
   my $id = shift;
   my $params = shift;
   my $statement;
-  $statement = qq(INSERT INTO queue (id, public, params, out, done) VALUES ('$id', '1', '', 0, 0));
+  $statement = qq(INSERT INTO queue (id, public, params, checked_out, done) VALUES ('$id', '1', '', 0, 0));
   $me->MyConnect($statement);
   my $sth = $dbh->prepare("$statement");
   $sth->execute or PRF_Error("Could not execute \"$statement\" in Set_Pubqueue");
@@ -220,7 +221,7 @@ sub Set_Pubqueue {
 sub Set_Privqueue {
   my $me = shift;
   my $id = shift;
-  my $statement = qq(INSERT INTO queue (id, genome_id, public, params, out, done) VALUES ('', '$id', '0', '', 0, 0));
+  my $statement = qq(INSERT INTO queue (id, genome_id, public, params, checked_out, done) VALUES ('', '$id', '0', '', 0, 0));
   $me->Execute($statement);
 }
 
@@ -248,7 +249,7 @@ sub Drop_Table {
 
 sub FillQueue {
   my $me = shift;
-  my $best_statement = "INSERT into queue (genome_id, public, params, out, done) SELECT id, 0, '', 0, 0 from genome";
+  my $best_statement = "INSERT into queue (genome_id, public, params, checked_out, done) SELECT id, 0, '', 0, 0 from genome";
   $me->MyConnect($best_statement);
   my $sth = $dbh->prepare($best_statement);
   $sth->execute;
@@ -256,7 +257,7 @@ sub FillQueue {
 
 sub Reset_Queue {
     my $me = shift;
-    my $statement = "UPDATE queue set out = '0' where done = '0' and out = '1'";
+    my $statement = "UPDATE queue set checked_out = '0' where done = '0' and checked_out = '1'";
     $me->MyConnect($statement);
     my $sth = $dbh->prepare($statement);
     $sth->execute;
@@ -271,9 +272,9 @@ sub Grab_Queue {
       $table = $config->{queue_table};
   }
   ## This id is the same id which uniquely identifies a sequence in the genome database
-#  my $single_id = qq(select id, genome_id from $table where public='$type' and out='0' ORDER BY rand() LIMIT 1);
+#  my $single_id = qq(select id, genome_id from $table where public='$type' and checked_out='0' ORDER BY rand() LIMIT 1);
 #  my $single_id = qq(select id, genome_id from $table where genome_id='207');
-  my $single_id = qq(select id, genome_id from $table where public='$type' and out='0' LIMIT 1);
+  my $single_id = qq(SELECT id, genome_id FROM $table WHERE public = '$type' AND checked_out = '0' LIMIT 1);
   my $ids = $me->MySelect($single_id, 'row');
   my $id = $ids->[0];
   my $genome_id = $ids->[1];
@@ -281,7 +282,7 @@ sub Grab_Queue {
       or !defined($genome_id) or $genome_id eq '') {
     return(undef);
   }
-  my $update = qq(UPDATE $table SET out='1', outtime=current_timestamp() WHERE id='$id' and public='$type');
+  my $update = qq(UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id='$id' and public='$type');
   $me->Execute($update);
   my $return = { queue_id => $id,
 		 genome_id => $genome_id,
@@ -296,7 +297,7 @@ sub Done_Queue {
   if (defined($config->{queue_table})) {
       $table = $config->{queue_table};
   }
-  my $update = qq(update $table set done='1', donetime=current_timestamp() where id='$id');
+  my $update = qq(update $table set done='1', done_time=current_timestamp() where id='$id');
   $me->Execute($update);
 }
 
@@ -657,6 +658,18 @@ sub Get_Sequence_from_id {
     }
 }
 
+sub Get_Sequence_From_Fasta {
+    my $filename = shift;
+    my $return = '';
+    open(IN, "<$filename") or print "Could not open $filename in Get_Sequence_From_Fasta $!\n";
+    while (my $line = <IN>) {
+	next if ($line =~ /^\>/);
+	$return .= $line;
+    }
+    close(IN);
+    return($return);
+}
+
 sub Get_MFE_ID {
     my $me = shift;
     my $genome_id = shift;
@@ -1012,10 +1025,10 @@ id $config->{sql_id},
 genome_id int,
 public bool,
 params blob,
-out bool,
-outtime timestamp default '',
+checked_out bool,
+checked_out_time timestamp default 0,
 done bool,
-donetime timestamp default '',
+done_time timestamp default 0,
 primary key (id))";
   $me->Execute($statement);
 }
@@ -1203,7 +1216,7 @@ sub Write_SQL {
     print SQL "$string";
 
     if (defined($genome_id)) {
-	my $second_statement = "UPDATE queue set done='0', out='0' where genome_id = '$genome_id';\n";
+	my $second_statement = "UPDATE queue set done='0', checked_out='0' where genome_id = '$genome_id';\n";
 	print SQL "$second_statement";
     }
     close(SQL);
