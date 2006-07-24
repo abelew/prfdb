@@ -87,8 +87,9 @@ sub Search {
         ## Print out the text of the fasta file to be used for searching and folding
         ## The start and end in full sequence takes into account
         ## Sequences which are cds
-        my $start_in_full_sequence = $start + $orf_start;
-        my $end_in_full_sequence = $end + $orf_start;
+        my $start_in_full_sequence = $start + $orf_start + 1;
+        my $end_in_full_sequence = $end + $orf_start + 1;
+	## These + 1's are required because thus far the start site has been incorrectly calculated.
         my $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
 $string
 ";
