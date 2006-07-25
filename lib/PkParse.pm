@@ -392,6 +392,115 @@ sub SETALTERNATIVEBRACKETS{
     $rightG = "}";
 }
 
+sub ReOrder_Stems {
+    my $strRef = shift;
+    my @arr = ();
+    if (ref($strREF) eq "ARRAY") {
+	@arr = @{$strREF};
+    }
+    else {
+	@arr = split(/\s+/, $strREF);
+    }
+    my @return_array  = @arr;
+    my @tmp_array = @arr;
+    my @shift_array = @arr;
+    my $replace_char = 'a';
+    while (my $char = shift(@shift_array)) {
+	   if ($char ne '.' and $char =~ /\d+/) {
+	       for my $shift_num (0 .. $#shift_array) {
+		   if ($shift_char eq $char) {
+		       $tmp_array[$shift_num] = $replace_char;
+		       $shift_array[$shift_num] = '.';
+		   }
+	       }
+	   }
+	   $replace_char++;
+       }
+    for my $c (0 .. $#tmp_array) {
+	if ($tmp_array[$c] eq 'a') {
+	    $return_array[$c] = '1';
+	}
+	elsif ($tmp_array[$c] eq 'b') {
+	    $return_array[$c] = '2';
+	}
+	elsif ($tmp_array[$c] eq 'c') {
+	    $return_array[$c] = '3';
+	}
+	elsif ($tmp_array[$c] eq 'd') {
+	    $return_array[$c] = '4';
+	}
+	elsif ($tmp_array[$c] eq 'e') {
+	    $return_array[$c] = '5';
+	}
+	elsif ($tmp_array[$c] eq 'f') {
+	    $return_array[$c] = '6';
+	}
+	elsif ($tmp_array[$c] eq 'g') {
+	    $return_array[$c] = '7';
+	}
+	elsif ($tmp_array[$c] eq 'h') {
+	    $return_array[$c] = '8';
+	}
+	elsif ($tmp_array[$c] eq 'i') {
+	    $return_array[$c] = '9';
+	}
+	elsif ($tmp_array[$c] eq 'j') {
+	    $return_array[$c] = '10';
+	}
+	elsif ($tmp_array[$c] eq 'k') {
+	    $return_array[$c] = '11';
+	}
+	elsif ($tmp_array[$c] eq 'l') {
+	    $return_array[$c] = '12';
+	}
+	elsif ($tmp_array[$c] eq 'm') {
+	    $return_array[$c] = '13';
+	}
+	elsif ($tmp_array[$c] eq 'n') {
+	    $return_array[$c] = '14';
+	}
+	elsif ($tmp_array[$c] eq 'o') {
+	    $return_array[$c] = '15';
+	}
+	elsif ($tmp_array[$c] eq 'p') {
+	    $return_array[$c] = '16';
+	}
+	elsif ($tmp_array[$c] eq 'q') {
+	    $return_array[$c] = '17';
+	}
+	elsif ($tmp_array[$c] eq 'r') {
+	    $return_array[$c] = '18';
+	}
+	elsif ($tmp_array[$c] eq 's') {
+	    $return_array[$c] = '19';
+	}
+	elsif ($tmp_array[$c] eq 't') {
+	    $return_array[$c] = '20';
+	}
+	elsif ($tmp_array[$c] eq 'u') {
+	    $return_array[$c] = '21';
+	}
+	elsif ($tmp_array[$c] eq 'v') {
+	    $return_array[$c] = '22';
+	}
+	elsif ($tmp_array[$c] eq 'w') {
+	    $return_array[$c] = '23';
+	}
+	elsif ($tmp_array[$c] eq 'x') {
+	    $return_array[$c] = '24';
+	}
+	elsif ($tmp_array[$c] eq 'y') {
+	    $return_array[$c] = '25';
+	}
+	elsif ($tmp_array[$c] eq 'z') {
+	    $return_array[$c] = '26';
+	}
+    }  ## For each element of the tmp array.
+    my $return = "@return_array";
+    return($return);
+  }
+}
+
 sub ReBarcoder{
   # Added by JLJ.
   my $strREF = shift;
@@ -401,7 +510,7 @@ sub ReBarcoder{
   }
   else {
     $str = $strREF;
-  }
+}
 
   my $x = "";
   my $max = 0;

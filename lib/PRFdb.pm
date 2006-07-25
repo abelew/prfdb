@@ -62,7 +62,7 @@ sub MySelect {
     ## If only $type is defined, do a selectrow_hashref
     elsif (defined($type)) {  ## Usually defined as 'hash'
 	$return = $dbh->selectrow_hashref($statement);
-    print "TESTME: $return $statement\n";
+#    print "TESTME: $return\n";
 	$selecttype = 'selectrow_hashref';
     }
 
@@ -962,6 +962,10 @@ id $config->{sql_id},
 accession $config->{sql_accession},
 species $config->{sql_species},
 genename $config->{sql_genename},
+locus text,
+ontology_function text,
+ontology_component text,
+ontology_process text,
 version int,
 comment $config->{sql_comment},
 mrna_seq longblob not null,
@@ -1161,7 +1165,7 @@ sub DBI_doSQL {
     my $data_error;
     my @resultSet = ();
     my @record = ();
-    
+
     unless( $sth = $dbh->prepare($statement) ){
 	$prep_error = $dbh->errstr;
 	print "SQL syntax error!\n\n$prep_error\n\n
