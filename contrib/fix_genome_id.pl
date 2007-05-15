@@ -4,10 +4,10 @@ use lib '../lib';
 
 use PRFdb;
 my $db = new PRFdb;
-my $select = qq(SELECT genome_id, accession from mfe where species='homo_sapiens');
+my $select = qq(SELECT genome_id, accession from mfe where species='homo_sapiens' ORDER BY genome_id);
 
 my $ids = $db->MySelect($select, 'hash', '1');
-foreach my $num (keys %{$ids}) {
+foreach my $num (sort keys %{$ids}) {
     my $test = qq(SELECT id from genome where accession='$ids->{$num}->{accession}');
     my $tmpid = $db->MySelect($test, 'hash');
     if ($tmpid->{id} != $ids->{$num}->{genome_id}) {

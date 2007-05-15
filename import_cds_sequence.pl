@@ -7,6 +7,10 @@ use PRFdb;
 my $config = $PRFConfig::config;
 my $db = new PRFdb;
 my @args = @ARGV;
+if (!$db->Tablep($PRFConfig::config->{queue_table})) {
+  $db->Create_Queue();
+}
+
 foreach my $arg (@args) {
   if (-r $arg) {
     Read_Accessions($arg);
@@ -16,7 +20,6 @@ foreach my $arg (@args) {
   }
 }
 
-    
 sub Read_Accession {
   my $accession_file = shift;
   open(AC, "<$accession_file");

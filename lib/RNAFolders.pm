@@ -21,6 +21,7 @@ sub new {
 
 sub Nupack {
   my $me = shift;
+  my $pseudo = shift;
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
@@ -34,8 +35,18 @@ sub Nupack {
       species => $me->{species},
       accession => $me->{accession},
   };
-  chdir($config->{tmpdir});
-  my $command = qq($config->{nupack} $inputfile 2>nupack.err);
+  chdir($config->{workdir});
+  my $command;
+  die("dataS_G.dna is missing.") unless(-r "dataS_G.dna");
+  die("dataS_G.rna is missing.") unless(-r "dataS_G.rna");
+  if (defined($pseudo) and $pseudo eq 'nopseudo') {
+    die("$config->{nupack_boot} is missing.") unless(-r $config->{nupack_boot});
+    $command = qq($config->{nupack_boot} $inputfile 2>nupack.err);
+  }
+  else {
+    die("$config->{nupack} is missing.") unless(-r $config->{nupack});
+    $command = qq($config->{nupack} $inputfile 2>nupack.err);
+  }
   my $nupack_pid = open(NU, "$command |") or PRF_Error("RNAFolders::Nupack, Could not run nupack: $!", $accession);
   ## OPEN NU in Nupack
   my $count = 0;
@@ -53,7 +64,8 @@ sub Nupack {
       }
       elsif ($count == 18) { ## Line 18 returns paren output
 #	  $return->{output} = $line;
-	  $return->{parens} = $line;
+        $return->{parens} = $line;
+#	  $return->{parens} = $line;
       }
       elsif ($count == 19) { ## Get the MFE here
 	  my $tmp = $line;
@@ -85,8 +97,10 @@ sub Nupack {
     chomp $line;
     $pairs++;
     my ($fiveprime, $threeprime) = split(/\s+/, $line);
-    $nupack_output[$threeprime] = $fiveprime;
-    $nupack_output[$fiveprime] = $threeprime;
+    my $five = $fiveprime - 1;
+    my $three = $threeprime - 1;
+    $nupack_output[$three] = $five;
+    $nupack_output[$five] = $three;
   }
   for my $c (0 .. $#nupack_output) {
       $nupack_output[$c] = '.' unless(defined $nupack_output[$c]);
@@ -113,6 +127,7 @@ sub Nupack {
   foreach my $char (@{$out}) {
       $parsed .= $char . ' ';
   }
+  $parsed = PkParse::ReOrder_Stems($parsed);
   $return->{parsed} = $parsed;
   $return->{barcode} = $barcode;
   chdir($config->{basedir});
@@ -122,10 +137,11 @@ sub Nupack {
 
 sub Nupack_NOPAIRS {
   my $me = shift;
+  my $pseudo = shift;
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
-  print "NUPACK: infile: $inputfile accession: $accession start: $start\n";
+  print "NUPACK_NOPAIRS: infile: $inputfile accession: $accession start: $start\n";
   my $slipsite = Get_Slipsite_From_Input($inputfile);
   my $return = {
       start => $start,
@@ -135,49 +151,66 @@ sub Nupack_NOPAIRS {
       species => $me->{species},
       accession => $me->{accession},
   };
-  chdir($config->{tmpdir});
-  my $command = qq($config->{nupack} $inputfile 2>nupack.err);
+  chdir($config->{workdir});
+  my $command;
+  die("dataS_G.dna is missing.") unless(-r "dataS_G.dna");
+  die("dataS_G.rna is missing.") unless(-r "dataS_G.rna");
+  if (defined($pseudo) and $pseudo eq 'nopseudo') {
+    die("$config->{nupack_boot} is missing.") unless(-r $config->{nupack_boot});
+    $command = qq($config->{nupack_boot} $inputfile 2>nupack.err);
+  }
+  else {
+    warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{nupack} =~ /nopairs/);
+    die("$config->{nupack} is missing.") unless(-r $config->{nupack});
+    $command = qq($config->{nupack} $inputfile 2>nupack.err);
+  }
+  print "Running: $command\n";
   my $nupack_pid = open(NU, "$command |") or PRF_Error("RNAFolders::Nupack_NOPAIRS, Could not run nupack: $!", $accession);
   ## OPEN NU in Nupack_NOPAIRS
   my $count = 0;
   my @nupack_output = ();
   my $pairs = 0;
   while (my $line = <NU>) {
-      $count++;
-      ## The first 15 lines of nupack output are worthless.
-      next unless($count > 14);
-      chomp $line;
-      if ($count == 15) {
-	  my ($crap, $len) = split(/\ \=\ /, $line);
-	  $return->{seqlength} = $len;
+    if ($line =~ /Error opening loop data file: dataS_G.rna/) {
+      PRF_Error("RNAFolders::Nupack_NOPAIRS, Missing dataS_G.rna!");
+    }
+    $count++;
+    ## The first 15 lines of nupack output are worthless.
+    next unless($count > 14);
+    chomp $line;
+    if ($count == 15) {
+      my ($crap, $len) = split(/\ \=\ /, $line);
+      $return->{seqlength} = $len;
+    }
+    elsif ($count == 17) { ## Line 17 returns the input sequence
+      $return->{sequence} = $line;
+    }
+    elsif ($line =~ /^\d+\s\d+$/) {
+      my ($fiveprime, $threeprime) = split(/\s+/, $line);
+      my $five = $fiveprime - 1;
+      my $three = $threeprime - 1;
+      $nupack_output[$three] = $five;
+      $nupack_output[$five] = $three;
+      $pairs++;
+      $count--;
+    }
+    elsif ($count == 18) { ## Line 18 returns paren output
+      $return->{parens} = $line;
+    }
+    elsif ($count == 19) { ## Get the MFE here
+      my $tmp = $line;
+      $tmp =~ s/^mfe\ \=\ //g;
+      $tmp =~ s/\ kcal\/mol//g;
+      $return->{mfe} = $tmp;
+    }
+    elsif ($count == 20) { ## Is it a pseudoknot?
+      if ($line eq 'pseudoknotted!') {
+        $return->{knotp} = 1;
       }
-      elsif ($count == 17) { ## Line 17 returns the input sequence
-	  $return->{sequence} = $line;
+      else {
+        $return->{knotp} = 0;
       }
-      elsif ($line =~ /^\d+\s\d+$/) {
-	  my ($fiveprime, $threeprime) = split(/\s+/, $line);
-	  $nupack_output[$threeprime] = $fiveprime;
-	  $nupack_output[$fiveprime] = $threeprime;
-          $pairs++;
-	  $count--;
-      }
-      elsif ($count == 18) { ## Line 18 returns paren output
-	  $return->{parens} = $line;
-      }
-      elsif ($count == 19) { ## Get the MFE here
-	  my $tmp = $line;
-	  $tmp =~ s/^mfe\ \=\ //g;
-	  $tmp =~ s/\ kcal\/mol//g;
-	  $return->{mfe} = $tmp;
-      }
-      elsif ($count == 20) { ## Is it a pseudoknot?
-	  if ($line eq 'pseudoknotted!') {
-	      $return->{knotp} = 1;
-	  }
-	  else {
-	      $return->{knotp} = 0;
-	  }
-      }
+    }
   }  ## End of the line reading the nupack output.
   close(NU);
   ## CLOSE NU in Nupack_NOPAIRS
@@ -208,6 +241,7 @@ sub Nupack_NOPAIRS {
   foreach my $char (@{$out}) {
     $parsed .= $char . ' ';
   }
+  $parsed = PkParse::ReOrder_Stems($parsed);
   $return->{parsed} = $parsed;
   $return->{barcode} = $barcode;
   chdir($config->{basedir});
@@ -217,6 +251,7 @@ sub Nupack_NOPAIRS {
 
 sub Pknots {
   my $me = shift;
+  my $pseudo = shift;
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start = $me->{start};
@@ -233,8 +268,15 @@ sub Pknots {
       sequence => $seq,
       seqlength => length($seq),
   };
-  chdir($config->{tmpdir});
-  my $command = qq($config->{pknots} -k $inputfile 2>pknots.err);
+  chdir($config->{workdir});
+  my $command;
+  die("pknots is missing.") unless(-r "$config->{pknots}");
+  if (defined($pseudo) and $pseudo eq 'nopseudo') {
+    $command = qq($config->{pknots} $inputfile 2>pknots.err);
+  }
+  else {
+    $command = qq($config->{pknots} -k $inputfile 2>pknots.err);
+  }
   open(PK, "$command |") or PRF_Error("RNAFolders::Pknots, Could not run pknots: $!", $accession);
   ## OPEN PK in Pknots
   my $counter = 0;
@@ -290,6 +332,7 @@ sub Pknots {
   foreach my $char (@{$out}) {
 	$parsed .= $char . ' ';
   }
+  $parsed = PkParse::ReOrder_Stems($parsed);
   $return->{parsed} = $parsed;
   $return->{barcode} = $barcode;
   $return->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
@@ -358,7 +401,8 @@ sub Pknots_Boot {
 	accession => $accession,
 	start => $start,
     };
-    chdir($config->{tmpdir});
+    chdir($config->{workdir});
+    die("pknots is missing.") unless(-r "$config->{pknots}");
     my $command = qq($config->{pknots} $inputfile 2>pknots_boot.err);
     open(PK, "$command |") or PRF_Error("RNAFolders::Pknots_Boot, Failed to run pknots: $!", $accession);
     ## OPEN PK in Pknots_Boot
@@ -409,7 +453,10 @@ sub Nupack_Boot {
 		accession => $accession,
 		start => $start,
 	       };
-  chdir($config->{tmpdir});
+  chdir($config->{workdir});
+  die("dataS_G.dna is missing.") unless(-r "dataS_G.dna");
+  die("dataS_G.rna is missing.") unless(-r "dataS_G.rna");
+  die("$config->{nupack_boot} is missing.") unless(-r $config->{nupack_boot});
   my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
   open(NU, "$command |") or PRF_Error("RNAFolders::Nupack_Boot, Failed to run nupack: $!", $accession);
   ## OPEN NU in Nupack_Boot
@@ -460,7 +507,11 @@ sub Nupack_Boot_NOPAIRS {
 	accession => $accession,
 	start => $start,
     };
-    chdir($config->{tmpdir});
+    chdir($config->{workdir});
+    die("dataS_G.dna is missing.") unless(-r "dataS_G.dna");
+    die("dataS_G.rna is missing.") unless(-r "dataS_G.rna");
+    die("$config->{nupack_boot} is missing.") unless(-r $config->{nupack_boot});
+    warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{nupack} =~ /nopairs/);
     my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
     my @nupack_output;
     open(NU, "$command |") or PRF_Error("RNAFolders::Nupack_Boot_NOPAIRS, Failed to run nupack: $!", $accession);

@@ -1,6 +1,6 @@
 prefix = "${HOME}/browser"
 basedir = $(prefix)                       ## The base directory of this crap
-tmpdir = "$(prefix)/work"                 ## Temporary directory, fasta files live there
+workdir = "$(prefix)/work"                 ## Temporary directory, fasta files live there
 bindir = "$(prefix)/work"
 max_struct_length = 99    ## The maximum structure size to be examined
 do_nupack = 1             ## Run nupack on sequences?
@@ -37,7 +37,7 @@ EVAL_PERL = 1           ## Template evaluate inline perl code
 ABSOLUTE = 1
 action = 'die'          ## Default action for multiple action script(s)
 #                      descriptor_template => "$prefix/descr/template.desc",  ## Rnamotif template descriptor file
-descriptor_file = "$(prefix)/descr/rnamotif_descriptor.desc"  ## Rnamotif descriptor output
+descriptor_file = "$(prefix)/descr/template.desc"  ## Rnamotif descriptor output
 slip_site_1 = '^n\{3\}$' ## Rnamotif first 3 bases of slippery site
 slip_site_2 = '^w\{3\}$' ## Rnamotif bases 4-6 of slippery site
 slip_site_3 = '^h\{3\}$' ## Rnamotif bases 7-9 of slippery site

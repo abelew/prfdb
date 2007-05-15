@@ -44,6 +44,7 @@ sub Alt_Orf {
   my $me = shift;
   my $start = shift;
   my $offset = shift; ## 5 will go +1, 6 will go -1
+  my $seq_help = new SeqMisc;
   my $sequence = $me->{sequence};
   if (!defined($sequence)) {
       my $error_string = "Alt_Orf: sequence is not defined!";
@@ -55,8 +56,22 @@ sub Alt_Orf {
                 orf => '',
                 length => 0,
                };
+  my $seq_count = 0;
+  my $codon = '';
   for my $char (($start + $offset) .. $#seq) {
+    $seq[$char] = 'U' if $seq[$char] eq 'T';
     $return->{orf} .= "$seq[$char]";
+    $seq_count++;
+    if (($seq_count % 3) == 0) {
+      $codon .= "$seq[$char]";
+      my $aa = $seq_help->{codons}->{$codon};
+      $codon = '';
+    $return->{mrnaseq} .= "$seq[$char]\{$aa\} ";
+  }
+    else {
+      $codon .= "$seq[$char]";
+      $return->{mrnaseq} .= "$seq[$char]";
+    }
   }
   if ($return->{orf} =~ /^A+$/) {
     return(undef);
