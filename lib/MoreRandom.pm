@@ -4,8 +4,10 @@ use PRFConfig;
 use File::Temp qw / tmpnam /;
 ## Every function here should take as input an array reference
 ## containing the sequence to be shuffled.
+
 my $config = $PRFConfig::config;
 ## Coin_Random
+##
 
 ## Expect $me to be the MoreRandom obj. It's a place holder for now.
 ## Expect two array references. First is array ref to sequence, 
@@ -45,8 +47,12 @@ sub ArrayShuffle{
 
 sub Squid {
   my $inarray = shift;
+  my $shuffle = shift;
+  my $shuffle_exe;
   my $inseq = '';
   foreach my $char (@{$inarray}) { $inseq = join('', $inseq, $char); }
+  if (defined($shuffle)) { $shuffle_exe = $shuffle; }
+  else { $shuffle_exe = 'shuffle'; }
   my $out_text;
   {  ## Begin a File::Temp Block
     my $fh = new File::Temp(DIR => $config->{workdir}, UNLINK => 0,);
@@ -55,7 +61,7 @@ sub Squid {
 $inseq
 ";
     my $infile = $fh->filename;
-    my $command = 'shuffle $infile';
+    my $command = "$shuffle_exe $infile";
     open(CMD, "$command |") or die("Could not execute shuffle. $!");
     ## OPEN CMD in Squid
     while (my $line = <CMD>) {
@@ -64,9 +70,8 @@ $inseq
       $out_text = join('', $out_text, $line);
     } ## End while
     close(CMD);
-    ## CLOSE CMD in Squid
     unlink($infile);
-  ## CLOSE $fh in Squid
+    ## CLOSE CMD in Squid
   }  ## End a File::Temp Block -- the tempfile should now no longer exist.
   my @out_array = split(//, $out_text);
   return(\@out_array);
@@ -74,8 +79,12 @@ $inseq
 
 sub Squid_Dinuc {
   my $inarray = shift;
+  my $shuffle = shift;
   my $inseq = '';
+  my $shuffle_exe;
   foreach my $char (@{$inarray}) { $inseq = join('', $inseq, $char); }
+  if (defined($shuffle)) { $shuffle_exe = $shuffle; }
+  else { $shuffle_exe = 'shuffle'; }
   my $out_text = '';
   {  ## Begin a File::Temp Block
     my $fh = new File::Temp(DIR => $config->{workdir}, UNLINK => 0,);
