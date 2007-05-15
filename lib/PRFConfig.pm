@@ -110,7 +110,6 @@ $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir};
 $ENV{BLASTDB} = qq($PRFConfig::config->{prefix}/blast);
 
 if ($PRFConfig::config->{arch_specific_exe} == 1) {
-
   ## If we have architecture specific executables, then
   ## They should live in directories named after their architecture
   my @modified_exes = ('rnamotif', 'rmprune', 'pknots', 'zcat');
@@ -190,7 +189,6 @@ if ($PRFConfig::config->{arch_specific_exe} == 1) {
     $PRFConfig::config->{nupack_boot} .= ".osx";
   }
 }  ## End checking if multiple architectures are in use
-
 $ENV{EFNDATA} = $PRFConfig::config->{workdir};
 $ENV{ENERGY_FILE} = qq($PRFConfig::config->{workdir}/dataS_G.rna);
 
