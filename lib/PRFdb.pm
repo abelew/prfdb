@@ -33,6 +33,7 @@ sub new {
   $me->Create_Landscape() unless($me->Tablep('landscape'));
 #  $me->Create_Analysis() unless($me->Tablep('analysis'));
   $me->Create_Errors() unless($me->Tablep('errors'));
+  $me->Create_NoSlipsite() unless($me->Tablep('noslipsite'));
   return ($me);
 }
 
@@ -111,6 +112,13 @@ sub Get_GenomeId_From_Accession {
   my $info = $me->MySelect(qq(SELECT id FROM genome WHERE accession = ?),
                            [$accession], 'row');
   return($info->[0]);
+}
+
+sub Get_GenomeId_From_QueueId {
+    my $me = shift;
+    my $queue_id = shift;
+    my $info = $me->MySelect(qq(SELECT genome_id FROM $config->{queue_table} WHERE id = ?), [$queue_id], 'row');
+    return($info->[0]);
 }
 
 sub Get_All_Sequences {
@@ -264,6 +272,8 @@ sub Set_Queue {
   $me->MyConnect($statement);
   my $sth = $dbh->prepare("$statement");
   $sth->execute($id) or PRF_Error("Could not execute \"$statement\" in Set_Queue");
+  my $last_id = $me->Get_Last_Id();
+  return($last_id);
 }
 
 sub Clean_Table {
@@ -436,79 +446,115 @@ sub Import_Fasta {
   my $file = shift;
   my $style = shift;
   my $startpos = shift;
+  my @return_array;
+  print "Starting Import_Fasta\n";
   open(IN, "<$file") or die "Could not open the input file. $!";
   my %datum = (accession => undef, genename => undef, version => undef, comment => undef, mrna_seq => undef);
+  my $linenum = 0;
   while (my $line = <IN>) {
-    chomp $line;
-    if ($line =~ /^\>/) {
-      if (defined($style)) {
-        if ($style eq 'sgd') {
-          if (defined($datum{accession})) {
-            if (defined($startpos)) {
-              $me->Import_CDS($datum{accession}, $startpos);
-            }
-            else {
-              $me->Import_CDS($datum{accession});
-            }
-            %datum = (accession => undef, genename => undef, version => undef, comment => undef, mrna_seq => undef);
-          } ## End if you are currently on a > line and the accession is defined -- thus you are on the first line.
-          my ($fake_accession, $comment) = split(/\,/, $line);
-          my ($accession, $genename) = split(/ /, $fake_accession);
-          $accession =~ s/^\>//g;
-          $datum{accession} = $accession;
-          $datum{genename} = $genename;
-          $datum{comment} = $comment;
-        } ## End if the style is sgd
-        elsif ($style eq 'mgc') {
-          if (defined($datum{accession})) {
-            if (defined($startpos)) {
-              $me->Import_CDS($datum{accession}, $startpos);
-            }
-            else {
-              $me->Import_CDS($datum{accession});
-            }
-            %datum = (accession => undef, genename => undef, version => undef, comment => undef, mrna_seq => undef);
-            my ($gi_trash, $gi_id, $gb_trash, $accession_version, $comment) = split(/\|/, $line);
-            my ($accession, $version);
-            if ($accession_version =~ m/\./) {
-              ($accession, $version) = split(/\./, $accession_version);
-            }
-            else {
-              $accession = $accession_version;
-              $version = '0';
-            }
-            $datum{accession} = $accession;
-            $datum{version} = $version;
-            $datum{comment} = $comment;
-            my ($space_trash, $genus, $species) = split(/ /, $comment);
-            $datum{species} = $genus . '_' . $species;
-            my ($genename, $clone, $type) = split(/\,/, $comment);
-            $datum{genename} = $genename;
-          }
-        } ## Endif the style is mgc
-        else {
-          print "No style.\n";
-        }
-      } ## End if the style is defined.
+      $linenum++;
+      chomp $line;
+      if ($line =~ /^\>/) {
+
+	  ## Do the actual insertion here, regardless of style
+	  if ($linenum > 1) {
+	      $datum{orf_start} = 1;
+	      $datum{orf_stop} = length($datum{mrna_seq});
+	      my $genome_id = $me->Insert_Genome_Entry(\%datum);
+	      my $queue_id = $me->Set_Queue($genome_id, \%datum);
+	      print "Added $queue_id\n";
+	      push(@return_array, $queue_id);
+	  }
+
+	  if (defined($style)) {
+	      if ($style eq 'sgd') {
+		  %datum = (accession => undef, 
+			    genename => undef,
+			    version => undef,
+			    comment => undef,
+			    mrna_seq => undef);
+		  my ($fake_accession, $comment) = split(/\,/, $line);
+		  my ($accession, $genename) = split(/ /, $fake_accession);
+		  $accession =~ s/^\>//g;
+		  $datum{accession} = $accession;
+		  $datum{genename} = $genename;
+		  $datum{comment} = $comment;
+		  $datum{genename} = $genename;
+		  $datum{protein_seq} = '';
+		  $datum{direction} = 'forward';
+		  $datum{defline} = $line;
+	      } ## End if the style is sgd
+
+	      elsif ($style eq 'mgc') {
+		  %datum = (accession => undef,
+			    genename => undef,
+			    version => undef,
+			    comment => undef,
+			    mrna_seq => undef
+		      );
+		  my ($gi_trash, $gi_id, $gb_trash, $accession_version, $comment) =
+		      split(/\|/, $line);
+		  my ($accession, $version);
+		  if ($accession_version =~ m/\./) {
+		      ($accession, $version) = split(/\./, $accession_version);
+		  }
+		  else {
+		      $accession = $accession_version;
+		      $version = '0';
+		  }
+		  $datum{accession} = $accession;
+		  $datum{version} = $version;
+		  $datum{comment} = $comment;
+		  my ($space_trash, $genus, $species) = split(/ /, $comment);
+		  $datum{species} = $genus . '_' . $species;
+		  my ($genename, $clone, $type) = split(/\,/, $comment);
+		  $datum{genename} = $genename;
+		  $datum{protein_seq} = '';
+		  $datum{direction} = 'forward';
+		  $datum{defline} = $line;
+	      }
+	      else {
+		  print "No style.\n";
+	      }
+	  } ## End if the style is defined.
+	  else {
+	      print "Style is not defined.\n";
+	  }
+
+      }  ## End if you are on a > line
+
       else {
-        print "Style is not defined.\n";
-      }
-    }  ## End if you are on a > line
-    else {
-      $line =~ s/\s//g;
-      $line =~ s/\d//g;
-      $datum{mrna_seq} .= $line;
-      ## The line after every Import_CDS had better clear datum{mrna_seq} or the sequence
-      ## will grow with every new sequence.
-    } ## Not an accession line
+	  $line =~ s/\s//g;
+	  $line =~ s/\d//g;
+	  $datum{mrna_seq} .= $line;
+	  ## The line after every Import_CDS had better clear datum{mrna_seq} or the sequence
+	  ## will grow with every new sequence.
+      } ## Not an accession line
   } ## End looking at every line.
   close(IN);
-  if (defined($startpos)) {
-    $me->Import_CDS($datum{accession}, $startpos);
-  }
-  else {
-    $me->Import_CDS($datum{accession});
-  }
+
+  $datum{orf_start} = 0;
+  $datum{orf_stop} = length($datum{mrna_seq});
+  my $genome_id = $me->Insert_Genome_Entry(\%datum);
+  my $queue_id = $me->Set_Queue($genome_id, \%datum);
+  print "Added $queue_id\n";
+  push(@return_array, $queue_id);
+  print "Last test: @return_array\n";
+  return(\@return_array);
+}
+
+sub Import_RawSeq {
+    my $me = shift;
+    my $datum = shift;
+    my $startpos = shift;
+    my $accession = $datum->{accession};
+    my $comment = $datum->{comment};
+    my $species = $datum->{species};
+    my $genename = $datum->{genename};
+    my $mrna_seq = $datum->{mrna_seq};
+    my $orf_start = (defined($startpos) ? $startpos : 0);
+    my $orf_stop = length($mrna_seq);
+    
 }
 
 sub Import_CDS {
@@ -525,7 +571,7 @@ sub Import_CDS {
   $full_species =~ tr/[A-Z]/[a-z]/;
   $config->{species} = $full_species;
   my $full_comment = $seq->desc();
-  print "TESTME: $full_comment\n";
+#  print "TESTME: $full_comment\n";
 #  my $gi = $seq->gi();
   my $defline = "lcl||gb|$accession|species|$full_comment\n";
   my ($genename, $desc) = split(/\,/, $full_comment);
@@ -577,6 +623,7 @@ sub Import_CDS {
     if (defined($startpos)) {
       $orf_start = $startpos;
     }
+    my $mrna_seqlength = length($tmp_mrna_sequence);
     my %datum = (
                  ### FIXME
                  accession => $accession,
@@ -592,7 +639,13 @@ sub Import_CDS {
                  defline => $defline,
                 );
     my $genome_id = $me->Insert_Genome_Entry(\%datum);
-    $me->Set_Queue($genome_id, \%datum);
+    if (defined($genome_id)) {
+	print "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
+       $me->Set_Queue($genome_id, \%datum);
+    }
+    else {
+	print "Did not insert anything into the genome table.\n";
+    }
   }
 }
 #363-581
@@ -762,6 +815,7 @@ sub Get_mRNA {
 sub Get_ORF {
   my $me = shift;
   my $accession = shift;
+  print "TESTME Get_ORF accession: $accession\n";
   my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?);
   my $info = $me->MySelect($statement,[$accession], 'hash');
   my $mrna_seq = $info->{mrna_seq};
@@ -808,6 +862,14 @@ sub Get_Slippery_From_RNAMotif {
 sub Insert_Genome_Entry {
   my $me = shift;
   my $datum = shift;
+  ## Check to see if the accession is already there
+  my $check = qq(SELECT id FROM genome where accession=?);
+  my $info = $me->MySelect($check,[$datum->{accession}]);
+  my $already_id = $info->[0]->[0];
+  if (defined($already_id)) {
+      print "The accession $datum->{accession} is already in the database with id: $already_id\n";
+      return(undef);
+  }
   my $statement = qq(INSERT INTO genome
 (accession, species, genename, version, comment, mrna_seq, protein_seq, orf_start, orf_stop, direction)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?));
@@ -819,6 +881,18 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?));
     ##calls to this don't end up with
     ## Increasingly long sequences
   foreach my $k (keys %{$datum}) { $datum->{$k} = undef; }
+  my $last_id = $me->Get_Last_Id();
+  return($last_id);
+}
+
+sub Insert_Noslipsite {
+    my $me = shift;
+    my $accession = shift;
+    my $statement = "INSERT INTO noslipsite
+(accession)
+VALUES($accession)";
+  my ($cp, $cf, $cl) = caller();
+  $me->Execute($statement,[$cp,$cf,$cl]);
   my $last_id = $me->Get_Last_Id();
   return($last_id);
 }
@@ -1068,6 +1142,10 @@ sub Execute {
           }  ## End checking for success in the 5 try while loop
         }    ## End the 5 try while loop
       }      ## End the if checking for a lost connection
+      elsif ($dbh->errstr =~ /(?:called with)/i) {
+	  $errorstr = "Error at: line $caller->[2] of $caller->[0]: Could not execute: $statement\n";
+	  print $errorstr;
+      }
       elsif ($dbh->errstr =~ /(?:You have an error)/i) {
 	  $errorstr = "Error at: line $caller->[2] of $caller->[0]: Could not execute: $statement\n";
 	  print $errorstr;
@@ -1166,6 +1244,18 @@ PRIMARY KEY (id))/;
   my ($cp, $cf, $cl) = caller();
   $me->Execute($statement,[],[$cp,$cf,$cl]);
 }
+
+sub Create_NoSlipsite {
+    my $me = shift;
+    my $statement = qq/CREATE table noslipsite (
+id $config->{sql_id},
+accession $config->{sql_accession},
+lastupdate $config->{sql_timestamp},
+PRIMARY KEY (id))/;
+    my ($cp, $cf, $cl) = caller();
+    $me->Execute($statement, [], [$cp,$cf,$cl]);
+}
+
 
 sub Create_Evaluate {
   my $me = shift;
