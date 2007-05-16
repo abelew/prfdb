@@ -8,6 +8,7 @@ use lib "$ENV{HOME}/usr/lib/perl5";
 use lib 'lib';
 use PRFConfig;
 use PRFdb;
+use RNAMotif_Search;
 use RNAFolders;
 use Bootlace;
 use Overlap;
