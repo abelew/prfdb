@@ -11,7 +11,8 @@ use PkParse;
 my $db_host = 'prfdb.no-ip.org';
 my $db_user = 'trey';
 my $db_pass = 'Iactilm2';
-my $db = 'prfdb05';
+#my $db = 'prfdb05';
+my $db = 'prfdb_test';
 
 #############################
 # set up the db's and such
@@ -37,8 +38,8 @@ my $parser = new PkParse();
 #$sth = $dbh->prepare("select id,output,parsed from mfe where barcode is null and id > '197865'") or die $dbh->errstr;
 #$sth = $dbh->prepare("select id,output,parsed from mfe where barcode is null and id > '198525'") or die $dbh->errstr;
 #$sth = $dbh->prepare("select id,output,parsed from mfe where barcode is null and id > '202900'") or die $dbh->errstr;
-#$sth = $dbh->prepare("SELECT id,output,parsed FROM mfe ORDER BY id") or die $dbh->errstr;
-$sth = $dbh->prepare("SELECT id,output,parsed FROM mfe WHERE id > '203926' ORDER BY id") or die $dbh->errstr;
+$sth = $dbh->prepare("SELECT id,output,parsed FROM mfe ORDER BY id") or die $dbh->errstr;
+#$sth = $dbh->prepare("SELECT id,output,parsed FROM mfe WHERE id > '203926' ORDER BY id") or die $dbh->errstr;
 $sth->execute;
 
 while (my ($id,$pko, $parsed) = $sth->fetchrow_array ) {
@@ -59,34 +60,34 @@ while (my ($id,$pko, $parsed) = $sth->fetchrow_array ) {
   $pko =~ s/\s+/ /g;
   my @noob = split(/ /,$pko);
   my $structure = $parser->Unzip(\@noob);
-  my $new_struc = PkParse3::ReBarcoder($structure);
-  my $condensed = PkParse3::Condense($new_struc);
-  my $brackets = PkParse3::MAKEBRACKETS(\@noob);
+  my $new_struc = PkParse::ReBarcoder($structure);
+  my $condensed = PkParse::Condense($new_struc);
+  my $brackets = PkParse::MAKEBRACKETS(\@noob);
   my @parens = split(//, $brackets);
   #print "$pknot\n";
   foreach my $char (@noob) {
     $char = sprintf("%3s", $char);
-    print "$char";
+#    print "$char";
   }
-  print "\n\n";
+#  print "\n\n";
   my $parsed_string = '';
   #    print "@noob\n";   print "@{$structure}\n";
   foreach my $char (@{$new_struc}) {
     $parsed_string .= "$char ";
     $char = sprintf("%3s", $char);
-    print "$char";
+#    print "$char";
   }
-  print "\n\n";
+#  print "\n\n";
   foreach my $char (@parens) {
     $char = sprintf("%3s", $char);
-    print "$char";
+#    print "$char";
   }
-  print "\n\n";
+#  print "\n\n";
 #    print "@{$new_struc}\n";
-  print "$condensed\n";
+#  print "$condensed\n";
   my $update_string = qq(UPDATE mfe SET barcode = '$condensed', parsed = '$parsed_string', parens = '$brackets' WHERE id = '$id';);
   print "$update_string\n";
-  print "--------------------------------------------------------------------------------\n";
+#  print "--------------------------------------------------------------------------------\n";
 #    print "ID: $id\n";
 
 #    my $update = "update mfe set barcode = \"$condensed\", parsed = \"@{$new_struc}\" where id = \"$id\"";
