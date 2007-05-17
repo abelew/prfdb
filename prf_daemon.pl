@@ -21,7 +21,7 @@ my %conf = ();
 GetOptions(
            'nodaemon:i' => \$conf{nodaemon}, ## If this gets set, then the prf_daemon will exit before it gets to the queue
            'help|version' => \$conf{help}, ## Print some help information
-           'accession|i:s' => \$conf{input_seq}, ## An accession to specifically fold.  If it is not already in the db
+           'accession|i:s' => \$conf{accession}, ## An accession to specifically fold.  If it is not already in the db
            ## Import it and then fold it.
            'blast:s' => \$conf{blast},
            'makeblast' => \$conf{makeblast},  ## Create a local blast database from the genome
@@ -68,7 +68,9 @@ GetOptions(
            'stem2_spacer_max:i' => \$conf{stem2_spacer_max},
           );
 foreach my $opt (keys %conf) {
-  $config->{$opt} = $conf{$opt} if (defined($conf{$opt}));
+    if (defined($conf{$opt})) {
+	$config->{$opt} = $conf{$opt};
+    }
 }
 
 my $state = {
@@ -100,10 +102,12 @@ Check_Tables();
 if (defined($config->{help})) {
   Print_Help();
 }
+
 if (defined($config->{makeblast})) {
   Make_Blast();
   exit(0);
 }
+
 if (defined($config->{blast})) {
   my $blast = new PRF_Blast;
   $blast->Search($config->{blast}, 'local');
@@ -111,15 +115,19 @@ if (defined($config->{blast})) {
   $blast->Search($config->{blast}, 'remote');
   exit(0);
 }
+
 if (defined($config->{fillqueue})) {
   $db->FillQueue();
 }
+
 if (defined($config->{resetqueue})) {
   $db->Reset_Queue();
 }
+
 if (defined($config->{copyfrom})) {
   $db->Copy_Genome($config->{copyfrom});
 }
+
 if (defined($config->{input_file})) {
   if (defined($config->{startpos})) {
     Read_Accessions($config->{input_file}, $config->{startpos});
@@ -128,12 +136,14 @@ if (defined($config->{input_file})) {
     Read_Accessions($config->{input_file});
   }
 }
+
 if (defined($config->{accession}) or defined($config->{import_accession})) {
-  my $accession = defined($config->{accession}) ? $config->{accession} : $config->{import_accession};
-  print "Importing Accession: $accession\n";
-  $db->Import_CDS($accession);
-  $state->{queue_id} = 0; ## Dumb hack lives on
-  $state->{accession} = $accession;
+    my $accession = defined($config->{accession}) ?
+	$config->{accession} : $config->{import_accession};
+    print "Importing Accession: $accession\n";
+    $db->Import_CDS($accession);
+    $state->{queue_id} = 0; ## Dumb hack lives on
+    $state->{accession} = $accession;
   $state->{genome_id} = $db->Get_GenomeId_From_Accession($accession);
   if (defined($config->{startpos})) {
     Gather($state, $config->{startpos});
@@ -146,14 +156,25 @@ if (defined($config->{accession}) or defined($config->{import_accession})) {
   }
   ## Once the prf_daemon finishes this accession it will start reading the queue...
 }
+
 if (defined($config->{input_fasta})) {
-  if (defined($config->{startpos})) {
-    $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style}, $config->{startpos});
+    my $queue_ids;
+    if (defined($config->{startpos})) {
+	$queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style}, $config->{startpos});
+    }
+    else {
+	$queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style});
   }
-  else {
-    $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style});
-  }
+
+    foreach my $queue_id (@{$queue_ids}) {
+	$state->{genome_id} = $db->Get_GenomeId_From_QueueId($queue_id);
+	$state->{queue_id} = $queue_id;
+	print "Performing gather for genome_id $state->{genome_id}";
+	Gather($state);
+    }
+    exit(0);
 }
+
 #  else {
 #    $state->{queue_id} = 0;  ## A dumb hack.  Why did I do this hack?  I think it
 #    ## has to do with the import and searching of individual viral genomes
@@ -219,11 +240,14 @@ sub Gather {
   $state->{genome_information} = $db->Get_ORF($state->{accession});
   my $sequence = $state->{genome_information}->{sequence};
   my $orf_start = $state->{genome_information}->{orf_start};
-  my $motifs = new RNAMotif_Search;
+  my $motifs = new RNAMotif_Search(config => $config);
   my $rnamotif_information = $motifs->Search(
                                                    $state->{genome_information}->{sequence},
                                                    $state->{genome_information}->{orf_start});
   $state->{rnamotif_information} = $rnamotif_information;
+  if (!defined($state->{rnamotif_information})) {
+      $db->Insert_NoSlipsite($state->{accession});
+  }
   return(0) unless(defined($state->{rnamotif_information})); ## If rnamotif_information is null
   ## Now I should have 1 or more start sites
   STARTSITE: foreach my $slipsite_start (keys %{$rnamotif_information}) {
@@ -461,7 +485,7 @@ sub Check_Nupack {
     my $nupack_folds = $db->Get_Num_RNAfolds('nupack', $state->{genome_id}, $slipsite_start);
     if ($nupack_folds > 0) {
       print "$state->{genome_id} has $nupack_folds > 0 nupack_folds\n";
-      my $seqlen = $config->{max_struct_length} + 1;
+      my $seqlen = $config->{seqlength};
       print "TEST seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
       $state->{nupack_mfe_id} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start, $seqlen, 'nupack');
       $nupack_mfe_id = $state->{nupack_mfe_id};
@@ -492,7 +516,7 @@ sub Check_Pknots {
     my $pknots_folds = $db->Get_Num_RNAfolds('pknots', $state->{genome_id}, $slipsite_start);
     if ($pknots_folds > 0) {### If there ARE existing folds...
       print "$state->{genome_id} has $pknots_folds > 0 pknots_folds\n";
-      my $seqlen = $config->{max_struct_length} + 1;
+      my $seqlen = $config->{seqlength};
       print "TEST seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
       $state->{pknots_mfe_id} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start, $seqlen, 'pknots');
       $pknots_mfe_id = $state->{pknots_mfe_id};
@@ -522,7 +546,7 @@ sub Check_Sequence_Length {
     my $sequence = $state->{sequence};
     my @seqarray = split(//, $sequence);
     my $sequence_length = $#seqarray;
-    my $wanted_sequence_length = $config->{max_struct_length};
+    my $wanted_sequence_length = $config->{seqlength};
     open(IN, "<$filename") or die ("Check_Sequence_Length: Couldn't open $filename $!");
     ## OPEN IN in Check_Sequence_Length
     my $output = '';
