@@ -53,7 +53,9 @@ sub MySelect {
     }
     my $dbh = $me->MyConnect($statement);
     my $selecttype;
-    my $sth = $dbh->prepare_cached($statement);
+    my $attr = {};
+    my $if_active = 1;
+    my $sth = $dbh->prepare_cached($statement, $attr, $if_active);
     my $rv = $sth->execute(@{$vars});
     ## If $type AND $descriptor are defined, do selectall_hashref
     if (defined($type) and defined($descriptor)) {
@@ -450,7 +452,6 @@ sub Done_Queue {
     $table .= '_landscape';
   }
   my $update = qq(UPDATE $table SET done='1', done_time=current_timestamp() WHERE genome_id=?);
-  print "TESTME: $update genome_id: $id\n";
   my ($cp, $cf, $cl) = caller();
   $me->Execute($update,[$id], [$cp, $cf, $cl]);
 }
@@ -583,8 +584,6 @@ sub Import_CDS {
   $full_species =~ tr/[A-Z]/[a-z]/;
   $config->{species} = $full_species;
   my $full_comment = $seq->desc();
-#  print "TESTME: $full_comment\n";
-#  my $gi = $seq->gi();
   my $defline = "lcl||gb|$accession|species|$full_comment\n";
   my ($genename, $desc) = split(/\,/, $full_comment);
   my $mrna_sequence = $seq->seq();
@@ -595,9 +594,6 @@ sub Import_CDS {
     $counter++;
     my $primary_tag = $feature->primary_tag();
     $protein_sequence =  $feature->seq->translate->seq();
-#    foreach my $z (sort keys %{$feature}) {
-#      print "TESTME: $z $feature->{$z}\n";
-#    }
     $orf_start = $feature->start();
     $orf_stop = $feature->end();
 #    print "START: $orf_start STOP: $orf_stop $feature->{_location}{_strand}\n";
@@ -1028,7 +1024,6 @@ VALUES
 (SELECT stddev(mfe) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
 (SELECT avg(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
 (SELECT stddev(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'))/;
-          print "TESTME: $statement\n";
           my ($cp, $cf, $cl) = caller();
           $me->Execute($statement, [], [$cp,$cf,$cl]);
         }
@@ -1195,7 +1190,9 @@ sub Execute {
     my $errorstr;
     my $retry_count = 0;
     my $success = 0;
-    my $sth = $dbh->prepare_cached($statement) or
+    my $attr = {};
+    my $if_active = 1;
+    my $sth = $dbh->prepare_cached($statement, $attr, $if_active) or
 	$errorstr = "Error at: line $caller->[2] of $caller->[0]: Could not prepare: $statement " . $dbh->errstr , Write_SQL($statement, $genome_id),  PRF_Error($errorstr);
     my $rc = $sth->execute(@{$vars});
     if (!$rc) {
@@ -1204,7 +1201,7 @@ sub Execute {
           $retry_count++;
           sleep 120;
           $me->MyConnect($statement);
-          $sth = $dbh->prepare_cached($statement);
+          $sth = $dbh->prepare_cached($statement, $attr, $if_active);
           $rc = $sth->execute(@{$vars});
           if ($rc) {
             $success = 1;
