@@ -22,7 +22,7 @@ sub new {
       user => $config->{user},
   }, $class;
 
-  $dbh = DBI->connect($me->{dsn}, $config->{user}, $config->{pass});
+#  $dbh = DBI->connect_cached($me->{dsn}, $config->{user}, $config->{pass});
   $dbh->{mysql_auto_reconnect} = 1;
   $dbh->{InactiveDestroy} = 1;
   my $answer = $me->Tablep('genome');
@@ -53,9 +53,7 @@ sub MySelect {
     }
     my $dbh = $me->MyConnect($statement);
     my $selecttype;
-    my $attr = {};
-    my $if_active = 1;
-    my $sth = $dbh->prepare_cached($statement, $attr, $if_active);
+    my $sth = $dbh->prepare($statement);
     my $rv = $sth->execute(@{$vars});
     ## If $type AND $descriptor are defined, do selectall_hashref
     if (defined($type) and defined($descriptor)) {
@@ -88,6 +86,7 @@ sub MySelect {
 	    $errorstring .= $DBI::errstr;
 	}
     }
+    
     return($return);
 }
 
@@ -830,7 +829,7 @@ sub Get_ORF {
   my $start = $info->{orf_start} - 1;
   my $stop = $info->{orf_stop} - 1;
   my $offset = $stop - $start;
-#  my $sequence = substr($mrna_seq, $start, $offset);  ## If I remove the substring
+  #  my $sequence = substr($mrna_seq, $start, $offset);  ## If I remove the substring
   ## Then it should return from the start codon to the end of the mRNA which is good
   ## For searching over viral sequence!
   my $sequence = substr($mrna_seq, $start);
@@ -1190,9 +1189,7 @@ sub Execute {
     my $errorstr;
     my $retry_count = 0;
     my $success = 0;
-    my $attr = {};
-    my $if_active = 1;
-    my $sth = $dbh->prepare_cached($statement, $attr, $if_active) or
+    my $sth = $dbh->prepare($statement) or
 	$errorstr = "Error at: line $caller->[2] of $caller->[0]: Could not prepare: $statement " . $dbh->errstr , Write_SQL($statement, $genome_id),  PRF_Error($errorstr);
     my $rc = $sth->execute(@{$vars});
     if (!$rc) {
@@ -1201,7 +1198,7 @@ sub Execute {
           $retry_count++;
           sleep 120;
           $me->MyConnect($statement);
-          $sth = $dbh->prepare_cached($statement, $attr, $if_active);
+          $sth = $dbh->prepare($statement);
           $rc = $sth->execute(@{$vars});
           if ($rc) {
             $success = 1;

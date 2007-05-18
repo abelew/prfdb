@@ -3,6 +3,7 @@ use strict;
 use lib '.';
 use PRFdb;
 use Template;
+use PRFConfig qw / PRF_Error PRF_Out /;
 my $config;
 my %slippery_sites = (
 					  aaaaaaa => 'A AAA AAA',
@@ -35,6 +36,9 @@ sub new {
   my ($class, %arg) = @_;
   if (defined($arg{config})) {
       $config = $arg{config};
+  }
+  else {
+      $config = $PRFConfig::config;
   }
   my $me = bless {}, $class;
   $me->{seqlength} = $config->{seqlength};
