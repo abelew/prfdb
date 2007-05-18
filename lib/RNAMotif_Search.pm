@@ -53,7 +53,6 @@ sub Search {
   my %return = ();
   my @information = split(//, $sequence);
   my $end_trim = 70;
-#  for my $c (0 .. ($#information - $end_trim)) {  ## Recurse over every nucleotide
   for my $c (0 .. $#information) {  ## Recurse over every nucleotide
     if ((($c + 1) % 3) == 0) {  ## Check for correct reading frame
       my $next_seven = "$information[$c] " . $information[$c + 1] . $information[$c + 2] . "$information[$c + 3] " . $information[$c + 4] . $information[$c + 5] . $information[$c + 6] if (defined($information[$c + 6]));
@@ -98,7 +97,7 @@ $string
         close($fh);
 	## CLOSE $fh in Search
         ### End of the fasta file.
-        my $command = "$config->{rnamotif} -context -descr $config->{descriptor_file} $filename 2>rnamotif.err | $config->{rmprune}";
+        my $command = qq($config->{rnamotif} -context -descr $config->{descriptor_file} $filename 2>rnamotif.err | $config->{rmprune});
         open(RNAMOT, "$command |") or PRF_Error("RNAMotif_Search:: Search, Unable to run rnamotif: $!", 'rnamotif', '');
 	## OPEN RNAMOT in Search
         my $permissable = 0;

@@ -193,6 +193,10 @@ $ENV{EFNDATA} = $PRFConfig::config->{workdir};
 $ENV{ENERGY_FILE} = qq($PRFConfig::config->{workdir}/dataS_G.rna);
 
 
+$ENV{EFNDATA} = $PRFConfig::config->{workdir};
+$ENV{ENERGY_FILE} = qq($PRFConfig::config->{workdir}/dataS_G.rna);
+
+
 sub PRF_Out {
   my $message = shift;
   open(OUTFH, ">>$out") or die "Unable to open the log file $out: $!\n";

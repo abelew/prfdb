@@ -4,10 +4,8 @@ use PRFConfig;
 use File::Temp qw / tmpnam /;
 ## Every function here should take as input an array reference
 ## containing the sequence to be shuffled.
-
 my $config = $PRFConfig::config;
 ## Coin_Random
-##
 
 ## Expect $me to be the MoreRandom obj. It's a place holder for now.
 ## Expect two array references. First is array ref to sequence, 
@@ -48,8 +46,8 @@ sub ArrayShuffle{
 sub Squid {
   my $inarray = shift;
   my $shuffle = shift;
-  my $shuffle_exe;
   my $inseq = '';
+  my $shuffle_exe;
   foreach my $char (@{$inarray}) { $inseq = join('', $inseq, $char); }
   if (defined($shuffle)) { $shuffle_exe = $shuffle; }
   else { $shuffle_exe = 'shuffle'; }

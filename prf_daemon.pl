@@ -484,15 +484,15 @@ sub Check_Nupack {
     my $nupack_mfe_id;
     my $nupack_folds = $db->Get_Num_RNAfolds('nupack', $state->{genome_id}, $slipsite_start);
     if ($nupack_folds > 0) {
-      print "$state->{genome_id} has $nupack_folds > 0 nupack_folds\n";
-      my $seqlen = $config->{seqlength};
+      print "$state->{genome_id} has $nupack_folds > 0 nupack_folds at position $slipsite_start\n";
+      my $seqlen = $config->{seqlength} + 1;
       print "TEST seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
       $state->{nupack_mfe_id} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start, $seqlen, 'nupack');
       $nupack_mfe_id = $state->{nupack_mfe_id};
       print "Check_nupack - already done: state: $state->{nupack_mfe_id} var: $nupack_mfe_id\n";
     }
     else { ### If there are no existing folds...
-      print "$state->{genome_id} has only $nupack_folds <= nupack_folds\n";
+      print "$state->{genome_id} has only $nupack_folds <= nupack_folds at position $slipsite_start\n";
       my $nupack_info;
       if ($config->{nupack_nopairs_hack}) {
         $nupack_info = $fold_search->Nupack_NOPAIRS();
@@ -515,15 +515,15 @@ sub Check_Pknots {
     my $pknots_mfe_id;
     my $pknots_folds = $db->Get_Num_RNAfolds('pknots', $state->{genome_id}, $slipsite_start);
     if ($pknots_folds > 0) {### If there ARE existing folds...
-      print "$state->{genome_id} has $pknots_folds > 0 pknots_folds\n";
-      my $seqlen = $config->{seqlength};
+      print "$state->{genome_id} has $pknots_folds > 0 pknots_folds at position $slipsite_start\n";
+      my $seqlen = $config->{seqlength} + 1;
       print "TEST seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
       $state->{pknots_mfe_id} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start, $seqlen, 'pknots');
       $pknots_mfe_id = $state->{pknots_mfe_id};
       print "Check_pknots - already done: state: $state->{pknots_mfe_id}\n";
     }
     else { ### If there are NO existing folds...
-      print "$state->{genome_id} has only $pknots_folds <= 0 pknots_folds\n";
+      print "$state->{genome_id} has only $pknots_folds <= 0 pknots_folds at position $slipsite_start\n";
       my $pknots_info = $fold_search->Pknots();
       $pknots_mfe_id = $db->Put_Pknots($pknots_info);
       $state->{pknots_mfe_id} = $pknots_mfe_id;

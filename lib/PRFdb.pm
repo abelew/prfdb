@@ -81,8 +81,10 @@ sub MySelect {
 
     if (!defined($return) or $return eq 'null') {
 	Write_SQL($statement);
-	my $errorstring = "DBH: <$dbh> $selecttype return is undefined in MySelect: $statement, " . $DBI::errstr;
-	die($errorstring);
+	my $errorstring = "DBH: <$dbh> $selecttype return is undefined in MySelect: $statement, ";
+	if (defined($DBI::errstr)) {
+	    $errorstring .= $DBI::errstr;
+	}
     }
     return($return);
 }
@@ -313,7 +315,7 @@ sub FillQueue {
 sub Copy_Genome {
   my $me = shift;
   my $old_db = shift;
-  my $new_db = $PRFConfig::config->{db};
+  my $new_db = $config->{db};
   my $statement = qq/INSERT INTO ${new_db}.genome
 (accession,species,genename,locus,ontology_function,ontology_component,ontology_process,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction,omim_id)
 SELECT accession,species,genename,locus,ontology_function,ontology_component,ontology_process,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction,omim_id from ${old_db}.genome/;
@@ -404,7 +406,17 @@ sub Grab_Queue {
   my $genome_id = $ids->[1];
   if (!defined($id) or $id eq ''
       or !defined($genome_id) or $genome_id eq '') {
-    return(undef);
+      ## This should mean there are no more entries to fold in the queue
+      ## Lets check this for truth -- first see if any are not done
+      my $done_id = qq(SELECT id, genome_id FROM $table WHERE done = '0' LIMIT 1);
+      my $ids = $me->MySelect($done_id, [], 'row');
+      $id = $ids->[0];
+      $genome_id = $ids->[1];
+      if (!defined($id) or $id eq '' or
+	  !defined($genome_id) or $genome_id eq '') {
+	  print "There are no more entries in the queue to test.\n";
+	  return(undef);
+      }
   }
   my $update = qq(UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?);
   my ($cp, $cf, $cl) = caller();
@@ -433,10 +445,12 @@ sub Done_Queue {
   if (defined($config->{queue_table})) {
       $table = $config->{queue_table};
   }
+
   if (defined($landscapep)) {
     $table .= '_landscape';
   }
-  my $update = qq(UPDATE $table SET done='1', done_time=current_timestamp() WHERE id=?);
+  my $update = qq(UPDATE $table SET done='1', done_time=current_timestamp() WHERE genome_id=?);
+  print "TESTME: $update genome_id: $id\n";
   my ($cp, $cf, $cl) = caller();
   $me->Execute($update,[$id], [$cp, $cf, $cl]);
 }
@@ -532,7 +546,6 @@ sub Import_Fasta {
       } ## Not an accession line
   } ## End looking at every line.
   close(IN);
-
   $datum{orf_start} = 0;
   $datum{orf_stop} = length($datum{mrna_seq});
   my $genome_id = $me->Insert_Genome_Entry(\%datum);
@@ -553,8 +566,7 @@ sub Import_RawSeq {
     my $genename = $datum->{genename};
     my $mrna_seq = $datum->{mrna_seq};
     my $orf_start = (defined($startpos) ? $startpos : 0);
-    my $orf_stop = length($mrna_seq);
-    
+    my $orf_stop = length($mrna_seq);    
 }
 
 sub Import_CDS {
@@ -776,7 +788,7 @@ sub Get_Num_RNAfolds {
   my $table = shift;
   $table = 'mfe' unless (defined($table));
   my $return = {};
-  my $sequence_length = $PRFConfig::config->{seqlength};
+  my $sequence_length = $config->{seqlength} + 1;
   my $statement = qq(SELECT count(id) FROM $table WHERE genome_id = ? AND algorithm = ? AND start = ? AND seqlength = ?);
   my $info = $me->MySelect($statement,[$genome_id,$algo,$slipsite_start,$sequence_length]);
   my $count = $info->[0]->[0];
@@ -791,7 +803,7 @@ sub Get_Num_Bootfolds {
   my $genome_id = shift;
   my $start = shift;
   my $return = {};
-  my $sequence_length = $PRFConfig::config->{max_struct_length} + 1;
+  my $sequence_length = $config->{seqlength} + 1;
   my $statement = qq(SELECT count(id) FROM boot WHERE genome_id = ? and start = ? and seqlength = ?);
   my $info = $me->MySelect($statement,[$genome_id,$start,$sequence_length]);
   my $count = $info->[0]->[0];
@@ -815,7 +827,6 @@ sub Get_mRNA {
 sub Get_ORF {
   my $me = shift;
   my $accession = shift;
-  print "TESTME Get_ORF accession: $accession\n";
   my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?);
   my $info = $me->MySelect($statement,[$accession], 'hash');
   my $mrna_seq = $info->{mrna_seq};
@@ -1087,6 +1098,64 @@ sub Put_Overlap {
     return($id);
 }  ## End of Put_Overlap
 
+sub Write_SQL {
+    my $statement = shift;
+    my $genome_id = shift;
+    open(SQL, ">>failed_sql_statements.txt");
+    ## OPEN SQL in Write_SQL
+    my $string = "$statement" . ";\n";
+    print SQL "$string";
+
+    if (defined($genome_id)) {
+	my $second_statement = "UPDATE queue set done='0', checked_out='0' where genome_id = '$genome_id';\n";
+	print SQL "$second_statement";
+    }
+    close(SQL);
+    ## CLOSE SQL in Write_SQL
+}
+
+sub Get_Last_Id {
+    my $me = shift;
+    my $statement = 'select last_insert_id()';
+    my $id = $me->MySelect($statement);
+    return($id->[0]->[0]);
+}
+
+sub Check_Genome_Table {
+  my $me = shift;
+  my $species = shift;
+  my $table = 'genome_' . $species;
+  my $statement = "SHOW TABLES like '$table'";  
+  my $info = $me->MySelect($statement,[]);
+  if (scalar(@{$info}) == 0) {
+    return(0);
+  }
+  else {
+    return(1);
+  }
+}
+
+sub Check_Insertion {
+    my $list = shift;
+    my $data = shift;
+    my $errorstring = undef;
+    foreach my $column (@{$list}) {
+	$errorstring .= "$column " unless(defined($data->{$column}));
+    }
+    return($errorstring);
+}
+
+sub Check_Defined {
+    my $args = shift;
+    my $return = '';
+    foreach my $k (keys %{$args}) {
+	if (!defined($args->{$k})) {
+		$return .= "$k,";
+	}
+    }
+    return($return);
+}
+
 sub Tablep {
     my $me = shift;
     my $table = shift;
@@ -1157,64 +1226,6 @@ sub Execute {
       die("Could not connect after 5 tries.");
     }
     return($rc);
-}
-
-sub Write_SQL {
-    my $statement = shift;
-    my $genome_id = shift;
-    open(SQL, ">>failed_sql_statements.txt");
-    ## OPEN SQL in Write_SQL
-    my $string = "$statement" . ";\n";
-    print SQL "$string";
-
-    if (defined($genome_id)) {
-	my $second_statement = "UPDATE queue set done='0', checked_out='0' where genome_id = '$genome_id';\n";
-	print SQL "$second_statement";
-    }
-    close(SQL);
-    ## CLOSE SQL in Write_SQL
-}
-
-sub Get_Last_Id {
-    my $me = shift;
-    my $statement = 'select last_insert_id()';
-    my $id = $me->MySelect($statement);
-    return($id->[0]->[0]);
-}
-
-sub Check_Genome_Table {
-  my $me = shift;
-  my $species = shift;
-  my $table = 'genome_' . $species;
-  my $statement = "SHOW TABLES like '$table'";  
-  my $info = $me->MySelect($statement,[]);
-  if (scalar(@{$info}) == 0) {
-    return(0);
-  }
-  else {
-    return(1);
-  }
-}
-
-sub Check_Insertion {
-    my $list = shift;
-    my $data = shift;
-    my $errorstring = undef;
-    foreach my $column (@{$list}) {
-	$errorstring .= "$column " unless(defined($data->{$column}));
-    }
-    return($errorstring);
-}
-
-sub Check_Defined {
-    my $args = shift;
-    my $return = '';
-    foreach my $k (keys %{$args}) {
-	if (!defined($args->{$k})) {
-		$return .= "$k,";
-	}
-    }
-    return($return);
 }
 
 sub Create_Genome {
