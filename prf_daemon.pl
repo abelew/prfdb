@@ -486,7 +486,7 @@ sub Check_Nupack {
     if ($nupack_folds > 0) {
       print "$state->{genome_id} has $nupack_folds > 0 nupack_folds at position $slipsite_start\n";
       my $seqlen = $config->{seqlength} + 1;
-#      print "TEST seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
+#      print "seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
       $state->{nupack_mfe_id} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start, $seqlen, 'nupack');
       $nupack_mfe_id = $state->{nupack_mfe_id};
       print "Check_nupack - already done: state: $state->{nupack_mfe_id} var: $nupack_mfe_id\n";
@@ -517,7 +517,7 @@ sub Check_Pknots {
     if ($pknots_folds > 0) {### If there ARE existing folds...
       print "$state->{genome_id} has $pknots_folds > 0 pknots_folds at position $slipsite_start\n";
       my $seqlen = $config->{seqlength} + 1;
-#      print "TEST seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
+#      print "seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
       $state->{pknots_mfe_id} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start, $seqlen, 'pknots');
       $pknots_mfe_id = $state->{pknots_mfe_id};
       print "Check_pknots - already done: state: $state->{pknots_mfe_id}\n";
