@@ -411,8 +411,32 @@ AND ${queue_table}.done = '0' AND ${queue_table}.genome_id = ${genome_table}.id 
 sub Grab_Queue {
   my $me = shift;
   my $landscapep = shift;
+  if ($config->{check_webqueue} == 1) {
+    ### Then first see if anything is in the webqueue
+    my $webqueue = $me->Get_Queue($landscapep,'webqueue');
+    if (defined($webqueue)) {
+      return($webqueue);
+    }
+    else {
+      my $queue = $me->Get_Queue($landscapep);
+      return($queue);
+    }
+  }
+  else {
+    my $queue = $me->Get_Queue($landscapep);
+    return($queue);
+  }
+}
+
+sub Get_Queue {
+  my $me = shift;
+  my $landscapep = shift;
+  my $webqueue = shift;
   my $table = 'queue';
-  if (defined($config->{queue_table})) {
+  if (defined($webqueue)) {
+    $table = 'webqueue';
+  }
+  elsif (defined($config->{queue_table})) {
     $table = $config->{queue_table};
   }
   if (defined($landscapep)) {
