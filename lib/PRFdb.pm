@@ -67,6 +67,31 @@ sub MySelect {
       $selecttype = 'selectrow_arrayref';
     }
 
+    ## A flat select is one in which the returned elements are returned as a single flat arrayref
+    ## If you ask for multiple columns, then it will return a 2d array ref with the first d being the cols
+    elsif (defined($type) and $type eq 'flat') {
+      my $selecttype = 'flat';
+      my @ret = ();
+      my $data = $sth->fetchall_arrayref();
+      if (scalar(@{$data->[0]}) == 1) {
+        foreach my $c (0 .. $#$data) {
+          push(@ret, $data->[$c]->[0]);
+        }
+      }
+      else {
+        foreach my $c (0 .. $#$data) {
+          my @elems = @{$data->[$c]};
+          foreach my $d (0 .. $#elems) {
+            $ret[$d][$c] = $data->[$c]->[$d];
+          }
+        }
+      }
+      $return = \@ret;
+      else {
+	$return = $sth->fetchrow_arrayref();
+	$selecttype = 'selectrow_arrayref';
+      }
+
     ## If only $type is defined, do a selectrow_hashref
     elsif (defined($type)) {  ## Usually defined as 'hash'
       $return = $sth->fetchrow_hashref();
@@ -86,7 +111,6 @@ sub MySelect {
 	    $errorstring .= $DBI::errstr;
 	}
     }
-    
     return($return);
 }
 
@@ -1092,6 +1116,16 @@ sub Put_Overlap {
     return($id);
 }  ## End of Put_Overlap
 
+sub Fill_Globals {
+  my $me = shift;
+  ## First fill out the means mfe for every sequence in the db
+#  my $statement = qq(SELECT average(SELECT mfe FROM mfe
+}
+
+#################################################
+### Functions used to create the prfdb tables
+#################################################
+
 sub Write_SQL {
     my $statement = shift;
     my $genome_id = shift;
@@ -1275,6 +1309,17 @@ min_mfe float,
 PRIMARY KEY (id)));
   my ($cp, $cf, $cl) = caller();
   $me->Execute($statement,[],[$cp,$cf,$cl]);
+}
+
+sub Create_Globals {
+  my $me = shift;
+  my $statement = "CREATE TABLE globals (
+id $config->{sql_id},
+seqlength text,
+species text,
+mean_mfe float,
+primary key(id))";
+  $me->Execute($statement);
 }
 
 sub Create_Stats {
