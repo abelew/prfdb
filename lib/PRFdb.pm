@@ -73,6 +73,9 @@ sub MySelect {
       my $selecttype = 'flat';
       my @ret = ();
       my $data = $sth->fetchall_arrayref();
+      if (!defined($data->[0])) {
+	return(undef);
+      }
       if (scalar(@{$data->[0]}) == 1) {
         foreach my $c (0 .. $#$data) {
           push(@ret, $data->[$c]->[0]);
