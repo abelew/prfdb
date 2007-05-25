@@ -26,6 +26,7 @@ my $appconfig = AppConfig->new({
 ## Set up some reasonable defaults here
 ####
 $PRFConfig::config->{queue_table} = 'queue';
+$PRFConfig::config->{check_webqueue} = 1;
 $PRFConfig::config->{genome_table} = 'genome';
 $PRFConfig::config->{seqlength} = 100;
 $PRFConfig::config->{do_nupack} = 1;
