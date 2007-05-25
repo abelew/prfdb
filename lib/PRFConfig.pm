@@ -44,7 +44,6 @@ $PRFConfig::config->{pass} = 'prfconfigdefault_pass';
 $PRFConfig::config->{INCLUDE_PATH} = 'html/';
 $PRFConfig::config->{INTERPOLATE} = 1;
 $PRFConfig::config->{POST_CHOMP} = 1;
-$PRFConfig::config->{PRE_PROCESS} = 'header';
 $PRFConfig::config->{EVAL_PERL} = 0;
 $PRFConfig::config->{ABSOLUTE} = 1;
 $PRFConfig::config->{slip_site_1} = '^n\{3\}$';
