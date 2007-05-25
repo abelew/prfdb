@@ -32,6 +32,7 @@ $PRFConfig::config->{do_nupack} = 1;
 $PRFConfig::config->{do_pknots} = 1;
 $PRFConfig::config->{do_boot} = 1;
 $PRFConfig::config->{workdir} = 'work';
+$PRFConfig::config->{workdir} = 'blast';
 $PRFConfig::config->{nupack_nopairs_hack} = 0;
 $PRFConfig::config->{arch_specific_exe} = 0;
 $PRFConfig::config->{boot_iterations} = 100;
