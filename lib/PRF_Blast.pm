@@ -1,6 +1,8 @@
 package PRF_Blast;
 use strict;
 use Bio::Seq;
+use Bio::SeqIO;
+use Bio::SearchIO::blast;
 use Bio::Tools::Run::StandAloneBlast;
 use Bio::Tools::Run::RemoteBlast;
 
@@ -24,23 +26,23 @@ sub Search {
   my $location = shift;
   my $return = {};
   my $factory;
-  my $blast_output;
+  my $blast_output = new Bio::SearchIO(-format => 'blast');
   my $result;
   my $seq = new Bio::Seq(
                          -display_id => 'query',
                          -seq => $sequence);
-
   if ($location eq 'local') {
-    print "LOCAL\n";
     my @params = (
                 program => 'blastn',
-                database => 'prfdb',
+#                database => 'prfdb',
                 I => 't',  ## -I tells blast to output the GI identifier, which is the id in the genome db
               );
     ## The param array just takes the first letter of the key and passes its value as the argument eg.
     ## -p blastn -d prfdb -I t
     $factory = new Bio::Tools::Run::StandAloneBlast(@params);
-    $blast_output = $factory->blastall($seq);  ## A Bio::SeqIO
+    ### New versions of Bio::Tools::Run::StandAloneBlast return Bio::SearchIO::blast objects
+
+    $blast_output = $factory->blastall($seq);  ## A Bio::SearchIO
     $result = $blast_output->next_result;
   }
   else {
@@ -99,66 +101,90 @@ sub Search {
   $return->{available_statistics} = $result->available_statistics();
   $return->{available_parameters} = $result->available_parameters();
   $return->{num_hits} = $result->num_hits();
-  print "Summary:
-algo  $return->{algorithm}
-version  $return->{algorithm_version}
-name  $return->{query_name}
-len  $return->{query_length}
-name  $return->{database_name}
-numletters  $return->{database_numletters}
-stats  $return->{available_statistics}
-params  $return->{available_parameters}
-num_hits  $return->{num_hits}
-";
+#  print "Summary:<br>
+#algo  $return->{algorithm}<br>
+#version  $return->{algorithm_version}<br>
+#name  $return->{query_name}<br>
+#len  $return->{query_length}<br>
+#name  $return->{database_name}<br>
+#numletters  $return->{database_numletters}<br>
+#stats  $return->{available_statistics}<br>
+#params  $return->{available_parameters}<br>
+#num_hits  $return->{num_hits}<br>
+#";
 
   ## Results for each hit here
   while( my $hit = $result->next_hit()) {
-    $count++;
-    $return->{$count}->{hit_name} = $hit->name();
-    $return->{$count}->{length} = $hit->length();
-    $return->{$count}->{accession} = $hit->accession();
-    $return->{$count}->{description} = $hit->description();
-    $return->{$count}->{algorithm} = $hit->algorithm();
+    $return->{hits}->[$count]->{hit_name} = $hit->name();
+    $return->{hits}->[$count]->{length} = $hit->length();
+    $return->{hits}->[$count]->{accession} = $hit->accession();
+    $return->{hits}->[$count]->{description} = $hit->description();
+    $return->{hits}->[$count]->{algorithm} = $hit->algorithm();
 #    $return->{$count}->{raw_score} = $hit->raw_score();
-    $return->{$count}->{score} = $hit->score();
-    $return->{$count}->{significance} = $hit->significance();
-    $return->{$count}->{bits} = $hit->bits();
-    $return->{$count}->{hsps_array} = $hit->hsps();
+    $return->{hits}->[$count]->{score} = $hit->score();
+    $return->{hits}->[$count]->{significance} = $hit->significance();
+    $return->{hits}->[$count]->{bits} = $hit->bits();
+    $return->{hits}->[$count]->{hsps_array} = $hit->hsps();
 #  $return->{$count}->{locus} = $hit->locus();
-    $return->{$count}->{rank} = $hit->rank();
-    print "  Name: $return->{$count}->{hit_name}
-   Description: $return->{$count}->{description}
-   Score: $return->{$count}->{score}
-   Length: $return->{$count}->{length}\n";
+    $return->{hits}->[$count]->{rank} = $hit->rank();
+#    print "  Name: $return->{$count}->{hit_name}<br>
+#   Description: $return->{$count}->{description}<br>
+#   Score: $return->{$count}->{score}<br>
+#   Length: $return->{$count}->{length}<br>\n";
 
     ## Results for each HSP here
     my $hsp_count = 0;
     while (my $hsp = $hit->next_hsp()) {
-      $hsp_count++;
-      foreach my $k (sort keys %{$hsp}) {
-        $return->{$count}->{hsps}->{$hsp_count}->{algorithm} = $hsp->algorithm() if (defined($hsp->algorithm()));
-        $return->{$count}->{hsps}->{$hsp_count}->{evalue} = $hsp->evalue() if (defined($hsp->evalue()));
-        $return->{$count}->{hsps}->{$hsp_count}->{expect} = $hsp->expect() if (defined($hsp->expect()));
-        $return->{$count}->{hsps}->{$hsp_count}->{frac_identical} = $hsp->frac_identical() if (defined($hsp->frac_identical()));
-        $return->{$count}->{hsps}->{$hsp_count}->{frac_conserved} = $hsp->frac_conserved() if (defined($hsp->frac_conserved()));
-        $return->{$count}->{hsps}->{$hsp_count}->{gaps} = $hsp->gaps() if (defined($hsp->gaps()));
-        $return->{$count}->{hsps}->{$hsp_count}->{query_string} = $hsp->query_string() if (defined($hsp->query_string()));
-        $return->{$count}->{hsps}->{$hsp_count}->{hit_string} = $hsp->hit_string() if (defined($hsp->hit_string()));
-        $return->{$count}->{hsps}->{$hsp_count}->{length_total} = $hsp->length('total') if (defined($hsp->length('total')));
-        $return->{$count}->{hsps}->{$hsp_count}->{length_hit} = $hsp->length('hit') if (defined($hsp->length('hit')));
-        $return->{$count}->{hsps}->{$hsp_count}->{length_query} = $hsp->length('query') if (defined($hsp->length('query')));
-        $return->{$count}->{hsps}->{$hsp_count}->{length_total} = $hsp->length('total') if (defined($hsp->length('total')));
-        $return->{$count}->{hsps}->{$hsp_count}->{hsp_length} = $hsp->hsp_length() if (defined($hsp->hsp_length()));
-        $return->{$count}->{hsps}->{$hsp_count}->{num_conserved} = $hsp->num_conserved() if (defined($hsp->num_conserved()));
-        $return->{$count}->{hsps}->{$hsp_count}->{num_identical} = $hsp->num_identical() if (defined($hsp->num_identical()));
-        $return->{$count}->{hsps}->{$hsp_count}->{rank} = $hsp->rank() if (defined($hsp->rank()));
+	$return->{hits}->[$count]->{hsps}->[$hsp_count]->{algorithm} =
+	    $hsp->algorithm() if (defined($hsp->algorithm()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{evalue} =
+	    $hsp->evalue() if (defined($hsp->evalue()));
+#	print "TEST: $return->{hits}->[$count]->{hsps}->[$hsp_count]->{evalue}<br>\n";
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{expect} =
+	    $hsp->expect() if (defined($hsp->expect()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{frac_identical} =
+	    $hsp->frac_identical() if (defined($hsp->frac_identical()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{frac_conserved} = 
+	    $hsp->frac_conserved() if (defined($hsp->frac_conserved()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{gaps} =
+	    $hsp->gaps() if (defined($hsp->gaps()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{query_string} =
+	    $hsp->query_string() if (defined($hsp->query_string()));
+
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{homology_string} =
+	    $hsp->homology_string() if (defined($hsp->homology_string()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{hit_string} =
+	    $hsp->hit_string() if (defined($hsp->hit_string()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{length_total} =
+	    $hsp->length('total') if (defined($hsp->length('total')));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{length_hit} =
+	    $hsp->length('hit') if (defined($hsp->length('hit')));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{length_query} =
+	    $hsp->length('query') if (defined($hsp->length('query')));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{length_total} =
+	    $hsp->length('total') if (defined($hsp->length('total')));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{hsp_length} =
+	    $hsp->hsp_length() if (defined($hsp->hsp_length()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{num_conserved} =
+	    $hsp->num_conserved() if (defined($hsp->num_conserved()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{num_identical} =
+	    $hsp->num_identical() if (defined($hsp->num_identical()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{rank} =
+	    $hsp->rank() if (defined($hsp->rank()));
 #        $return->{$count}->{hsps}->{$hsp_count}->{seq_query_identical} = $hsp->seq_inds('query','identical') if (defined($hsp->seq_inds('query','identical')));
-        $return->{$count}->{hsps}->{$hsp_count}->{score} = $hsp->score() if (defined($hsp->score()));
-        $return->{$count}->{hsps}->{$hsp_count}->{bits} = $hsp->bits() if (defined($hsp->bits()));
-        $return->{$count}->{hsps}->{$hsp_count}->{range_query} = $hsp->range('query') if (defined($hsp->range('query')));
-        $return->{$count}->{hsps}->{$hsp_count}->{range_hit} = $hsp->range('hit') if (defined($hsp->range('hit')));
-        $return->{$count}->{hsps}->{$hsp_count}->{range_query} = $hsp->range('query') if (defined($hsp->range('query')));
-        $return->{$count}->{hsps}->{$hsp_count}->{percent_identity} = $hsp->percent_identity() if (defined($hsp->percent_identity()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{score} =
+	    $hsp->score() if (defined($hsp->score()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{bits} =
+	    $hsp->bits() if (defined($hsp->bits()));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{range_query} =
+	    $hsp->range('query') if (defined($hsp->range('query')));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{range_hit} = 
+	    $hsp->range('hit') if (defined($hsp->range('hit')));
+#        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{range_query} =
+#	    $hsp->range('query') if (defined($hsp->range('query')));
+        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{percent_identity} =
+	    $hsp->percent_identity() if (defined($hsp->percent_identity()));
+	$hsp_count++;
 #        $return->{$count}->{hsps}->{$hsp_count}->{start_query} = $hsp->start('query') if (defined($hsp->start('query')));
 #        $return->{$count}->{hsps}->{$hsp_count}->{start_hit} = $hsp->start('hit') if (defined($hsp->start('hit')));
 #        $return->{$count}->{hsps}->{$hsp_count}->{end_query} = $hsp->end('query') if (defined($hsp->end('query')));
@@ -171,10 +197,9 @@ num_hits  $return->{num_hits}
 #          $return->{$count}->{hsps}->{$hsp_count}->{$k} = $hsp->{$k};
 #          print "KEY: $k VALUE: $hsp->{$k}\n";
 #        }
-
 #        print "TESTME: $hit->{_hsplength}\n";
-      } ## Foreach key in hsp
     }  ## Foreach hsp
+    $count++;
   }  ## Foreach hit
   return($return);
 }
