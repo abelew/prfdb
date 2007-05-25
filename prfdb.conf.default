@@ -2,6 +2,7 @@ prefix = "${HOME}/browser"
 basedir = $(prefix)                       ## The base directory of this crap
 workdir = "$(prefix)/work"                 ## Temporary directory, fasta files live there
 bindir = "$(prefix)/work"
+check_webqueue = 1
 blastdb = "$(prefix)/blast"
 max_struct_length = 99    ## The maximum structure size to be examined
 do_nupack = 1             ## Run nupack on sequences?
