@@ -80,17 +80,14 @@ sub MySelect {
       }
       else {
         foreach my $c (0 .. $#$data) {
-          my @elems = @{$data->[$c]};
+	  my @elems = @{$data->[$c]};
           foreach my $d (0 .. $#elems) {
             $ret[$d][$c] = $data->[$c]->[$d];
           }
         }
       }
       $return = \@ret;
-      else {
-	$return = $sth->fetchrow_arrayref();
-	$selecttype = 'selectrow_arrayref';
-      }
+    } ## Endif flat
 
     ## If only $type is defined, do a selectrow_hashref
     elsif (defined($type)) {  ## Usually defined as 'hash'
