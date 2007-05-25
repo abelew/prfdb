@@ -33,7 +33,7 @@ sub new {
 
 # PPCC is Probability Plot Correlation Coefficient; basically, how good does the randomized data fit a normal distribution?
 # see Jacobs & Dinman, NAR 2004 or Filliben 1974 for more info.
-sub GET_PPCC{
+sub Get_PPCC{
     my $me = shift;
 
     #probably should put some error checking here.. but... wtf!
@@ -64,7 +64,7 @@ sub GET_PPCC{
 	return $corr->query;
 }
 
-sub GET_CHART_URL{
+sub Get_Chart_URL{
     my $me = shift;
     
     #not yet implemented

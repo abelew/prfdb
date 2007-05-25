@@ -597,6 +597,7 @@ sub Import_CDS {
   my $me = shift;
   my $accession = shift;
   my $startpos = shift;
+  my $return = '';
   my $uni = new Bio::DB::Universal;
   my $seq = $uni->get_Seq_by_id($accession);
   my @cds = grep { $_->primary_tag eq 'CDS' } $seq->get_SeqFeatures();
@@ -671,13 +672,15 @@ sub Import_CDS {
                 );
     my $genome_id = $me->Insert_Genome_Entry(\%datum);
     if (defined($genome_id)) {
-	print "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
+      $return .= "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
        $me->Set_Queue($genome_id, \%datum);
     }
     else {
-	print "Did not insert anything into the genome table.\n";
+      $return .= "Did not insert anything into the genome table.\n";
     }
+    print $return;
   }
+  return($return);
 }
 #363-581
 #ctagacgt ggaaaacgag cggcggtaga aacgtaggaa taggtgtacc gtcgtaccct
