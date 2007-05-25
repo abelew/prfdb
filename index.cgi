@@ -25,12 +25,13 @@ my $basedir = $base;
 $ENV{BLASTDB} = $config->{blastdb};
 $basedir =~ s/\/index.cgi.*//g;
 my $vars = {
-    base => $base,
-    basedir => $basedir,
-    searchform => "$base/searchform",
-    filterform => "$base/start_filter",
-    submit => $cgi->submit,
-};
+	    base => $base,
+	    basedir => $basedir,
+	    searchform => "$base/searchform",
+	    importform => "$base/import",
+	    filterform => "$base/start_filter",
+	    submit => $cgi->submit,
+	   };
 
 #### MAIN BLOCK OF CODE RIGHT HERE
 my $path = $cgi->path_info;
@@ -40,7 +41,15 @@ if ($path eq '/start' or $path eq '') {
   ## The default page
   ## Templates read: header.html index.html
   ## Next Steps: (header) searchform filterform download.htm
+  Print_Search_Form();
   Print_Index();
+}
+elsif ($path eq '/import') {
+  Print_Import_Form();
+}
+elsif ($path eq '/perform_import') {
+  Perform_Import();
+  Print_Import_Form();
 }
 elsif ($path eq '/searchform') {
   ## If you click on the 'search' link
@@ -48,7 +57,7 @@ elsif ($path eq '/searchform') {
   ## Next Steps: /search
   Print_Search_Form();
 }
-elsif ($path eq '/search') {
+elsif ($path eq '/perform_search') {
   ## Perform the search outlined in searchform
   ## Templates Read: multimatch_header.html multimatch_body.html multimatch_footer.html
   ## Next Steps: /refinesearch /browse(see slipsites for accession)
@@ -94,9 +103,15 @@ sub Print_Index {
 }
 
 sub Print_Search_Form {
-    $vars->{startform} = $cgi->startform(-action => "$base/search");
+    $vars->{startform} = $cgi->startform(-action => "$base/perform_search");
     $vars->{query} = $cgi->textfield(-name => 'query', -size => 20);
     $template->process('searchform.html', $vars) or print $template->error(), die;
+}
+
+sub Print_Import_Form {
+    $vars->{startform} = $cgi->startform(-action => "$base/perform_import");
+    $vars->{import} = $cgi->textfield(-name => 'import_accession', -size => 20);
+    $template->process('import.html', $vars) or print $template->error(), die;
 }
 
 sub Print_Detail_Slipsite {
@@ -257,6 +272,13 @@ sub Perform_Search {
   else { ## More than 1 return from the search...
     Print_Multiple_Accessions($data);
   }
+}
+
+sub Perform_Import {
+  my $accession = $cgi->param('import_accession');
+  my $result = $db->Import_CDS($accession);
+  $vars->{import_result} = $result;
+  $template->process('import_result.html', $vars) or print $template->error(), die;
 }
 
 sub ErrorPage {
