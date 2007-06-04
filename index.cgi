@@ -9,6 +9,7 @@ use PRFdb;
 use RNAMotif_Search;
 use PRFAnalysis;
 use PRF_Blast;
+use Landscape;
 
 my $config = $PRFConfig::config;
 ## All configuration information exists here
@@ -50,6 +51,9 @@ elsif ($path eq '/import') {
 elsif ($path eq '/perform_import') {
   Perform_Import();
   Print_Import_Form();
+}
+elsif ($path eq '/landscape') {
+  Check_Landscape();
 }
 elsif ($path eq '/searchform') {
   ## If you click on the 'search' link
@@ -620,4 +624,18 @@ sub Print_Blast {
       hsps_score => \%hsps_score,
   };
   $template->process('blast.html', $vars) or die $template->error();
+}
+
+
+sub Check_Landscape {
+  my $accession = $cgi->param('accession');
+  my $filename = qq($config->{base}/landscapes/$accession.png);
+  if (!-r $filename) {
+    my $pic = new Landscape;
+    $pic->Make_Picture($accession);
+  }
+  my $url = "landscapes/$accession.png";
+  $vars->{picture} = $url;
+  $vars->{accession} = $accession;
+  $template->process('landscape.html', $vars) or print $template->error(), die;
 }
