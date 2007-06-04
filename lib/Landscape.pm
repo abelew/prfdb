@@ -23,7 +23,8 @@ sub new {
 sub Make_Picture {
   my $me = shift;
   my $accession = shift;
-  my $filename = qq($config->{base}/landscapes/$accession.png);
+  my $directory = Make_Directory($accession);
+  my $filename = qq($directory/$accession.png);
   system("touch $filename");
   my $img = GD::SVG::Image->new();
   my $gene = $db->MySelect("SELECT genename FROM genome WHERE accession='$accession'");
@@ -150,3 +151,17 @@ sub Make_Picture {
   return($filename);
 }
 
+sub Make_Directory {
+  my $accession = shift;
+  my $dir = '';
+  my @cheat = split(//, $accession);
+  my $first = shift @cheat;
+  my $second = shift @cheat;
+  my $third = shift @cheat;
+  my $fourth = shift @cheat;
+  my $fifth = shift @cheat;
+  my $sixth = shift @cheat;
+  my $directory = qq($config->{base}/landscapes/${first}${second}/${third}${fourth});
+  system("mkdir -p $directory");
+  return($directory);
+}
