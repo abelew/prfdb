@@ -629,12 +629,13 @@ sub Print_Blast {
 
 sub Check_Landscape {
   my $accession = $cgi->param('accession');
-  my $filename = qq($config->{base}/landscapes/$accession.png);
+  my $pic = new Landscape;
+  my $dirname = $pic->Make_Directory($accession);
+  my $filename = $pic->Picture_Filename($accession);
   if (!-r $filename) {
-    my $pic = new Landscape;
     $pic->Make_Picture($accession);
   }
-  my $url = "landscapes/$accession.png";
+  my $url = $pic->Picture_Filename($accession, 'url');
   $vars->{picture} = $url;
   $vars->{accession} = $accession;
   $template->process('landscape.html', $vars) or print $template->error(), die;
