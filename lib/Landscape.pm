@@ -19,12 +19,10 @@ sub new {
   return($me);
 }
 
-
 sub Make_Picture {
   my $me = shift;
   my $accession = shift;
-  my $directory = $me->Make_Directory($accession);
-  my $filename = qq($directory/$accession.png);
+  my $filename = $me->Picture_Filename($accession);
   system("touch $filename");
   my $img = GD::SVG::Image->new();
   my $gene = $db->MySelect("SELECT genename FROM genome WHERE accession='$accession'");
@@ -151,18 +149,41 @@ sub Make_Picture {
   return($filename);
 }
 
+sub Picture_Filename {
+    my $me = shift;
+    my $accession = shift;
+    my $url = shift;
+    my $directory = $me->Make_Directory($accession, $url);
+    my $filename = qq($directory/$accession.png);
+#    print "Picture_Filename: $filename\n";
+    return($filename);
+}
+
 sub Make_Directory {
   my $me = shift;
   my $accession = shift;
+  my $url = shift;
   my $dir = '';
-  my @cheat = split(//, $accession);
+  my $nums = $accession;
+  $nums =~ s/\W//g;
+  $nums =~ s/[a-z]//g;
+  $nums =~ s/[A-Z]//g;
+#  print "TESTME $nums\n";
+  my @cheat = split(//, $nums);
   my $first = shift @cheat;
   my $second = shift @cheat;
   my $third = shift @cheat;
   my $fourth = shift @cheat;
   my $fifth = shift @cheat;
   my $sixth = shift @cheat;
+  if (defined($url)) {
+      my $url = qq(landscapes/${first}${second}/${third}${fourth});
+      return($url);
+  }
   my $directory = qq($config->{base}/landscapes/${first}${second}/${third}${fourth});
-  system("mkdir -p $directory");
+#  print "<br>$directory\n<br>\n";
+  if (!-x $directory) {
+      system("mkdir -p $directory");
+  }
   return($directory);
 }
