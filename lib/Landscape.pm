@@ -23,7 +23,7 @@ sub new {
 sub Make_Picture {
   my $me = shift;
   my $accession = shift;
-  my $directory = Make_Directory($accession);
+  my $directory = $me->Make_Directory($accession);
   my $filename = qq($directory/$accession.png);
   system("touch $filename");
   my $img = GD::SVG::Image->new();
@@ -152,6 +152,7 @@ sub Make_Picture {
 }
 
 sub Make_Directory {
+  my $me = shift;
   my $accession = shift;
   my $dir = '';
   my @cheat = split(//, $accession);
