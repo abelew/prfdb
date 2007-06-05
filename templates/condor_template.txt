@@ -1,0 +1,13 @@
+Requirements = Memory >= [% memory %] && OpSys == "[% operating_system %]" && ARCH == "[% arch %]"
+Universe = [% universe %]
+Executable = [% executable %]
+Error = [% slot %].err
+Output = [% slot %].out
+Log = [% slot %].log
+
+should_transfer_files = [% should_transfer_files %]
+when_to_transfer_output = [% when_to_transfer_output %]
+transfer_input_files = [% transfer_input_files %]
+
+Arguments = [% arguments %]
+Queue
