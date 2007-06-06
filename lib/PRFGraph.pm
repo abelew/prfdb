@@ -18,6 +18,7 @@ sub new {
     $config = $arg{config};
   }
   my $me = bless {
+    list_data => $arg->{list_data}
   }, $class;
   return($me);
 }
