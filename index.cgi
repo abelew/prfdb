@@ -135,7 +135,10 @@ sub Print_Detail_Slipsite {
       my $mfe_values = $boot->[0];
       my @mfe_values_array = split(/\s+/, $mfe_values);
       
-      $chart = new PRFGraph( {list_data => \@mfe_values_array});
+      $chart = new PRFGraph( {list_data => \@mfe_values_array,
+      	accession => $accession,
+        slipstart => $slipstart,
+        });
       my $filename = $chart->Picture_Filename('distribution', $accession);
       if (!-r $filename) {
         $chart = Make_Distribution();
@@ -636,7 +639,7 @@ sub Print_Blast {
 sub Check_Landscape {
   my $accession = $cgi->param('accession');
   my $pic = new PRFGraph;
-  # IS THIS REALLY NECESSARY?  my $dirname = $pic->Make_Directory('landscape', $accession);
+  # my $dirname = $pic->Make_Directory('landscape', $accession);
   my $filename = $pic->Picture_Filename('landscape', $accession);
   if (!-r $filename) {
     $pic->Make_Landscape($accession);

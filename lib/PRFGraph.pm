@@ -12,13 +12,18 @@ use Statistics::Basic::StdDev;
 use Statistics::Distributions;
 use Statistics::Basic::Correlation;
 
+my $config = $PRFConfig::config;
+my $db = new PRFdb;
+
 sub new {
-  my ($class, %arg) = @_;
-  if (defined($arg{config})) {
-    $config = $arg{config};
+  my ($class, $arg) = @_;
+  if (defined($arg->{config})) {
+    $config = $arg->{config};
   }
   my $me = bless {
-    list_data => $arg->{list_data}
+    list_data => $arg->{list_data},
+    accession => $arg->{accession},
+    slipstart => $arg->{slipstart},
   }, $class;
   return($me);
 }
@@ -26,7 +31,7 @@ sub new {
 sub Make_Landscape {
   my $me = shift;
   my $accession = shift;
-  my $filename = $me->Picture_Filename($accession);
+  my $filename = $me->Picture_Filename('landscape', $accession);
   system("touch $filename");
   # my $img = GD::SVG::Image->new();
   my $gene = $db->MySelect("SELECT genename FROM genome WHERE accession='$accession'");
@@ -160,6 +165,12 @@ sub Make_Distribution{
     #my $real_mfe = $me->{realmfe};
     
     my @values = @{$me->{list_data}};
+    my $accession = $me->{accession};
+    my $slipstart = $me->{slipstart};
+    
+    my $acc_slip = qq(${accession}_${slipstart}); 
+    
+    my $filename = $me->Picture_Filename('distribution', $acc_slip);
     
     my @sorted = sort {$a <=> $b} @values;
 		
