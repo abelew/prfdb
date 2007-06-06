@@ -134,8 +134,14 @@ sub Print_Detail_Slipsite {
     if (defined($boot)) {
       my $mfe_values = $boot->[0];
       my @mfe_values_array = split(/\s+/, $mfe_values);
-      $chart = new PRFAnalysis( {list_data => \@mfe_values_array});
-      $chartURL = $chart->Get_Chart_URL();
+      
+      $chart = new PRFGraph( {list_data => \@mfe_values_array});
+      my $filename = $chart->Picture_Filename('distribution', $accession);
+      if (!-r $filename) {
+        $chart = Make_Distribution();
+      }
+      my $chartURL = $chart->Picture_Filename('distribution', $accession, 'url');
+ 
       $mfe_mean = $boot->[1];
       $mfe_sd = $boot->[2];
       $mfe_se = $boot->[3];
@@ -629,13 +635,13 @@ sub Print_Blast {
 
 sub Check_Landscape {
   my $accession = $cgi->param('accession');
-  my $pic = new Landscape;
-  my $dirname = $pic->Make_Directory($accession);
-  my $filename = $pic->Picture_Filename($accession);
+  my $pic = new PRFGraph;
+  # IS THIS REALLY NECESSARY?  my $dirname = $pic->Make_Directory('landscape', $accession);
+  my $filename = $pic->Picture_Filename('landscape', $accession);
   if (!-r $filename) {
-    $pic->Make_Picture($accession);
+    $pic->Make_Landscape($accession);
   }
-  my $url = $pic->Picture_Filename($accession, 'url');
+  my $url = $pic->Picture_Filename('landscape', $accession, 'url');
   $vars->{picture} = $url;
   $vars->{accession} = $accession;
   $template->process('landscape.html', $vars) or print $template->error(), die;
