@@ -194,12 +194,12 @@ sub Check_Folds {
     print "Check $name - already done: state: $state->{$slot}->{pknots_mfe_id}\n";
   }
   else { ## There are no existing folds
-    if ($name = 'pknots') {
+    if ($name eq 'pknots') {
       my $pknots_info = $fold_search->Pknots_Condor();
       $id = $db->Put_Pknots($pknots_info);
       $state->{pknots_mfe_id} = $id;
     }
-    elsif ($name = 'nupack') {
+    elsif ($name eq 'nupack') {
       my $nupack_info = $fold_search->Nupack_Condor();
       $id = $db->Put_Nupack($nupack_info);
       $state->{nupack_mfe_id} = $id;

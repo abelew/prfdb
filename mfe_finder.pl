@@ -29,7 +29,7 @@ foreach my $opt (keys %conf) {
     }
 }
 
-my @lowest_accessions = $db->Get_Lowest_Accession($minimum);
+my @lowest_accessions = $db->Get_Lowest_Accession($config->{minimum});
 foreach my $acc (@lowest_accessions) {
     my $new_accessions = $blast->Find_Similar_NR($acc);
     foreach my $new_accession(@{$new_accessions}) {

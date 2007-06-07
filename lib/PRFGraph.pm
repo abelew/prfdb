@@ -13,7 +13,7 @@ use Statistics::Distributions;
 use Statistics::Basic::Correlation;
 
 my $config = $PRFConfig::config;
-my $db = new PRFdb;
+
 
 sub new {
   my ($class, $arg) = @_;
@@ -33,6 +33,7 @@ sub Make_Landscape {
   my $filename = $me->Picture_Filename('landscape', $accession);
   system("touch $filename");
   # my $img = GD::SVG::Image->new();
+  my $db = new PRFdb;
   my $gene = $db->MySelect("SELECT genename FROM genome WHERE accession='$accession'");
   my $data = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM landscape WHERE accession='$accession' ORDER BY start, algorithm");
   my $slipsites = $db->MySelect("SELECT distinct(start) FROM mfe WHERE accession='$accession' ORDER BY start");

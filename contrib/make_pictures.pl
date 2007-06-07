@@ -9,7 +9,7 @@ my $db = new PRFdb;
 my $land = new PRFGraph;
 my $type = 'landscape';
 
-my $accessions = qq(SELECT distinct(accession) FROM landscape);
+my $accessions = qq/SELECT distinct(accession) FROM landscape/;
 my $acc = $db->MySelect($accessions);
 foreach my $a (@{$acc}) {
   my $accession = $a->[0];
