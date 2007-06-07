@@ -7,9 +7,8 @@ use lib "lib";
 use PRFConfig;
 use PRFdb;
 use RNAMotif_Search;
-use PRFAnalysis;
 use PRF_Blast;
-use Landscape;
+use PRFGraph;
 
 my $config = $PRFConfig::config;
 ## All configuration information exists here

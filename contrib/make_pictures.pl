@@ -2,7 +2,7 @@
 use lib '../lib';
 use PRFConfig;
 use PRFdb;
-use Landscape;
+use PRFGraph;
 
 my $config = $PRFConfig::config;
 my $db = new PRFdb;

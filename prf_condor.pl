@@ -38,7 +38,7 @@ GetOptions(
            'boot:i' => \$conf{do_boot},
            'workdir:s' => \$conf{workdir},
            'nupack_nopairs:i' => \$conf{nupack_nopairs_hack},
-           'arch:i' => \$config{arch_specific_exe},
+           'arch:i' => \$conf{arch_specific_exe},
            'iterations:i' => \$conf{boot_iterations},
            'db|d:s' => \$conf{db},
            'host:s' => \$conf{host},
@@ -68,7 +68,7 @@ GetOptions(
            'condor_universe:s' => \$conf{condor_universe},
           );
 foreach my $opt (keys %conf) {
-  $config->{$opt} = $config{$opt} if (defined($conf{$opt}));
+  $config->{$opt} = $conf{$opt} if (defined($conf{$opt}));
 }
 
 my $state = {
@@ -101,7 +101,7 @@ Check_Tables();
 if (defined($config->{help})) {
   Print_Help();
 }
-if (defined($config->{fillqueue}))
+if (defined($config->{fillqueue})) {
   $db->FillQueue();
 }
 if (defined($config->{resetqueue})) {
@@ -126,7 +126,7 @@ if (defined($config->{accession})) {
   if (defined($config->{startpos})) {
     Gather($state, $config->{startpos});
   }
-  elsif (defined($config->{startmotif}) {
+  elsif (defined($config->{startmotif})) {
     Gather($state, $config->{startmotif});
   }
   else {

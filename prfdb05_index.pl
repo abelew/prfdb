@@ -8,7 +8,7 @@ use CGI::Carp qw(fatalsToBrowser carpout);
 use DBI;
 use Template;
 use lib "lib";
-use PRFAnalysis;
+use PRFGraph;
 
 #use PRFConfig;
 #use PRFdb;

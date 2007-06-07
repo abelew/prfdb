@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 use strict;
 use Data::Dumper;
-use lib 'lib';
+use lib '../lib';
 use PRFdb;
 use PRFConfig;
 my $freq = {};

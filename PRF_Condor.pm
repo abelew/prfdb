@@ -1,6 +1,7 @@
 package PRF_Condor;
 use strict;
 use DBI;
+use lib 'lib';
 use PRFConfig qw / PRF_Error PRF_Out /;
 use Template;
 

@@ -21,7 +21,7 @@ my $blast = new PRF_Blast;
 my %conf = ();
 GetOptions(
     'minimum:m' => \$conf{minimum},
-    };
+    );
 
 foreach my $opt (keys %conf) {
     if (defined($conf{$opt})) {
