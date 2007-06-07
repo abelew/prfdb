@@ -10,10 +10,10 @@ my $db = new PRFdb;
 my $sth = $db->Get_All_Sequences($species);
 my $c = 0;
 my ($accession, $sequence);
-my $num = scalar(@{$all_sequences});
+my $num = scalar(@{$sth});
 while ($sth->fetch) {
-  $accession = $all_sequences->[$c]->[0];
-  $sequence = $all_sequences->[$c]->[1];
+  $accession = $sth->[$c]->[0];
+  $sequence = $sth->[$c]->[1];
   $sequence =~ s/A+$//g;
   my @seq= split(//, $sequence);
   my $position = 0;

@@ -169,13 +169,13 @@ Bad things are going to happen soon.\n";
                                      accession => $state->{$slot}->{accession},
                                      start => $slipsite_start,);
     if ($config->{do_nupack}) {
-      $nupack_mfe_id = Check_Folds('nupack', $fold_search, $slipsite_start, $slot);
-      $seqlength = $db->Get_Seqlength($nupack_mfe_id);
+      my $nupack_mfe_id = Check_Folds('nupack', $fold_search, $slipsite_start, $slot);
+      my $seqlength = $db->Get_Seqlength($nupack_mfe_id);
     } ### End check if we should do a nupack fold
 
     if ($config->{do_pknots}) { ### Do we run a pknots fold?
-      $pknots_mfe_id = Check_Folds('pknots', $fold_search, $slipsite_start, $slot);
-      $seqlength = $db->Get_Seqlength($pknots_mfe_id);
+      my $pknots_mfe_id = Check_Folds('pknots', $fold_search, $slipsite_start, $slot);
+      my $seqlength = $db->Get_Seqlength($pknots_mfe_id);
     }
     unlink($state->{$slot}->{fasta_file});
     Clean_Up($state->{$slot});
@@ -185,7 +185,7 @@ Bad things are going to happen soon.\n";
 sub Check_Folds {
   my $name = shift;
   my $fold_search = shift;
-  my $start = shift;
+  my $slipsite_start = shift;
   my $slot = shift;
   my $folds = $db->Get_Num_RNAfolds($name, $state->{$slot}->{genome_id}, $slipsite_start);
   my $id;
@@ -210,6 +210,7 @@ sub Check_Folds {
 
 ## Start Check_Sequence_Length
 sub Check_Sequence_Length {
+	my $slot = shift;
     my $filename = $state->{$slot}->{fasta_file};
     my $sequence = $state->{$slot}->{sequence};
     my @seqarray = split(//, $sequence);
