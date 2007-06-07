@@ -410,44 +410,44 @@ AND ${queue_table}.done = '0' AND ${queue_table}.genome_id = ${genome_table}.id 
 
 sub Grab_Queue {
   my $me = shift;
-  my $landscapep = shift;
+  my $queue = undef;
   if ($config->{check_webqueue} == 1) {
     ### Then first see if anything is in the webqueue
-    my $webqueue = $me->Get_Queue($landscapep,'webqueue');
-    if (defined($webqueue)) {
-      return($webqueue);
+    $queue = $me->Get_Queue('webqueue');
+    if (defined($queue)) {
+      return($queue);
     }
     else {
-      my $queue = $me->Get_Queue($landscapep);
+      $queue = $me->Get_Queue();
       return($queue);
     }
   }
-  else {
-    my $queue = $me->Get_Queue($landscapep);
+  elsif ($config->{do_landscape}) {
+    $queue = $me->Get_Queue('landscapequeue');
     return($queue);
+  }
+  else {
+    $queue = $me->Get_Queue();
+      return($queue);
   }
 }
 
 sub Get_Queue {
   my $me = shift;
-  my $landscapep = shift;
-  my $webqueue = shift;
+  my $queue_name = shift;
   my $table = 'queue';
-  if (defined($webqueue)) {
-    $table = 'webqueue';
+  if (defined($queue_name)) {
+    $table = $queue_name;
   }
   elsif (defined($config->{queue_table})) {
     $table = $config->{queue_table};
   }
-  if (defined($landscapep)) {
-    my $old_table = $table;
-    $table .= '_landscape';
-    unless ($me->Tablep($table)) {
-      $me->Create_Queue($table);
-      $me->Copy_Queue($old_table, $table);
-      $me->Reset_Queue($table, 'complete');
-    }
+  unless ($me->Tablep($table)) {
+    $me->Create_Queue($table);
+#    $me->Copy_Queue($old_table, $table);
+    $me->Reset_Queue($table, 'complete');
   }
+
   ## This id is the same id which uniquely identifies a sequence in the genome database
   my $single_id = qq(SELECT id, genome_id FROM $table WHERE checked_out = '0' LIMIT 1);
   my $ids = $me->MySelect($single_id, [], 'row');

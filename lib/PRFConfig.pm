@@ -1,5 +1,5 @@
 package PRFConfig;
-## Time-stamp: <Wed Dec 20 16:38:50 2006 Ashton Trey Belew (abelew@wesleyan.edu)>
+## Time-stamp: <Sat May 26 09:27:37 2007 Ashton Trey Belew (abelew@wesleyan.edu)>
 use strict;
 use AppConfig qw/:argcount :expand/;
 require      Exporter;
@@ -32,6 +32,7 @@ $PRFConfig::config->{seqlength} = 100;
 $PRFConfig::config->{do_nupack} = 1;
 $PRFConfig::config->{do_pknots} = 1;
 $PRFConfig::config->{do_boot} = 1;
+$PRFConfig::config->{do_landscape} = 0;
 $PRFConfig::config->{workdir} = 'work';
 $PRFConfig::config->{workdir} = 'blast';
 $PRFConfig::config->{nupack_nopairs_hack} = 0;
