@@ -108,12 +108,11 @@ sub DETAILEDLIST{
         
         if( defined($$r3[0]) ){
         	my @randomMFE = split(/\s+/,$$r3[0]);
-        	my $chart = new PRFAnalysis( {list_data => \@randomMFE} );
-        	$chartURL = $chart->GET_CHART_URL();
+        	my $chartURL = new PRFGraph( {list_data => \@randomMFE} );
         	$zscore = sprintf("%.2f",($$r2[9] - $$r3[1])/$$r3[2]); #hehe.... ugly... (x-xbar)/sd
         	$randMean = sprintf("%.1f",$$r3[1]);
         	$randSE = sprintf("%.1f",$$r3[3]);
-        	$ppcc = sprintf("%.4f",$chart->GET_PPCC());
+        	$ppcc = sprintf("%.4f",$chartURL->GET_PPCC());
         }   
         
         $vars = {

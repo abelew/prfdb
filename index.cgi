@@ -7,7 +7,7 @@ use lib "lib";
 use PRFConfig;
 use PRFdb;
 use RNAMotif_Search;
-use PRF_Blast;
+use PRF_Blast; 
 use PRFGraph;
 
 my $config = $PRFConfig::config;
@@ -134,15 +134,15 @@ sub Print_Detail_Slipsite {
       my $mfe_values = $boot->[0];
       my @mfe_values_array = split(/\s+/, $mfe_values);
       
+      my $acc_slip = qq({$accession}_{$slipstart});
       $chart = new PRFGraph( {list_data => \@mfe_values_array,
-      	accession => $accession,
-        slipstart => $slipstart,
+      	acc_slip => $acc_slip,
         });
-      my $filename = $chart->Picture_Filename('distribution', $accession);
+      my $filename = $chart->Picture_Filename('distribution', $acc_slip);
       if (!-r $filename) {
         $chart = Make_Distribution();
       }
-      my $chartURL = $chart->Picture_Filename('distribution', $accession, 'url');
+      my $chartURL = $chart->Picture_Filename('distribution', $acc_slip, 'url');
  
       $mfe_mean = $boot->[1];
       $mfe_sd = $boot->[2];

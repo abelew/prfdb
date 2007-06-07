@@ -22,8 +22,7 @@ sub new {
   }
   my $me = bless {
     list_data => $arg->{list_data},
-    accession => $arg->{accession},
-    slipstart => $arg->{slipstart},
+    acc_slip => $arg->{acc_slip},
   }, $class;
   return($me);
 }
@@ -165,10 +164,7 @@ sub Make_Distribution{
     #my $real_mfe = $me->{realmfe};
     
     my @values = @{$me->{list_data}};
-    my $accession = $me->{accession};
-    my $slipstart = $me->{slipstart};
-    
-    my $acc_slip = qq(${accession}_${slipstart}); 
+    my $acc_slip = $me->{acc_slip}; 
     
     my $filename = $me->Picture_Filename('distribution', $acc_slip);
     
@@ -245,6 +241,37 @@ sub Make_Distribution{
     print IMG $gd->png;
     close IMG;
     return($filename);
+}
+
+sub Get_PPCC{
+    my $me = shift;
+
+    #probably should put some error checking here.. but... wtf!
+    my @values = @{$me->{list_data}};
+    my @sorted = sort {$a <=> $b} @values;
+		
+    ###
+    # Stats part
+    my $n = scalar(@values);
+    my $xbar = sprintf("%.2f",Statistics::Basic::Mean->new(\@values)->query);
+    my $xvar = sprintf("%.2f",Statistics::Basic::Variance->new(\@values)->query);
+    my $xstddev = sprintf("%.2f",Statistics::Basic::StdDev->new(\@values)->query);
+    
+    # get P(X) for each values
+    my @PofX = ();
+    foreach my $x (@sorted){
+    	push(@PofX, (1 - Statistics::Distributions::uprob($x - $xbar) / $xstddev));
+    }
+    
+    #get P(X) for the standard normal distribution
+    my @PofY = ();
+    for(my $i = 1; $i < $n+1; $i++){
+    	push(@PofY,$i/($n+1));
+   	}
+   	
+	my $corr = new Statistics::Basic::Correlation( \@PofY, \@PofX );
+	
+	return $corr->query;
 }
 
 sub Picture_Filename {
