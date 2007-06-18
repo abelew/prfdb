@@ -138,12 +138,12 @@ if (defined($config->{input_file})) {
 }
 
 if (defined($config->{accession}) or defined($config->{import_accession})) {
-    my $accession = defined($config->{accession}) ?
-	$config->{accession} : $config->{import_accession};
-    print "Importing Accession: $accession\n";
-    $db->Import_CDS($accession);
-    $state->{queue_id} = 0; ## Dumb hack lives on
-    $state->{accession} = $accession;
+  my $accession = defined($config->{accession}) ?
+  $config->{accession} : $config->{import_accession};
+  print "Importing Accession: $accession\n";
+  $db->Import_CDS($accession);
+  $state->{queue_id} = 0; ## Dumb hack lives on
+  $state->{accession} = $accession;
   $state->{genome_id} = $db->Get_GenomeId_From_Accession($accession);
   if (defined($config->{startpos})) {
     Gather($state, $config->{startpos});
@@ -160,29 +160,20 @@ if (defined($config->{accession}) or defined($config->{import_accession})) {
 if (defined($config->{input_fasta})) {
     my $queue_ids;
     if (defined($config->{startpos})) {
-	$queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style}, $config->{startpos});
+	  $queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style}, $config->{startpos});
     }
     else {
-	$queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style});
-  }
+	  $queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style});
+    }
 
     foreach my $queue_id (@{$queue_ids}) {
-	$state->{genome_id} = $db->Get_GenomeId_From_QueueId($queue_id);
-	$state->{queue_id} = $queue_id;
-	print "Performing gather for genome_id $state->{genome_id}";
-	Gather($state);
+	  $state->{genome_id} = $db->Get_GenomeId_From_QueueId($queue_id);
+	  $state->{queue_id} = $queue_id;
+	  print "Performing gather for genome_id $state->{genome_id}";
+	  Gather($state);
     }
     exit(0);
 }
-
-#  else {
-#    $state->{queue_id} = 0;  ## A dumb hack.  Why did I do this hack?  I think it
-#    ## has to do with the import and searching of individual viral genomes
-#    $state->{accession} = $ARGV[0];
-#    $state->{genome_id} = $db->Get_GenomeId_From_Accession($ARGV[0]);
-#    Gather($state);
-#  }
-#}
 if (defined($config->{nodaemon})) {
   print "No daemon is set, existing before reading queue.\n";
   exit(0);
@@ -236,14 +227,27 @@ sub Gather {
   my $ref = $db->Id_to_AccessionSpecies($state->{genome_id});
   $state->{accession} = $ref->{accession};
   $state->{species} = $ref->{species};
-  print "\nWorking with: qid:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
+  my $message = "qid:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
+  print "\nWorking with: $message";;
+  
+  my %pre_landscape_state = %{$state};
+  my $landscape_state = \%pre_landscape_state;
+  Landscape_Gatherer($landscape_state, $message);
+  
+  PRF_Gatherer($state);
+}
+## End Gather
+
+## Start PRF_Gatherer
+sub PRG_Gatherer {
+  my $state = shift;
   $state->{genome_information} = $db->Get_ORF($state->{accession});
   my $sequence = $state->{genome_information}->{sequence};
   my $orf_start = $state->{genome_information}->{orf_start};
   my $motifs = new RNAMotif_Search(config => $config);
   my $rnamotif_information = $motifs->Search(
-                                                   $state->{genome_information}->{sequence},
-                                                   $state->{genome_information}->{orf_start});
+  $state->{genome_information}->{sequence},
+  $state->{genome_information}->{orf_start});
   $state->{rnamotif_information} = $rnamotif_information;
   if (!defined($state->{rnamotif_information})) {
       $db->Insert_NoSlipsite($state->{accession});
@@ -313,7 +317,8 @@ sub Gather {
                            );
 
 	my $boot_folds = $db->Get_Num_Bootfolds($state->{genome_id}, $slipsite_start);
-	my $number_boot_algos = Get_Num($config->{boot_mfe_algorithms});
+    my $number_boot_algos = 0;
+	$number_boot_algos += scalar keys %{$config->{boot_mfe_algorithms}};
 	## CHECKME!  I do not think this next line is appropriate
 	#my $needed_boots = $number_boot_algos * $number_rnamotif_information;
 	my $needed_boots = $number_boot_algos;
@@ -350,7 +355,77 @@ sub Gather {
   Clean_Up();
   ## Clean out state
 }
-## End Gather
+## End PRF_Gatherer
+
+## Start Landscape_Gatherer
+sub Landscape_Gatherer {
+  my $state = shift;
+  my $message = shift;
+  
+  my $sequence = $db->Get_Sequence($state->{accession});
+  my @seq_array = split(//, $sequence);
+  my $sequence_length = scalar(@seq_array);
+  my $start_point = 0;
+  while ($start_point + $state->{seqlength} <= $sequence_length) {
+      my $individual_sequence = ">$message";
+      my $end_point = $start_point + $config->{max_struct_length};
+
+      foreach my $character ($start_point .. $end_point) {
+	    $individual_sequence = $individual_sequence . $seq_array[$character];
+      }
+      $individual_sequence = $individual_sequence . "\n";
+      $state->{fasta_file} = $db->Sequence_to_Fasta($individual_sequence);
+      my $fold_search = new RNAFolders(
+				       file => $state->{fasta_file},
+				       genome_id => $state->{genome_id},
+				       species => $state->{species},
+				       accession => $state->{accession},
+				       start => $start_point,
+				       );
+				       
+      my $nupack_foldedp = $db->Get_Num_RNAfolds('nupack', $state->{genome_id}, $start_point, 'landscape');
+      my $pknots_foldedp = $db->Get_Num_RNAfolds('pknots', $state->{genome_id}, $start_point, 'landscape');
+      my ($nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id);
+      if ($nupack_foldedp == 0) {
+        if ($config->{nupack_nopairs_hack}) {
+          print "Running NOPAIRS\n";
+          $nupack_info = $fold_search->Nupack_NOPAIRS('nopseudo');
+        }
+        else {
+          $nupack_info = $fold_search->Nupack('nopseudo');
+        }
+        $nupack_mfe_id = $db->Put_Nupack($nupack_info, 'landscape');
+        $state->{nupack_mfe_id} = $nupack_mfe_id;
+      }
+      if ($pknots_foldedp == 0) {
+	  $pknots_info = $fold_search->Pknots('nopseudo');
+	  $pknots_mfe_id = $db->Put_Pknots($pknots_info, 'landscape');
+	  $state->{pknots_mfe_id} = $pknots_mfe_id;
+      }
+
+#      my $boot = new Bootlace(
+#			      genome_id => $state->{genome_id},
+#			      nupack_mfe_id => (defined($state->{nupack_mfe_id})) ? $state->{nupack_mfe_id} : $nupack_mfe_id,
+#			      pknots_mfe_id => (defined($state->{pknots_mfe_id})) ? $state->{pknots_mfe_id} : $pknots_mfe_id,
+#			      inputfile => $state->{fasta_file},
+#			      species => $state->{species},
+#			      accession => $state->{accession},
+#			      start => $start_point,
+#			      seqlength => $state->{seqlength},
+#			      iterations => $config->{boot_iterations},
+#			      boot_mfe_algorithms => $config->{boot_mfe_algorithms},
+#			      randomizers => $config->{boot_randomizers},
+#			      );
+#      my $bootlaces = $boot->Go();
+#      $db->Put_Boot($bootlaces);
+
+      ## The functional portion of the while loop is over, just set the state now
+      $start_point = $start_point + $config->{window_space};
+      unlink($state->{fasta_file});  ## Get rid of each fasta file
+  }
+  Clean_Up('landscape');
+}
+## End Landscape_Gatherer
 
 ## Start Check_Environment
 sub Check_Environment {
@@ -409,17 +484,6 @@ $nu_boot and running: $config->{boot_iterations} times\n";
   sleep(1);
 }
 ## End Print_Config
-
-## Start Get_Num
-sub Get_Num {
-  my $data = shift;
-  my $count = 0;
-  foreach my $k (keys %{$data}) {
-    $count++;
-  }
-  return($count);
-}
-## End Get_Num
 
 ## Start Check_Boot_Connectivity
 sub Check_Boot_Connectivity {

@@ -422,10 +422,6 @@ sub Grab_Queue {
       return($queue);
     }
   }
-  elsif ($config->{do_landscape}) {
-    $queue = $me->Get_Queue('landscapequeue');
-    return($queue);
-  }
   else {
     $queue = $me->Get_Queue();
       return($queue);
@@ -489,15 +485,11 @@ sub Copy_Queue {
 sub Done_Queue {
   my $me = shift;
   my $id = shift;
-  my $landscapep = shift;
   my $table = 'queue';
   if (defined($config->{queue_table})) {
       $table = $config->{queue_table};
   }
 
-  if (defined($landscapep)) {
-    $table .= '_landscape';
-  }
   my $update = qq(UPDATE $table SET done='1', done_time=current_timestamp() WHERE genome_id=?);
   my ($cp, $cf, $cl) = caller();
   $me->Execute($update,[$id], [$cp, $cf, $cl]);
@@ -839,7 +831,7 @@ sub Get_Num_RNAfolds {
   my $info = $me->MySelect($statement,[$genome_id,$algo,$slipsite_start,$sequence_length]);
   my $count = $info->[0]->[0];
   if (!defined($count) or $count eq '') {
-      $count = 0;
+    $count = 0;
   }
   return($count);
 }
