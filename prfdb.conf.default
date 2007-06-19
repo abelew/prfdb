@@ -1,3 +1,4 @@
+checks = 1                               ## Perform checks on the prfdb
 prefix = "${HOME}/browser"
 basedir = $(prefix)                       ## The base directory of this crap
 workdir = "$(prefix)/work"                 ## Temporary directory, fasta files live there
