@@ -165,7 +165,6 @@ sub Make_Distribution{
     
     my @values = @{$me->{list_data}};
     my $acc_slip = $me->{acc_slip}; 
-    print "ACC_SLIP: $acc_slip\n";
     my $filename = $me->Picture_Filename('distribution', $acc_slip);
     
     my @sorted = sort {$a <=> $b} @values;
