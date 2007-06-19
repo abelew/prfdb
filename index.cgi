@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -d:DProf
+#!/usr/bin/perl -w
 use strict;
 use CGI qw/:standard :html3/;
 use CGI::Carp qw(fatalsToBrowser carpout);
@@ -28,6 +28,7 @@ my $vars = {
 	    searchform => "$base/searchform",
 	    importform => "$base/import",
 	    filterform => "$base/start_filter",
+	    downloadform => "$base/download",
 	    submit => $cgi->submit,
 	   };
 
@@ -41,6 +42,9 @@ if ($path eq '/start' or $path eq '') {
   ## Next Steps: (header) searchform filterform download.htm
   Print_Search_Form();
   Print_Index();
+}
+elsif ($path eq '/download') {
+    Print_Download();
 }
 elsif ($path eq '/import') {
   Print_Import_Form();
@@ -101,6 +105,10 @@ exit(0);
 
 sub Print_Index {
     $template->process('index.html', $vars) or print $template->error(), die;
+}
+
+sub Print_Download {
+    $template->process('download.html', $vars) or print $template->error(), die;
 }
 
 sub Print_Search_Form {
