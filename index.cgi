@@ -130,12 +130,13 @@ sub Print_Detail_Slipsite {
   $vars->{accession} = $accession;
   $vars->{slipstart} = $slipstart;
   $template->process("detail_header.html", $vars) or print $template->error(), die;
+  my $detail_stmt = qq(SELECT species, slipsite, sequence, output, parsed, barcode, parens, mfe, pairs, knotp, algorithm, lastupdate, seqlength, id FROM mfe WHERE accession = ? ORDER BY seqlength DESC);
   ###                               0        1        2         3       4       5        6       7    8      9      10          11         12         13
-  my $info = $db->MySelect("SELECT species, slipsite, sequence, output, parsed, barcode, parens, mfe, pairs, knotp, algorithm, lastupdate, seqlength, id FROM mfe WHERE accession = ?", [$accession]);
+  my $info = $db->MySelect($detail_stmt, [$accession]);
   foreach my $structure (@{$info}) {
       my $id = $structure->[13];
       my $boot = $db->MySelect("SELECT mfe_values, mfe_mean, mfe_sd, mfe_se FROM boot WHERE mfe_id = ?", [$id], 'row');
-      my ($filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $mfe);
+      my ($ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $mfe);
       if (defined($boot)) {
 	  my $mfe_values = $boot->[0];
 	  my @mfe_values_array = split(/\s+/, $mfe_values);
@@ -144,9 +145,11 @@ sub Print_Detail_Slipsite {
 	      list_data => \@mfe_values_array,
 	      acc_slip => $acc_slip,
 	  });
+	  my $ppcc_values = $chart->Get_PPCC();
 	  $filename = $chart->Picture_Filename('distribution', $acc_slip);
 	  my $pre_chartURL = $chart->Picture_Filename('distribution', $acc_slip, 'url');
 	  $chartURL = $basedir . '/' . $pre_chartURL;
+
 	  if (!-r $filename) {
 	      $chart = $chart->Make_Distribution();
 	  }
@@ -158,7 +161,6 @@ sub Print_Detail_Slipsite {
 	  $zscore = sprintf("%.2f", ($mfe - $mfe_mean) / $mfe_sd);
 	  $randMean = sprintf("%.1f",$mfe_mean);
 	  $randSE = sprintf("%.1f", $mfe_se);
-	  my $ppcc_values = $chart->Get_PPCC();
 	  $ppcc = sprintf("%.4f",$ppcc_values);
       }
       else {
