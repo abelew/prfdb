@@ -317,7 +317,7 @@ sub Gather {
 
 ## Start Check_Environment
 sub Check_Environment {
-  die("No rnamotif descriptor file set.") unless(defined($config->{descriptor_file}));
+  die("No rnamotif descriptor file set.") unless(defined($config->{rnamotif_template}));
   die("Workdir must be executable: $!") unless(-x $config->{workdir});
   die("Workdir must be writable: $!") unless(-w $config->{workdir});
   die("Database not defined") unless($config->{db} ne 'prfconfigdefault_db');
@@ -325,10 +325,10 @@ sub Check_Environment {
   die("Database user not defined") unless($config->{user} ne 'prfconfigdefault_user');
   die("Database pass not defined") unless($config->{pass} ne 'prfconfigdefault_pass');
 
-  unless(-r $config->{descriptor_file}) {
+  unless(-r $config->{rnamotif_template}) {
     RNAMotif_Search::Descriptor();
     die("Unable to read the rnamotif descriptor file: $!")
-      unless(-r $config->{descriptor_file});
+      unless(-r $config->{rnamotif_template});
   }
 }
 ## End Check_Environment

@@ -25,15 +25,17 @@ sub new {
 #  $dbh = DBI->connect_cached($me->{dsn}, $config->{user}, $config->{pass});
   $dbh->{mysql_auto_reconnect} = 1;
   $dbh->{InactiveDestroy} = 1;
-  my $answer = $me->Tablep('genome');
-  $me->Create_Genome() unless($me->Tablep('genome'));
-  $me->Create_Queue() unless($me->Tablep($config->{queue_table}));
-  $me->Create_Boot() unless($me->Tablep('boot'));
-  $me->Create_MFE() unless($me->Tablep('mfe'));
-  $me->Create_Landscape() unless($me->Tablep('landscape'));
+  if ($config->{checks}) {
+    my $answer = $me->Tablep('genome');
+    $me->Create_Genome() unless($me->Tablep('genome'));
+    $me->Create_Queue() unless($me->Tablep($config->{queue_table}));
+    $me->Create_Boot() unless($me->Tablep('boot'));
+    $me->Create_MFE() unless($me->Tablep('mfe'));
+    $me->Create_Landscape() unless($me->Tablep('landscape'));
 #  $me->Create_Analysis() unless($me->Tablep('analysis'));
-  $me->Create_Errors() unless($me->Tablep('errors'));
-  $me->Create_NoSlipsite() unless($me->Tablep('noslipsite'));
+    $me->Create_Errors() unless($me->Tablep('errors'));
+    $me->Create_NoSlipsite() unless($me->Tablep('noslipsite'));
+  }
   return ($me);
 }
 

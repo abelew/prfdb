@@ -22,7 +22,7 @@ my $template = new Template($config);
 ## And a new Template
 my $base = "http://" . $ENV{HTTP_HOST} . $ENV{SCRIPT_NAME};
 my $basedir = $base;
-$ENV{BLASTDB} = $config->{blastdb};
+$ENV{BLASTDB} = $config->{blastdir};
 $basedir =~ s/\/index.cgi.*//g;
 my $vars = {
 	    base => $base,

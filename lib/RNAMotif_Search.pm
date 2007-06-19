@@ -160,7 +160,7 @@ sub Descriptor {
   my $template_config = $config;
   $template_config->{PRE_PROCESS} = undef;
   my $template = new Template($template_config);
-  my $output = $config->{descriptor_file};
+  my $output = $config->{rnamotif_template};
   unless (-r $output) {
     my $vars = {
                 slip_site_1 => $config->{slip_site_1},

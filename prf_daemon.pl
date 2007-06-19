@@ -66,6 +66,7 @@ GetOptions(
            'stem2_loop_max:i' => \$conf{stem2_loop_max},
            'stem2_spacer_min:i' => \$conf{stem2_spacer_min},
            'stem2_spacer_max:i' => \$conf{stem2_spacer_max},
+           'checks:i' => \$conf{checks},
           );
 foreach my $opt (keys %conf) {
     if (defined($conf{$opt})) {
@@ -94,8 +95,10 @@ my $state = {
 
 ### START DOING WORK NOW
 chdir($config->{basedir});
-Check_Environment();
-Check_Tables();
+if  ($config->{checks}) {
+  Check_Environment();
+  Check_Tables();
+}
 
 ## Some Arguments should be checked before others...
 ## These first arguments are not exclusive and so are separate ifs
@@ -178,7 +181,11 @@ if (defined($config->{nodaemon})) {
   print "No daemon is set, existing before reading queue.\n";
   exit(0);
 }
-Print_Config();
+
+if ($config->{checks}) {
+  Print_Config();
+}
+
 until (defined($state->{time_to_die})) {
   ### You can set a configuration variable 'master' so that it will not die
   if ($state->{done_count} > 60 and !defined($config->{master})) { $state->{time_to_die} = 1 };
@@ -369,7 +376,6 @@ sub Landscape_Gatherer {
   while ($start_point + $state->{seqlength} <= $sequence_length) {
       my $individual_sequence = ">$message";
       my $end_point = $start_point + $config->{max_struct_length};
-
       foreach my $character ($start_point .. $end_point) {
 	    $individual_sequence = $individual_sequence . $seq_array[$character];
       }
@@ -429,18 +435,18 @@ sub Landscape_Gatherer {
 
 ## Start Check_Environment
 sub Check_Environment {
-  die("No rnamotif descriptor file set.") unless(defined($config->{descriptor_file}));
-  die("Workdir must be executable: $!") unless(-x $config->{workdir});
+  die("No rnamotif descriptor file set.") unless(defined($config->{rnamotif_template}));
+  die("Workdir must be executable: $config->{workdir} $!") unless(-x $config->{workdir});
   die("Workdir must be writable: $!") unless(-w $config->{workdir});
   die("Database not defined") unless($config->{db} ne 'prfconfigdefault_db');
   die("Database host not defined") unless($config->{host} ne 'prfconfigdefault_host');
   die("Database user not defined") unless($config->{user} ne 'prfconfigdefault_user');
   die("Database pass not defined") unless($config->{pass} ne 'prfconfigdefault_pass');
 
-  unless(-r $config->{descriptor_file}) {
+  unless(-r $config->{rnamotif_template}) {
     RNAMotif_Search::Descriptor();
     die("Unable to read the rnamotif descriptor file: $!")
-      unless(-r $config->{descriptor_file});
+      unless(-r $config->{rnamotif_template});
   }
 }
 ## End Check_Environment
