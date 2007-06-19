@@ -149,90 +149,92 @@ sub Make_Landscape {
   return ($filename);
 }
 
-sub Make_Distribution {
-  my $me = shift;
+sub Make_Distribution{
+    my $me = shift;
+    
+    #not yet implemented
+    #my $real_mfe = $me->{realmfe};
+    
+    my @values = @{$me->{list_data}};
+    my $acc_slip = $me->{acc_slip}; 
+    my $filename = $me->Picture_Filename('distribution', $acc_slip);
+    
+    my @sorted = sort {$a <=> $b} @values;
+		
+    my $min = sprintf("%+d",$sorted[0])-2;
+    my $max = sprintf("%+d",$sorted[scalar(@sorted)-1])+2;
+    
+    my $total_range = sprintf("%d",($max - $min));
+    
+    my $num_bins = sprintf( "%d",2 * (scalar(@sorted) ** (2/5))); # bins = floor{ 2 * N^(2/5) }
+    
+    my $bin_range = sprintf( "%.1f", $total_range / $num_bins);
+	
+	my @yax = ( 0 );
+    my @yax_sums = ( 0 );
+    my @xax = ( sprintf("%.1f",$min) );
+    
+    for(my $i = 1; $i <= ($num_bins); $i++){
+        $xax[$i] = sprintf( "%.1f",$bin_range * $i + $min);
+        foreach my $val (@values){ $yax_sums[$i]++ if $val < $xax[$i] }
+    }
+    #save the CDF
+    my @CDF_yax = @yax_sums;
+    
+    # make a histogram and not a cumulative distribution function
+    my $i = 0;
+    for ($i = (@yax_sums-1); $i > 0; $i--) {
+	$yax[$i] = ($yax_sums[$i]-$yax_sums[$i-1]) / scalar(@values);
+    }
+    
+    ###
+    # Stats part
+    my $xbar = sprintf("%.2f",Statistics::Basic::Mean->new(\@values)->query);
+    my $xvar = sprintf("%.2f",Statistics::Basic::Variance->new(\@values)->query);
+    my $xstddev = sprintf("%.2f",Statistics::Basic::StdDev->new(\@values)->query);
+    
+    
+    # initially calculated as a CDF.
+    my @dist_y = ();
+    foreach my $x (@xax){
+        my $zscore = ($x - $xbar) / $xstddev;
+        my $prob = (1 - Statistics::Distributions::uprob($zscore));
+        push(@dist_y,$prob);
+    }
+    #save the CDF
+    my @CDF_dist = @dist_y;
+    
+    # make a pdf not a cdf.
+    for(my $i = (@dist_y-1); $i > 0; $i--){ $dist_y[$i] = $dist_y[$i] - $dist_y[$i-1]; }
+    
+    ###
+    # Chart part
+    my @data = (\@xax, \@yax, \@dist_y );
+    
+    my $graph = GD::Graph::mixed->new(200,150);
+    $graph->set_legend( "Random MFE", "Normal Distribution");
+    $graph->set(
+            types             => [ qw(bars lines) ],
+            x_label           => 'kcal/mol',
+            y_label           => 'p(x)',
+            y_label_skip      => 2,
+            y_number_format   => "%.2f",
+            x_labels_vertical => 1,
+            x_label_skip      => 1,
+            line_width => 3,
+            dclrs => [qw(lblue red)],
+            borderclrs => [ qw(black ) ]
+    ) or die $graph->error;
 
-  #not yet implemented
-  #my $real_mfe = $me->{realmfe};
-
-  my @values   = @{ $me->{list_data} };
-  my $acc_slip = $me->{acc_slip};
-  my $filename = $me->Picture_Filename( 'distribution', $acc_slip );
-
-  my @sorted = sort { $a <=> $b } @values;
-
-  my $min = sprintf( "%+d", $sorted[0] ) - 2;
-  my $max = sprintf( "%+d", $sorted[ scalar(@sorted) - 1 ] ) + 2;
-
-  my $total_range = sprintf( "%d", ( $max - $min ) );
-
-  my $num_bins = sprintf( "%d", 2 * ( scalar(@sorted)**( 2 / 5 ) ) );    # bins = floor{ 2 * N^(2/5) }
-
-  my $bin_range = sprintf( "%.1f", $total_range / $num_bins );
-
-  my @yax      = (0);
-  my @yax_sums = (0);
-  my @xax      = ( sprintf( "%.1f", $min ) );
-
-  for ( my $i = 1 ; $i <= ($num_bins) ; $i++ ) {
-    $xax[$i] = sprintf( "%.1f", $bin_range * $i + $min );
-    foreach my $val (@values) { $yax_sums[$i]++ if $val < $xax[$i] }
-  }
-
-  #save the CDF
-  my @CDF_yax = @yax_sums;
-
-  # make a histogram and not a cumulative distribution function
-  for ( my $i = ( @yax_sums - 1 ) ; $i > 0 ; $i-- ) { $yax[$i] = ( $yax_sums[$i] - $yax_sums[ $i - 1 ] ) / scalar(@values); }
-
-  ###
-  # Stats part
-  my $xbar    = sprintf( "%.2f", Statistics::Basic::Mean->new( \@values )->query );
-  my $xvar    = sprintf( "%.2f", Statistics::Basic::Variance->new( \@values )->query );
-  my $xstddev = sprintf( "%.2f", Statistics::Basic::StdDev->new( \@values )->query );
-
-  # initially calculated as a CDF.
-  my @dist_y = ();
-  foreach my $x (@xax) {
-    my $zscore = ( $x - $xbar ) / $xstddev;
-    my $prob   = ( 1 - Statistics::Distributions::uprob($zscore) );
-    push( @dist_y, $prob );
-  }
-
-  #save the CDF
-  my @CDF_dist = @dist_y;
-
-  # make a pdf not a cdf.
-  for ( my $i = ( @dist_y - 1 ) ; $i > 0 ; $i-- ) { $dist_y[$i] = $dist_y[$i] - $dist_y[ $i - 1 ]; }
-
-  ###
-  # Chart part
-  my @data = ( \@xax, \@yax, \@dist_y );
-
-  my $graph = GD::Graph::mixed->new( 200, 150 );
-  $graph->set_legend( "Random MFE", "Normal Distribution" );
-  $graph->set(
-    types             => [qw(bars lines)],
-    x_label           => 'kcal/mol',
-    y_label           => 'p(x)',
-    y_label_skip      => 2,
-    y_number_format   => "%.2f",
-    x_labels_vertical => 1,
-    x_label_skip      => 1,
-    line_width        => 3,
-    dclrs             => [qw(lblue red)],
-    borderclrs        => [qw(black )]
-  ) or die $graph->error;
-
-  my $gd = $graph->plot( \@data ) or die $graph->error;
-
-  # THIS NEEDS TO BE UNCOMMENTED
-  #my $tempfile = 'temp/graph'.time().'.gif';
-  open( IMG, ">$filename" ) or die $!;
-  binmode IMG;
-  print IMG $gd->png;
-  close IMG;
-  return ($filename);
+    my $gd = $graph->plot(\@data) or die $graph->error;
+    
+    # THIS NEEDS TO BE UNCOMMENTED
+    #my $tempfile = 'temp/graph'.time().'.gif';
+	open(IMG, ">$filename") or die $!;
+ 	binmode IMG;
+    print IMG $gd->png;
+    close IMG;
+    return($filename);
 }
 
 sub Get_PPCC {
