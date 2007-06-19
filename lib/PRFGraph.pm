@@ -63,7 +63,6 @@ sub Make_Landscape {
   }
   $site_info->{$start_stop->[0]->[0]} = 'start';
   $site_info->{$start_stop->[0]->[1]} = 'stop';
-#  print "TESTME START: $start_stop->[0]->[0] STOP: $start_stop->[0]->[1]<br>\n";
 
   my (@axis_x, @slipsites_y, @nupack_y, @pknots_y, @start_y, @stop_y);
   my $end_spot = $points[$#points] + 105;
@@ -166,7 +165,7 @@ sub Make_Distribution{
     
     my @values = @{$me->{list_data}};
     my $acc_slip = $me->{acc_slip}; 
-    
+    print "ACC_SLIP: $acc_slip\n";
     my $filename = $me->Picture_Filename('distribution', $acc_slip);
     
     my @sorted = sort {$a <=> $b} @values;
@@ -244,7 +243,7 @@ sub Make_Distribution{
     return($filename);
 }
 
-sub Get_PPCC{
+sub Get_PPCC {
     my $me = shift;
 
     #probably should put some error checking here.. but... wtf!
@@ -296,7 +295,7 @@ sub Make_Directory {
   $nums =~ s/\W//g;
   $nums =~ s/[a-z]//g;
   $nums =~ s/[A-Z]//g;
-#  print "TESTME $nums\n";
+  $nums =~ s/_//g;
   my @cheat = split(//, $nums);
   my $first = shift @cheat;
   my $second = shift @cheat;

@@ -1,7 +1,23 @@
-Required Modules:
+Required Software:
+rnamotif
+pknots
+nupack
+libpng
+libjpeg
+libgd
+
+
+Required Perl Modules:
 
 DBI
 Template
 DBD::Mysql
 CGI
 Statistics::Distribution
+GD::Graph
+GD::Image with png support
+Bioperl
+
+Required Editing:
+Copy prfdb.conf.default to prfdb.conf
+Check over the fields there, prefix, db, username should all be changed

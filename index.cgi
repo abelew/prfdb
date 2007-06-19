@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl -w -d:DProf
 use strict;
 use CGI qw/:standard :html3/;
 use CGI::Carp qw(fatalsToBrowser carpout);
@@ -6,10 +6,8 @@ use Template;
 use lib "lib";
 use PRFConfig;
 use PRFdb;
-use RNAMotif_Search;
 use PRF_Blast; 
 use PRFGraph;
-
 my $config = $PRFConfig::config;
 ## All configuration information exists here
 chdir($config->{basedir});
@@ -127,43 +125,45 @@ sub Print_Detail_Slipsite {
   ###                               0        1        2         3       4       5        6       7    8      9      10          11         12         13
   my $info = $db->MySelect("SELECT species, slipsite, sequence, output, parsed, barcode, parens, mfe, pairs, knotp, algorithm, lastupdate, seqlength, id FROM mfe WHERE accession = ?", [$accession]);
   foreach my $structure (@{$info}) {
-    my $id = $structure->[13];
-    my $boot = $db->MySelect("SELECT mfe_values, mfe_mean, mfe_sd, mfe_se FROM boot WHERE mfe_id = ?", [$id], 'row');
-    my ($chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $mfe);
-    if (defined($boot)) {
-      my $mfe_values = $boot->[0];
-      my @mfe_values_array = split(/\s+/, $mfe_values);
-      
-      my $acc_slip = qq({$accession}_{$slipstart});
-      $chart = new PRFGraph( {list_data => \@mfe_values_array,
-      	acc_slip => $acc_slip,
-        });
-      my $filename = $chart->Picture_Filename('distribution', $acc_slip);
-      if (!-r $filename) {
-        $chart = Make_Distribution();
+      my $id = $structure->[13];
+      my $boot = $db->MySelect("SELECT mfe_values, mfe_mean, mfe_sd, mfe_se FROM boot WHERE mfe_id = ?", [$id], 'row');
+      my ($filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $mfe);
+      if (defined($boot)) {
+	  my $mfe_values = $boot->[0];
+	  my @mfe_values_array = split(/\s+/, $mfe_values);
+	  my $acc_slip = qq/$accession-$slipstart/;
+	  $chart = new PRFGraph( {
+	      list_data => \@mfe_values_array,
+	      acc_slip => $acc_slip,
+	  });
+	  $filename = $chart->Picture_Filename('distribution', $acc_slip);
+	  my $pre_chartURL = $chart->Picture_Filename('distribution', $acc_slip, 'url');
+	  $chartURL = $basedir . '/' . $pre_chartURL;
+	  if (!-r $filename) {
+	      $chart = $chart->Make_Distribution();
+	  }
+
+	  $mfe_mean = $boot->[1];
+	  $mfe_sd = $boot->[2];
+	  $mfe_se = $boot->[3];
+	  $mfe = $structure->[7];
+	  $zscore = sprintf("%.2f", ($mfe - $mfe_mean) / $mfe_sd);
+	  $randMean = sprintf("%.1f",$mfe_mean);
+	  $randSE = sprintf("%.1f", $mfe_se);
+	  my $ppcc_values = $chart->Get_PPCC();
+	  $ppcc = sprintf("%.4f",$ppcc_values);
       }
-      my $chartURL = $chart->Picture_Filename('distribution', $acc_slip, 'url');
- 
-      $mfe_mean = $boot->[1];
-      $mfe_sd = $boot->[2];
-      $mfe_se = $boot->[3];
-      $mfe = $structure->[7];
-      $zscore = sprintf("%.2f", ($mfe - $mfe_mean) / $mfe_sd);
-      $randMean = sprintf("%.1f",$mfe_mean);
-      $randSE = sprintf("%.1f", $mfe_se);
-      $ppcc = sprintf("%.4f",$chart->Get_PPCC());
-    }
-    else {
-      $chart = "undef";
-      $chartURL = "images/no_data.gif";
-      $mfe_mean = "undef";
-      $mfe_sd = "undef";
-      $mfe_se = "undef";
-      $zscore = "UNDEF";
-      $randMean = "UNDEF";
-      $randSE = "UNDEF";
-      $ppcc = "UNDEF";
-    }
+      else {
+	  $chart = "undef";
+	  $chartURL = "images/no_data.gif";
+	  $mfe_mean = "undef";
+	  $mfe_sd = "undef";
+	  $mfe_se = "undef";
+	  $zscore = "UNDEF";
+	  $randMean = "UNDEF";
+	  $randSE = "UNDEF";
+	  $ppcc = "UNDEF";
+      }
     $vars->{species} = $structure->[0];
     $vars->{slipsite} = $structure->[1];
     $vars->{pk_input} = $structure->[2];
@@ -299,7 +299,6 @@ sub ErrorPage {
 
 sub Start_Filter {
   my $species = $db->MySelect("SELECT distinct(species) from genome", [], 'flat');
-#  print "TESTME: @{$species}<br>\n";
 #  unshift (@{$species}, 'All');
   $vars->{startform} = $cgi->startform(-action => "$base/filter");
   $vars->{species} = $cgi->popup_menu(-name => 'species',
@@ -440,14 +439,12 @@ sub Create_Pretty_mRNA {
   my $slipsite_positions = $db->MySelect("SELECT DISTINCT start FROM mfe WHERE accession = ? ORDER BY start", [$accession], 'flat');
   ## Each slipsite_position will probably have to have the number of start_padding_bases added to it
   ## Now move all attributes by the number of padding bases, otherwise the non bases will get colored.
-#  print "TESTME PRE_ADD START: $orf_start STOP: $orf_stop<br>\n";
   my $corrected_orf_start = $orf_start + $start_padding_bases;
   my $corrected_orf_stop = $orf_stop + $start_padding_bases;
   my @corrected_slipsites = ();
   for my $d (0 .. $#$slipsite_positions) {
     $corrected_slipsites[$d] = $slipsite_positions->[$d] + $start_padding_bases;  ## Lazy
   }
-#  print "TESTME START: $orf_start STOP: $orf_stop<br>\n";
   ## If you make an array of stems, keep this in mind.
 
   my $first_pass = '';
