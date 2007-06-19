@@ -46,7 +46,6 @@ $PRFConfig::config->{db} = 'prfconfigdefault_db';
 $PRFConfig::config->{host} = 'prfconfigdefault_host';
 $PRFConfig::config->{user} = 'prfconfigdefault_user';
 $PRFConfig::config->{pass} = 'prfconfigdefault_pass';
-$PRFConfig::config->{PRE_PROCESS} = 'header.html';
 $PRFConfig::config->{INCLUDE_PATH} = 'html/';
 $PRFConfig::config->{INTERPOLATE} = 1;
 $PRFConfig::config->{POST_CHOMP} = 1;
