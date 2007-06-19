@@ -5,7 +5,7 @@ use PRFConfig;
 use PRFdb;
 
 my $config = $PRFConfig::config;
-my $db = new PRFdb;
+my $db     = new PRFdb;
 
 $db->Create_Rnamotif05();
 $db->Create_Nupack05();

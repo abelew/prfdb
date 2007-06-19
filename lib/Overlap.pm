@@ -7,88 +7,87 @@ use PRFConfig qw /PRF_Error PRF_Out /;
 my $config = $PRFConfig::config;
 
 sub new {
-  my ($class, %arg) = @_;
+  my ( $class, %arg ) = @_;
   my $me = bless {
-		  genome_id => $arg{genome_id},
-		  species => $arg{species},
-                  accession => $arg{accession},
-                  sequence => $arg{sequence},
-                  start => $arg{start},
-                 }, $class;
+    genome_id => $arg{genome_id},
+    species   => $arg{species},
+    accession => $arg{accession},
+    sequence  => $arg{sequence},
+    start     => $arg{start},
+  }, $class;
   return ($me);
 }
 
 sub Alts {
-  my $me = shift;
+  my $me    = shift;
   my $start = shift;
-  my $info = {
-              genome_id => $me->{genome_id},
-              species => $me->{species},
-              accession => $me->{accession},
-              start => $start,
-             };
-  my $plus = $me->Alt_Orf($start, 5);
-  if (defined($plus)) {
+  my $info  = {
+    genome_id => $me->{genome_id},
+    species   => $me->{species},
+    accession => $me->{accession},
+    start     => $start,
+  };
+  my $plus = $me->Alt_Orf( $start, 5 );
+  if ( defined($plus) ) {
     $info->{plus_length} = $plus->{length};
-    $info->{plus_orf} = $plus->{orf};
+    $info->{plus_orf}    = $plus->{orf};
   }
-  my $minus = $me->Alt_Orf($start, 6);
-  if (defined($minus)) {
+  my $minus = $me->Alt_Orf( $start, 6 );
+  if ( defined($minus) ) {
     $info->{minus_length} = $minus->{length};
-    $info->{minus_orf} = $minus->{orf};
+    $info->{minus_orf}    = $minus->{orf};
   }
-  return($info);
+  return ($info);
 }
 
 sub Alt_Orf {
-  my $me = shift;
-  my $start = shift;
-  my $offset = shift; ## 5 will go +1, 6 will go -1
+  my $me       = shift;
+  my $start    = shift;
+  my $offset   = shift;             ## 5 will go +1, 6 will go -1
   my $seq_help = new SeqMisc;
   my $sequence = $me->{sequence};
-  if (!defined($sequence)) {
-      my $error_string = "Alt_Orf: sequence is not defined!";
-      PRF_Error($error_string, $me->{species}, $me->{accession});
-      print "$me->{species} $me->{accession}: $error_string\n";
+  if ( !defined($sequence) ) {
+    my $error_string = "Alt_Orf: sequence is not defined!";
+    PRF_Error( $error_string, $me->{species}, $me->{accession} );
+    print "$me->{species} $me->{accession}: $error_string\n";
   }
-  my @seq = split(//, $sequence);
+  my @seq = split( //, $sequence );
   my $return = {
-                orf => '',
-                length => 0,
-               };
+    orf    => '',
+    length => 0,
+  };
   my $seq_count = 0;
-  my $codon = '';
-  for my $char (($start + $offset) .. $#seq) {
+  my $codon     = '';
+  for my $char ( ( $start + $offset ) .. $#seq ) {
     $seq[$char] = 'U' if $seq[$char] eq 'T';
     $return->{orf} .= "$seq[$char]";
     $seq_count++;
-    if (($seq_count % 3) == 0) {
+    if ( ( $seq_count % 3 ) == 0 ) {
       $codon .= "$seq[$char]";
       my $aa = $seq_help->{codons}->{$codon};
       $codon = '';
-    $return->{mrnaseq} .= "$seq[$char]\{$aa\} ";
-  }
-    else {
-      $codon .= "$seq[$char]";
+      $return->{mrnaseq} .= "$seq[$char]\{$aa\} ";
+    } else {
+      $codon             .= "$seq[$char]";
       $return->{mrnaseq} .= "$seq[$char]";
     }
   }
-  if ($return->{orf} =~ /^A+$/) {
-    return(undef);
+  if ( $return->{orf} =~ /^A+$/ ) {
+    return (undef);
   }
   $return->{orf} =~ tr/atgcT/AUGCU/;
-  my @plus_one = split(//, $return->{orf});
-  my $seqmisc = new SeqMisc(sequence => \@plus_one);
-  my $aa_seq = $seqmisc->{aaseq};
+  my @plus_one = split( //, $return->{orf} );
+  my $seqmisc      = new SeqMisc( sequence => \@plus_one );
+  my $aa_seq       = $seqmisc->{aaseq};
   my $new_plus_one = '';
-  for my $char (@{$aa_seq}) {
-    if ($char eq '*') { last; }
+  for my $char ( @{$aa_seq} ) {
+    if ( $char eq '*' ) { last; }
     $new_plus_one .= $char;
   }
   $return->{orf} = $new_plus_one;
-  my @new_plus = split(//, $new_plus_one);
+  my @new_plus = split( //, $new_plus_one );
   $return->{length} = scalar(@new_plus);
-  return($return);
+  return ($return);
 }
 
 1;

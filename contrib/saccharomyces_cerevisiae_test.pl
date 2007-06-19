@@ -4,8 +4,8 @@ use lib '../lib';
 use PRFConfig;
 use PRFdb;
 
-my $config = $PRFConfig::config;
-my $db = new PRFdb;
+my $config  = $PRFConfig::config;
+my $db      = new PRFdb;
 my $species = $ARGV[0];
 $PRFConfig::config->{input} = 'data/orf_coding.fasta';
 $species = 'saccharomyces_cerevisiae';

@@ -9,12 +9,11 @@ my $config = $PRFConfig::config;
 $config->{db} = 'prfdb_test';
 my $db = new PRFdb;
 
-
 $db->Create_Stats();
 my $data = {
-            species => ['homo_sapiens','saccharomyces_cerevisiae'],
-            seqlength => [50,],
-            max_mfe => ['10.0',],
-            algorithm => ['nupack','pknots'],
-            };
+  species   => [ 'homo_sapiens', 'saccharomyces_cerevisiae' ],
+  seqlength => [ 50, ],
+  max_mfe   => [ '10.0', ],
+  algorithm => [ 'nupack',       'pknots' ],
+};
 $db->Put_Stats($data);
