@@ -1,0 +1,136 @@
+<p><font size="-1">This structure is associated with a putative slippery site 
+  at position [% slipstart %] in [% genename %] from [% species %]. The 
+  structure you have requested was folded by [% algorithm %] to a length of
+  [% seqlength %] bases. The predicted structure has a minimum free energy value of
+  [% mfe %] kcal/mol and comprises [% pairs %] base pairs.<br>
+  The &quot;barcode&quot; for this structure is 
+  <strong>&quot;<font face="Courier New, Courier, mono">[% barcode %]</font>&quot;</strong>. 
+  This structure is predicted to have a 
+  <em><font face="Times New Roman, Times, serif">Z </font></em>score
+  of [% zscore %] (mean MFE = [% mean %] &plusmn; [% stderr %]).<br>
+  The randomized MFE values fit a Normal distribution with a Probability Plot 
+  Correlation Coefficient (PPCC) value of [% ppcc %].
+</font></p>
+
+    <table width="450" border="0" align="center" cellpadding="2" cellspacing="1">
+
+      <tr valign="top" bgcolor="#CCCCCC">
+	<td width="120">
+	  <div align="right"><em><font size="-1">Algorithm Used: </font></em></div>
+	</td>
+	<td>
+	  <strong><font size="-1" face="Courier New, Courier, mono">[% algorithm %]</font></strong>
+	</td>
+
+      </tr>
+      <tr valign="top" bgcolor="#CCCCCC">
+	<td width="120">
+	  <div align="right"><em><font size="-1">Barcode: </font></em></div>
+	</td>
+	<td>
+	  <strong><font size="-1" face="Courier New, Courier, mono">[% barcode %]</font></strong>
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#CCCCCC">
+	<td width="120">
+	  <div align="right"><em><font size="-1">Sequence Length: </font></em></div>
+	</td>
+	<td>
+	  <strong><font size="-1" face="Courier New, Courier, mono">[% seqlength %] Bases</font></strong>
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#CCCCCC">
+	<td width="120">
+	  <div align="right"><em><font size="-1"> Base Pairs:</font></em></div>
+	</td>
+	<td>
+	  <strong><font size="-1" face="Courier New, Courier, mono">[% pairs %]</font></strong>
+	</td>
+      </tr>
+    </table>
+
+
+    <table width="450" border="0" align="center" cellpadding="2" cellspacing="1">
+      <tr bgcolor="#CCCCCC">
+	<td width="120" valign="top">
+	  <div align="right"><em><font size="-1">MFE:</font></em></div>
+	</td>
+	<td valign="top">
+	  <font size="-1" face="Courier New, Courier, mono"><strong>[% mfe %] kcal/mol</strong></font>
+	</td>
+	<td width="200" rowspan="4" valign="top">
+	  <div align="left"><img src="[% chartURL %]" width="200" height="150" border="2"></div>
+	</td>
+      </tr>
+
+      <tr bgcolor="#CCCCCC">
+	<td width="120" valign="top">
+	  <div align="right"><em><font size="-1">Z score</font></em></div>
+	</td>
+	<td valign="top">
+	  <font size="-1" face="Courier New, Courier, mono"><strong>[% zscore %]</strong></font>
+	</td>
+      </tr>
+
+      <tr bgcolor="#CCCCCC">
+	<td width="120" valign="top">
+	  <div align="right"><em><font size="-1">Randomized Mean MFE</font></em></div>
+	</td>
+	<td valign="top">
+	  <font size="-1" face="Courier New, Courier, mono"><strong>[% randmean %] &plusmn; [% randse %] kcal/mol</strong></font>
+	</td>
+      </tr>
+      
+      <tr bgcolor="#CCCCCC">
+	<td width="120" valign="top">
+	  <div align="right"><em><font size="-1">PPCC</font></em></div>
+	</td>
+	<td valign="top">
+	  <font size="-1" face="Courier New, Courier, mono"><strong>[% ppcc %]</strong></font>
+	</td>
+      </tr>
+</table>
+
+<p><font size="-1">Below you will find 1) the input sequence in FASTA format;
+    2) the raw output from [% algorithm %]; 3) a condensed &quot;parsed&quot; structure
+    format; and 4) the structure in bracket notation.</font></p>
+<hr>
+<p><strong>FASTA</strong></p>
+
+
+    <table width="100%" border="0" cellpadding="2" cellspacing="0" bgcolor="#CCCCCC">
+      <tr>
+	<td>
+	  <font size="-1" face="Courier New, Courier, mono">&gt;[% accession %] sub sequence<br>
+	    [% pk_input %]</font></td>
+      </tr>
+    </table>
+
+<hr>
+<p><strong>Raw Output from [% algorithm %].</strong></p>
+
+    <table width="100%" border="0" cellpadding="2" cellspacing="0" bgcolor="#CCCCCC">
+      <tr>
+	<td>
+	  <font size="-1" face="Courier New, Courier, mono">[% pk_output %]</font>
+	</td>
+      </tr>
+    </table>
+
+<hr>
+<p><strong>The structure in two readable formats.</strong></p>
+
+    <table width="100%" border="0" cellpadding="2" cellspacing="0" bgcolor="#CCCCCC">
+      <tr>
+	<td>
+	  <font face="Courier New, Courier, mono">[% parsed %]</font>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <font face="Courier New, Courier, mono">[% brackets %]</font>
+	</td>
+      </tr>
+    </table>
