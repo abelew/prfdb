@@ -25,7 +25,6 @@ sub Nupack {
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start     = $me->{start};
-  print "NUPACK: infile: $inputfile accession: $accession start: $start\n";
   my $slipsite = Get_Slipsite_From_Input($inputfile);
   my $return   = {
     start     => $start,
@@ -47,6 +46,8 @@ sub Nupack {
     die("$config->{nupack} is missing.") unless ( -r $config->{nupack} );
     $command = qq($config->{nupack} $inputfile 2>nupack.err);
   }
+  print "NUPACK: infile: $inputfile accession: $accession start: $start
+command: $command\n";
   my $nupack_pid = open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack, Could not run nupack: $!", $accession );
   ## OPEN NU in Nupack
   my $count = 0;
@@ -137,7 +138,6 @@ sub Nupack_NOPAIRS {
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start     = $me->{start};
-  print "NUPACK_NOPAIRS: infile: $inputfile accession: $accession start: $start\n";
   my $slipsite = Get_Slipsite_From_Input($inputfile);
   my $return   = {
     start     => $start,
@@ -160,7 +160,8 @@ sub Nupack_NOPAIRS {
     die("$config->{nupack} is missing.") unless ( -r $config->{nupack} );
     $command = qq($config->{nupack} $inputfile 2>nupack.err);
   }
-  print "Running: $command\n";
+  print "NUPACK_NOPAIRS: infile: $inputfile accession: $accession start: $start
+command: $command\n";
   my $nupack_pid = open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_NOPAIRS, Could not run nupack: $!", $accession );
   ## OPEN NU in Nupack_NOPAIRS
   my $count         = 0;
@@ -244,7 +245,6 @@ sub Pknots {
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start     = $me->{start};
-  print "PKNOTS: infile: $inputfile accession: $accession start: $start\n";
   my $slipsite = Get_Slipsite_From_Input($inputfile);
   my $seq      = Get_Sequence_From_Input($inputfile);
   my $return   = {
@@ -266,6 +266,8 @@ sub Pknots {
   } else {
     $command = qq($config->{pknots} -k $inputfile 2>pknots.err);
   }
+  print "PKNOTS: infile: $inputfile accession: $accession start: $start
+command: $command\n";
   open( PK, "$command |" ) or PRF_Error( "RNAFolders::Pknots, Could not run pknots: $!", $accession );
   ## OPEN PK in Pknots
   my $counter = 0;

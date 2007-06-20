@@ -169,7 +169,7 @@ sub Print_Detail_Slipsite {
     $vars->{pk_output}  = $structure->[3];
     $vars->{parsed}     = $structure->[4];
     $vars->{barcode}    = $structure->[5];
-    $vars->{bracket}    = $structure->[6];
+    $vars->{brackets}    = $structure->[6];
     $vars->{mfe}        = $structure->[7];
     $vars->{pairs}      = $structure->[8];
     $vars->{knotp}      = $structure->[9];
@@ -186,9 +186,39 @@ sub Print_Detail_Slipsite {
     $vars->{randmean} = $randMean;
     $vars->{randse}   = $randSE;
     $vars->{ppcc}     = $ppcc;
+
+    $vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
+
     $template->process( "detail_record_body.html", $vars ) or print $template->error(), die;
   }    ## End foreach structure in the database
   $template->process( "detail_list_footer.html", $vars );
+}
+
+sub Color_Stems {
+    my $brackets = shift;
+    my $parsed = shift;
+    my @br = split(//, $brackets);
+    my @pa = split(/\s+/, $parsed);
+    my $colors = {
+	1 => 'blue',
+	2 => 'red',
+	3 => 'green',
+	4 => 'purple',
+	5 => 'orange',
+	6 => 'brown',
+	7 => 'yellow',
+    };
+    my $bracket_string = '';
+    for my $t (0 .. $#pa) {
+	if ($pa[$t] eq '.') {
+	    $bracket_string .= '.';
+	}
+	else {
+	    my $append = qq(<font color="$colors->{$pa[$t]}">$br[$t]</font>);
+	    $bracket_string .= $append;
+	}
+    }
+    return($bracket_string);
 }
 
 sub Print_Single_Accession {
@@ -430,7 +460,20 @@ sub Create_Pretty_mRNA {
   my @seq_array = split( //, $mrna_seq );
   ## First step:  Figure out how many bases we need to pad to get the start codon in the 0 frame.
   ## The orf_start is a 1 indexed integer
-  my $start_padding_bases = ( $orf_start - 1 ) % 3;
+  my $pre_padding_bases = $orf_start % 3;
+  my $start_padding_bases;
+  if ($pre_padding_bases == 0) {
+      $start_padding_bases = 0;
+  }
+  elsif ($pre_padding_bases == 1) {
+      $start_padding_bases = 2;
+  }
+  elsif ($pre_padding_bases == 2) {
+      $start_padding_bases = 1;
+  }
+  else {
+      $start_padding_bases = 10;
+  }
   my $slipsite_positions = $db->MySelect( "SELECT DISTINCT start FROM mfe WHERE accession = ? ORDER BY start", [$accession], 'flat' );
   ## Each slipsite_position will probably have to have the number of start_padding_bases added to it
   ## Now move all attributes by the number of padding bases, otherwise the non bases will get colored.

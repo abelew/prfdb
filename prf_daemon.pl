@@ -38,6 +38,7 @@ GetOptions(
   ## also usable by inputfasta or inputfile
   'startmotif:s'           => \$conf{startmotif},             ## A specific start motif to start folding at
   'length:i'               => \$conf{max_struct_length},      ## i == integer
+  'landscape_length:i'     => \$conf{landscape_seqlength},
   'nupack:i'               => \$conf{do_nupack},              ## If no type definition is given, it is boolean
   'pknots:i'               => \$conf{do_pknots},              ## The question is, will these be set to 0 if not applied?
   'boot:i'                 => \$conf{do_boot},
@@ -239,7 +240,7 @@ sub Gather {
 ## End Gather
 
 ## Start PRF_Gatherer
-sub PRG_Gatherer {
+sub PRF_Gatherer {
   my $state = shift;
   $state->{genome_information} = $db->Get_ORF( $state->{accession} );
   my $sequence             = $state->{genome_information}->{sequence};
@@ -258,6 +259,7 @@ STARTSITE: foreach my $slipsite_start ( keys %{$rnamotif_information} ) {
     my $seqlength;
     $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
     $state->{sequence}   = $rnamotif_information->{$slipsite_start}{sequence};
+    print "PRF_Gatherer: $slipsite_start\n";
     if ( !defined( $state->{fasta_file} or $state->{fasta_file} eq '' or !-r $state->{fasta_file} ) ) {
       print "The fasta file for: $state->{accession} $slipsite_start does not exist.\n";
       print "You may expect this script to die momentarily.\n";
@@ -358,9 +360,10 @@ sub Landscape_Gatherer {
   my @seq_array       = split( //, $sequence );
   my $sequence_length = scalar(@seq_array);
   my $start_point     = 0;
-  while ( $start_point + $state->{seqlength} <= $sequence_length ) {
+  while ( $start_point + $config->{landscape_seqlength} <= $sequence_length ) {
+    print "Landscape_Gatherer: $start_point\n";
     my $individual_sequence = ">$message";
-    my $end_point           = $start_point + $config->{max_struct_length};
+    my $end_point           = $start_point + $config->{landscape_seqlength};
     foreach my $character ( $start_point .. $end_point ) {
       $individual_sequence = $individual_sequence . $seq_array[$character];
     }
@@ -373,13 +376,11 @@ sub Landscape_Gatherer {
       accession => $state->{accession},
       start     => $start_point,
     );
-
     my $nupack_foldedp = $db->Get_Num_RNAfolds( 'nupack', $state->{genome_id}, $start_point, 'landscape' );
     my $pknots_foldedp = $db->Get_Num_RNAfolds( 'pknots', $state->{genome_id}, $start_point, 'landscape' );
     my ( $nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id );
     if ( $nupack_foldedp == 0 ) {
       if ( $config->{nupack_nopairs_hack} ) {
-        print "Running NOPAIRS\n";
         $nupack_info = $fold_search->Nupack_NOPAIRS('nopseudo');
       } else {
         $nupack_info = $fold_search->Nupack('nopseudo');
@@ -587,7 +588,7 @@ sub Check_Pknots {
 ## Start Clean_Up
 sub Clean_Up {
   $db->Done_Queue( $state->{genome_id} );
-  foreach my $k ( keys %{$state} ) { $state->{$k} = undef unless ( $k eq 'done_count' ); }
+  foreach my $k ( keys %{$state} ) { $state->{$k} = undef unless ( $k eq 'done_count' or $k ); }
 }
 ## End Clean_Up
 

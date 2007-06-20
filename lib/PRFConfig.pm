@@ -32,6 +32,7 @@ $PRFConfig::config->{queue_table}          = 'queue';
 $PRFConfig::config->{check_webqueue}       = 1;
 $PRFConfig::config->{genome_table}         = 'genome';
 $PRFConfig::config->{seqlength}            = 100;
+$PRFConfig::config->{landscape_seqlength}  = 105;
 $PRFConfig::config->{max_struct_length}    = 99;
 $PRFConfig::config->{do_nupack}            = 1;
 $PRFConfig::config->{do_pknots}            = 1;
