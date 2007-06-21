@@ -134,7 +134,7 @@ sub Print_Detail_Slipsite {
     my $mfe = $structure->[12];
     my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se FROM boot WHERE mfe_id = ?);
     my $boot = $db->MySelect( $boot_stmt, [$id], 'row' );
-    my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $mfe );
+    my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se );
     if ( defined($boot) ) {
       my $mfe_values       = $boot->[0];
       my @mfe_values_array = split( /\s+/, $mfe_values );
