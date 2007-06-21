@@ -371,6 +371,7 @@ sub Landscape_Gatherer {
     }
     $individual_sequence = $individual_sequence . "\n";
     $state->{fasta_file} = $db->Sequence_to_Fasta($individual_sequence);
+    if (!defined($state->{accession})) { die("The accession is no longer defined. This cannot be allowed.") };
     my $fold_search = new RNAFolders(
       file      => $state->{fasta_file},
       genome_id => $state->{genome_id},
@@ -504,6 +505,7 @@ sub Check_Boot_Connectivity {
       {
         ### Then there is no nupack information :(
         #print "No Nupack information!\n";
+        if (!defined($state->{accession})) { die("The accession is no longer defined. This cannot be allowed.") };
         my $fold_search = new RNAFolders(
           file      => $state->{fasta_file},
           genome_id => $state->{genome_id},
@@ -516,6 +518,7 @@ sub Check_Boot_Connectivity {
         and $mfe_method eq 'pknots' )
       {
         ### Then there is no pknots information :(
+        if (!defined($state->{accession})) { die("The accession is no longer defined. This cannot be allowed.") };
         my $fold_search = new RNAFolders(
           file      => $state->{fasta_file},
           genome_id => $state->{genome_id},

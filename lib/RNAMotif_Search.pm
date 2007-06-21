@@ -55,7 +55,7 @@ sub Search {
   for my $c ( 0 .. $#information ) {    ## Recurse over every nucleotide
 
     if ( ( ( $c + 1 ) % 3 ) == 0 ) {    ## Check for correct reading frame
-      my $next_seven = "$information[$c] " . $information[ $c + 1 ] . $information[ $c + 2 ] . "$information[$c + 3] " . $information[ $c + 4 ] . $information[ $c + 5 ] . $information[ $c + 6 ] if ( defined( $information[ $c + 6 ] ) );
+	my $next_seven = qq($information[$c] ${information[$c+1]}${information[$c+2]}${information[$c+3]} ${information[$c+4]}${information[$c+5]}${information[$c+6]}) if (defined($information[$c+6]));
       ## Check for a slippery site from this position
       my $slipsite = Slip_p($next_seven) if ( defined($next_seven) );
       if ($slipsite) {                  ## Then check that a slippery site is in the correct frame
@@ -64,7 +64,7 @@ sub Search {
         ## We chop off the slippery site we will still have a window of the
         ## Desired size.
         my $no_slip_site_start = $start + 7;
-        my $end                = $c + (($me->{seqlength} + 7) - 1);  ## One day someone will look at this and wonder
+        my $end                = $c + (($me->{seqlength} - 1) + 7);  ## One day someone will look at this and wonder
       ##  WTF?  However it was done for a reason, to make explicit the removal of a single base so that the fasta file
       ##  Created by this function will have the correct number of bases -- without this -1 the fastafile will have n+1
       ##  bases rather than the expected n

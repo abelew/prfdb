@@ -200,6 +200,8 @@ $sequence
   close(OUTPUT);
 }
 
+
+
 sub Sequence_to_Fasta {
   my $me   = shift;
   my $data = shift;
@@ -1001,6 +1003,7 @@ sub Put_MFE {
     $errorstring = "Undefined value(s) in Put_MFE: $errorstring";
     PRF_Error( $errorstring, $data->{species}, $data->{accession} );
   }
+  $data->{sequence} =~ tr/actgu/ACTGU/;
   my $statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?));
   my ( $cp, $cf, $cl ) = caller();
   $me->Execute( $statement, [ $data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{slipsite}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode} ], [ $cp, $cf, $cl ], $data->{genome_id} );
@@ -1021,6 +1024,7 @@ sub Put_MFE_Landscape {
     $errorstring = "Undefined value(s) in Put_MFE_Landscape: $errorstring";
     Sec_Error( $errorstring, $data->{species}, $data->{accession} );
   }
+  $data->{sequence} =~ tr/actgu/ACTGU/;
   my $statement = qq(INSERT INTO landscape (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
   my ( $cp, $cf, $cl ) = caller();
   $me->Execute( $statement, [ $data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode} ], [ $cp, $cf, $cl ], $data->{genome_id} );

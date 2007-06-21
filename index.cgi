@@ -179,6 +179,7 @@ sub Print_Detail_Slipsite {
     $vars->{slipsite}   = $structure->[6];
     $vars->{seqlength}  = $structure->[7];
     $vars->{pk_input}   = $structure->[8];
+    $vars->{pk_input}   =~ tr/atgcu/ATGCU/;
     $vars->{pk_output}  = $structure->[9];
     $vars->{parsed}     = $structure->[10];
     $vars->{parsed}     =~ s/\s+//g;
@@ -205,6 +206,7 @@ sub Print_Detail_Slipsite {
 
     $vars->{pk_input} = Color_Stems($vars->{pk_input}, $vars->{parsed});
     $vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
+    $vars->{parsed} = Color_Stems($vars->{parsed}, $vars->{parsed});
 
     $template->process( "detail_body.html", $vars ) or print $template->error(), die;
   }    ## End foreach structure in the database
