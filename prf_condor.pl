@@ -32,7 +32,7 @@ GetOptions(
   'startpos:s' => \$conf{startpos},          ## A specific start position to fold a single sequence at,
   ## also usable by inputfasta or inputfile
   'startmotif:s'           => \$conf{startmotif},             ## A specific start motif to start folding at
-  'length:i'               => \$conf{max_struct_length},      ## i == integer
+  'length:i'               => \$conf{seqlength},      ## i == integer
   'nupack:i'               => \$conf{do_nupack},              ## If no type definition is given, it is boolean
   'pknots:i'               => \$conf{do_pknots},              ## The question is, will these be set to 0 if not applied?
   'boot:i'                 => \$conf{do_boot},
@@ -154,8 +154,8 @@ if ( $config->{nodaemon} eq '1' ) {
 until ( defined( $state->{time_to_die} ) ) {
   ### You can set a configuration variable 'master' so that it will not die
   if ( $state->{done_count} > 60 and !defined( $config->{master} ) ) { $state->{time_to_die} = 1 }
-  if ( defined( $config->{max_struct_length} ) ) {
-    $state->{seqlength} = $config->{max_struct_length} + 1;
+  if ( defined( $config->{seqlength} ) ) {
+    $state->{seqlength} = $config->{seqlength};
   } else {
     $state->{seqlength} = 100;
   }
@@ -355,7 +355,7 @@ $nu_boot and running: $config->{boot_iterations} times\n";
   }
   if   ( $config->{arch_specific_exe} ) { print "I AM USING ARCH SPECIFIC EXECUTABLES\n"; }
   else                                  { print "I am not using arch specific executables\n"; }
-  print "The default structure length in this run is: $config->{max_struct_length}\n";
+  print "The default structure length in this run is: $config->{seqlength}\n";
   print "I am using the database: $config->{db} and user: $config->{user}\n\n\n";
   sleep(1);
 }
@@ -433,7 +433,7 @@ sub Check_Nupack {
   my $nupack_folds = $db->Get_Num_RNAfolds( 'nupack', $state->{genome_id}, $slipsite_start );
   if ( $nupack_folds > 0 ) {
     print "$state->{genome_id} has $nupack_folds > 0 nupack_folds\n";
-    my $seqlen = $config->{max_struct_length} + 1;
+    my $seqlen = $config->{seqlength};
     print "TEST seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
     $state->{nupack_mfe_id} = $db->Get_MFE_ID( $state->{genome_id}, $slipsite_start, $seqlen, 'nupack' );
     $nupack_mfe_id = $state->{nupack_mfe_id};
@@ -462,7 +462,7 @@ sub Check_Pknots {
   my $pknots_folds = $db->Get_Num_RNAfolds( 'pknots', $state->{genome_id}, $slipsite_start );
   if ( $pknots_folds > 0 ) {    ### If there ARE existing folds...
     print "$state->{genome_id} has $pknots_folds > 0 pknots_folds\n";
-    my $seqlen = $config->{max_struct_length} + 1;
+    my $seqlen = $config->{seqlength};
     print "TEST seqlen: $seqlen genome_id:$state->{genome_id} slipsite_start:$slipsite_start seqlen:$seqlen\n";
     $state->{pknots_mfe_id} = $db->Get_MFE_ID( $state->{genome_id}, $slipsite_start, $seqlen, 'pknots' );
     $pknots_mfe_id = $state->{pknots_mfe_id};
@@ -491,7 +491,7 @@ sub Check_Sequence_Length {
   my $sequence               = $state->{sequence};
   my @seqarray               = split( //, $sequence );
   my $sequence_length        = $#seqarray;
-  my $wanted_sequence_length = $config->{max_struct_length};
+  my $wanted_sequence_length = $config->{seqlength};
   open( IN, "<$filename" ) or die("Check_Sequence_Length: Couldn't open $filename $!");
   ## OPEN IN in Check_Sequence_Length
   my $output = '';

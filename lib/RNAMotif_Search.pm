@@ -64,7 +64,10 @@ sub Search {
         ## We chop off the slippery site we will still have a window of the
         ## Desired size.
         my $no_slip_site_start = $start + 7;
-        my $end                = $c + $me->{seqlength} + 7;
+        my $end                = $c + (($me->{seqlength} + 7) - 1);  ## One day someone will look at this and wonder
+      ##  WTF?  However it was done for a reason, to make explicit the removal of a single base so that the fasta file
+      ##  Created by this function will have the correct number of bases -- without this -1 the fastafile will have n+1
+      ##  bases rather than the expected n
         my $fh                 = PRFdb::MakeTempfile();
         ## OPEN $fh in Search
         my $filename = $fh->filename;
@@ -88,6 +91,7 @@ sub Search {
         ## The start and end in full sequence takes into account
         ## Sequences which are cds
         my $start_in_full_sequence = $start + $orf_start + 1;
+#        my $end_in_full_sequence   = $end + $orf_start + 1;
         my $end_in_full_sequence   = $end + $orf_start + 1;
         ## These + 1's are required because thus far the start site has been incorrectly calculated.
         my $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
@@ -97,7 +101,7 @@ $string
         close($fh);
         ## CLOSE $fh in Search
         ### End of the fasta file.
-        my $command = qq($config->{rnamotif} -context -descr $config->{descriptor_file} $filename 2>rnamotif.err | $config->{rmprune});
+        my $command = qq($config->{rnamotif} -context -descr $config->{rnamotif_descriptor} $filename 2>rnamotif.err | $config->{rmprune});
         open( RNAMOT, "$command |" ) or PRF_Error( "RNAMotif_Search:: Search, Unable to run rnamotif: $!", 'rnamotif', '' );
         ## OPEN RNAMOT in Search
         my $permissable     = 0;

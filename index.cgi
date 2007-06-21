@@ -122,8 +122,7 @@ sub Print_Detail_Slipsite {
   ## 0  1         2         3       4         5     6        7         8        9      10     11     12  13    14    15      16
   my $info = $db->MySelect( $detail_stmt, [ $accession, $slipstart ] );
   $vars->{species} = $info->[0]->[3];
-  $vars->{genome_id} = $info->[1]->[1];
-  print "TESTME: $vars->{genome_id}\n";
+  $vars->{genome_id} = $info->[0]->[1];
   $vars->{mfe_id} = $info->[0]->[0];
 
   my $genome_stmt = qq(SELECT genename FROM genome where id = ?);

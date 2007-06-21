@@ -37,7 +37,7 @@ GetOptions(
   'startpos:s' => \$conf{startpos},               ## A specific start position to fold a single sequence at,
   ## also usable by inputfasta or inputfile
   'startmotif:s'           => \$conf{startmotif},             ## A specific start motif to start folding at
-  'length:i'               => \$conf{max_struct_length},      ## i == integer
+  'length:i'               => \$conf{seqlength},      ## i == integer
   'landscape_length:i'     => \$conf{landscape_seqlength},
   'nupack:i'               => \$conf{do_nupack},              ## If no type definition is given, it is boolean
   'pknots:i'               => \$conf{do_pknots},              ## The question is, will these be set to 0 if not applied?
@@ -185,8 +185,8 @@ if ( $config->{checks} ) {
 until ( defined( $state->{time_to_die} ) ) {
   ### You can set a configuration variable 'master' so that it will not die
   if ( $state->{done_count} > 60 and !defined( $config->{master} ) ) { $state->{time_to_die} = 1 }
-  if ( defined( $config->{max_struct_length} ) ) {
-    $state->{seqlength} = $config->{max_struct_length} + 1;
+  if ( defined( $config->{seqlength} ) ) {
+    $state->{seqlength} = $config->{seqlength};
   } else {
     $state->{seqlength} = 100;
   }
@@ -233,7 +233,9 @@ sub Gather {
 
   my %pre_landscape_state = %{$state};
   my $landscape_state     = \%pre_landscape_state;
-  Landscape_Gatherer( $landscape_state, $message );
+  if ($config->{do_landscape}) {
+    Landscape_Gatherer( $landscape_state, $message );
+  }
 
   PRF_Gatherer($state);
 }
@@ -599,7 +601,7 @@ sub Check_Sequence_Length {
   my $filename               = $state->{fasta_file};
   my $sequence               = $state->{sequence};
   my @seqarray               = split( //, $sequence );
-  my $sequence_length        = $#seqarray;
+  my $sequence_length        = $#seqarray + 1;
   my $wanted_sequence_length = $config->{seqlength};
   open( IN, "<$filename" ) or die("Check_Sequence_Length: Couldn't open $filename $!");
   ## OPEN IN in Check_Sequence_Length
