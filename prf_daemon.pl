@@ -245,7 +245,7 @@ sub PRF_Gatherer {
   $state->{genome_information} = $db->Get_ORF( $state->{accession} );
   my $sequence             = $state->{genome_information}->{sequence};
   my $orf_start            = $state->{genome_information}->{orf_start};
-  my $motifs               = new RNAMotif_Search( config => $config );
+  my $motifs               = new RNAMotif_Search();
   my $rnamotif_information = $motifs->Search( $state->{genome_information}->{sequence}, $state->{genome_information}->{orf_start} );
   $state->{rnamotif_information} = $rnamotif_information;
   if ( !defined( $state->{rnamotif_information} ) ) {
@@ -420,7 +420,8 @@ sub Landscape_Gatherer {
 
 ## Start Check_Environment
 sub Check_Environment {
-  die("No rnamotif descriptor file set.")                  unless ( defined( $config->{rnamotif_template} ) );
+  die("No rnamotif template file set.")                  unless ( defined( $config->{rnamotif_template} ) );
+  die("No rnamotif descriptor file set.")                  unless ( defined( $config->{rnamotif_descriptor} ) );
   die("Workdir must be executable: $config->{workdir} $!") unless ( -x $config->{workdir} );
   die("Workdir must be writable: $!")                      unless ( -w $config->{workdir} );
   die("Database not defined")                              unless ( $config->{db} ne 'prfconfigdefault_db' );
@@ -428,10 +429,11 @@ sub Check_Environment {
   die("Database user not defined")                         unless ( $config->{user} ne 'prfconfigdefault_user' );
   die("Database pass not defined")                         unless ( $config->{pass} ne 'prfconfigdefault_pass' );
 
-  unless ( -r $config->{rnamotif_template} ) {
+  unless ( -r $config->{rnamotif_descriptor} ) {
     RNAMotif_Search::Descriptor();
-    die("Unable to read the rnamotif descriptor file: $!")
-      unless ( -r $config->{rnamotif_template} );
+    unless (-r $config->{rnamotif_descriptor}) {
+	die("Unable to read the rnamotif descriptor file: $!");
+    }
   }
 }
 ## End Check_Environment

@@ -4,7 +4,7 @@ use lib '.';
 use PRFdb;
 use Template;
 use PRFConfig qw / PRF_Error PRF_Out /;
-my $config;
+my $config = $PRFConfig::config;
 my %slippery_sites = (
   aaaaaaa => 'A AAA AAA',
   aaaaaac => 'A AAA AAC',
@@ -35,11 +35,6 @@ my %slippery_sites = (
 
 sub new {
   my ( $class, %arg ) = @_;
-  if ( defined( $arg{config} ) ) {
-    $config = $arg{config};
-  } else {
-    $config = $PRFConfig::config;
-  }
   my $me = bless {}, $class;
   $me->{seqlength}          = $config->{seqlength};
   $me->{stem_length}        = 6;
@@ -161,8 +156,11 @@ sub Descriptor {
   my $template_config = $config;
   $template_config->{PRE_PROCESS} = undef;
   my $template = new Template($template_config);
-  my $output   = $config->{rnamotif_template};
-  unless ( -r $output ) {
+  my $rnamotif_template_file = qq($config->{INCLUDE_PATH}$config->{rnamotif_template});
+  if (!-r $rnamotif_template_file) {
+      die("Need an rnamotif template");
+  }
+  unless ( -r $config->{rnamotif_descriptor} ) {
     my $vars = {
       slip_site_1          => $config->{slip_site_1},
       slip_site_2          => $config->{slip_site_2},
@@ -182,9 +180,8 @@ sub Descriptor {
       stem2_spacer_min     => $config->{stem2_spacer_min},
       stem2_spacer_max     => $config->{stem2_spacer_max},
     };
-    my $input = $config->{descriptor_template};
-    $template->process( $input, $vars, $output ) or die $template->error();
-  }    ## Unless the template file exists.
+    $template->process( $config->{rnamotif_template}, $vars, $config->{rnamotif_descriptor} ) or die $template->error();
+  }    ## Unless the rnamotif descriptor file exists.
 }
 
 1;
