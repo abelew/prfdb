@@ -8,6 +8,8 @@ use PRFConfig;
 use PRFdb;
 use PRF_Blast;
 use PRFGraph;
+use MoreRandom;
+use Bootlace;
 umask(0000);
 my $config = $PRFConfig::config;
 ## All configuration information exists here
@@ -135,6 +137,30 @@ sub Print_Detail_Slipsite {
     my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se FROM boot WHERE mfe_id = ?);
     my $boot = $db->MySelect( $boot_stmt, [$id], 'row' );
     my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se );
+
+    if (!defined($boot)) {
+	print "$structure->[2] was missing its bootstrap, generating it now.  Please wait.<br>\n";
+	my $data = ">tmp
+$structure->[8]
+";
+	my $inputfile = $db->Sequence_to_Fasta($data);
+	my $boot = new Bootlace(
+        genome_id           => $structure->[1],
+        nupack_mfe_id       => $structure->[0],
+        pknots_mfe_id       => $structure->[0],
+        inputfile           => $inputfile,
+        species             => $structure->[3],
+        accession           => $structure->[2],
+        start               => $structure->[5],
+        seqlength           => $structure->[7],
+        iterations          => $config->{boot_iterations},
+        boot_mfe_algorithms => $config->{boot_mfe_algorithms},
+        randomizers         => $config->{boot_randomizers},
+      );
+	my $bootlaces = $boot->Go();
+	$db->Put_Boot($bootlaces);
+    }
+
     if ( defined($boot) ) {
       my $mfe_values       = $boot->[0];
       my @mfe_values_array = split( /\s+/, $mfe_values );
@@ -163,7 +189,8 @@ sub Print_Detail_Slipsite {
       $randMean = sprintf( "%.1f", $mfe_mean );
       $randSE   = sprintf( "%.1f", $mfe_se );
       $ppcc     = sprintf( "%.4f", $ppcc_values );
-    } else {
+    }
+    else {  ##Boot is not defined!
       $chart    = "undef";
       $chartURL = "images/no_data.gif";
       $mfe_mean = "undef";
@@ -184,7 +211,7 @@ sub Print_Detail_Slipsite {
     $vars->{parsed}     = $structure->[10];
     $vars->{parsed}     =~ s/\s+//g;
     $vars->{brackets}   = $structure->[11];
-    #$vars->{mfe}        = $structure->[12];  ## Already gotten above
+    $vars->{mfe}        = $mfe;
     $vars->{pairs}      = $structure->[13];
     $vars->{knotp}      = $structure->[14];
     $vars->{barcode}    = $structure->[15];

@@ -101,6 +101,8 @@ $PRFConfig::config->{sql_genename}  = 'varchar(120)';
 $PRFConfig::config->{sql_comment}   = 'text not null';
 $PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
 $PRFConfig::config->{sql_index}     = $PRFConfig::config->{sql_id};
+$PRFConfig::config->{logfile}       = 'prfdb.log';
+$PRFConfig::config->{errorfile}     = 'prfdb.errors';
 
 my $open = $appconfig->file('prfdb.conf');
 my %data = $appconfig->varlist("^.*");

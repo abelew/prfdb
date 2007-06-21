@@ -56,7 +56,7 @@ sub Go {
   my $accession = $me->{accession};
   my $start     = $me->{start};
   my $seqlength = $me->{seqlength};
-  print "Boot: infile: $inputfile accession: $accession start: $start seqlength: $seqlength\n";
+#  print "Boot: infile: $inputfile accession: $accession start: $start seqlength: $seqlength\n";
 
   if ( !defined($seqlength) or $seqlength eq '' or $seqlength == 0 ) {
     print "SEQLENGTH NOT DEFINED\n";

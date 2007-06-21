@@ -298,7 +298,7 @@ command: $command\n";
   close(PK);
   ## CLOSE PK in Pknots
   my $pknots_return = $?;
-  unless ( $pknots_return eq '0' or $pknots_return eq '256' ) {
+  unless ( $pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134' ) {
     PRFConfig::PRF_Error( "Pknots Error: $!", $accession );
     die("Pknots Error! $!");
   }
@@ -416,10 +416,10 @@ sub Pknots_Boot {
   close(PK);
   ## CLOSE PK in Pknots_Boot
   my $pknots_return = $?;
-  unless ( $pknots_return eq '0' or $pknots_return eq '256' ) {
-    PRFConfig::PRF_Error( "Pknots Error: $!", $accession );
-    die("Pknots Error! $!");
-  }
+#  unless ( $pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134' ) {
+#    PRFConfig::PRF_Error( "Pknots Error: $!", $accession );
+#    die("Pknots Error! $!");
+#  }
   return ($return);
 }
 
