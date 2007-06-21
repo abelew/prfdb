@@ -117,10 +117,14 @@ sub Print_Detail_Slipsite {
   my $slipstart = $cgi->param('slipstart');
   $vars->{accession} = $accession;
   $vars->{slipstart} = $slipstart;
-  $template->process( "detail_header.html", $vars ) or print $template->error(), die;
-  my $detail_stmt = qq(SELECT species, slipsite, sequence, output, parsed, barcode, parens, mfe, pairs, knotp, algorithm, lastupdate, seqlength, id FROM mfe WHERE accession = ? AND start = ? ORDER BY seqlength DESC);
-  ###                               0        1        2         3       4       5        6       7    8      9      10          11         12         13
+  my $detail_stmt = qq(SELECT species, slipsite, sequence, output, parsed, barcode, parens, mfe, pairs, knotp, algorithm, lastupdate, seqlength, id, genome_id FROM mfe WHERE accession = ? AND start = ? ORDER BY seqlength DESC);
+  ###                         0        1         2         3       4       5        6       7    8      9      10         11          12         13  14
   my $info = $db->MySelect( $detail_stmt, [ $accession, $slipstart ] );
+  my $genome_stmt = qq(SELECT genename FROM genome where id = ?);
+  my $genome_info = $db->MySelect( $genome_stmt, [ $info->[0]->[14] ] );
+  $vars->{species} = $info->[0]->[0];
+  $vars->{genename} = $genome_info->[0]->[0];
+  $template->process( "detail_header.html", $vars ) or print $template->error(), die;
   foreach my $structure ( @{$info} ) {
     my $id = $structure->[13];
     my $boot = $db->MySelect( "SELECT mfe_values, mfe_mean, mfe_sd, mfe_se FROM boot WHERE mfe_id = ?", [$id], 'row' );
@@ -131,13 +135,15 @@ sub Print_Detail_Slipsite {
       my $acc_slip         = qq/$accession-$slipstart/;
       $chart = new PRFGraph(
         {
-          list_data => \@mfe_values_array,
-          acc_slip  => $acc_slip,
+	    real_mfe => $structure->[7],
+	    list_data => \@mfe_values_array,
+	    accession  => $acc_slip,
+	    mfe_id => $id,
         }
       );
       my $ppcc_values = $chart->Get_PPCC();
-      $filename = $chart->Picture_Filename( 'distribution', $acc_slip );
-      my $pre_chartURL = $chart->Picture_Filename( 'distribution', $acc_slip, 'url' );
+      $filename = $chart->Picture_Filename( { type => 'distribution', } );
+      my $pre_chartURL = $chart->Picture_Filename( { type => 'distribution', url => 'url', } );
       $chartURL = $basedir . '/' . $pre_chartURL;
 
       if ( !-r $filename ) {
@@ -168,14 +174,19 @@ sub Print_Detail_Slipsite {
     $vars->{pk_input}   = $structure->[2];
     $vars->{pk_output}  = $structure->[3];
     $vars->{parsed}     = $structure->[4];
+    $vars->{parsed}     =~ s/\s+//g;
     $vars->{barcode}    = $structure->[5];
-    $vars->{brackets}    = $structure->[6];
+    $vars->{brackets}   = $structure->[6];
     $vars->{mfe}        = $structure->[7];
     $vars->{pairs}      = $structure->[8];
     $vars->{knotp}      = $structure->[9];
     $vars->{algorithm}  = $structure->[10];
     $vars->{lastupdate} = $structure->[11];
     $vars->{seqlength}  = $structure->[12];
+
+    my $delta = $vars->{seqlength} - length($vars->{parsed});
+    $vars->{parsed} .= '.' x $delta;
+    $vars->{brackets} .= '.' x $delta;
 
     $vars->{chart}    = $chart;
     $vars->{chartURL} = $chartURL;
@@ -189,7 +200,7 @@ sub Print_Detail_Slipsite {
 
     $vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
 
-    $template->process( "detail_record_body.html", $vars ) or print $template->error(), die;
+    $template->process( "detail_body.html", $vars ) or print $template->error(), die;
   }    ## End foreach structure in the database
   $template->process( "detail_list_footer.html", $vars );
 }
@@ -198,7 +209,7 @@ sub Color_Stems {
     my $brackets = shift;
     my $parsed = shift;
     my @br = split(//, $brackets);
-    my @pa = split(/\s+/, $parsed);
+    my @pa = split(//, $parsed);
     my $colors = {
 	1 => 'blue',
 	2 => 'red',
@@ -671,14 +682,13 @@ sub Print_Blast {
 
 sub Check_Landscape {
   my $accession = $cgi->param('accession');
-  my $pic       = new PRFGraph;
+  my $pic       = new PRFGraph( {accession => $accession });
 
-  # my $dirname = $pic->Make_Directory('landscape', $accession);
-  my $filename = $pic->Picture_Filename( 'landscape', $accession );
+  my $filename = $pic->Picture_Filename( { type => 'landscape', });
   if ( !-r $filename ) {
-    $pic->Make_Landscape($accession);
+    $pic->Make_Landscape();
   }
-  my $url = $pic->Picture_Filename( 'landscape', $accession, 'url' );
+  my $url = $pic->Picture_Filename( { type => 'landscape', url => 'url' } );
   $vars->{picture}   = $url;
   $vars->{accession} = $accession;
   $template->process( 'landscape.html', $vars ) or print $template->error(), die;

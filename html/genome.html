@@ -1,3 +1,7 @@
+
+<input type="hidden" name="species" value="[% species %]">
+<input type="hidden" name="accession" value="[% accession %]">
+
 <table width="100%" border="0" cellspacing="2" cellpadding="2">
   <tr align="left" valign="top">
     <td width="400">
@@ -7,8 +11,5 @@
       <strong>Run</strong> <a href="[% base %]/local_blast?accession=[% accession %]">Local Blast</a><br>
       <strong>Run</strong> <a href="[% base %]/remote_blast?accession=[% accession %]">Remote Blast</a></br>
       <strong>Graph</strong> <a href="[% base %]/landscape?accession=[% accession %]">MFE minima</a><br>
-    </td>
-    <td>
-      [% sig_count %] folded structures found among [% ss_count %] potential slippery sites.
     </td>
   </tr>

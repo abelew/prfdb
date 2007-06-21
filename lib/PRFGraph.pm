@@ -22,15 +22,17 @@ sub new {
   }
   my $me = bless {
     list_data => $arg->{list_data},
-    acc_slip  => $arg->{acc_slip},
+    accession  => $arg->{accession},
+    real_mfe => $arg->{real_mfe},
+    mfe_id => $arg->{mfe_id},
   }, $class;
   return ($me);
 }
 
 sub Make_Landscape {
   my $me        = shift;
-  my $accession = shift;
-  my $filename  = $me->Picture_Filename( 'landscape', $accession );
+  my $accession = $me->{accession};
+  my $filename  = $me->Picture_Filename( { type => 'landscape', } );
   system("touch $filename");
 
   # my $img = GD::SVG::Image->new();
@@ -151,13 +153,15 @@ sub Make_Landscape {
 
 sub Make_Distribution{
     my $me = shift;
+    my $graph_x_size = 400;
+    my $graph_y_size = 300;
     
     #not yet implemented
-    #my $real_mfe = $me->{realmfe};
+    my $real_mfe = $me->{real_mfe};
     
     my @values = @{$me->{list_data}};
     my $acc_slip = $me->{acc_slip}; 
-    my $filename = $me->Picture_Filename('distribution', $acc_slip);
+    my $filename = $me->Picture_Filename( { type => 'distribution', } );
     
     my @sorted = sort {$a <=> $b} @values;
 		
@@ -170,13 +174,17 @@ sub Make_Distribution{
     
     my $bin_range = sprintf( "%.1f", $total_range / $num_bins);
 	
-	my @yax = ( 0 );
+    my @yax = ( 0 );
     my @yax_sums = ( 0 );
     my @xax = ( sprintf("%.1f",$min) );
     
     for(my $i = 1; $i <= ($num_bins); $i++){
         $xax[$i] = sprintf( "%.1f",$bin_range * $i + $min);
-        foreach my $val (@values){ $yax_sums[$i]++ if $val < $xax[$i] }
+        foreach my $val (@values) { 
+	    if ($val < $xax[$i]) {
+		$yax_sums[$i]++;
+	    }
+	}
     }
     #save the CDF
     my @CDF_yax = @yax_sums;
@@ -184,7 +192,7 @@ sub Make_Distribution{
     # make a histogram and not a cumulative distribution function
     my $i = 0;
     for ($i = (@yax_sums-1); $i > 0; $i--) {
-	$yax[$i] = ($yax_sums[$i]-$yax_sums[$i-1]) / scalar(@values);
+	$yax[$i] = ($yax_sums[$i] - $yax_sums[$i-1]) / scalar(@values);
     }
     
     ###
@@ -205,16 +213,30 @@ sub Make_Distribution{
     my @CDF_dist = @dist_y;
     
     # make a pdf not a cdf.
-    for(my $i = (@dist_y-1); $i > 0; $i--){ $dist_y[$i] = $dist_y[$i] - $dist_y[$i-1]; }
-    
-    ###
+    for(my $i = (@dist_y-1); $i > 0; $i--) {
+	$dist_y[$i] = $dist_y[$i] - $dist_y[$i-1];
+    }
+
+    ## Make an array for the mfe value points
+    my @real_mfes;
+    my $rounded_mfe = sprintf("%.2d",$real_mfe + 0.5);
+    foreach my $x_position (@xax) {
+	if ($rounded_mfe <= $x_position) {
+	    push(@real_mfes,  $yax[5]);
+	    last;
+	}
+	else {
+	    push(@real_mfes, undef);
+	}
+    }
+
     # Chart part
-    my @data = (\@xax, \@yax, \@dist_y );
+    my @data = (\@xax, \@yax, \@dist_y, \@real_mfes, );
     
-    my $graph = GD::Graph::mixed->new(200,150);
+    my $graph = GD::Graph::mixed->new($graph_x_size, $graph_y_size);
     $graph->set_legend( "Random MFE", "Normal Distribution");
     $graph->set(
-            types             => [ qw(bars lines) ],
+            types             => [ qw(bars lines points) ],
             x_label           => 'kcal/mol',
             y_label           => 'p(x)',
             y_label_skip      => 2,
@@ -222,7 +244,7 @@ sub Make_Distribution{
             x_labels_vertical => 1,
             x_label_skip      => 1,
             line_width => 3,
-            dclrs => [qw(lblue red)],
+            dclrs => [qw(lblue red green)],
             borderclrs => [ qw(black ) ]
     ) or die $graph->error;
 
@@ -270,22 +292,31 @@ sub Get_PPCC {
 
 sub Picture_Filename {
   my $me        = shift;
-  my $type      = shift;
-  my $accession = shift;
-  my $url       = shift;
-  my $directory = $me->Make_Directory( $type, $accession, $url );
-  my $filename  = qq($directory/$accession.png);
+  my $args      = shift;
+  my $type = $args->{type};
+  my $url = $args->{url};
 
-  #    print "Picture_Filename: $filename\n";
+  my $accession = $me->{accession};
+  my $mfe_id = $me->{mfe_id};
+
+  my $directory = $me->Make_Directory( $type, $url );
+  my $filename;
+  if (defined($mfe_id)) {
+      $filename = qq($directory/${accession}-${mfe_id}.png);
+  }
+  else {
+      $filename  = qq($directory/$accession.png);
+  }
+
   return ($filename);
 }
 
 sub Make_Directory {
   my $me        = shift;
   my $type      = shift;
-  my $accession = shift;
   my $url       = shift;
   my $dir       = '';
+  my $accession = $me->{accession};
   my $nums      = $accession;
   $nums =~ s/\W//g;
   $nums =~ s/[a-z]//g;
