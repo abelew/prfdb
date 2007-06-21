@@ -4,19 +4,22 @@ use lib '../lib';
 
 use PRFdb;
 my $db     = new PRFdb;
-my $select = qq(SELECT genome_id, accession from mfe where species='homo_sapiens' ORDER BY genome_id);
+my $select = qq(SELECT genome_id, accession from mfe ORDER BY genome_id);
 
-my $ids = $db->MySelect( $select, 'hash', '1' );
-foreach my $num ( sort keys %{$ids} ) {
-  my $test = qq(SELECT id from genome where accession='$ids->{$num}->{accession}');
-  my $tmpid = $db->MySelect( $test, 'hash' );
-  if ( $tmpid->{id} != $ids->{$num}->{genome_id} ) {
-
-    my $update = qq(UPDATE mfe SET genome_id='$tmpid->{id}' WHERE accession='$ids->{$num}->{accession}');
-    print "UPDATE: $update\n";
-    $db->Execute($update);
-  } else {
-    print "Matched: Genome_id: $tmpid->{id} to MFE_ID: $ids->{$num}->{genome_id}\n";
-  }
+my $ids = $db->MySelect( $select, [] );
+foreach my $entry (@{$ids}) {
+    my $genome_id = $entry->[0];
+    my $accession = $entry->[1];
+    my $test = qq(SELECT id from genome where accession='$accession');
+    my $tmpid = $db->MySelect( $test, [] );
+    my $id = $tmpid->[0]->[0];
+    if ( $id != $genome_id ) {
+	my $update = qq(UPDATE mfe SET genome_id='$id' WHERE accession='$accession');
+	print "UPDATE: $update\n";
+	$db->Execute($update);
+    }
+    else {
+	print "Matched: Genome_id(from genome): $id to genome_id(from mfe): $genome_id\n";
+    }
 }
 

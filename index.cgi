@@ -117,17 +117,24 @@ sub Print_Detail_Slipsite {
   my $slipstart = $cgi->param('slipstart');
   $vars->{accession} = $accession;
   $vars->{slipstart} = $slipstart;
-  my $detail_stmt = qq(SELECT species, slipsite, sequence, output, parsed, barcode, parens, mfe, pairs, knotp, algorithm, lastupdate, seqlength, id, genome_id FROM mfe WHERE accession = ? AND start = ? ORDER BY seqlength DESC);
-  ###                         0        1         2         3       4       5        6       7    8      9      10         11          12         13  14
+  my $detail_stmt = qq(SELECT * FROM mfe WHERE accession = ? AND start = ? ORDER BY seqlength DESC);
+  ## id,genome_id,accession,species,algorithm,start,slipsite,seqlength,sequence,output,parsed,parens,mfe,pairs,knotp,barcode,lastupdate
+  ## 0  1         2         3       4         5     6        7         8        9      10     11     12  13    14    15      16
   my $info = $db->MySelect( $detail_stmt, [ $accession, $slipstart ] );
+  $vars->{species} = $info->[0]->[3];
+  $vars->{genome_id} = $info->[1]->[1];
+  print "TESTME: $vars->{genome_id}\n";
+  $vars->{mfe_id} = $info->[0]->[0];
+
   my $genome_stmt = qq(SELECT genename FROM genome where id = ?);
-  my $genome_info = $db->MySelect( $genome_stmt, [ $info->[0]->[14] ] );
-  $vars->{species} = $info->[0]->[0];
+  my $genome_info = $db->MySelect( $genome_stmt, [ $vars->{genome_id} ] );
   $vars->{genename} = $genome_info->[0]->[0];
   $template->process( "detail_header.html", $vars ) or print $template->error(), die;
   foreach my $structure ( @{$info} ) {
-    my $id = $structure->[13];
-    my $boot = $db->MySelect( "SELECT mfe_values, mfe_mean, mfe_sd, mfe_se FROM boot WHERE mfe_id = ?", [$id], 'row' );
+    my $id = $structure->[0];
+    my $mfe = $structure->[12];
+    my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se FROM boot WHERE mfe_id = ?);
+    my $boot = $db->MySelect( $boot_stmt, [$id], 'row' );
     my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $mfe );
     if ( defined($boot) ) {
       my $mfe_values       = $boot->[0];
@@ -135,7 +142,7 @@ sub Print_Detail_Slipsite {
       my $acc_slip         = qq/$accession-$slipstart/;
       $chart = new PRFGraph(
         {
-	    real_mfe => $structure->[7],
+	    real_mfe => $mfe,
 	    list_data => \@mfe_values_array,
 	    accession  => $acc_slip,
 	    mfe_id => $id,
@@ -153,7 +160,6 @@ sub Print_Detail_Slipsite {
       $mfe_mean = $boot->[1];
       $mfe_sd   = $boot->[2];
       $mfe_se   = $boot->[3];
-      $mfe      = $structure->[7];
       $zscore   = sprintf( "%.2f", ( $mfe - $mfe_mean ) / $mfe_sd );
       $randMean = sprintf( "%.1f", $mfe_mean );
       $randSE   = sprintf( "%.1f", $mfe_se );
@@ -169,20 +175,20 @@ sub Print_Detail_Slipsite {
       $randSE   = "UNDEF";
       $ppcc     = "UNDEF";
     }
-    $vars->{species}    = $structure->[0];
-    $vars->{slipsite}   = $structure->[1];
-    $vars->{pk_input}   = $structure->[2];
-    $vars->{pk_output}  = $structure->[3];
-    $vars->{parsed}     = $structure->[4];
+    $vars->{algorithm}  = $structure->[4];
+    $vars->{slipstart}  = $structure->[5];
+    $vars->{slipsite}   = $structure->[6];
+    $vars->{seqlength}  = $structure->[7];
+    $vars->{pk_input}   = $structure->[8];
+    $vars->{pk_output}  = $structure->[9];
+    $vars->{parsed}     = $structure->[10];
     $vars->{parsed}     =~ s/\s+//g;
-    $vars->{barcode}    = $structure->[5];
-    $vars->{brackets}   = $structure->[6];
-    $vars->{mfe}        = $structure->[7];
-    $vars->{pairs}      = $structure->[8];
-    $vars->{knotp}      = $structure->[9];
-    $vars->{algorithm}  = $structure->[10];
-    $vars->{lastupdate} = $structure->[11];
-    $vars->{seqlength}  = $structure->[12];
+    $vars->{brackets}   = $structure->[11];
+    #$vars->{mfe}        = $structure->[12];  ## Already gotten above
+    $vars->{pairs}      = $structure->[13];
+    $vars->{knotp}      = $structure->[14];
+    $vars->{barcode}    = $structure->[15];
+    $vars->{lastupdate} = $structure->[16];
 
     my $delta = $vars->{seqlength} - length($vars->{parsed});
     $vars->{parsed} .= '.' x $delta;
@@ -198,6 +204,7 @@ sub Print_Detail_Slipsite {
     $vars->{randse}   = $randSE;
     $vars->{ppcc}     = $ppcc;
 
+    $vars->{pk_input} = Color_Stems($vars->{pk_input}, $vars->{parsed});
     $vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
 
     $template->process( "detail_body.html", $vars ) or print $template->error(), die;
@@ -222,7 +229,8 @@ sub Color_Stems {
     my $bracket_string = '';
     for my $t (0 .. $#pa) {
 	if ($pa[$t] eq '.') {
-	    $bracket_string .= '.';
+	    $br[$t] = '.' if (!defined($br[$t]));
+	    $bracket_string .= $br[$t];
 	}
 	else {
 	    my $append = qq(<font color="$colors->{$pa[$t]}">$br[$t]</font>);
@@ -231,6 +239,7 @@ sub Color_Stems {
     }
     return($bracket_string);
 }
+
 
 sub Print_Single_Accession {
   my $datum = shift;

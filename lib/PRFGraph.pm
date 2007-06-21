@@ -6,7 +6,6 @@ use PRFConfig qw / PRF_Error PRF_Out /;
 use PRFdb;
 use GD::Graph::mixed;
 
-# use GD::SVG;
 use Statistics::Basic::Mean;
 use Statistics::Basic::Variance;
 use Statistics::Basic::StdDev;
@@ -35,7 +34,6 @@ sub Make_Landscape {
   my $filename  = $me->Picture_Filename( { type => 'landscape', } );
   system("touch $filename");
 
-  # my $img = GD::SVG::Image->new();
   my $db         = new PRFdb;
   my $gene       = $db->MySelect("SELECT genename FROM genome WHERE accession='$accession'");
   my $data       = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM landscape WHERE accession='$accession' ORDER BY start, algorithm");
@@ -161,7 +159,7 @@ sub Make_Distribution{
     
     my @values = @{$me->{list_data}};
     my $acc_slip = $me->{acc_slip}; 
-    my $filename = $me->Picture_Filename( { type => 'distribution', } );
+    
     
     my @sorted = sort {$a <=> $b} @values;
 		
@@ -192,7 +190,15 @@ sub Make_Distribution{
     # make a histogram and not a cumulative distribution function
     my $i = 0;
     for ($i = (@yax_sums-1); $i > 0; $i--) {
-	$yax[$i] = ($yax_sums[$i] - $yax_sums[$i-1]) / scalar(@values);
+	my $subtraction = 0;
+	my $y_axis_sum = 0;
+	if (defined($yax_sums[$i])) {
+	    $y_axis_sum = $yax_sums[$i];
+	}
+	if (defined($yax_sums[$i - 1])) {
+	    $subtraction = $yax_sums[$i - 1];
+	}
+	$yax[$i] = ($y_axis_sum - $subtraction) / scalar(@values);
     }
     
     ###
@@ -213,16 +219,32 @@ sub Make_Distribution{
     my @CDF_dist = @dist_y;
     
     # make a pdf not a cdf.
+    my $y_axis_maximum = 0;
     for(my $i = (@dist_y-1); $i > 0; $i--) {
 	$dist_y[$i] = $dist_y[$i] - $dist_y[$i-1];
+	if ($dist_y[$i] > $y_axis_maximum) {
+	    $y_axis_maximum = $dist_y[$i];
+	}
     }
 
     ## Make an array for the mfe value points
+    
     my @real_mfes;
-    my $rounded_mfe = sprintf("%.2d",$real_mfe + 0.5);
-    foreach my $x_position (@xax) {
-	if ($rounded_mfe <= $x_position) {
-	    push(@real_mfes,  $yax[5]);
+
+    ## Assume 13 buckets
+    ## The absolute y_axis maximum is 1.0
+    ## $y_axis_maximum is one value >= 1.0
+    ## I want to put $real_mfes[$c] between $y_axis_maximum and 0 so that earlier buckets get higher $y_axis_maximums
+    my $mfe_y_position = $y_axis_maximum;
+    my $mfe_y_decrement = ($y_axis_maximum / 10.0);
+#    print "STARTING y max: $mfe_y_position DECEMENT: $mfe_y_decrement\n<br>";
+    for my $c (0 .. $#xax) {
+	$mfe_y_position -= $mfe_y_decrement;
+#	print "TESTME $xax[$c] $mfe_y_position\n<br>";
+	if ($real_mfe < $xax[$c]) {
+#	    print "$real_mfe is less than $xax[$c]\n<br>";
+	    $real_mfes[$c] = $mfe_y_position;
+	    push(@real_mfes, undef);
 	    last;
 	}
 	else {
@@ -249,11 +271,10 @@ sub Make_Distribution{
     ) or die $graph->error;
 
     my $gd = $graph->plot(\@data) or die $graph->error;
-    
-    # THIS NEEDS TO BE UNCOMMENTED
-    #my $tempfile = 'temp/graph'.time().'.gif';
-	open(IMG, ">$filename") or die $!;
- 	binmode IMG;
+
+    my $filename = $me->Picture_Filename( { type => 'distribution', } );
+    open(IMG, ">$filename") or die $!;
+    binmode IMG;
     print IMG $gd->png;
     close IMG;
     return($filename);
@@ -336,9 +357,13 @@ sub Make_Directory {
   }
   my $directory = qq($config->{base}/$type/${first}${second}/${third}${fourth});
 
-  #  print "<br>$directory\n<br>\n";
+  my $command = qq(/bin/mkdir -p $directory);
+  my $output = '';
   if ( !-x $directory ) {
-    system("mkdir -p $directory");
+      open (CMD, "$command |") or die("Could not run $command $!");
+      while (my $line = <CMD>) {
+	  $output .= $line;
+      }
   }
   return ($directory);
 }
