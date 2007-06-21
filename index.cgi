@@ -26,6 +26,8 @@ $basedir =~ s/\/index.cgi.*//g;
 my $vars = {
   base         => $base,
   basedir      => $basedir,
+  startsearchform => $cgi->startform( -action => "$base/perform_search"),
+  searchquery => $cgi->textfield(-name => 'query', -size => 20),
   searchform   => "$base/searchform",
   importform   => "$base/import",
   filterform   => "$base/start_filter",
@@ -100,8 +102,6 @@ sub Print_Download {
 }
 
 sub Print_Search_Form {
-  $vars->{startform} = $cgi->startform( -action => "$base/perform_search" );
-  $vars->{query} = $cgi->textfield( -name => 'query', -size => 20 );
   $template->process( 'searchform.html', $vars ) or print $template->error(), die;
 }
 
