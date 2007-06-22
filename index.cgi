@@ -236,8 +236,8 @@ $structure->[8]
     $vars->{pk_input} = Color_Stems($vars->{pk_input}, $vars->{parsed});
     $vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
     $vars->{parsed} = Color_Stems($vars->{parsed}, $vars->{parsed});
-    $vars->{species} =~ s/_//g;
-    $vars->{species} =~ s/[a-z]/[A-Z]/;
+    $vars->{species} =~ s/_/ /g;
+    $vars->{species} =~ tr/[a-z]/[A-Z]/;
 
     $template->process( "detail_body.html", $vars ) or print $template->error(), die;
   }    ## End foreach structure in the database
