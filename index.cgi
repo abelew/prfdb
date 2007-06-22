@@ -138,8 +138,10 @@ sub Print_Detail_Slipsite {
     my $boot = $db->MySelect( $boot_stmt, [$id], 'row' );
     my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se );
 
-    if (!defined($boot)) {
-	print "$structure->[2] was missing its bootstrap, generating it now.  Please wait.<br>\n";
+    if (!defined($boot) and $config->{do_boot}) {
+	$vars->{accession} = $structure->[2];
+	$template->process( 'generate_boot.html', $vars) or print $template->error(), die;
+
 	my $data = ">tmp
 $structure->[8]
 ";
