@@ -249,15 +249,7 @@ sub Color_Stems {
     my $parsed = shift;
     my @br = split(//, $brackets);
     my @pa = split(//, $parsed);
-    my $colors = {
-	1 => 'blue',
-	2 => 'red',
-	3 => 'green',
-	4 => 'purple',
-	5 => 'orange',
-	6 => 'brown',
-	7 => 'yellow',
-    };
+    my @colors = split(/ /, $config->{stem_colors});
     my $bracket_string = '';
     for my $t (0 .. $#pa) {
 	if ($pa[$t] eq '.') {
@@ -265,13 +257,12 @@ sub Color_Stems {
 	    $bracket_string .= $br[$t];
 	}
 	else {
-	    my $append = qq(<font color="$colors->{$pa[$t]}">$br[$t]</font>);
+	    my $append = qq(<font color="$colors[$pa[$t]]">$br[$t]</font>);
 	    $bracket_string .= $append;
 	}
     }
     return($bracket_string);
 }
-
 
 sub Print_Single_Accession {
   my $datum = shift;

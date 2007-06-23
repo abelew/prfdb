@@ -1,5 +1,5 @@
 package PRFConfig;
-## Time-stamp: <Sat May 26 09:27:37 2007 Ashton Trey Belew (abelew@wesleyan.edu)>
+## Time-stamp: <Sat Jun 23 01:51:29 2007 Ashton Trey Belew (abelew@wesleyan.edu)>
 use strict;
 use AppConfig qw/:argcount :expand/;
 require Exporter;
@@ -103,6 +103,11 @@ $PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEF
 $PRFConfig::config->{sql_index}     = $PRFConfig::config->{sql_id};
 $PRFConfig::config->{logfile}       = 'prfdb.log';
 $PRFConfig::config->{errorfile}     = 'prfdb.errors';
+
+$PRFConfig::config->{stem_colors} = "black blue red green purple orange brown yellow";  ## This gets dropped into an array
+## The zeroth element is a non-stem, thus black
+$PRFConfig::config->{graph_font} = 'arial.ttf';
+$PRFConfig::config->{graph_font_size} = 8;
 
 my $open = $appconfig->file('prfdb.conf');
 my %data = $appconfig->varlist("^.*");

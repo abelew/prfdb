@@ -140,7 +140,11 @@ sub Make_Landscape {
     markers           => [10],
     marker_size       => 160,
   ) or die $graph->error;
-
+  $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+  $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+  $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+  $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+  $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
   my $gd = $graph->plot( \@mfe_data ) or die( $graph->error );
 
   open( IMG, ">$filename" ) or die $!;
@@ -271,11 +275,11 @@ sub Make_Distribution{
             borderclrs => [ qw(black ) ]
     ) or die $graph->error;
 
-    $graph->set_legend_font("$config->{base}/fonts/arial.ttf", 8);
-    $graph->set_x_axis_font("$config->{base}/fonts/arial.ttf", 8);
-    $graph->set_x_label_font("$config->{base}/fonts/arial.ttf", 8);
-    $graph->set_y_axis_font("$config->{base}/fonts/arial.ttf", 8);
-    $graph->set_y_label_font("$config->{base}/fonts/arial.ttf", 8);
+    $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
 
     my $gd = $graph->plot(\@data) or die $graph->error;
  
