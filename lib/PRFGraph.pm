@@ -6,6 +6,7 @@ use PRFConfig qw / PRF_Error PRF_Out /;
 use PRFdb;
 use GD::Graph::mixed;
 
+
 use Statistics::Basic::Mean;
 use Statistics::Basic::Variance;
 use Statistics::Basic::StdDev;
@@ -229,36 +230,36 @@ sub Make_Distribution{
 
     ## Make an array for the mfe value points
     
-    my @real_mfes;
+#    my @real_mfes;
 
     ## Assume 13 buckets
     ## The absolute y_axis maximum is 1.0
     ## $y_axis_maximum is one value >= 1.0
     ## I want to put $real_mfes[$c] between $y_axis_maximum and 0 so that earlier buckets get higher $y_axis_maximums
-    my $mfe_y_position = $y_axis_maximum;
-    my $mfe_y_decrement = ($y_axis_maximum / 10.0);
+#    my $mfe_y_position = $y_axis_maximum;
+#    my $mfe_y_decrement = ($y_axis_maximum / 10.0);
 #    print "STARTING y max: $mfe_y_position DECEMENT: $mfe_y_decrement\n<br>";
-    for my $c (0 .. $#xax) {
-	$mfe_y_position -= $mfe_y_decrement;
+#    for my $c (0 .. $#xax) {
+#	$mfe_y_position -= $mfe_y_decrement;
 #	print "TESTME $xax[$c] $mfe_y_position\n<br>";
-	if ($real_mfe < $xax[$c]) {
+#	if ($real_mfe < $xax[$c]) {
 #	    print "$real_mfe is less than $xax[$c]\n<br>";
-	    $real_mfes[$c] = $mfe_y_position;
-	    push(@real_mfes, undef);
-	    last;
-	}
-	else {
-	    push(@real_mfes, undef);
-	}
-    }
+#	    $real_mfes[$c] = $y_axis_maximum/2;
+#	    push(@real_mfes, undef);
+#	    last;
+#	}
+#	else {
+#	    push(@real_mfes, undef);
+#	}
+#    }
 
     # Chart part
-    my @data = (\@xax, \@yax, \@dist_y, \@real_mfes, );
+    my @data = (\@xax, \@yax, \@dist_y, [0], );
     
     my $graph = GD::Graph::mixed->new($graph_x_size, $graph_y_size);
-    $graph->set_legend( "Random MFE", "Normal Distribution");
+    $graph->set_legend( "Random MFEs", "Normal Distribution", "Actual MFE");
     $graph->set(
-            types             => [ qw(bars lines points) ],
+            types             => [ qw(bars lines lines) ],
             x_label           => 'kcal/mol',
             y_label           => 'p(x)',
             y_label_skip      => 2,
@@ -270,7 +271,32 @@ sub Make_Distribution{
             borderclrs => [ qw(black ) ]
     ) or die $graph->error;
 
+    $graph->set_legend_font("$config->{base}/fonts/arial.ttf", 8);
+    $graph->set_x_axis_font("$config->{base}/fonts/arial.ttf", 8);
+    $graph->set_x_label_font("$config->{base}/fonts/arial.ttf", 8);
+    $graph->set_y_axis_font("$config->{base}/fonts/arial.ttf", 8);
+    $graph->set_y_label_font("$config->{base}/fonts/arial.ttf", 8);
+
     my $gd = $graph->plot(\@data) or die $graph->error;
+ 
+    my $axes_coords = $graph->get_feature_coordinates('axes');
+
+    my $top_x_coord = $axes_coords->[1];
+    my $top_y_coord = $axes_coords->[2];
+    my $bottom_x_coord = $axes_coords->[3];
+    my $bottom_y_coord = $axes_coords->[4];
+
+    my $x_interval = sprintf("%.1f", (($max-$min)/$num_bins + 0.05) );
+
+    # print "$x_interval\n";
+
+    my $mfe_x_coord = ($real_mfe - $min)/($x_interval*$num_bins) * ($bottom_x_coord - $top_x_coord) + $top_x_coord;
+
+    # print "$max, $min, $real_mfe, $top_x_coord, $bottom_x_coord, $mfe_x_coord\n";
+    # print "$axes_coords->[0], $top_x_coord, $top_y_coord, $bottom_x_coord, $bottom_x_coord, $mfe_x_coord"; 
+
+    my $green = $gd->colorAllocate(0,191,0);
+    $gd->filledRectangle($mfe_x_coord, $bottom_y_coord+1 , $mfe_x_coord+1, $top_y_coord-1, $green);
 
     my $filename = $me->Picture_Filename( { type => 'distribution', } );
     open(IMG, ">$filename") or die $!;
