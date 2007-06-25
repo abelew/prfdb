@@ -215,8 +215,14 @@ sub Make_Distribution{
     
     # initially calculated as a CDF.
     my @dist_y = ();
-    foreach my $x (@xax){
-        my $zscore = ($x - $xbar) / $xstddev;
+    foreach my $x (@xax) {
+        my $zscore; 
+        if ($xstddev == 0) {
+	 $zscore = 0;
+	}
+	else {
+         $zscore = ($x - $xbar) / $xstddev;
+        }
         my $prob = (1 - Statistics::Distributions::uprob($zscore));
         push(@dist_y,$prob);
     }
@@ -327,7 +333,12 @@ sub Get_PPCC {
   # get P(X) for each values
   my @PofX = ();
   foreach my $x (@sorted) {
-    push( @PofX, ( 1 - Statistics::Distributions::uprob( $x - $xbar ) / $xstddev ) );
+    if ($xstddev == 0) {
+      push( @PofX, 0 );
+    }
+    else { 
+      push( @PofX, ( 1 - Statistics::Distributions::uprob( $x - $xbar ) / $xstddev ) );
+    }
   }
 
   #get P(X) for the standard normal distribution

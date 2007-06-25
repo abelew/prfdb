@@ -300,7 +300,7 @@ command: $command\n";
   my $pknots_return = $?;
   unless ( $pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134' ) {
     PRFConfig::PRF_Error( "Pknots Error: $!", $accession );
-    die("Pknots Error! $!");
+#    die("Pknots Error! $!");
   }
   $string =~ s/\s+/ /g;
   $return->{output} = $string;

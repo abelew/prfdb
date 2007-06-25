@@ -187,7 +187,12 @@ $structure->[8]
       $mfe_mean = $boot->[1];
       $mfe_sd   = $boot->[2];
       $mfe_se   = $boot->[3];
-      $zscore   = sprintf( "%.2f", ( $mfe - $mfe_mean ) / $mfe_sd );
+      if ($mfe_sd == 0) { 
+        $zscore = 0;
+      }
+      else {
+        $zscore   = sprintf( "%.2f", ( $mfe - $mfe_mean ) / $mfe_sd );
+      }
       $randMean = sprintf( "%.1f", $mfe_mean );
       $randSE   = sprintf( "%.1f", $mfe_se );
       $ppcc     = sprintf( "%.4f", $ppcc_values );
@@ -278,8 +283,12 @@ sub Print_Single_Accession {
   $vars->{counter}         = $datum->{counter};
   $vars->{accession}       = $accession;
   $vars->{species}         = $datum->{species};
+  $vars->{species} =~ s/_/ /g;
+  $vars->{species} = ucfirst($vars->{species});
   $vars->{genename}        = $datum->{genename};
   $vars->{comments}        = $datum->{comment};
+  $vars->{orf_start}       = $datum->{orf_start};
+  $vars->{orf_stop}        = $datum->{orf_stop};
   $vars->{slipsite_count}  = $datum->{slipsite_count};
   $vars->{structure_count} = $datum->{structure_count};
   $vars->{pretty_mrna_seq} = Create_Pretty_mRNA($accession);
@@ -288,13 +297,22 @@ sub Print_Single_Accession {
   my $slipsite_information = $db->MySelect("SELECT distinct start, slipsite, count(id) FROM mfe WHERE accession = '$accession' GROUP BY start ORDER BY start");
   $template->process( 'genome.html',          $vars ) or print $template->error(), die;
   $template->process( 'sliplist_header.html', $vars ) or print $template->error(), die;
-  my $highlighted_slip;
 
+  my $num_stops_printed = 0;
+  my $num_starts_printed = 0;
   while ( my $slip_info = shift( @{$slipsite_information} ) ) {
     $vars->{slipstart}   = $slip_info->[0];
     $vars->{slipseq}     = $slip_info->[1];
     $vars->{pknotscount} = $slip_info->[2];
     $vars->{sig_count} += $vars->{pknotscount};
+    if ($vars->{orf_start} < $vars->{slipstart} and $num_starts_printed == 0) {
+	$num_starts_printed++;
+	$template->process( 'sliplist_start_codon.html', $vars ) or print $template->error(), die;
+    }
+    if ($vars->{orf_stop} <= $vars->{slipstart} and $num_stops_printed == 0) {
+	$num_stops_printed++;
+	$template->process( 'sliplist_stop_codon.html', $vars ) or print $template->error(), die;
+    }
     $template->process( 'sliplist.html', $vars ) or print $template->error(), die;
   }
   $template->process( 'sliplist_footer.html', $vars ) or print $template->error(), die;
@@ -633,7 +651,7 @@ sub Create_Pretty_mRNA {
 
 sub Get_Accession_Info {
   my $accession       = shift;
-  my $query_statement = qq(SELECT id, species, genename, comment, lastupdate, mrna_seq FROM genome WHERE accession = ?);
+  my $query_statement = qq(SELECT id, species, genename, comment, orf_start, orf_stop, lastupdate, mrna_seq FROM genome WHERE accession = ?);
 
   #  my $entries = $db->MySelect($query_statement, [$query, $query, $query, $query]);
   my $entry = $db->MySelect( $query_statement, [$accession], 'row' );
@@ -642,8 +660,10 @@ sub Get_Accession_Info {
     species    => $entry->[1],
     genename   => $entry->[2],
     comment    => $entry->[3],
-    lastupdate => $entry->[4],
-    mrna_seq   => $entry->[5],
+    orf_start  => $entry->[4],
+    orf_stop   => $entry->[5],
+    lastupdate => $entry->[6],
+    mrna_seq   => $entry->[7],
   };
   my $slipsite_structure_count = $db->MySelect( "SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?", [$accession], 'row' );
   $data->{slipsite_count}  = $slipsite_structure_count->[0];
