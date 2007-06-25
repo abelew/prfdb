@@ -300,7 +300,8 @@ sub Make_Distribution{
 
     # print "$x_interval\n";
 
-    my $mfe_x_coord = ($real_mfe - $min)/($x_interval*$num_bins) * ($bottom_x_coord - $top_x_coord) + $top_x_coord;
+    my $mfe_x_coord_buffer = ( $bottom_x_coord - $top_x_coord )/($num_bins + 2);
+    my $mfe_x_coord = (($real_mfe - $min)/($x_interval*$num_bins)) + $mfe_x_coord_buffer + $top_x_coord;
 
     # print "$max, $min, $real_mfe, $top_x_coord, $bottom_x_coord, $mfe_x_coord\n";
     # print "$axes_coords->[0], $top_x_coord, $top_y_coord, $bottom_x_coord, $bottom_x_coord, $mfe_x_coord"; 
@@ -309,7 +310,7 @@ sub Make_Distribution{
     $gd->filledRectangle($mfe_x_coord, $bottom_y_coord+1 , $mfe_x_coord+1, $top_y_coord-1, $green);
 
     my $filename = $me->Picture_Filename( { type => 'distribution', } );
-    open(IMG, ">$filename") or die $!;
+    open(IMG, ">$filename") or die ("Unable to open $filename $!");
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -399,12 +400,14 @@ sub Make_Directory {
   my $directory = qq($config->{base}/$type/${first}${second}/${third}${fourth});
 
   my $command = qq(/bin/mkdir -p $directory);
-  my $output = '';
-  if ( !-x $directory ) {
-      open (CMD, "$command |") or die("Could not run $command $!");
-      while (my $line = <CMD>) {
-	  $output .= $line;
-      }
-  }
+  system($command);
+  #print "the command: $command <br>\n";
+  #my $output = '';
+  #if ( !-r $directory ) {
+  #    open (CMD, "$command |") or die("Could not run $command $!");
+  #    while (my $line = <CMD>) {
+#	  $output .= $line;
+#      }
+#  }
   return ($directory);
 }
