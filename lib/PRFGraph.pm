@@ -156,8 +156,8 @@ sub Make_Landscape {
 
 sub Make_Distribution{
     my $me = shift;
-    my $graph_x_size = 400;
-    my $graph_y_size = 300;
+    my $graph_x_size = $config->{distribution_graph_x_size};
+    my $graph_y_size = $config->{distribution_graph_y_size};
     
     #not yet implemented
     my $real_mfe = $me->{real_mfe};
@@ -299,9 +299,10 @@ sub Make_Distribution{
     my $x_interval = sprintf("%.1f", (($max-$min)/$num_bins + 0.05) );
 
     # print "$x_interval\n";
-
-    my $mfe_x_coord_buffer = ( $bottom_x_coord - $top_x_coord )/($num_bins + 2);
-    my $mfe_x_coord = (($real_mfe - $min)/($x_interval*$num_bins)) + $mfe_x_coord_buffer + $top_x_coord;
+    my $bins_adjustment = $num_bins - 1;
+#    my $mfe_x_coord_buffer = ( $bottom_x_coord - $top_x_coord )/($num_bins + 2);
+#    my $mfe_x_coord = (($real_mfe - $min)/($x_interval*$num_bins)) + $mfe_x_coord_buffer + $top_x_coord;
+    my $mfe_x_coord = ($real_mfe - $min)/($x_interval*$bins_adjustment) * ($bottom_x_coord - $top_x_coord) + $top_x_coord;
 
     # print "$max, $min, $real_mfe, $top_x_coord, $bottom_x_coord, $mfe_x_coord\n";
     # print "$axes_coords->[0], $top_x_coord, $top_y_coord, $bottom_x_coord, $bottom_x_coord, $mfe_x_coord"; 
@@ -400,14 +401,15 @@ sub Make_Directory {
   my $directory = qq($config->{base}/$type/${first}${second}/${third}${fourth});
 
   my $command = qq(/bin/mkdir -p $directory);
-  system($command);
+  #system($command);
   #print "the command: $command <br>\n";
-  #my $output = '';
-  #if ( !-r $directory ) {
-  #    open (CMD, "$command |") or die("Could not run $command $!");
-  #    while (my $line = <CMD>) {
-#	  $output .= $line;
-#      }
-#  }
+  my $output = '';
+  if ( !-r $directory ) {
+      open (CMD, "$command |") or die("Could not run $command
+Make sure that user $< and/or group $( has write permissions: $!");
+      while (my $line = <CMD>) {
+	  $output .= $line;
+     } 
+  }
   return ($directory);
 }

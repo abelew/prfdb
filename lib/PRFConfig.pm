@@ -104,9 +104,11 @@ $PRFConfig::config->{sql_index}     = $PRFConfig::config->{sql_id};
 $PRFConfig::config->{logfile}       = 'prfdb.log';
 $PRFConfig::config->{errorfile}     = 'prfdb.errors';
 
-$PRFConfig::config->{stem_colors} = "black blue red green purple orange brown yellow";  ## This gets dropped into an array
+$PRFConfig::config->{stem_colors} = "black blue red green purple orange brown darkslategray";  ## This gets dropped into an array
 ## The zeroth element is a non-stem, thus black
 $PRFConfig::config->{graph_font} = 'arial.ttf';
+$PRFConfig::config->{distribution_graph_x_size} = 400;
+$PRFConfig::config->{distribution_graph_y_size} = 300;
 $PRFConfig::config->{graph_font_size} = 8;
 
 my $open = $appconfig->file('prfdb.conf');

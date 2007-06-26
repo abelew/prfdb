@@ -45,7 +45,7 @@ if ( $path eq '/start' or $path eq '' ) {
   ## The default page
   ## Templates read: header.html index.html
   ## Next Steps: (header) searchform filterform download.htm
-  Print_Search_Form();
+#  Print_Search_Form();
   Print_Index();
 } elsif ( $path eq '/download' ) {
   Print_Download();
@@ -61,14 +61,23 @@ if ( $path eq '/start' or $path eq '' ) {
   ## Templates read: searchform.html
   ## Next Steps: /search
   Print_Search_Form();
-} elsif ( $path eq '/perform_search' ) {
+} elsif ( $path eq '/perform_search' and defined($cgi->param('second_filter')) ) {
+    print "FILTER is defined\n<br>";
+  Perform_Second_Filter();
+} elsif ( $path eq '/perform_search' and defined($cgi->param('third_filter')) ) {
+    print "FILTER is defined\n<br>";
+  Perform_Third_Filter();
+} elsif ($path eq '/perform_search' and defined($cgi->param('blastsearch'))  ) {
+    my $input_sequence = $cgi->param('blastsearch');
+  Print_Blast('local',$input_sequence);
+} elsif ( $path eq '/perform_search') {
   ## Perform the search outlined in searchform
   ## Templates Read: multimatch_header.html multimatch_body.html multimatch_footer.html
   ## Next Steps: /refinesearch /browse(see slipsites for accession)
   ## If a single hit is found in the search, then do Browse_Single
   ## Templates Read:
   ## Next Steps:
-  Print_Search_Form();
+#  Print_Search_Form();
   Perform_Search();
 } elsif ( $path eq '/start_filter' ) {
   Start_Filter();
@@ -76,10 +85,8 @@ if ( $path eq '/start' or $path eq '' ) {
   ## Look for individual slippery sites in a single accession
   ## Templates Read: sliplist_header.html sliplist.html
   ## Next Steps:
-  Print_Search_Form();
+#  Print_Search_Form();
   Print_Single_Accession();
-} elsif ( $path eq '/filter' ) {
-  Perform_Filter();
 } elsif ( $path eq '/list_slipsites' ) {
   Print_Sliplist();
 } elsif ( $path eq '/detail' ) {
@@ -104,6 +111,9 @@ sub Print_Download {
 }
 
 sub Print_Search_Form {
+    $vars->{blast_startform} = $cgi->startform( -action => "$base/blast_search" );
+    $vars->{blastsearch} = $cgi->textarea( -name => 'blastsearch', -rows => 12, -columns => 80, );
+    $vars->{blast_submit} = $cgi->submit( -name => 'blastsearch', -value => 'Perform Blast Search');
   $template->process( 'searchform.html', $vars ) or print $template->error(), die;
 }
 
@@ -386,123 +396,166 @@ sub Start_Filter {
   my $species = $db->MySelect( "SELECT distinct(species) from genome", [], 'flat' );
 
   #  unshift (@{$species}, 'All');
-  $vars->{startform} = $cgi->startform( -action => "$base/filter" );
+  $vars->{startform} = $cgi->startform( -action => "$base/second_filter" );
+  $vars->{filter_submit} = $cgi->submit( -name => 'filter', -value => 'Filter PRFdb');
   $vars->{species} = $cgi->popup_menu(
     -name    => 'species',
     -values  => $species,
-    -default => 'saccharomces_cerevisiae',
+    -default => 'saccharomyces_cerevisiae',
   );
   $vars->{algorithm} = $cgi->popup_menu(
     -name    => 'algorithm',
     -values  => [ 'pknots', 'nupack' ],
     -default => 'pknots'
   );
-  $vars->{filters} = $cgi->checkbox_group(
-    -name   => 'filters',
-    -values => [ 'pseudoknots only', 'lowest mfe only', 'longest window', 'less than mean mfe', 'less than mean zR' ],
-    -defaults => [ 'pseudoknots only', 'lowest mfe only' ],
-    -rows     => 3,
-    -columns  => 3
-  );
+#  $vars->{filters} = $cgi->checkbox_group(
+#    -name   => 'filters',
+#    -values => [ 'pseudoknots only', 'lowest mfe only', 'longest window', 'less than mean mfe', 'less than mean zR' ],
+#    -defaults => [ 'pseudoknots only', 'lowest mfe only' ],
+#    -rows     => 3,
+#    -columns  => 3
+#  );
   $template->process( 'filterform.html', $vars ) or print $template->error(), die;
 }
 
-sub Perform_Filter {
+sub Perform_Second_Filter {
   my $species   = $cgi->param('species');
-  my @filters   = $cgi->param('filters');
-  my $statement = "SELECT mfe.*, boot.zscore FROM mfe,boot WHERE mfe < 0 AND ";
-  if ( $species ne 'All' ) {
-    $statement .= "species = '$species' AND ";
-  }
-  foreach my $filter (@filters) {
-    if ( $filter eq 'pseudoknots only' ) {
-      $statement .= "knotp = '1' AND ";
-    } elsif ( $filter eq 'longest window' ) {
-      $statement .= "seqlength = (SELECT max(seqlength) FROM mfe) AND ";
-    } elsif ( $filter eq 'less than mean mfe' ) {
-      $statement .= "mfe <= (SELECT avg(mfe) FROM mfe WHERE seqlength >= 50) AND ";
-    } elsif ( $filter eq 'less than mean zR' ) {
-      $statement .= "less than mean zR AND ";
+  my $algorithm = $cgi->param('algorithm');
+
+
+  my $max_mfe_stmt = qq(SELECT avg_mfe FROM stats WHERE species = ? AND algorithm = ? AND seqlength = ?);
+  my $max_mfes = $db->MySelect($max_mfe_stmt, [$species, $algorithm, $config->{seqlength}], 'row');
+  my $max_mfe = $max_mfes->[0];
+  $vars->{max_mfe} = $max_mfe;
+
+  $vars->{filters} = $cgi->checkbox_group(
+    -name   => 'filters',
+    -values => [ 'pseudoknots only', ],
+#    [ 'pseudoknots only', 'lowest mfe only', 'longest window', 'less than mean mfe', 'less than mean zR' ],
+    -defaults => [ 'pseudoknots only', ],
+#    -rows     => 3,
+#    -columns  => 3
+					  );
+  $vars->{species} = $cgi->hidden(-name => 'species', -value => $species);
+  $vars->{algorithm} = $cgi->hidden( -name => 'algorithm', -value => $algorithm);
+  $vars->{filter_submit} = $cgi->submit( -name => 'second_filter', -value => 'Filter PRFdb');
+  $template->process( 'secondfilterform.html', $vars ) or print $template->error(), die;
+}
+
+sub Perform_Third_Filter {
+    my @filters   = $cgi->param('filters');
+    my $species = $cgi->param('species');
+    my $algorithm = $cgi->param('algorithm');
+    my $max_mfe = $cgi->param('max_mfe');
+    my $seqlength = $config->{seqlength};
+
+    my $statement = qq(SELECT * FROM mfe WHERE species = '$species' AND algorithm = '$algorithm' AND seqlength = '$seqlength');
+    foreach my $filter (@filters) {
+	if ( $filter eq 'pseudoknots only' ) {
+	    $statement .= "knotp = '1' AND ";
+	}
     }
-  }
-  $statement =~ s/AND $/ORDER BY accession,mfe/g;
-  $vars->{select_statement} = $statement;
-
-  my $data;
-  my $count     = 1;
-  my $HOW_CLOSE = 0.1;
-  my $MAX_MFE   = -15.0;
-
-  my $entries = $db->MySelect($statement);
-  foreach my $entry ( @{$entries} ) {
-    my $id         = $entry->[0];
-    my $genome_id  = $entry->[1];
-    my $accession  = $entry->[2];
-    my $species    = $entry->[3];
-    my $algorithm  = $entry->[4];
-    my $start      = $entry->[5];
-    my $slipsite   = $entry->[6];
-    my $seqlength  = $entry->[7];
-    my $sequence   = $entry->[8];
-    my $output     = $entry->[9];
-    my $parsed     = $entry->[10];
-    my $parens     = $entry->[11];
-    my $mfe        = $entry->[12];
-    my $pairs      = $entry->[13];
-    my $knotp      = $entry->[14];
-    my $barcode    = $entry->[15];
-    my $lastupdate = $entry->[16];
-    my $zr         = $entry->[17];
-    $mfe = sprintf( "%.2f", $mfe );
-
-    if ( defined( $data->{$accession} ) ) {
-      $count++;
-      $data->{$accession}->{$count}->{mfe}   = $mfe;
-      $data->{$accession}->{$count}->{id}    = $id;
-      $data->{$accession}->{$count}->{knotp} = $knotp;
-    } else {
-      $count                                 = 1;
-      $data->{$accession}->{$count}->{mfe}   = $mfe;
-      $data->{$accession}->{$count}->{id}    = $id;
-      $data->{$accession}->{$count}->{knotp} = $knotp;
+    if (defined($max_mfe)) {
+	$statement .= "";
     }
-  }
-  my @accessions_to_consider = ();
-ACC: foreach my $acc ( sort( keys %{$data} ) ) {
-    my %mfe_count  = %{ $data->{$acc} };
-    my $lowest_mfe = -1000;
-  MFE: foreach my $c ( sort { $mfe_count{$a} <=> $mfe_count{$b} } keys %mfe_count ) {
-      my $mfe   = $mfe_count{$c}->{mfe};
-      my $knotp = $mfe_count{$c}->{knotp};
-      my $id    = $mfe_count{$c}->{id};
-      if ( $c == 1 ) {
-        $lowest_mfe = $mfe;
-        if ( $knotp == 1 ) {
-          if ( $mfe >= $MAX_MFE ) {
-            $lowest_mfe = -100.0;
-            next ACC;
-          }
-          print "MFE: $mfe ACC: $acc ID: $id\n";
-          $lowest_mfe = -1000.0;
-          next ACC;
-        }
-      } elsif ( $mfe <= ( $lowest_mfe + $HOW_CLOSE ) ) {
-        if ( $knotp == 1 ) {
-          if ( $mfe >= $MAX_MFE ) {
-            $lowest_mfe = -100.0;
-            next ACC;
-          }
-          print "MFE: $mfe ACC: $acc ID: $id\n";
-          $lowest_mfe = -1000;
-          next ACC;
-        }
-      } else {
-        $lowest_mfe = -1000;
-        next ACC;
-      }
-    }    ## End foreach
-    $lowest_mfe = -1000;
-  }    ## End foreach acc
+
+#  my $statement = "SELECT mfe.*, boot.zscore FROM mfe,boot WHERE mfe < 0 AND ";
+#  my $statement = "SELECT accession, species FROM mfe WHERE mfe < 0 AND ";
+#  if ( $species ne 'All' ) {
+#    $statement .= "mfe.species = '${species}' AND ";
+#  }
+#  foreach my $filter (@filters) {
+#    if ( $filter eq 'pseudoknots only' ) {
+#      $statement .= "knotp = '1' AND ";
+#    } elsif ( $filter eq 'longest window' ) {
+#      $statement .= "seqlength = (SELECT max(seqlength) FROM mfe) AND ";
+#	$statement .= "seqlength = 100 AND ";
+#
+#
+#    } elsif ( $filter eq 'less than mean mfe' ) {
+#      $statement .= "mfe <= (SELECT avg(mfe) FROM mfe WHERE seqlength = '100') AND ";
+#    } elsif ( $filter eq 'less than mean zR' ) {
+#      $statement .= "less than mean zR AND ";
+#    }
+#  }
+#  $statement =~ s/AND $/ORDER BY accession,mfe LIMIT 100/g;
+#  $vars->{select_statement} = $statement;
+#
+#  my $data;
+#  my $count     = 1;
+#  my $HOW_CLOSE = 0.1;
+#  my $MAX_MFE   = -15.0;
+#
+#  my $entries = $db->MySelect($statement);
+#  foreach my $entry ( @{$entries} ) {
+#    my $id         = $entry->[0];
+#    my $genome_id  = $entry->[1];
+#    my $accession  = $entry->[2];
+#    my $species    = $entry->[3];
+#    my $algorithm  = $entry->[4];
+#    my $start      = $entry->[5];
+#    my $slipsite   = $entry->[6];
+#    my $seqlength  = $entry->[7];
+#    my $sequence   = $entry->[8];
+#    my $output     = $entry->[9];
+#    my $parsed     = $entry->[10];
+#    my $parens     = $entry->[11];
+#    my $mfe        = $entry->[12];
+#    my $pairs      = $entry->[13];
+#    my $knotp      = $entry->[14];
+#    my $barcode    = $entry->[15];
+#    my $lastupdate = $entry->[16];
+#    my $zr         = $entry->[17];
+#    $mfe = sprintf( "%.2f", $mfe );
+#
+#    if ( defined( $data->{$accession} ) ) {
+#      $count++;
+#      $data->{$accession}->{$count}->{mfe}   = $mfe;
+#      $data->{$accession}->{$count}->{id}    = $id;
+#      $data->{$accession}->{$count}->{knotp} = $knotp;
+#    } else {
+#      $count                                 = 1;
+#      $data->{$accession}->{$count}->{mfe}   = $mfe;
+#      $data->{$accession}->{$count}->{id}    = $id;
+#      $data->{$accession}->{$count}->{knotp} = $knotp;
+#    }
+#  }
+#  my @accessions_to_consider = ();
+#ACC: foreach my $acc ( sort( keys %{$data} ) ) {
+#    my %mfe_count  = %{ $data->{$acc} };
+#    my $lowest_mfe = -1000;
+#  MFE: foreach my $c ( sort { $mfe_count{$a} <=> $mfe_count{$b} } keys %mfe_count ) {
+#      my $mfe   = $mfe_count{$c}->{mfe};
+#      my $knotp = $mfe_count{$c}->{knotp};
+#      my $id    = $mfe_count{$c}->{id};
+#      if ( $c == 1 ) {
+#        $lowest_mfe = $mfe;
+#        if ( $knotp == 1 ) {
+#          if ( $mfe >= $MAX_MFE ) {
+#            $lowest_mfe = -100.0;
+#            next ACC;
+#          }
+#          print "MFE: $mfe ACC: $acc ID: $id\n";
+#          $lowest_mfe = -1000.0;
+#          next ACC;
+#        }
+#      } elsif ( $mfe <= ( $lowest_mfe + $HOW_CLOSE ) ) {
+#        if ( $knotp == 1 ) {
+#          if ( $mfe >= $MAX_MFE ) {
+#            $lowest_mfe = -100.0;
+#            next ACC;
+#          }
+#          print "MFE: $mfe ACC: $acc ID: $id\n";
+#          $lowest_mfe = -1000;
+#          next ACC;
+#        }
+#      } else {
+#        $lowest_mfe = -1000;
+#        next ACC;
+#      }
+#    }    ## End foreach
+#    $lowest_mfe = -1000;
+#  }    ## End foreach acc
   $template->process( 'filter.html', $vars ) or print $template->error(), die;
 }
 
@@ -673,10 +726,20 @@ sub Get_Accession_Info {
 
 sub Print_Blast {
   my $local      = shift;
+  my $input_sequence = shift;
   my $blast      = new PRF_Blast;
-  my $accession  = $cgi->param('accession');
-  my $mrna_seq   = $db->MySelect( "SELECT mrna_seq FROM genome WHERE accession = ?", [$accession], 'row' );
-  my $sequence   = $mrna_seq->[0];
+  
+  my $accession;
+  my $sequence;
+  if (defined($input_sequence)) {
+      $sequence = $input_sequence;
+  }
+  else {
+      $accession  = $cgi->param('accession');
+      my $mrna_seq   = $db->MySelect( "SELECT mrna_seq FROM genome WHERE accession = ?", [$accession], 'row' );
+      $sequence   = $mrna_seq->[0];
+  }
+  
   my $local_info = $blast->Search( $sequence, $local );
 
   my ( %hit_names, %accessions, %lengths, %descriptions, %scores, %significances, %bitses );
