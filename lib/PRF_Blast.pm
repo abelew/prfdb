@@ -5,6 +5,9 @@ use Bio::SeqIO;
 use Bio::SearchIO::blast;
 use Bio::Tools::Run::StandAloneBlast;
 use Bio::Tools::Run::RemoteBlast;
+use PRFConfig;
+
+my $config = $PRFConfig::config;
 
 sub new {
   my ( $class, %arg ) = @_;
@@ -15,7 +18,7 @@ sub new {
 sub Format_Db {
   my $me      = shift;
   my $input   = shift;                                                       ## Fasta file to format.
-  my $command = qq(cd blast && formatdb  -i $input -p F -o T -n prfdb -s);
+  my $command = qq(cd $config->{blastdir} && formatdb  -i $input -p F -o T -n nr -s);
   system($command);
 }
 
@@ -27,6 +30,7 @@ sub Search {
   my $factory;
   my $blast_output = new Bio::SearchIO( -format => 'blast' );
   my $result;
+  $sequence =~ s/\s+//g;
   my $seq = new Bio::Seq(
     -display_id => 'query',
     -seq        => $sequence

@@ -62,10 +62,10 @@ if ( $path eq '/start' or $path eq '' ) {
   ## Next Steps: /search
   Print_Search_Form();
 } elsif ( $path eq '/perform_search' and defined($cgi->param('second_filter')) ) {
-    print "FILTER is defined\n<br>";
+    print "FILTER is defined: perform second\n<br>";
   Perform_Second_Filter();
 } elsif ( $path eq '/perform_search' and defined($cgi->param('third_filter')) ) {
-    print "FILTER is defined\n<br>";
+    print "FILTER is defined perform third\n<br>";
   Perform_Third_Filter();
 } elsif ($path eq '/perform_search' and defined($cgi->param('blastsearch'))  ) {
     my $input_sequence = $cgi->param('blastsearch');
@@ -397,7 +397,7 @@ sub Start_Filter {
 
   #  unshift (@{$species}, 'All');
   $vars->{startform} = $cgi->startform( -action => "$base/second_filter" );
-  $vars->{filter_submit} = $cgi->submit( -name => 'filter', -value => 'Filter PRFdb');
+  $vars->{filter_submit} = $cgi->submit( -name => 'second_filter', -value => 'Filter PRFdb');
   $vars->{species} = $cgi->popup_menu(
     -name    => 'species',
     -values  => $species,
@@ -422,7 +422,6 @@ sub Perform_Second_Filter {
   my $species   = $cgi->param('species');
   my $algorithm = $cgi->param('algorithm');
 
-
   my $max_mfe_stmt = qq(SELECT avg_mfe FROM stats WHERE species = ? AND algorithm = ? AND seqlength = ?);
   my $max_mfes = $db->MySelect($max_mfe_stmt, [$species, $algorithm, $config->{seqlength}], 'row');
   my $max_mfe = $max_mfes->[0];
@@ -435,29 +434,68 @@ sub Perform_Second_Filter {
     -defaults => [ 'pseudoknots only', ],
 #    -rows     => 3,
 #    -columns  => 3
-					  );
-  $vars->{species} = $cgi->hidden(-name => 'species', -value => $species);
-  $vars->{algorithm} = $cgi->hidden( -name => 'algorithm', -value => $algorithm);
-  $vars->{filter_submit} = $cgi->submit( -name => 'second_filter', -value => 'Filter PRFdb');
-  $template->process( 'secondfilterform.html', $vars ) or print $template->error(), die;
+      );
+  $vars->{species} = $species;
+  $vars->{algorithm} = $algorithm;
+  $vars->{choose_mfe} = $cgi->textfield(-name => 'choose_mfe', -value => ($max_mfe*2.0));
+  $vars->{choose_limit} = $cgi->textfield(-name => 'choose_limit',);
+  $vars->{hidden_species} = $cgi->hidden(-name => 'hidden_species', -value => $species);
+  $vars->{hidden_algorithm} = $cgi->hidden( -name => 'hidden_algorithm', -value => $algorithm);
+  $vars->{filter_submit} = $cgi->submit( -name => 'third_filter', -value => 'Filter PRFdb');
+  $template->process( 'secondfilterform.html', $vars ) or print "$! $template->error()", die;
 }
 
 sub Perform_Third_Filter {
     my @filters   = $cgi->param('filters');
-    my $species = $cgi->param('species');
-    my $algorithm = $cgi->param('algorithm');
-    my $max_mfe = $cgi->param('max_mfe');
+    my $species = $cgi->param('hidden_species');
+    my $algorithm = $cgi->param('hidden_algorithm');
+    my $max_mfe = $cgi->param('choose_mfe');
     my $seqlength = $config->{seqlength};
+    my $limit = $cgi->param('choose_limit');
+    $vars->{choose_limit} = $limit;
+    $vars->{species} = $species;
+    $vars->{algorithm} = $algorithm;
+    $vars->{hidden_species} = $cgi->hidden(-name =>'hidden_species', -value => $species);
+    $vars->{hidden_algorithm} = $cgi->hidden(-name => 'hidden_algorithm', -value => $algorithm);
 
-    my $statement = qq(SELECT * FROM mfe WHERE species = '$species' AND algorithm = '$algorithm' AND seqlength = '$seqlength');
+    my $statement = qq(SELECT * FROM mfe WHERE species = '$species' AND algorithm = '$algorithm' AND seqlength = '$seqlength' AND );
     foreach my $filter (@filters) {
 	if ( $filter eq 'pseudoknots only' ) {
 	    $statement .= "knotp = '1' AND ";
 	}
     }
     if (defined($max_mfe)) {
-	$statement .= "";
+	$statement .= "mfe < '$max_mfe' AND ";
     }
+
+  $statement =~ s/AND $/ORDER BY accession,mfe/g;
+
+    if (defined($limit) and $limit ne '') {
+	$statement .= " LIMIT $limit";
+    }
+
+    my $info = $db->MySelect($statement, []);
+    foreach my $datum (@{$info}) {
+	$vars->{id} = $datum->[0];
+	$vars->{genome_id} = $datum->[1];
+	$vars->{accession} = $datum->[2];
+      #species: saccharomyces_cerevisiae = $datum->[3];
+      #algorithm: pknots = $datum->[4];
+	$vars->{start} = $datum->[5];
+	$vars->{slipsite} = $datum->[6];
+	$vars->{seqlength} = $datum->[7];
+	$vars->{sequence} = $datum->[8];
+	$vars->{output} = $datum->[9];
+	$vars->{parsed} = $datum->[10];
+	$vars->{parens} = $datum->[11];
+	$vars->{mfe} = $datum->[12];
+	$vars->{pairs} = $datum->[13];
+	$vars->{knotp} = $datum->[14];
+	$vars->{barcode} = $datum->[15];
+	$vars->{lastupdate} = $datum->[16];
+	$template->process('filter_finished.html', $vars ) or die $template->error();
+    }
+
 
 #  my $statement = "SELECT mfe.*, boot.zscore FROM mfe,boot WHERE mfe < 0 AND ";
 #  my $statement = "SELECT accession, species FROM mfe WHERE mfe < 0 AND ";
@@ -556,7 +594,7 @@ sub Perform_Third_Filter {
 #    }    ## End foreach
 #    $lowest_mfe = -1000;
 #  }    ## End foreach acc
-  $template->process( 'filter.html', $vars ) or print $template->error(), die;
+  $template->process( 'thirdfilter.html', $vars ) or print $template->error(), die;
 }
 
 sub Print_Sliplist {

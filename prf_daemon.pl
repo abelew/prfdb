@@ -99,6 +99,7 @@ chdir( $config->{basedir} );
 if ( $config->{checks} ) {
   Check_Environment();
   Check_Tables();
+  Check_Blast();
 }
 
 ## Some Arguments should be checked before others...
@@ -447,6 +448,13 @@ sub Check_Tables {
     $db->Create_Queue( $config->{queue_table} );
     $db->FillQueue();
   }
+}
+
+sub Check_Blast {
+    my $testfile = qq($config->{blastdir}/nr.nni);
+    unless (-r $testfile) {
+	Make_Blast();
+    }
 }
 
 ## Start Print_Config

@@ -296,15 +296,14 @@ sub Make_Distribution{
     my $bottom_x_coord = $axes_coords->[3];
     my $bottom_y_coord = $axes_coords->[4];
 
-    my $x_interval = sprintf("%.1f", (($max-$min)/$num_bins + 0.05) );
+    my $x_interval = sprintf("%.1f", (($max-$min)/$num_bins) );
 
     # print "$x_interval\n";
-    my $bins_adjustment = $num_bins - 1;
-#    my $mfe_x_coord_buffer = ( $bottom_x_coord - $top_x_coord )/($num_bins + 2);
-#    my $mfe_x_coord = (($real_mfe - $min)/($x_interval*$num_bins)) + $mfe_x_coord_buffer + $top_x_coord;
-    my $mfe_x_coord = ($real_mfe - $min)/($x_interval*$bins_adjustment) * ($bottom_x_coord - $top_x_coord) + $top_x_coord;
-
-    # print "$max, $min, $real_mfe, $top_x_coord, $bottom_x_coord, $mfe_x_coord\n";
+    # my $bins_adjustment = $num_bins - 1;
+    my $x_interval_pixels = ( $bottom_x_coord - $top_x_coord )/($num_bins + 2);
+    # my $mfe_x_coord = (($real_mfe - $min)/($x_interval*$num_bins)) + $mfe_x_coord_buffer + $top_x_coord;
+    my $mfe_x_coord = $top_x_coord + ($x_interval_pixels) + (($real_mfe - $min) * ($x_interval_pixels/$x_interval));
+    # print "$max, $min, $real_mfe, $top_x_coord, $bottom_x_coord, $mfe_x_coord, $x_interval, $x_interval_pixels\n";
     # print "$axes_coords->[0], $top_x_coord, $top_y_coord, $bottom_x_coord, $bottom_x_coord, $mfe_x_coord"; 
 
     my $green = $gd->colorAllocate(0,191,0);
