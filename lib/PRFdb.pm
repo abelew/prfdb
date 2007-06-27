@@ -172,6 +172,29 @@ sub Keyword_Search {
   return ($return);
 }
 
+sub Mfeid_to_Bpseq {
+    my $me = shift;
+    my $mfeid = shift;
+    my $input_stmt = qq(SELECT sequence, output FROM mfe WHERE id = ?);
+    my $input = $db->MySelect($input_stmt, [$mfeid], 'row');
+    my $seq = $input->[0];
+    my $in = $input->[1];
+    my $output = '';
+    my @seq_array = split(//, $seq);
+    $in =~ s/^\s//g;
+    my @in_array = split(/ /, $in);
+    
+    foreach my $c (0 .. $#seq_array) {
+	if ($in_array[$c] eq '.') {
+	    $output .= "$c $seq_array[$c] 0\n";
+	}
+	else {
+	    $output .= "$c $seq_array[$c] $in_array[$c]\n";
+	}
+    }
+    return($output);
+}
+
 sub Genome_to_Fasta {
   my $me        = shift;
   my $output    = shift;
