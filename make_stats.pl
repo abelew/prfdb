@@ -11,9 +11,9 @@ my $db = new PRFdb;
 
 $db->Create_Stats();
 my $data = {
-  species   => [ 'homo_sapiens', 'saccharomyces_cerevisiae' ],
-  seqlength => [ 50, ],
+  species   => [ 'homo_sapiens', 'saccharomyces_cerevisiae', 'mus_musculus' ],
+  seqlength => [ 50, '100', ],
   max_mfe   => [ '10.0', ],
-  algorithm => [ 'nupack',       'pknots' ],
+  algorithm => [ 'nupack', 'pknots' ],
 };
 $db->Put_Stats($data);

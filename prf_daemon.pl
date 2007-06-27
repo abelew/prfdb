@@ -42,6 +42,7 @@ GetOptions(
   'nupack:i'               => \$conf{do_nupack},              ## If no type definition is given, it is boolean
   'pknots:i'               => \$conf{do_pknots},              ## The question is, will these be set to 0 if not applied?
   'boot:i'                 => \$conf{do_boot},
+  'utr:i'                  => \$conf{do_utr},
   'workdir:s'              => \$conf{workdir},
   'nupack_nopairs:i'       => \$conf{nupack_nopairs_hack},
   'arch:i'                 => \$conf{arch_specific_exe},
@@ -257,6 +258,10 @@ sub PRF_Gatherer {
   return (0) unless ( defined( $state->{rnamotif_information} ) );    ## If rnamotif_information is null
   ## Now I should have 1 or more start sites
 STARTSITE: foreach my $slipsite_start ( keys %{$rnamotif_information} ) {
+    if ($config->{do_utr} == 0) {
+	my $end_of_orf = $db->MySelect("SELECT orf_stop FROM genome WHERE accession = ?", [$state->{accession}], 'row');
+	next STARTSITE if ($end_of_orf->[0] < $slipsite_start);
+    }
     my $nupack_mfe_id;
     my $pknots_mfe_id;
     my $seqlength;

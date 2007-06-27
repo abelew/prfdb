@@ -38,6 +38,7 @@ $PRFConfig::config->{do_nupack}            = 1;
 $PRFConfig::config->{do_pknots}            = 1;
 $PRFConfig::config->{do_boot}              = 1;
 $PRFConfig::config->{do_landscape}         = 0;
+$PRFConfig::config->{do_utr}               = 0;
 $PRFConfig::config->{workdir}              = 'work';
 $PRFConfig::config->{blastdir}             = 'blast';
 $PRFConfig::config->{nupack_nopairs_hack}  = 0;
