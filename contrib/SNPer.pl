@@ -6,7 +6,7 @@ use PRFConfig;
 use PRFdb;
 use Bio::DB::GenBank;
 
-my $config = PRFConfig::config;
+my $config = $PRFConfig::config;
 
 my $PRFdb = new PRFdb;
 
