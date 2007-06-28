@@ -1,7 +1,13 @@
+##  Use this if you have modperl
 <Files *.cgi>
-      SetHandler perl-script 
-#      PerlHandler ModPerl::PerlRunPrefork
-      PerlHandler ModPerl::RegistryPrefork
-      PerlSendHeader on 
-      Options ExecCGI
+ SetHandler perl-script 
+ PerlHandler ModPerl::RegistryPrefork
+ PerlSendHeader on 
+ Options ExecCGI
 </Files>
+
+### Or this if you do not
+#<Files *.cgi>
+#  Options ExecCGI
+#</Files>
+  
