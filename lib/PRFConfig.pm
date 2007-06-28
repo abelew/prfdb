@@ -28,6 +28,7 @@ my $appconfig = AppConfig->new(
 ## Set up some reasonable defaults here
 ####
 $PRFConfig::config->{checks}               = 1;
+$PRFConfig::config->{workdir}              = 'work';
 $PRFConfig::config->{queue_table}          = 'queue';
 $PRFConfig::config->{check_webqueue}       = 1;
 $PRFConfig::config->{genome_table}         = 'genome';
@@ -39,7 +40,6 @@ $PRFConfig::config->{do_pknots}            = 1;
 $PRFConfig::config->{do_boot}              = 1;
 $PRFConfig::config->{do_landscape}         = 0;
 $PRFConfig::config->{do_utr}               = 0;
-$PRFConfig::config->{workdir}              = 'work';
 $PRFConfig::config->{blastdir}             = 'blast';
 $PRFConfig::config->{nupack_nopairs_hack}  = 0;
 $PRFConfig::config->{arch_specific_exe}    = 0;
@@ -128,7 +128,8 @@ $PRFConfig::config->{dsn}                 = qq(DBI:mysql:database=$PRFConfig::co
 my $err           = $PRFConfig::config->{errorfile};
 my $out           = $PRFConfig::config->{logfile};
 my $error_counter = 0;
-$ENV{PATH}    = $ENV{PATH} . ':' . $PRFConfig::config->{bindir};
+$PRFConfig::config->{workdir} = $PRFConfig::config->{'base'} . '/' . $PRFConfig::config->{workdir};
+$ENV{PATH}    = $ENV{PATH} . ':' . $PRFConfig::config->{workdir};
 $ENV{BLASTDB} = qq($PRFConfig::config->{prefix}/blast);
 
 if ( $PRFConfig::config->{arch_specific_exe} == 1 ) {
@@ -148,13 +149,13 @@ if ( $PRFConfig::config->{arch_specific_exe} == 1 ) {
   ## CLOSE UNAME in PRFConfig
   chomp $arch;
   if ( $arch =~ /IRIX/ ) {
-    $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/irix';
+    $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{workdir} . '/irix';
   } elsif ( $arch =~ /Linux/ ) {
-    $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/linux';
+    $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{workdir} . '/linux';
   } elsif ( $arch =~ /Darwin/ ) {
-    $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/osx';
+    $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{workdir} . '/osx';
   } elsif ( $arch =~ /AIX/ ) {
-    $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{bindir} . '/aix';
+    $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{workdir} . '/aix';
   }
   foreach my $exe (@modified_exes) {
     my $dirvar = $exe . '_dir';
