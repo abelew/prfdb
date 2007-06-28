@@ -46,9 +46,9 @@ foreach my $acc ( @{$accs} ) {
       my $location    = $feature->{_location};
       my $vstart      = $location->start();
       my $vstop       = $location->end();
-      my $complement_test  = split( /\(/, $location->to_FTstring() );
+      my @complement_test  = split( /\(/, $location->to_FTstring() );
       my $vcomplement = 0;
-      if ( $complement_test->[0] eq 'complement' ) {
+      if ( $complement_test[0] eq 'complement' ) {
         $vcomplement = 1;
       }
 
@@ -90,7 +90,7 @@ foreach my $acc ( @{$accs} ) {
         my $locus    = ( $vstart - $fstart - 7 );
         my $v_parsed = $mfe_parsed[$locus];
         if ( !defined($v_parsed) ) {
-          print( ERROUT "$acc: v_parsed " . scalar(@mfe_parsed) . " $locus UNDEF!\n" );
+          # print( ERROUT "$acc: v_parsed " . scalar(@mfe_parsed) . " $locus UNDEF!\n" );
           next;
         }
 
