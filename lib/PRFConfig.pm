@@ -28,6 +28,7 @@ my $appconfig = AppConfig->new(
 ## Set up some reasonable defaults here
 ####
 $PRFConfig::config->{checks}               = 1;
+$PRFConfig::config->{add_to_path}          = "/usr/local/bin:/usr/bin";
 $PRFConfig::config->{has_modperl}          = 0;
 $PRFConfig::config->{species_limit}        = undef;
 $PRFConfig::config->{workdir}              = 'work';
@@ -131,7 +132,11 @@ my $err           = $PRFConfig::config->{errorfile};
 my $out           = $PRFConfig::config->{logfile};
 my $error_counter = 0;
 $PRFConfig::config->{workdir} = $PRFConfig::config->{'base'} . '/' . $PRFConfig::config->{workdir};
+foreach my $dir (split(/:/, $PRFConfig::config->{add_to_path})) {
+    $ENV{PATH} = $ENV{PATH} . ':' . $dir;
+}
 $ENV{PATH}    = $ENV{PATH} . ':' . $PRFConfig::config->{workdir};
+
 $ENV{BLASTDB} = qq($PRFConfig::config->{prefix}/blast);
 
 if ( $PRFConfig::config->{arch_specific_exe} == 1 ) {

@@ -26,6 +26,8 @@ sub Nupack {
   my $accession = $me->{accession};
   my $start     = $me->{start};
   my $slipsite = Get_Slipsite_From_Input($inputfile);
+  my $nupack = qq($config->{workdir}/$config->{nupack});
+  my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
   my $return   = {
     start     => $start,
     slipsite  => $slipsite,
@@ -40,11 +42,11 @@ sub Nupack {
   die("$config->{workdir}/dataS_G.rna is missing.") unless ( -r "$config->{workdir}/dataS_G.rna" );
 
   if ( defined($pseudo) and $pseudo eq 'nopseudo' ) {
-    die("$config->{nupack_boot} is missing.") unless ( -r $config->{nupack_boot} );
-    $command = qq($config->{nupack_boot} $inputfile 2>nupack.err);
+    die("$nupack_boot is missing.") unless ( -r $nupack_boot );
+    $command = qq($nupack_boot $inputfile 2>${inputfile}_nupackboot.err);
   } else {
-    die("$config->{nupack} is missing.") unless ( -r $config->{nupack} );
-    $command = qq($config->{nupack} $inputfile 2>nupack.err);
+    die("$nupack is missing.") unless ( -r $nupack );
+    $command = qq($nupack $inputfile 2>${inputfile}_nupack.err);
   }
   print "NUPACK: infile: $inputfile accession: $accession start: $start
 command: $command\n";
@@ -84,8 +86,8 @@ command: $command\n";
   ## CLOSE NU in Nupack
   my $nupack_return = $?;
   unless ( $nupack_return eq '0' or $nupack_return eq '256' ) {
-    PRFConfig::PRF_Error( "Nupack Error: $!", $accession );
-    die("Nupack Error! $!");
+    PRFConfig::PRF_Error( "Nupack Error running $nupack: $!", $accession );
+    die("Nupack Error running $nupack: $!");
   }
   open( PAIRS, "<out.pair" ) or PRF_Error( "Could not open the nupack pairs file: $!", $accession );
   ## OPEN PAIRS in Nupack
@@ -138,6 +140,8 @@ sub Nupack_NOPAIRS {
   my $inputfile = $me->{file};
   my $accession = $me->{accession};
   my $start     = $me->{start};
+  my $nupack = qq($config->{workdir}/$config->{nupack});
+  my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
   my $slipsite = Get_Slipsite_From_Input($inputfile);
   my $return   = {
     start     => $start,
@@ -153,12 +157,12 @@ sub Nupack_NOPAIRS {
   die("$config->{workdir}/dataS_G.rna is missing.") unless ( -r "$config->{workdir}/dataS_G.rna" );
 
   if ( defined($pseudo) and $pseudo eq 'nopseudo' ) {
-    die("$config->{nupack_boot} is missing.") unless ( -r $config->{nupack_boot} );
-    $command = qq($config->{nupack_boot} $inputfile 2>nupack.err);
+    die("$nupack_boot is missing.") unless ( -r $nupack_boot );
+    $command = qq($nupack_boot $inputfile 2>${inputfile}_nupackboot.err);
   } else {
     warn("The nupack executable does not have 'nopairs' in its name") unless ( $config->{nupack} =~ /nopairs/ );
-    die("$config->{nupack} is missing.") unless ( -r $config->{nupack} );
-    $command = qq($config->{nupack} $inputfile 2>nupack.err);
+    die("$nupack is missing.") unless ( -r $nupack );
+    $command = qq($nupack $inputfile 2>${inputfile}_nupack.err);
   }
   print "NUPACK_NOPAIRS: infile: $inputfile accession: $accession start: $start
 command: $command\n";
@@ -207,8 +211,8 @@ command: $command\n";
   ## CLOSE NU in Nupack_NOPAIRS
   my $nupack_return = $?;
   unless ( $nupack_return eq '0' or $nupack_return eq '256' ) {
-    PRFConfig::PRF_Error( "Nupack Error: $!", $accession );
-    die("Nupack Error! $!");
+    PRFConfig::PRF_Error( "Nupack Error running $command: $!", $accession );
+    die("Nupack Error running $command $!");
   }
   for my $c ( 0 .. $#nupack_output ) {
     $nupack_output[$c] = '.' unless ( defined $nupack_output[$c] );
@@ -262,9 +266,9 @@ sub Pknots {
   die("pknots is missing.") unless ( -r "$config->{pknots}" );
 
   if ( defined($pseudo) and $pseudo eq 'nopseudo' ) {
-    $command = qq($config->{pknots} $inputfile 2>pknots.err);
+    $command = qq($config->{pknots} $inputfile 2>pknots_${inputfile}.err);
   } else {
-    $command = qq($config->{pknots} -k $inputfile 2>pknots.err);
+    $command = qq($config->{pknots} -k $inputfile 2>pknots_${inputfile}.err);
   }
   print "PKNOTS: infile: $inputfile accession: $accession start: $start
 command: $command\n";
@@ -299,14 +303,13 @@ command: $command\n";
   ## CLOSE PK in Pknots
   my $pknots_return = $?;
   unless ( $pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134' ) {
-    PRFConfig::PRF_Error( "Pknots Error: $!", $accession );
+    PRFConfig::PRF_Error( "Pknots Error running $command: $!", $accession );
 #    die("Pknots Error! $!");
   }
   $string =~ s/\s+/ /g;
   $return->{output} = $string;
   if ( defined( $config->{max_spaces} ) ) {
-    my $max_spaces = $config->{max_spaces};
-    $parser = new PkParse( debug => 0, max_spaces => $max_spaces );
+    my $max_spaces = $config->{max_spaces};    $parser = new PkParse( debug => 0, max_spaces => $max_spaces );
   } else {
     $parser = new PkParse( debug => 0 );
   }
@@ -386,8 +389,7 @@ sub Pknots_Boot {
     start     => $start,
   };
   chdir( $config->{workdir} );
-  die("pknots is missing.") unless ( -r "$config->{pknots}" );
-  my $command = qq($config->{pknots} $inputfile 2>pknots_boot.err);
+  my $command = qq($config->{pknots} $inputfile 2>${inputfile}_pknots_boot.err);
   open( PK, "$command |" ) or PRF_Error( "RNAFolders::Pknots_Boot, Failed to run pknots: $!", $accession );
   ## OPEN PK in Pknots_Boot
   my $counter = 0;
@@ -429,6 +431,8 @@ sub Nupack_Boot {
   my $inputfile = shift;
   my $accession = shift;
   my $start     = shift;
+  my $nupack = qq($config->{workdir}/$config->{nupack});
+  my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
   my $return    = {
     accession => $accession,
     start     => $start,
@@ -436,8 +440,7 @@ sub Nupack_Boot {
   chdir( $config->{workdir} );
   die("$config->{workdir}/dataS_G.dna is missing.")            unless ( -r "$config->{workdir}/dataS_G.dna" );
   die("$config->{workdir}/dataS_G.rna is missing.")            unless ( -r "$config->{workdir}/dataS_G.rna" );
-  die("$config->{nupack_boot} is missing.") unless ( -r $config->{nupack_boot} );
-  my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
+  my $command = qq($nupack_boot $inputfile 2>${inputfile}_nupack_boot.err);
   open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_Boot, Failed to run nupack: $!", $accession );
   ## OPEN NU in Nupack_Boot
   my $count = 0;
@@ -457,8 +460,8 @@ sub Nupack_Boot {
   ## CLOSE NU in Nupack_Boot
   my $nupack_return = $?;
   unless ( $nupack_return eq '0' or $nupack_return eq '256' ) {
-    PRFConfig::PRF_Error( "Nupack Error: $!", $accession );
-    die("Nupack Error! $!");
+    PRFConfig::PRF_Error( "Nupack Error running $command: $!", $accession );
+    die("Nupack Error running $command $!");
   }
 
   open( PAIRS, "<out.pair" ) or PRF_Error( "Could not open the nupack pairs file: $!", $accession );
@@ -482,6 +485,8 @@ sub Nupack_Boot_NOPAIRS {
   my $inputfile = shift;
   my $accession = shift;
   my $start     = shift;
+  my $nupack = qq($config->{workdir}/$config->{nupack});
+  my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
   my $return    = {
     accession => $accession,
     start     => $start,
@@ -489,9 +494,9 @@ sub Nupack_Boot_NOPAIRS {
   chdir( $config->{workdir} );
   die("$config->{workdir}/dataS_G.dna is missing.")            unless ( -r "$config->{workdir}/dataS_G.dna" );
   die("$config->{workdir}/dataS_G.rna is missing.")            unless ( -r "$config->{workdir}/dataS_G.rna" );
-  die("$config->{nupack_boot} is missing.") unless ( -r $config->{nupack_boot} );
+  die("$nupack_boot is missing.") unless ( -r $nupack_boot );
   warn("The nupack executable does not have 'nopairs' in its name") unless ( $config->{nupack} =~ /nopairs/ );
-  my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
+  my $command = qq($nupack_boot $inputfile 2>${inputfile}_nupacknopairs_boot.err);
   my @nupack_output;
   open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_Boot_NOPAIRS, Failed to run nupack: $!", $accession );
   ## OPEN NU in Nupack_Boot_NOPAIRS
@@ -516,8 +521,8 @@ sub Nupack_Boot_NOPAIRS {
   ## CLOSE NU in Nupack_Boot_NOPAIRS
   my $nupack_return = $?;
   unless ( $nupack_return eq '0' or $nupack_return eq '256' ) {
-    PRFConfig::PRF_Error( "Nupack Error: $!", $accession );
-    die("Nupack Error! $!");
+    PRFConfig::PRF_Error( "Nupack Error running $command: $!", $accession );
+    die("Nupack Error running $command: $!");
   }
   $return->{pairs} = $pairs;
   return ($return);

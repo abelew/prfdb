@@ -82,7 +82,7 @@ sub Squid_Dinuc {
   my $shuffle_exe;
   foreach my $char ( @{$inarray} ) { $inseq = join( '', $inseq, $char ); }
   if   ( defined($shuffle) ) { $shuffle_exe = $shuffle; }
-  else                       { $shuffle_exe = 'shuffle'; }
+  else                       { $shuffle_exe = qq($config->{workdir}/shuffle); }
   my $out_text = '';
   {    ## Begin a File::Temp Block
     my $fh = new File::Temp( DIR => $config->{workdir}, UNLINK => 0, );
@@ -90,7 +90,8 @@ sub Squid_Dinuc {
 $inseq
 ";
     my $infile = $fh->filename;
-    open( CMD, "shuffle -d $infile |" ) or die("Could not execute shuffle. $!");
+    my $command = qq($shuffle_exe -d $infile);
+    open( CMD, "$command |" ) or die("Could not execute shuffle $command. $!");
     ## OPEN CMD in Squid_Dinuc
     while ( my $line = <CMD> ) {
       chomp $line;

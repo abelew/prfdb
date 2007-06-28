@@ -135,7 +135,7 @@ sub Make_Distribution{
     my $total_range = sprintf("%d",($max - $min));
     
     my $num_bins = sprintf( "%d",2 * (scalar(@sorted) ** (2/5))); # bins = floor{ 2 * N^(2/5) }
-    
+    $num_bins++ if ($num_bins == 0);
     my $bin_range = sprintf( "%.1f", $total_range / $num_bins);
 	
     my @yax = ( 0 );
