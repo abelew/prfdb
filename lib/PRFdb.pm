@@ -1030,7 +1030,7 @@ sub Put_MFE {
     PRF_Error( $errorstring, $data->{species}, $data->{accession} );
   }
   $data->{sequence} =~ tr/actgu/ACTGU/;
-  my $statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?));
+  my $statement = qq(INSERT DELAYED INTO $table (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?));
   my ( $cp, $cf, $cl ) = caller();
   $me->Execute( $statement, [ $data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{slipsite}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode} ], [ $cp, $cf, $cl ], $data->{genome_id} );
   my $dbh             = DBI->connect( $me->{dsn}, $config->{user}, $config->{pass} );
@@ -1051,7 +1051,7 @@ sub Put_MFE_Landscape {
     Sec_Error( $errorstring, $data->{species}, $data->{accession} );
   }
   $data->{sequence} =~ tr/actgu/ACTGU/;
-  my $statement = qq(INSERT INTO landscape (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
+  my $statement = qq(INSERT DELAYED INTO landscape (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
   my ( $cp, $cf, $cl ) = caller();
   $me->Execute( $statement, [ $data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode} ], [ $cp, $cf, $cl ], $data->{genome_id} );
   my $dbh             = DBI->connect( $me->{dsn}, $config->{user}, $config->{pass} );
@@ -1067,7 +1067,7 @@ sub Put_Stats {
     foreach my $seqlength ( @{ $data->{seqlength} } ) {
       foreach my $max_mfe ( @{ $data->{max_mfe} } ) {
         foreach my $algorithm ( @{ $data->{algorithm} } ) {
-          my $statement = qq/INSERT INTO stats
+          my $statement = qq/INSERT DELAYED INTO stats
 (species, seqlength, max_mfe, algorithm, num_sequences, avg_mfe, stddev_mfe, avg_pairs, stddev_pairs, num_sequences_noknot, avg_mfe_noknot, stddev_mfe_noknot, avg_pairs_noknot, stddev_pairs_noknot, num_sequences_knotted, avg_mfe_knotted, stddev_mfe_knotted, avg_pairs_knotted, stddev_pairs_knotted)
 VALUES
 ('$species', '$seqlength', '$max_mfe', '$algorithm',
@@ -1126,7 +1126,7 @@ sub Put_Boot {
         $errorstring = "Undefined value(s) in Put_Boot: $errorstring";
         PRF_Error( $errorstring, $species, $accession );
       }
-      my $statement = qq(INSERT INTO boot 
+      my $statement = qq(INSERT DELAYED INTO boot 
 (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
 VALUES
 (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?));
@@ -1145,7 +1145,7 @@ VALUES
 sub Put_Overlap {
   my $me        = shift;
   my $data      = shift;
-  my $statement = qq(INSERT INTO overlap
+  my $statement = qq(INSERT DELAYED INTO overlap
 (genome_id, species, accession, start, plus_length, plus_orf, minus_length, minus_orf) VALUES
 (?,?,?,?,?,?,?,?));
   my ( $cp, $cf, $cl ) = caller();
@@ -1448,6 +1448,25 @@ knotp bool,
 barcode text,
 lastupdate $config->{sql_timestamp},
 INDEX(genome_id),
+INDEX(accession),
+PRIMARY KEY(id))\;
+  my ( $cp, $cf, $cl ) = caller();
+  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+}
+
+sub Create_Variations {
+  my $me        = shift;
+  my $statement = qq\CREATE TABLE variations (
+id $config->{sql_id},
+dbSNP text,
+accession $config->{sql_accession},
+start int,
+stop int,
+complement int,
+vars text,
+frameshift char(1),
+note text,
+INDEX(dbSNP),
 INDEX(accession),
 PRIMARY KEY(id))\;
   my ( $cp, $cf, $cl ) = caller();
