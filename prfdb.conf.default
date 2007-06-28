@@ -16,12 +16,6 @@ boot_randomizers = { array => \&MoreRandom::ArrayShuffle, dinuc => \&MoreRandom:
 nupack_dir = "$(prefix)/work"             ## Where does nupack live?
 nupack = "Fold.out"
 nupack_boot = "Fold.out.boot"
-rnamotif_dir = "$(prefix)/work"
-rnamotif = 'rnamotif'
-rmprune_dir = "$(prefix)/work"
-rmprune = 'rmprune'     ## Location of rmprune
-zcat_dir = "$(prefix)/work"
-zcat = 'zcat'           ## Location of zcat (rename to gzcat for OSX)
 db = 'DATABASENAME'         ## Name of mysql database
 host = 'DATABASEHOST' ## Mysql database hostname
 user = 'DATABASEUSER'           ## Mysql username
