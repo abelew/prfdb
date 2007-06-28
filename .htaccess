@@ -1,1 +1,6 @@
-Options +ExecCGI
+<Files *.cgi>
+      SetHandler perl-script 
+      PerlHandler ModPerl::PerlRunPrefork
+      PerlSendHeader on 
+      Options ExecCGI
+</Files>

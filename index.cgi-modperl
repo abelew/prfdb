@@ -10,6 +10,7 @@ use PRF_Blast;
 use PRFGraph;
 use MoreRandom;
 use Bootlace;
+use vars qw($config $db $cgi $template $base $basedir $vars);
 umask(0000);
 my $config = $PRFConfig::config;
 ## All configuration information exists here
