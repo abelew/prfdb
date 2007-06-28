@@ -1,6 +1,7 @@
 <Files *.cgi>
       SetHandler perl-script 
-      PerlHandler ModPerl::PerlRunPrefork
+#      PerlHandler ModPerl::PerlRunPrefork
+      PerlHandler ModPerl::RegistryPrefork
       PerlSendHeader on 
       Options ExecCGI
 </Files>

@@ -10,23 +10,22 @@ use PRF_Blast;
 use PRFGraph;
 use MoreRandom;
 use Bootlace;
-use vars qw($config $db $cgi $template $base $basedir $vars);
 umask(0000);
-my $config = $PRFConfig::config;
+our $config = $PRFConfig::config;
 ## All configuration information exists here
 chdir( $config->{basedir} );
 ## Change into the home directory of the folder daemon
-my $db = new PRFdb;    
+our $db = new PRFdb;    
 ## Set up a database configuration
-my $cgi = new CGI;
+our $cgi = new CGI;
 ## Start a new CGI object
-my $template = new Template($config);
+our $template = new Template($config);
 ## And a new Template
-my $base    = "http://" . $ENV{HTTP_HOST} . $ENV{SCRIPT_NAME};
-my $basedir = $base;
+our $base    = "http://" . $ENV{HTTP_HOST} . $ENV{SCRIPT_NAME};
+our $basedir = $base;
 $ENV{BLASTDB} = $config->{blastdir};
 $basedir =~ s/\/index.cgi.*//g;
-my $vars = {
+our $vars = {
   base         => $base,
   basedir      => $basedir,
   startsearchform => $cgi->startform( -action => "$base/perform_search"),
