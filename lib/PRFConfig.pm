@@ -28,6 +28,8 @@ my $appconfig = AppConfig->new(
 ## Set up some reasonable defaults here
 ####
 $PRFConfig::config->{checks}               = 1;
+$PRFConfig::config->{has_modperl}          = 0;
+$PRFConfig::config->{species_limit}        = undef;
 $PRFConfig::config->{workdir}              = 'work';
 $PRFConfig::config->{queue_table}          = 'queue';
 $PRFConfig::config->{check_webqueue}       = 1;

@@ -451,8 +451,18 @@ sub Check_Environment {
 	die("Unable to read the rnamotif descriptor file: $!");
     }
   }
-}
+  unless ( -r "$config->{base}/.htaccess" ) {
+      my $copy_command;
+      if ($config->{has_modperl}) {
+	  $copy_command = qq(cp $config->{base}/html/htaccess.modperl $config->{base}/.htaccess);
+      }
+      else {
+	  $copy_command = qq(cp $config->{base}/html/htaccess.cgi $config->{base}/.htaccess);
+      }
+      system($copy_command);
+  }
 ## End Check_Environment
+}
 
 sub Check_Tables {
   my $test = $db->Tablep( $config->{queue_table} );

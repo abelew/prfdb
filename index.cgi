@@ -112,13 +112,13 @@ sub Print_Search_Form {
     $vars->{blast_startform} = $cgi->startform( -action => "$base/blast_search" );
     $vars->{blastsearch} = $cgi->textarea( -name => 'blastsearch', -rows => 12, -columns => 80, );
     $vars->{blast_submit} = $cgi->submit( -name => 'blastsearch', -value => 'Perform Blast Search');
-  $template->process( 'searchform.html', $vars ) or print $template->error(), die;
+    $template->process( 'searchform.html', $vars ) or print $template->error(), die;
 }
 
 sub Print_Import_Form {
-  $vars->{startform} = $cgi->startform( -action => "$base/perform_import" );
-  $vars->{import} = $cgi->textfield( -name => 'import_accession', -size => 20 );
-  $template->process( 'import.html', $vars ) or print $template->error(), die;
+    $vars->{startform} = $cgi->startform( -action => "$base/perform_import" );
+    $vars->{import} = $cgi->textfield( -name => 'import_accession', -size => 20 );
+    $template->process( 'import.html', $vars ) or print $template->error(), die;
 }
 
 sub Print_Detail_Slipsite {
@@ -355,7 +355,12 @@ sub Print_Multiple_Accessions {
 
 sub Perform_Search {
   my $query = $cgi->param('query');
-  my $query_statement = qq(SELECT *  FROM genome WHERE (genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query'));
+  my $query_statement = qq/SELECT *  FROM genome WHERE /;
+  if (defined($config->{species_limit})) {
+      $query_statement .= qq/species = '$config->{species_limit}' AND /;
+  }
+  $query_statement .= qq/(genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')/;
+  
   my $entries = $db->MySelect($query_statement, [], 'hash', 1);
   foreach my $c (keys %{$entries}) {
       my $slipsite_structure_count = $db->MySelect( "SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?", [$entries->{$c}->{accession}], 'row' );
