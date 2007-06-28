@@ -36,8 +36,8 @@ sub Nupack {
   };
   chdir( $config->{workdir} );
   my $command;
-  die("dataS_G.dna is missing.") unless ( -r "dataS_G.dna" );
-  die("dataS_G.rna is missing.") unless ( -r "dataS_G.rna" );
+  die("$config->{workdir}/dataS_G.dna is missing.") unless ( -r "$config->{workdir}/dataS_G.dna" );
+  die("$config->{workdir}/dataS_G.rna is missing.") unless ( -r "$config->{workdir}/dataS_G.rna" );
 
   if ( defined($pseudo) and $pseudo eq 'nopseudo' ) {
     die("$config->{nupack_boot} is missing.") unless ( -r $config->{nupack_boot} );
@@ -149,8 +149,8 @@ sub Nupack_NOPAIRS {
   };
   chdir( $config->{workdir} );
   my $command;
-  die("dataS_G.dna is missing.") unless ( -r "dataS_G.dna" );
-  die("dataS_G.rna is missing.") unless ( -r "dataS_G.rna" );
+  die("$config->{workdir}/dataS_G.dna is missing.") unless ( -r "$config->{workdir}/dataS_G.dna" );
+  die("$config->{workdir}/dataS_G.rna is missing.") unless ( -r "$config->{workdir}/dataS_G.rna" );
 
   if ( defined($pseudo) and $pseudo eq 'nopseudo' ) {
     die("$config->{nupack_boot} is missing.") unless ( -r $config->{nupack_boot} );
@@ -434,8 +434,8 @@ sub Nupack_Boot {
     start     => $start,
   };
   chdir( $config->{workdir} );
-  die("dataS_G.dna is missing.")            unless ( -r "dataS_G.dna" );
-  die("dataS_G.rna is missing.")            unless ( -r "dataS_G.rna" );
+  die("$config->{workdir}/dataS_G.dna is missing.")            unless ( -r "$config->{workdir}/dataS_G.dna" );
+  die("$config->{workdir}/dataS_G.rna is missing.")            unless ( -r "$config->{workdir}/dataS_G.rna" );
   die("$config->{nupack_boot} is missing.") unless ( -r $config->{nupack_boot} );
   my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
   open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_Boot, Failed to run nupack: $!", $accession );
@@ -487,8 +487,8 @@ sub Nupack_Boot_NOPAIRS {
     start     => $start,
   };
   chdir( $config->{workdir} );
-  die("dataS_G.dna is missing.")            unless ( -r "dataS_G.dna" );
-  die("dataS_G.rna is missing.")            unless ( -r "dataS_G.rna" );
+  die("$config->{workdir}/dataS_G.dna is missing.")            unless ( -r "$config->{workdir}/dataS_G.dna" );
+  die("$config->{workdir}/dataS_G.rna is missing.")            unless ( -r "$config->{workdir}/dataS_G.rna" );
   die("$config->{nupack_boot} is missing.") unless ( -r $config->{nupack_boot} );
   warn("The nupack executable does not have 'nopairs' in its name") unless ( $config->{nupack} =~ /nopairs/ );
   my $command = qq($config->{nupack_boot} $inputfile 2>nupack_boot.err);
