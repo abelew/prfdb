@@ -1,8 +1,6 @@
 checks = 1                               ## Perform checks on the prfdb
 prefix = "${HOME}/browser"
 basedir = $(prefix)                       ## The base directory of this crap
-workdir = "$(prefix)/work"                 ## Temporary directory, fasta files live there
-bindir = "$(prefix)/work"
 check_webqueue = 1
 seqlength = 100    ## The maximum structure size to be examined
 do_nupack = 1             ## Run nupack on sequences?
