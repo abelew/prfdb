@@ -110,6 +110,8 @@ $PRFConfig::config->{stem_colors} = "black blue red green purple orange brown da
 $PRFConfig::config->{graph_font} = 'arial.ttf';
 $PRFConfig::config->{distribution_graph_x_size} = 400;
 $PRFConfig::config->{distribution_graph_y_size} = 300;
+$PRFConfig::config->{landscape_graph_x_size} = 800;
+$PRFConfig::config->{landscape_graph_y_size} = 600;
 $PRFConfig::config->{graph_font_size} = 8;
 
 my $open = $appconfig->file('prfdb.conf');

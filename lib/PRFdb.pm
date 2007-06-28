@@ -176,7 +176,7 @@ sub Mfeid_to_Bpseq {
     my $me = shift;
     my $mfeid = shift;
     my $input_stmt = qq(SELECT sequence, output FROM mfe WHERE id = ?);
-    my $input = $db->MySelect($input_stmt, [$mfeid], 'row');
+    my $input = $me->MySelect($input_stmt, [$mfeid], 'row');
     my $seq = $input->[0];
     my $in = $input->[1];
     my $output = '';
@@ -943,6 +943,9 @@ sub Insert_Genome_Entry {
   my $check      = qq(SELECT id FROM genome where accession=?);
   my $info       = $me->MySelect( $check, [ $datum->{accession} ] );
   my $already_id = $info->[0]->[0];
+  ## A check to make sure that the orf_start is not 0.  If it is, set it to 1 so it is consistent with the
+  ## crap from the SGD
+  $datum->{orf_start} = 1 if (!defined($datum->{orf_start}) or $datum->{orf_start} == 0);
   if ( defined($already_id) ) {
     print "The accession $datum->{accession} is already in the database with id: $already_id\n";
     return (undef);

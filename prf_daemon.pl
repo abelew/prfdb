@@ -142,8 +142,15 @@ if ( defined( $config->{input_file} ) ) {
   }
 }
 
-if ( defined( $config->{accession} ) or defined( $config->{import_accession} ) ) {
-  my $accession = defined( $config->{accession} ) ? $config->{accession} : $config->{import_accession};
+if (defined($config->{accession})) {
+  $state->{queue_id}  = 0;                                              ## Dumb hack lives on
+  $state->{accession} = $config->{accession};
+  $state->{genome_id} = $db->Get_GenomeId_From_Accession($config->{accession});
+  Gather($state);
+}
+
+if ( defined( $config->{import_accession} )) {
+  my $accession = $config->{import_accession};
   print "Importing Accession: $accession\n";
   $db->Import_CDS($accession);
   $state->{queue_id}  = 0;                                              ## Dumb hack lives on
@@ -157,7 +164,7 @@ if ( defined( $config->{accession} ) or defined( $config->{import_accession} ) )
     Gather($state);
   }
   ## Once the prf_daemon finishes this accession it will start reading the queue...
-}
+}  ## Endif used the import_accession arg
 
 if ( defined( $config->{input_fasta} ) ) {
   my $queue_ids;

@@ -6,7 +6,6 @@ use PRFConfig qw / PRF_Error PRF_Out /;
 use PRFdb;
 use GD::Graph::mixed;
 
-
 use Statistics::Basic::Mean;
 use Statistics::Basic::Variance;
 use Statistics::Basic::StdDev;
@@ -34,7 +33,6 @@ sub Make_Landscape {
   my $accession = $me->{accession};
   my $filename  = $me->Picture_Filename( { type => 'landscape', } );
   system("touch $filename");
-
   my $db         = new PRFdb;
   my $gene       = $db->MySelect("SELECT genename FROM genome WHERE accession='$accession'");
   my $data       = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM landscape WHERE accession='$accession' ORDER BY start, algorithm");
@@ -43,29 +41,17 @@ sub Make_Landscape {
 
   my $info        = {};
   my @points      = ();
-  my $avg_counter = 0;
-  my $avg_sum     = 0;
   foreach my $datum ( @{$data} ) {
-    $avg_counter = $avg_counter + 2;
     my $place = $datum->[0];
     push( @points, $place );
     if ( $datum->[1] eq 'pknots' ) {
       $info->{$place}->{pknots} = $datum->[3];
-      $avg_sum = $avg_sum + $datum->[3];
     } elsif ( $datum->[1] eq 'nupack' ) {
       $info->{$place}->{nupack} = $datum->[3];
-      $avg_sum = $avg_sum + $datum->[3];
     }
   }    ## End foreach spot
-  my $average   = $avg_sum / $avg_counter;
-  my $site_info = {};
-  foreach my $site ( @{$slipsites} ) {
-    $site_info->{ $site->[0] } = 'slipsite';
-  }
-  $site_info->{ $start_stop->[0]->[0] } = 'start';
-  $site_info->{ $start_stop->[0]->[1] } = 'stop';
 
-  my ( @axis_x, @slipsites_y, @nupack_y, @pknots_y, @start_y, @stop_y );
+  my ( @axis_x, @nupack_y, @pknots_y);
   my $end_spot = $points[$#points] + 105;
   my $current  = 0;
   while ( $current <= $end_spot ) {
@@ -73,58 +59,14 @@ sub Make_Landscape {
     if ( defined( $info->{$current} ) ) {
       push( @nupack_y, $info->{$current}->{nupack} );
       push( @pknots_y, $info->{$current}->{pknots} );
-      if ( defined( $site_info->{$current} ) ) {
-        if ( $site_info->{$current} eq 'start' ) {
-          push( @start_y,     $average );
-          push( @slipsites_y, undef );
-          push( @stop_y,      undef );
-        } elsif ( $site_info->{$current} eq 'stop' ) {
-          push( @start_y,     undef );
-          push( @slipsites_y, undef );
-          push( @stop_y,      $average );
-        } elsif ( $site_info->{$current} eq 'slipsite' ) {
-          push( @start_y,     undef );
-          push( @slipsites_y, $average );
-          push( @stop_y,      undef );
-        }
-      } else {
-        push( @start_y,     undef );
-        push( @slipsites_y, undef );
-        push( @stop_y,      undef );
-      }
     }
-
-    elsif ( defined( $site_info->{$current} ) ) {
-      if ( $site_info->{$current} eq 'start' ) {
-        push( @start_y,     $average );
-        push( @slipsites_y, undef );
-        push( @stop_y,      undef );
-      } elsif ( $site_info->{$current} eq 'stop' ) {
-        push( @start_y,     undef );
-        push( @slipsites_y, undef );
-        push( @stop_y,      $average );
-      } elsif ( $site_info->{$current} eq 'slipsite' ) {
-        push( @start_y,     undef );
-        push( @slipsites_y, $average );
-        push( @stop_y,      undef );
-      } else {
-        push( @start_y,     undef );
-        push( @slipsites_y, undef );
-        push( @stop_y,      undef );
-      }
-    }
-
     else {
-      push( @slipsites_y, undef );
       push( @nupack_y,    undef );
       push( @pknots_y,    undef );
-      push( @start_y,     undef );
-      push( @stop_y,      undef );
     }
     $current++;
   }
-
-  my @mfe_data = ( \@axis_x, \@nupack_y, \@pknots_y, \@slipsites_y, \@start_y, \@stop_y );
+  my @mfe_data = (\@axis_x, \@nupack_y, \@pknots_y,);
   my $width    = $end_spot;
   my $graph    = new GD::Graph::mixed( $width, 400 );
   $graph->set(
@@ -134,11 +76,10 @@ sub Make_Landscape {
     y_number_format   => "%.2f",
     x_labels_vertical => 1,
     x_label_skip      => 100,
-    dclrs             => [qw(blue red black green red)],
+      line_width => 2,
+      dclrs => [qw(blue red )],
     default_type      => 'lines',
-    types             => [qw(lines lines points points points)],
-    markers           => [10],
-    marker_size       => 160,
+      types => [qw(lines lines)],
   ) or die $graph->error;
   $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
   $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -146,6 +87,26 @@ sub Make_Landscape {
   $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
   $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
   my $gd = $graph->plot( \@mfe_data ) or die( $graph->error );
+
+  my $axes_coords = $graph->get_feature_coordinates('axes');
+  my $top_x_coord = $axes_coords->[1];
+  my $top_y_coord = $axes_coords->[2];
+  my $bottom_x_coord = $axes_coords->[3];
+  my $bottom_y_coord = $axes_coords->[4];
+  my $green = $gd->colorAllocate(0,191,0);
+  my $red = $gd->colorAllocate(191,0,0);
+  my $black = $gd->colorAllocate(0,0,0);
+  my $start_x_coord = $top_x_coord + $start_stop->[0]->[0];
+  my $stop_x_coord = $top_x_coord + $start_stop->[0]->[1];
+  my $orf_start = 0;
+  my $orf_stop =
+  ## Fill in the start site:
+  $gd->filledRectangle($start_x_coord, $bottom_y_coord+1, $start_x_coord+1, $top_y_coord-1, $green);
+  $gd->filledRectangle($stop_x_coord, $bottom_y_coord+1, $stop_x_coord+1, $top_y_coord-1, $red);
+  foreach my $slipsite_x_coords (@{$slipsites}) {
+      my $slipsite_x_coord = $slipsite_x_coords->[0];
+      $gd->filledRectangle($slipsite_x_coord, $bottom_y_coord+1, $slipsite_x_coord+1, $top_y_coord-1, $black);
+  }
 
   open( IMG, ">$filename" ) or die $!;
   binmode IMG;
@@ -277,7 +238,7 @@ sub Make_Distribution{
             x_labels_vertical => 1,
             x_label_skip      => 1,
             line_width => 3,
-            dclrs => [qw(lblue red green)],
+            dclrs => [qw(blue red green)],
             borderclrs => [ qw(black ) ]
     ) or die $graph->error;
 

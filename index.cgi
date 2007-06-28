@@ -324,7 +324,6 @@ sub Print_Single_Accession {
 	$num_starts_printed++;
 	$template->process( 'sliplist_start_codon.html', $vars ) or print $template->error(), die;
     }
-    print "TESTME: $vars->{orf_stop} AND $vars->{slipstart}<br>\n";
     if ($vars->{orf_stop} <= $vars->{slipstart} and $num_stops_printed == 0) {
 	$num_stops_printed++;
 	$template->process( 'sliplist_stop_codon.html', $vars ) or print $template->error(), die;
@@ -757,5 +756,9 @@ sub Check_Landscape {
   my $url = $pic->Picture_Filename( { type => 'landscape', url => 'url' } );
   $vars->{picture}   = $url;
   $vars->{accession} = $accession;
+  my $stmt = qq(SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession');
+  my $tmp  = $db->MySelect($stmt, [], 'row');
+  $vars->{start} = $tmp->[0];
+  $vars->{stop} = $tmp->[1];
   $template->process( 'landscape.html', $vars ) or print $template->error(), die;
 }

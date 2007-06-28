@@ -6,21 +6,22 @@ use PRFGraph;
 
 my $config = $PRFConfig::config;
 my $db     = new PRFdb;
-my $land   = new PRFGraph;
-my $type   = 'landscape';
 
-my $accessions = qq/SELECT distinct(accession) FROM landscape/;
-my $acc        = $db->MySelect($accessions);
-foreach my $a ( @{$acc} ) {
-  my $accession = $a->[0];
-  print "Working on $accession\n";
-  my $test_dir = $land->Make_Directory( $type, $accession );
-  my $test_file = qq($test_dir/$accession.png);
-  if ( -r $test_file ) {
-    print "Already have $test_file\n";
-    next;
-  }
-  my $filename = $land->Make_Picture( $type, $accession );
-  print "Wrote $filename\n";
+my $type   = 'landscape';
+my $accessions;
+if (!defined($ARGV[0])) {
+    $acc_stmt = qq/SELECT distinct(accession) FROM landscape/;
+    $accessions        = $db->MySelect($acc_stmt);
+    foreach my $a ( @{$accessions} ) {
+	my $land   = new PRFGraph( {accession => $a, mfe_id => 1});
+	my $accession = $a->[0];
+	print "Working on $accession\n";
+	$land->Make_Landscape($accession);
+    }
+}
+else {
+    print "Working on $ARGV[0]\n";
+    my $land = new PRFGraph({accession => $ARGV[0], mfe_id => 1});
+    $land->Make_Landscape($ARGV[0]);
 }
 
