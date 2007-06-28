@@ -30,7 +30,7 @@ sub new {
     fasta_arrayref => [],
   }, $class;
   my $inputfile = $me->{inputfile};
-  open( IN, "<$inputfile" ) or PRFConfig::PRF_Error( "Could not open the Bootlace input file.", $arg{species}, $arg{accession} );
+  open( IN, "<$inputfile" ) or PRFConfig::PRF_Error( "Could not open the Bootlace input file. $inputfile  $!", $arg{species}, $arg{accession} );
   ## OPEN IN in new
   while ( my $line = <IN> ) {
     chomp $line;
@@ -154,7 +154,7 @@ sub Overwrite_Inputfile {
   my $sequence = shift;
   my $string;
   foreach my $char ( @{$sequence} ) { $string .= $char; }
-  open( OUT, ">$me->{inputfile}" ) or PRF_Error( "Could not open output file in Bootlace.", $me->{species}, $me->{accession} );
+  open( OUT, ">$me->{inputfile}" ) or PRF_Error( "Could not open output file: $me->{inputfile} in Bootlace. $!", $me->{species}, $me->{accession} );
   ## OPEN OUT in Overwrite_Inputfile
   print OUT "$me->{fasta_comment}
 $string
