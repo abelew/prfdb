@@ -107,6 +107,7 @@ $PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEF
 $PRFConfig::config->{sql_index}     = $PRFConfig::config->{sql_id};
 $PRFConfig::config->{logfile}       = 'prfdb.log';
 $PRFConfig::config->{errorfile}     = 'prfdb.errors';
+$PRFConfig::config->{dirvar}        = undef;
 
 $PRFConfig::config->{stem_colors} = "black blue red green purple orange brown darkslategray";  ## This gets dropped into an array
 ## The zeroth element is a non-stem, thus black
