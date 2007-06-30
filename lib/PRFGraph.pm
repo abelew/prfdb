@@ -365,10 +365,10 @@ sub Make_Directory {
   my $sixth  = shift @cheat;
 
   if ( defined($url) ) {
-    my $url = qq($type/${first}${second}/${third}${fourth});
+    my $url = qq(images/$type/${first}${second}/${third}${fourth});
     return ($url);
   }
-  my $directory = qq($config->{base}/$type/${first}${second}/${third}${fourth});
+  my $directory = qq($config->{base}/images/$type/${first}${second}/${third}${fourth});
   
   my $command = qq(/bin/mkdir -p $directory);
   #system($command);
