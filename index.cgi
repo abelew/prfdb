@@ -386,6 +386,8 @@ sub Print_Multiple_Accessions {
     $vars->{counter}         = $data->{$id}->{counter};
     $vars->{accession}       = $data->{$id}->{accession};
     $vars->{species}         = $data->{$id}->{species};
+    $vars->{species} =~ s/_/ /g;
+    $vars->{species} = ucfirst($vars->{species});
     $vars->{genename}        = $data->{$id}->{genename};
     $vars->{comments}        = $data->{$id}->{comment};
     $vars->{slipsite_count}  = $data->{$id}->{slipsite_count};
