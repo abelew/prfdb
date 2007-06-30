@@ -5,9 +5,17 @@ use PRFdb;
 use PkParse;
 
 my $db     = new PRFdb;
-my $parser = new PkParse();
 
-my $select = qq(SELECT id, output, parsed FROM mfe order by id);
+#my $parser = new PkParse(debug => 1);
+my $parser = new PkParse();
+my $select;
+if (defined($ARGV[0])) {
+  $select = qq(SELECT id, output, parsed FROM mfe where id = '$ARGV[0]');
+}
+else {
+  $select = qq(SELECT id, output, parsed FROM mfe order by id);
+}
+
 
 my $info = $db->MySelect($select);
 foreach my $inf ( @{$info} ) {
@@ -27,7 +35,7 @@ foreach my $inf ( @{$info} ) {
     $parsed_string .= "$char ";
   }
 
-  #  my $update_string = qq(UPDATE mfe SET barcode = '$condensed', parsed = '$parsed_string', WHERE id = '$mfe_id');
-  my $update_string = qq(UPDATE mfe SET barcode = '$condensed' WHERE id = '$mfe_id');
+  my $update_string = qq(UPDATE mfe SET barcode = '$condensed', parsed = '$parsed_string', WHERE id = '$mfe_id');
+  #my $update_string = qq(UPDATE mfe SET barcode = '$condensed' WHERE id = '$mfe_id');
   print "${update_string};\n";
 }

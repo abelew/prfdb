@@ -35,7 +35,7 @@ my $spaces = 1000;
 ## If this is greater than max_spaces then increment the stemid
 my $last_pos = -1000;
 ## ??? Where was I last
-my $filled_positions = 0;
+my $positions_filled = 0;
 ## This should be a signal that it is time to restart
 my $positions_remaining = 0;
 ## How many positions are left.
@@ -120,29 +120,30 @@ __________________________
 
       ### For the first time we will fill out a piece of out_pattern
       elsif ( $out_pattern->[$current] == -1 ) {
+#	  print "\ttimes: $times_in_stem filled: $positions_filled\t";
+	  if ( ( $times_in_stem % 2 ) == 0 ) {
+	      if ( $times_in_stem == 0 ) {
+#		  print "Incrementing stemid 5' filled: $positions_filled\n";
+		  $stemid++;
+		  if ( $positions_filled > 0 ) {
+		      return ($out_pattern);
+		  }
+	      }
+	      elsif ( abs( $last - $in_pattern->[$current] ) > $me->{max_spaces} ) {
+		  return ($out_pattern);
+	      }
 
-        #        print "\ttimes: $times_in_stem filled: $filled_positions\t";
-        if ( ( $times_in_stem % 2 ) == 0 ) {
-          if ( $times_in_stem == 0 ) {
-            $stemid++;
-            if ( $filled_positions > 0 ) {
-              return ($out_pattern);
-            }
-          } elsif ( abs( $last - $in_pattern->[$current] ) > $me->{max_spaces} ) {
-            return ($out_pattern);
-          }
-
-          $positions_filled++;
-          $next = $in_pattern->[$current];
-          $times_in_stem++;
-          $spaces = 0;
-          $front_pos++;
-          if ( $me->{debug} ) {
-            print "\t$current -> $stemid\t";
-          }
-          $out_pattern->[$current] = $stemid;    ## YAY FILLED IT!
-          $positions_remaining--;
-        }    ## End elsif times_in_stem is even
+	      $positions_filled++;
+	      $next = $in_pattern->[$current];
+	      $times_in_stem++;
+	      $spaces = 0;
+	      $front_pos++;
+	      if ( $me->{debug} ) {
+		  print "\t$current -> $stemid\t";
+	      }
+	      $out_pattern->[$current] = $stemid;    ## YAY FILLED IT!
+	      $positions_remaining--;
+	  }    ## End elsif times_in_stem is even
 
         elsif ( ( $times_in_stem % 2 ) == 1 ) {
           $positions_filled++;
@@ -193,9 +194,10 @@ __________________________
       ### For the first time we will fill out a piece of out_pattern
       elsif ( $out_pattern->[$current] == -1 ) {
         if ( ( $times_in_stem % 2 ) == 0 ) {
-          if ( $times_in_stem == 0 ) {
+	    if ( $times_in_stem == 0 ) {
+#		print "Incrementing stemid, times_in_stem == 0 3'\n";
             $stemid++;
-            if ( $filled_positions > 0 ) {
+            if ( $positions_filled > 0 ) {
               return ($out_pattern);
             }
           } elsif ( abs( $last - $in_pattern->[$current] ) > $me->{max_spaces} ) {
@@ -213,7 +215,7 @@ __________________________
           $spaces = 0;
           $back_pos--;
           if ( $me->{debug} ) {
-            print "\t$current -> $stemid\t";
+            print "\t$current -> $stemid\t3'";
           }
           $out_pattern->[$current] = $stemid;    ## YAY FILLED IT!
           $positions_remaining--;
@@ -226,7 +228,7 @@ __________________________
           $spaces   = 0;
           $back_pos = $current - 1;
           if ( $me->{debug} ) {
-            print "\t$current -> $stemid\t";
+            print "\t$current -> $stemid\t ODD times in stem";
           }
           $out_pattern->[$current] = $stemid;    ## YAY FILLED IT!
           $positions_remaining--;
