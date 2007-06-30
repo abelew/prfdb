@@ -175,24 +175,49 @@ sub Keyword_Search {
 sub Mfeid_to_Bpseq {
     my $me = shift;
     my $mfeid = shift;
-    my $input_stmt = qq(SELECT sequence, output FROM mfe WHERE id = ?);
+    my $add_slipsite = shift;
+
+    my $fh = PRFdb::MakeTempfile({SUFFIX => '.bpseq'});
+    my $filename = $fh->filename;
+
+    my $input_stmt = qq(SELECT sequence, output, slipsite FROM mfe WHERE id = ?);
     my $input = $me->MySelect($input_stmt, [$mfeid], 'row');
     my $seq = $input->[0];
     my $in = $input->[1];
+    my $slipsite = $input->[2];
     my $output = '';
+    $seq =~ s/^\s+//g;
+    $seq =~ tr/augct/AUGCT/;
+    $in =~ s/^\s+//g;
     my @seq_array = split(//, $seq);
-    $in =~ s/^\s//g;
-    my @in_array = split(/ /, $in);
-    
-    foreach my $c (0 .. $#seq_array) {
-	if ($in_array[$c] eq '.') {
-	    $output .= "$c $seq_array[$c] 0\n";
-	}
-	else {
-	    $output .= "$c $seq_array[$c] $in_array[$c]\n";
+    my @in_array = split(/\s+/, $in);
+    if (defined($add_slipsite)) {
+	$slipsite = reverse($slipsite);
+	my @slipsite_array = split(//, $slipsite);
+	foreach my $slipsite_char (@slipsite_array) {
+	    unshift(@seq_array, $slipsite_char);
+	    unshift(@in_array, '.');
 	}
     }
-    return($output);
+    my $seq_length = scalar(@seq_array);
+    my $input_length = scalar(@in_array);
+
+    foreach my $c (0 .. $#seq_array) {
+	if (!defined($in_array[$c])) {
+	    $output .= "$c $seq_array[$c] 0\n";
+	}
+	elsif ($in_array[$c] eq '.') {
+	    my $position = $c + 1;
+	    $output .= "$position $seq_array[$c] 0\n";
+	}
+	else {
+	    my $position = $c + 1;
+	    my $bound_position = $in_array[$c] + 1;
+	    $output .= "$position $seq_array[$c] $bound_position\n";
+	}
+    }
+    print $fh $output;
+    return($filename);
 }
 
 sub Genome_to_Fasta {
@@ -236,14 +261,15 @@ sub Sequence_to_Fasta {
 }
 
 sub MakeTempfile {
-  $File::Temp::KEEP_ALL = 1;
-  my $fh = new File::Temp(
-    DIR      => $config->{workdir},
-    TEMPLATE => 'slip_XXXXX',
-    UNLINK   => 0,
-    SUFFIX   => '.fasta'
-  );
-  return ($fh);
+    my $args = shift;
+    $File::Temp::KEEP_ALL = 1;
+    my $fh = new File::Temp(
+			    DIR      => $config->{workdir},
+			    TEMPLATE => 'slip_XXXXX',
+			    UNLINK   => 0,
+			    SUFFIX   => defined($args->{SUFFIX}) ? $args->{SUFFIX} : '.fasta',
+			    );
+    return ($fh);
 }
 
 ####

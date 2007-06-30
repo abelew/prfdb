@@ -172,10 +172,23 @@ $structure->[8]
 	$db->Put_Boot($bootlaces);
     }
 
+    my $acc_slip         = qq/$accession-$slipstart/;
+    my $feynman_pic = new PRFGraph({mfe_id => $id, accession => $acc_slip});
+    my $pre_feynman_url = $feynman_pic->Picture_Filename({type=> 'feynman', url => 'url',});
+    my $feynman_url = $basedir . '/' . $pre_feynman_url;
+#    ## Feynman
+    $ENV{DISPLAY}=":6";
+    my $feynman_output_filename = $feynman_pic->Picture_Filename( {type => 'feynman', });
+    if (!-f $feynman_output_filename) {
+	my $feynman_input_file = $db->Mfeid_to_Bpseq($id);
+	$feynman_pic->Make_Feynman($feynman_input_file);
+    }
+## This requires an X server connection -- perhaps I can solve this
+## By logging in at boot time as 'website' and starting a null Xserver on
+## :6 and then setting env{display} to :6
     if ( defined($boot) ) {
       my $mfe_values       = $boot->[0];
       my @mfe_values_array = split( /\s+/, $mfe_values );
-      my $acc_slip         = qq/$accession-$slipstart/;
       $chart = new PRFGraph(
         {
 	    real_mfe => $mfe,
@@ -239,6 +252,9 @@ $structure->[8]
 
     $vars->{chart}    = $chart;
     $vars->{chartURL} = $chartURL;
+    $vars->{feynman}  = $feynman_pic;
+    $vars->{feynman_url} = $feynman_url;
+
     $vars->{mfe_mean} = $mfe_mean;
     $vars->{mfe_sd}   = $mfe_sd;
     $vars->{mfe_se}   = $mfe_se;

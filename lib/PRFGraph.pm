@@ -278,6 +278,16 @@ sub Make_Distribution{
     return($filename);
 }
 
+sub Make_Feynman {
+    my $me = shift;
+    my $input_file = shift;
+    my $acc_slip = $me->{acc_slip};
+    my $filename = $me->Picture_Filename( { type => 'feynman', } );
+    my $command = qq(DISPLAY=:6 ; /usr/bin/java -jar $config->{workdir}/jViz.jar -t -i $input_file -l $filename 2>$config->{workdir}/java.out 1>&2);
+    my $output = system($command);
+    system("rm $input_file");
+}
+
 sub Get_PPCC {
   my $me = shift;
 
