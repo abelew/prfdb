@@ -143,9 +143,9 @@ sub Print_Detail_Slipsite {
   foreach my $structure ( @{$info} ) {
     my $id = $structure->[0];
     my $mfe = $structure->[12];
-    my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se FROM boot WHERE mfe_id = ?);
+    my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = ?);
     my $boot = $db->MySelect( $boot_stmt, [$id], 'row' );
-    my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se );
+    my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $boot_db );
 
     if (!defined($boot) and $config->{do_boot}) {
 	$vars->{accession} = $structure->[2];
@@ -209,6 +209,7 @@ $structure->[8]
       $mfe_mean = $boot->[1];
       $mfe_sd   = $boot->[2];
       $mfe_se   = $boot->[3];
+      $boot_db  = $boot->[4];
       if ($mfe_sd == 0) { 
         $zscore = 0;
       }
@@ -262,6 +263,7 @@ $structure->[8]
     $vars->{randmean} = $randMean;
     $vars->{randse}   = $randSE;
     $vars->{ppcc}     = $ppcc;
+    $vars->{boot_db}  = $boot_db;
 
     $vars->{numbers} = Make_Nums($vars->{pk_input});
     $vars->{pk_input} = Color_Stems($vars->{pk_input}, $vars->{parsed});
