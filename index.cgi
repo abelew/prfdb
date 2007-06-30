@@ -263,6 +263,7 @@ $structure->[8]
     $vars->{randse}   = $randSE;
     $vars->{ppcc}     = $ppcc;
 
+    $vars->{numbers} = Make_Nums($vars->{pk_input});
     $vars->{pk_input} = Color_Stems($vars->{pk_input}, $vars->{parsed});
     $vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
     $vars->{parsed} = Color_Stems($vars->{parsed}, $vars->{parsed});
@@ -292,6 +293,31 @@ sub Color_Stems {
 	}
     }
     return($bracket_string);
+}
+
+sub Make_Nums {
+    my $sequence = shift;
+    my $num_string = '';
+    my @seq = split(//, $sequence);
+    my $c = 0;
+    my $count = 10;
+    foreach my $char (@seq) {
+	$c++;
+	if (($c % 10) == 0) {
+	    $num_string .= "$count";
+	    $count = $count + 10;
+	}
+	elsif ($c == 1) {
+	    $num_string .= "&nbsp;";
+	}
+	elsif ((($c - 1) % 10) == 0) {
+	    next;
+	}
+	else {
+	    $num_string .= "&nbsp;";
+	}
+    }
+    return($num_string);
 }
 
 sub Print_Single_Accession {
