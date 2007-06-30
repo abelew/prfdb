@@ -34,6 +34,7 @@ our $vars = {
   importform   => "$base/import",
   filterform   => "$base/start_filter",
   downloadform => "$base/download",
+  cloudform => "$base/cloud",
   submit       => $cgi->submit,
 };
 
@@ -56,6 +57,8 @@ if ( $path eq '/start' or $path eq '' ) {
   Print_Import_Form();
 } elsif ( $path eq '/landscape' ) {
   Check_Landscape();
+} elsif ( $path eq '/cloud' ) {
+  Cloud();
 } elsif ( $path eq '/searchform' ) {
   ## If you click on the 'search' link
   ## Templates read: searchform.html
@@ -667,42 +670,6 @@ sub Create_Pretty_mRNA {
   return ($first_pass);
 }
 
-#  my $prefont_ss = qq(<font color="#FF0000"><strong>);
-#  my $postfont_ss = qq(</strong></font>);
-#  my $resultset = $db->MySelect(qq(SELECT DISTINCT start FROM mfe WHERE accession = '$accession' ORDER BY start));
-#  my $slips = ' ';
-#  while (my $result = shift(@{$resultset})) {
-#    $slips .= " $result->[0] ";
-#  }
-#  my $slipcounter = 0;
-#  my $x = "";
-#  my $new_seq = '';
-#  for my $c (0 .. $#seq_array) {
-#    $new_seq .= $seq_array[1];
-#    $x = $c + 2;
-#    if ($slips =~ / $x /) {
-#      unless ($slipcounter) {
-#	$new_seq .= $prefont_ss;
-#      }
-#      $slipcounter = 8;
-#      $slips =~ s/ $x //;
-#    }
-#    if ($slipcounter > 1) {
-#      $slipcounter --;
-#    }
-#    elsif ($slipcounter == 1) {
-#      $slipcounter--;
-#      $new_seq .= $postfont_ss;
-#    }
-#  }
-#  $new_seq =~ s/($prefont_ss[ATGC])/$1 /g;
-#  $new_seq =~ s/([ATGC]3)/$1 /g;
-#  ### Color the -1 Frame stops
-#    $new_seq =~ s/T \<\/strong\>\<\/font>(AA|AG|GA)/\<\/strong\>\<\/font\>\<font color =\"#0000FF\"\>\<strong\>T $1\<\/strong\>\<\/font\>/g;
-#    $new_seq =~ s/(#FF0000.*?)T (AA|GA|AG)/$1\<font color =\"#0000FF\"\>\<strong\>T $2\<\/strong\>\<\/font\>/g;
-#    return $new_seq;
-#}
-
 sub Get_Accession_Info {
   my $accession       = shift;
   my $query_statement = qq(SELECT id, species, genename, comment, orf_start, orf_stop, lastupdate, mrna_seq FROM genome WHERE accession = ?);
@@ -812,4 +779,15 @@ sub Check_Landscape {
   $vars->{start} = $tmp->[0];
   $vars->{stop} = $tmp->[1];
   $template->process( 'landscape.html', $vars ) or print $template->error(), die;
+}
+
+sub Cloud {
+    my $species = 'homo_sapiens';
+    my $averages = $db->MySelect("SELECT avg_mfe, stddev_mfe, avg_zscore, stddev_zscore FROM stats WHERE species = '$species' AND seqlength = '100' AND algorithm = 'pknots'", [], 'row');
+    my ($avg_mfe, $stddev_mfe, $avg_zscore, $stddev_zscore) = (@{$averages});
+    my $points = $db->MySelect("SELECT mfe.mfe,boot.zscore FROM mfe,boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > '-80' AND boot.zscore > '-20' AND boot.zscore < '20' AND mfe.species = '$species' AND mfe.seqlength = '100' AND mfe.id = boot.mfe_id", []);
+    my $cloud = new PRFGraph();
+    $cloud->Make_Cloud($species, $points);
+    $template->process( 'cloud.html', $vars ) or print $template->error(), die;
+
 }

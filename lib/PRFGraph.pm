@@ -28,6 +28,48 @@ sub new {
   return ($me);
 }
 
+sub Make_Cloud {
+    my $me = shift;
+    my $species = shift;
+    my $data = shift;
+    my $graph = new GD::Graph::points('400','400');
+
+    $graph->set(
+		x_label           => 'MFE',
+		y_label           => 'Zscore',
+		y_label_skip      => 2,
+		y_number_format   => "%.2f",
+		x_labels_vertical => 1,
+		x_label_skip      => 10,
+		y_max_value => 30,
+		y_min_value => -30,
+		x_min_value => -30,
+		x_max_value => 30,
+		);
+
+    my $fun = [[0],[0]];
+    my $gd = $graph->plot($fun) or die ($graph->error);
+    my $red = $gd->colorAllocate(191,0,0);
+    my $axes_coords = $graph->get_feature_coordinates('axes');
+    my $top_x_coord = $axes_coords->[1];
+    my $top_y_coord = $axes_coords->[2];
+    my $bottom_x_coord = $axes_coords->[3];
+    my $bottom_y_coord = $axes_coords->[4];
+    foreach my $point (@{$data}) {
+	my $x_point = $point->[0] + ($bottom_x_coord / 2);  ## MFE
+	my $y_point = $point->[1] + ($top_y_coord / 2);  ## Z
+#	print "TESTME: $x_point $y_point<br>\n";
+	## filled arc: x, y, width, height, start, end, color, style
+#	$gd->filledArc($x_point, $y_point, 2, 2, 0, 360, $red, gdEdged|gdNoFill);
+	$gd->filledArc($x_point, $y_point, 2, 2, 0, 360, $red, 'gdFill');
+    }
+    my $filename = "$config->{base}/html/cloud.png";
+    open (IMG, ">$filename") or die $!;
+    binmode IMG;
+    print IMG $gd->png;
+    close IMG;
+}
+
 sub Make_Landscape {
   my $me        = shift;
   my $accession = $me->{accession};
@@ -198,31 +240,6 @@ sub Make_Distribution{
 	    $y_axis_maximum = $dist_y[$i];
 	}
     }
-
-    ## Make an array for the mfe value points
-    
-#    my @real_mfes;
-
-    ## Assume 13 buckets
-    ## The absolute y_axis maximum is 1.0
-    ## $y_axis_maximum is one value >= 1.0
-    ## I want to put $real_mfes[$c] between $y_axis_maximum and 0 so that earlier buckets get higher $y_axis_maximums
-#    my $mfe_y_position = $y_axis_maximum;
-#    my $mfe_y_decrement = ($y_axis_maximum / 10.0);
-#    print "STARTING y max: $mfe_y_position DECEMENT: $mfe_y_decrement\n<br>";
-#    for my $c (0 .. $#xax) {
-#	$mfe_y_position -= $mfe_y_decrement;
-#	print "TESTME $xax[$c] $mfe_y_position\n<br>";
-#	if ($real_mfe < $xax[$c]) {
-#	    print "$real_mfe is less than $xax[$c]\n<br>";
-#	    $real_mfes[$c] = $y_axis_maximum/2;
-#	    push(@real_mfes, undef);
-#	    last;
-#	}
-#	else {
-#	    push(@real_mfes, undef);
-#	}
-#    }
 
     # Chart part
     my @data = (\@xax, \@yax, \@dist_y, [0], );

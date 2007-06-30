@@ -1094,7 +1094,7 @@ sub Put_Stats {
       foreach my $max_mfe ( @{ $data->{max_mfe} } ) {
         foreach my $algorithm ( @{ $data->{algorithm} } ) {
           my $statement = qq/INSERT DELAYED INTO stats
-(species, seqlength, max_mfe, algorithm, num_sequences, avg_mfe, stddev_mfe, avg_pairs, stddev_pairs, num_sequences_noknot, avg_mfe_noknot, stddev_mfe_noknot, avg_pairs_noknot, stddev_pairs_noknot, num_sequences_knotted, avg_mfe_knotted, stddev_mfe_knotted, avg_pairs_knotted, stddev_pairs_knotted)
+(species, seqlength, max_mfe, algorithm, num_sequences, avg_mfe, stddev_mfe, avg_pairs, stddev_pairs, num_sequences_noknot, avg_mfe_noknot, stddev_mfe_noknot, avg_pairs_noknot, stddev_pairs_noknot, num_sequences_knotted, avg_mfe_knotted, stddev_mfe_knotted, avg_pairs_knotted, stddev_pairs_knotted, avg_zscore, stddev_zscore)
 VALUES
 ('$species', '$seqlength', '$max_mfe', '$algorithm',
 (SELECT count(id) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
@@ -1111,7 +1111,10 @@ VALUES
 (SELECT avg(mfe) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
 (SELECT stddev(mfe) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
 (SELECT avg(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT stddev(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'))/;
+(SELECT stddev(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT avg(zscore) FROM boot WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'),
+(SELECT stddev(zscore) FROM boot WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength')
+)/;
           my ( $cp, $cf, $cl ) = caller();
           $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
         }
@@ -1407,6 +1410,8 @@ avg_mfe_knotted float,
 stddev_mfe_knotted float,
 avg_pairs_knotted float,
 stddev_pairs_knotted float,
+avg_zscore float,
+stddev_zscore float,
 PRIMARY KEY (id)));
   my ( $cp, $cf, $cl ) = caller();
   $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
