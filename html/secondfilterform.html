@@ -1,0 +1,19 @@
+[% startform %]
+[% hidden_species %]
+[% hidden_algorithm %]
+You are filtering for [% species %] sequences using [% algorithm %] with [% seqlength %]bp sequences.<br>
+Given these criteria, the prfdb contains [% num_sequences %] sequences, of which [% num_sequences_knotted %] have
+pseudoknots and [% num_sequences_noknot %] do not.<br>
+The average minimum free energy of all these sequences is [% avg_mfe %]+-[% stddev_mfe %] kcal/mol.<br>
+The average minimum free energy of the pseudoknotted sequences is [% avg_mfe_knotted %]+-[% stddev_mfe_knotted %] kcal/mol while the non-pseudoknotted average is [% avg_mfe_noknot %]+-[% stddev_mfe_noknot %] kcal/mol.<br>
+All sequences in the db have an average [% avg_pairs %]+-[% stddev_pairs %] basepairs, pseudoknotted sequences however, have [% avg_pairs_knotted %]+-[% stddev_pairs_knotted %] and non-pseudoknotted sequences have [% avg_pairs_noknot %]+-[% stddev_pairs_noknot %].<br>
+Filters: <br>
+[% filters %]<br>
+Minimum Free Energy Requirement: [% choose_mfe %](The default is 1 standard deviation away from the mean)<br>
+Pairs Requirement: [% choose_pairs %](1 standard deviation from mean)<br>
+Choose Limit: [% choose_limit %]<br>
+[% filter_submit %]
+
+
+
+    
