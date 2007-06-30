@@ -18,6 +18,6 @@ foreach my $boot (@{$all_boot}) {
     my $mfe_ref = $db->MySelect($mfe_stmt,[],'row');
     my $mfe = $mfe_ref->[0];
     my $zscore = sprintf("%.3f", ($mfe - $mfe_mean) / $mfe_sd);
-    my $update_stmt = qq(UPDATE boot WHERE id = '$id' SET zscore = '$zscore');
+    my $update_stmt = qq(UPDATE boot SET zscore = '$zscore' WHERE id = '$id');
     $db->Execute($update_stmt);
 }
