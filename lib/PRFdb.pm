@@ -343,16 +343,26 @@ sub Get_Entire_Queue {
 sub Set_Queue {
   my $me    = shift;
   my $id    = shift;
+  my $override_table = shift;
   my $table = 'queue';
   if ( defined( $config->{queue_table} ) ) {
     $table = $config->{queue_table};
   }
-  my $statement = qq(INSERT INTO $table (genome_id, checked_out, done) VALUES (?, 0, 0));
-  $me->MyConnect($statement);
-  my $sth = $dbh->prepare("$statement");
-  $sth->execute($id) or PRF_Error("Could not execute \"$statement\" in Set_Queue");
-  my $last_id = $me->Get_Last_Id();
-  return ($last_id);
+  if (defined($override_table)) {
+      $table = $override_table;
+  }
+  my $check_for_existing = $me->MySelect("SELECT count(id) FROM $table WHERE genome_id = ? and done = '0'", [$id], 'row');
+  my $num_existing = $check_for_existing->[0];
+  if ($num_existing > 0) {
+      return(0);
+  }
+  else {
+      my $statement = qq(INSERT INTO $table (genome_id, checked_out, done) VALUES (?, 0, 0));
+      my ( $cp, $cf, $cl ) = caller();
+      my $rc = $me->Execute($statement, [$id], [$cp,$cf,$cl]);
+      my $last_id = $me->Get_Last_Id();
+      return ($last_id);
+  }
 }
 
 sub Clean_Table {

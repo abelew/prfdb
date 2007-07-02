@@ -150,7 +150,11 @@ sub Print_Detail_Slipsite {
     my $boot = $db->MySelect( $boot_stmt, [$id], 'row' );
     my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $boot_db );
 
-    if (!defined($boot) and $config->{do_boot}) {
+    if (!defined($boot) and $config->{do_boot} == 2) {
+	## Add it to the webqueue
+	$db->Set_Queue($vars->{genome_id}, 'webqueue');
+    }
+    elsif (!defined($boot) and $config->{do_boot} == 1) {
 	$vars->{accession} = $structure->[2];
 	$template->process( 'generate_boot.html', $vars) or print $template->error(), die;
 
@@ -225,7 +229,7 @@ $structure->[8]
     }
     else {  ##Boot is not defined!
       $chart    = "undef";
-      $chartURL = "images/no_data.gif";
+      $chartURL = "html/no_data.gif";
       $mfe_mean = "undef";
       $mfe_sd   = "undef";
       $mfe_se   = "undef";

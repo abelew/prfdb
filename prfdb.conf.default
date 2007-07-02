@@ -5,7 +5,9 @@ check_webqueue = 1
 seqlength = 100    ## The maximum structure size to be examined
 do_nupack = 1             ## Run nupack on sequences?
 do_pknots = 0             ## Run pknots on sequence?
-do_boot = 1               ## Perform our faux bootstrap
+do_boot = 2               ## Perform our faux bootstrap
+## If do_boot is set to 2, then unfinished items will get added to the
+## queue table
 do_landscape = 0
 nupack_nopairs_hack = 0   ## For the NCI systems I had to hack nupack
 arch_specific_exe = 1     ## Architecture specific executables (used for a pbs environment)
