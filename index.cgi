@@ -133,7 +133,7 @@ sub Print_MFE_Z {
     my $mfe_plus = $mfe + 0.9;
     $z = sprintf('%.0f', $z);
     my $z_plus = $z + 1.0;
-    my $stmt = qq(SELECT mfe.id, mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = ? AND mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id);
+    my $stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = ? AND mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
     my $stuff = $db->MySelect($stmt, [$species,$mfe,$mfe_plus,$z,$z_plus]);
     $vars->{mfe} = $mfe;
     $vars->{mfe_plus} = $mfe_plus;
@@ -142,14 +142,12 @@ sub Print_MFE_Z {
     $vars->{species} = $species;
     $template->process('mfe_z_header.html', $vars) or print $template->error();
     foreach my $datum (@{$stuff}) {
-	my $id = $datum->[0];
-	my $accession = $datum->[1];
-	my $start = $datum->[2];
+	my $accession = $datum->[0];
+	my $start = $datum->[1];
 	my $gene_stmt = qq(SELECT genename,comment FROM genome WHERE accession = ?);
 	my $g = $db->MySelect($gene_stmt,[$accession],'row');
 	my $genename = $g->[0];
 	my $comments = $g->[1];
-	$vars->{id} = $id;
 	$vars->{accession} = $accession;
 	$vars->{start} = $start;
 	$vars->{genename} = $genename;
