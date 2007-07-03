@@ -12,6 +12,7 @@ use Statistics::Basic::StdDev;
 use Statistics::Distributions;
 use Statistics::Basic::Correlation;
 
+# GD::Image->trueColor(1);
 my $config = $PRFConfig::config;
 
 sub new {
@@ -32,42 +33,136 @@ sub Make_Cloud {
     my $me = shift;
     my $species = shift;
     my $data = shift;
-    my $graph = new GD::Graph::points('400','400');
+    my $averages = shift;
+    my $filename = shift;
+    my $graph = new GD::Graph::points('800','800');
 
+    my $mfe_min_value = -80;
+    my $mfe_max_value = 5;
+    my $z_min_value = -10;
+    my $z_max_value = 10;
     $graph->set(
-		x_label           => 'MFE',
-		y_label           => 'Zscore',
-		y_label_skip      => 2,
-		y_number_format   => "%.2f",
-		x_labels_vertical => 1,
-		x_label_skip      => 10,
-		y_max_value => 30,
-		y_min_value => -30,
-		x_min_value => -30,
-		x_max_value => 30,
-		);
+		bgclr => 'white',
 
-    my $fun = [[0],[0]];
-    my $gd = $graph->plot($fun) or die ($graph->error);
-    my $red = $gd->colorAllocate(191,0,0);
+		x_min_value => $mfe_min_value,
+		x_max_value => $mfe_max_value,
+		x_ticks => 1,
+		x_label           => 'MFE',
+		x_labels_vertical => 1,
+		x_label_skip      => 0,
+		x_number_format   => "%.2f",
+		x_tick_number => 21,
+		x_all_ticks => 1,
+
+		y_min_value => $z_min_value,
+		y_max_value => $z_max_value,
+		y_label           => 'Zscore',
+		y_label_skip      => 1,
+		y_number_format   => "%.2f",
+
+		dclrs => ['black','black'],
+		marker_size => 0,
+
+		);
+    $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    my $fun = [[-100,-100,-100],[0,0,0]];
+    my $gd = $graph->plot($fun,) or die ($graph->error);
+    #$gd = GD::Image->TrueColor(1);
+    my $black = $gd->colorResolve(0,0,0);
+    my $green = $gd->colorResolve(0,191,0);
+    my $blue = $gd->colorResolve(0,0,191);
+    my $gb = $gd->colorResolve(0,97,97);
     my $axes_coords = $graph->get_feature_coordinates('axes');
-    my $top_x_coord = $axes_coords->[1];
+    my $left_x_coord = $axes_coords->[1];
     my $top_y_coord = $axes_coords->[2];
-    my $bottom_x_coord = $axes_coords->[3];
+    my $right_x_coord = $axes_coords->[3];
     my $bottom_y_coord = $axes_coords->[4];
+    my $x_range = $right_x_coord - $left_x_coord;
+    my $y_range = $top_y_coord - $bottom_y_coord;
+    my $mfe_range = $mfe_max_value - $mfe_min_value;
+    my $z_range = $z_max_value - $z_min_value;
+
+    my $points = {};
+    my $max_counter = 1;
     foreach my $point (@{$data}) {
-	my $x_point = $point->[0] + ($bottom_x_coord / 2);  ## MFE
-	my $y_point = $point->[1] + ($top_y_coord / 2);  ## Z
-#	print "TESTME: $x_point $y_point<br>\n";
-	## filled arc: x, y, width, height, start, end, color, style
-#	$gd->filledArc($x_point, $y_point, 2, 2, 0, 360, $red, gdEdged|gdNoFill);
-	$gd->filledArc($x_point, $y_point, 2, 2, 0, 360, $red, 'gdFill');
+	my $x_point = sprintf("%.1f",$point->[0]);
+	my $y_point = sprintf("%.1f",$point->[1]);
+	#print "MFE_value: $x_point Zscore: $y_point<br>\n";
+	if ( defined($points->{$x_point}->{$y_point})) {
+	    $points->{$x_point}->{$y_point}->{count}++;
+	    if ( $max_counter < $points->{$x_point}->{$y_point}->{count} ) {
+		$max_counter = $points->{$x_point}->{$y_point}->{count};
+	    }
+	}
+	else {
+	    $points->{$x_point}->{$y_point}->{count} = 1;
+	    $points->{$x_point}->{$y_point}->{accession} = $point->[2];
+	}
     }
-    my $filename = "$config->{base}/html/cloud.png";
+
+    my $average_mfe_coord = sprintf("%.1f",((($x_range/$mfe_range)*($averages->[0] - $mfe_min_value)) + $left_x_coord));
+    my $average_z_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $averages->[1])) + $bottom_y_coord));
+    my $tmp_filename = $filename;
+    open(MAP, ">${tmp_filename}.map");
+    print MAP "base_url http://dinmanlab.umd.edu/prfdb_beta/index.cgi/accession/\n";
+    foreach my $x_point (keys %{$points}) {
+	my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
+	foreach my $y_point (keys %{$points->{$x_point}}) {
+	    my $accession = $points->{$x_point}->{$y_point}->{accession};
+	    my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
+	    my $counter = $points->{$x_point}->{$y_point}->{count};
+	    
+	    ## Quadrant Color Code
+#	    my $color_value = 127 + (127*($max_counter/$counter));
+	    my $color_value = 220 - (500*($counter/$max_counter));
+	    my $color = undef;
+	    # print "X: $x_coord Y: $y_coord AVGX: $average_mfe_coord AVGY: $average_z_coord CV: $color_value";
+#	    print "TESTME: $color_value<br>\n";
+	    if ( ($x_coord < $average_mfe_coord) and ($y_coord > $average_z_coord) ) {
+		$color = $gd->colorResolve($color_value,0,0);
+		# print " C: red<br>\n";
+	    } elsif ( $x_coord < $average_mfe_coord ) {
+		$color = $gd->colorResolve(0,$color_value,0);
+		# print " C: green<br>\n";
+	    } elsif ( $y_coord > $average_z_coord ) {
+		$color = $gd->colorResolve(0,0,$color_value);
+		# print " C: blue<br>\n";
+	    } elsif ( ($x_coord > $average_mfe_coord) and ($y_coord < $average_z_coord) ) {
+		$color = $gd->colorResolve($color_value,$color_value,$color_value);
+		# print " C: grey<br>\n";
+	    } else {
+		$color = $gd->colorResolve(254,191,191);
+		# print " C: pink<br>\n";
+	    }
+	    #$gd->setAntiAliased($color);
+#	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, );
+	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 4); 
+#	    my $string = "point\t${x_coord},${y_coord}\t${accession}\n";
+	    my $string = "point $accession ${x_coord},${y_coord}\n";
+	    print MAP $string;
+	}
+    }
+    close MAP;
+    #$gd->setAntiAliased($green);
+    #$gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, 'gdAntiAliased');
+    #$gd->setAntiAliased($blue);
+    #$gd->filledRectangle($left_x_coord+1, $average_z_coord, $right_x_coord-1, $average_z_coord+1, 'gdAntiAliased');
+    #$gd->filledRectangle($average_mfe_coord, $average_z_coord, $average_mfe_coord+1, $average_z_coord+1, $gb);
+
+    $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
+    $gd->filledRectangle($left_x_coord+1, $average_z_coord, $right_x_coord-1, $average_z_coord+1, $black);
+    $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
+#    $gd->filledRectangle($average_mfe_coord, $average_z_coord, $average_mfe_coord+1, $average_z_coord+1, $gb);
+
     open (IMG, ">$filename") or die $!;
     binmode IMG;
     print IMG $gd->png;
     close IMG;
+    return($points);
 }
 
 sub Make_Landscape {
@@ -112,20 +207,21 @@ sub Make_Landscape {
   my $width    = $end_spot;
   my $graph    = new GD::Graph::mixed( $width, 400 );
   $graph->set(
+	      bgclr   => 'white',
     x_label           => 'Distance on ORF',
     y_label           => 'kcal/mol',
     y_label_skip      => 2,
     y_number_format   => "%.2f",
     x_labels_vertical => 1,
     x_label_skip      => 100,
-      line_width => 2,
+	   line_width => 2,
       dclrs => [qw(blue red )],
     default_type      => 'lines',
       types => [qw(lines lines)],
   ) or die $graph->error;
   $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
   $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-  $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+  $graph->set_x_label_font("$config->{base}/fonts/$config->o{graph_font}", $config->{graph_font_size});
   $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
   $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
   my $gd = $graph->plot( \@mfe_data ) or die( $graph->error );
@@ -141,7 +237,7 @@ sub Make_Landscape {
   my $start_x_coord = $top_x_coord + $start_stop->[0]->[0];
   my $stop_x_coord = $top_x_coord + $start_stop->[0]->[1];
   my $orf_start = 0;
-  my $orf_stop =
+  my $orf_stop = $end_spot;
   ## Fill in the start site:
   $gd->filledRectangle($start_x_coord, $bottom_y_coord+1, $start_x_coord+1, $top_y_coord-1, $green);
   $gd->filledRectangle($stop_x_coord, $bottom_y_coord+1, $stop_x_coord+1, $top_y_coord-1, $red);
@@ -247,6 +343,7 @@ sub Make_Distribution{
     my $graph = GD::Graph::mixed->new($graph_x_size, $graph_y_size);
     $graph->set_legend( "Random MFEs", "Normal Distribution", "Actual MFE");
     $graph->set(
+		bgclr => 'white',
             types             => [ qw(bars lines lines) ],
             x_label           => 'kcal/mol',
             y_label           => 'p(x)',
@@ -273,16 +370,9 @@ sub Make_Distribution{
     my $top_y_coord = $axes_coords->[2];
     my $bottom_x_coord = $axes_coords->[3];
     my $bottom_y_coord = $axes_coords->[4];
-
     my $x_interval = sprintf("%.1f", (($max-$min)/$num_bins) );
-
-    # print "$x_interval\n";
-    # my $bins_adjustment = $num_bins - 1;
     my $x_interval_pixels = ( $bottom_x_coord - $top_x_coord )/($num_bins + 2);
-    # my $mfe_x_coord = (($real_mfe - $min)/($x_interval*$num_bins)) + $mfe_x_coord_buffer + $top_x_coord;
     my $mfe_x_coord = $top_x_coord + ($x_interval_pixels) + (($real_mfe - $min) * ($x_interval_pixels/$x_interval));
-    # print "$max, $min, $real_mfe, $top_x_coord, $bottom_x_coord, $mfe_x_coord, $x_interval, $x_interval_pixels\n";
-    # print "$axes_coords->[0], $top_x_coord, $top_y_coord, $bottom_x_coord, $bottom_x_coord, $mfe_x_coord"; 
 
     my $green = $gd->colorAllocate(0,191,0);
     $gd->filledRectangle($mfe_x_coord, $bottom_y_coord+1 , $mfe_x_coord+1, $top_y_coord-1, $green);
@@ -346,12 +436,23 @@ sub Picture_Filename {
   my $args      = shift;
   my $type = $args->{type};
   my $url = $args->{url};
+  my $species = $args->{species};
 
   my $accession = $me->{accession};
   my $mfe_id = $me->{mfe_id};
 
+  if (defined($species)) {
+      if (defined($url)) {
+	  return(qq(images/${type}/${species}.png));
+      }
+      else {
+	  return(qq($config->{base}/images/${type}/${species}.png));
+      }
+  }
+
   my $directory = $me->Make_Directory( $type, $url );
   my $filename;
+
   if (defined($mfe_id)) {
       $filename = qq($directory/${accession}-${mfe_id}.png);
   }
@@ -369,6 +470,7 @@ sub Make_Directory {
   my $dir       = '';
   my $accession = $me->{accession};
   my $nums      = $accession;
+
   $nums =~ s/\W//g;
   $nums =~ s/[a-z]//g;
   $nums =~ s/[A-Z]//g;

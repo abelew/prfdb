@@ -10,6 +10,7 @@ use PRF_Blast;
 use PRFGraph;
 use MoreRandom;
 use Bootlace;
+
 umask(0000);
 our $config = $PRFConfig::config;
 ## All configuration information exists here
@@ -31,77 +32,69 @@ our $vars = {
   startsearchform => $cgi->startform( -action => "$base/perform_search"),
   searchquery => $cgi->textfield(-name => 'query', -size => 20),
   searchform   => "$base/searchform",
+  endsearchform => $cgi->endform(),
   importform   => "$base/import",
   filterform   => "$base/start_filter",
   downloadform => "$base/download",
-  cloudform => "$base/cloud",
+  cloudform => "$base/cloudform",
   submit       => $cgi->submit,
 };
 
+MAIN();
+
+sub MAIN {
 #### MAIN BLOCK OF CODE RIGHT HERE
-my $path = $cgi->path_info;
-print $cgi->header;
-$template->process( 'header.html', $vars ) or print $template->error(), die;
-if ( $path eq '/start' or $path eq '' ) {
-  ## The default page
-  ## Templates read: header.html index.html
-  ## Next Steps: (header) searchform filterform download.htm
-#  Print_Search_Form();
-  Print_Index();
-} elsif ( $path eq '/download' ) {
-  Print_Download();
-} elsif ( $path eq '/import' ) {
-  Print_Import_Form();
-} elsif ( $path eq '/perform_import' ) {
-  Perform_Import();
-  Print_Import_Form();
-} elsif ( $path eq '/landscape' ) {
-  Check_Landscape();
-} elsif ( $path eq '/cloud' ) {
-  Cloud();
-} elsif ( $path eq '/searchform' ) {
-  ## If you click on the 'search' link
-  ## Templates read: searchform.html
-  ## Next Steps: /search
-  Print_Search_Form();
-} elsif ( $path eq '/perform_search' and defined($cgi->param('second_filter')) ) {
-  Perform_Second_Filter();
-} elsif ( $path eq '/perform_search' and defined($cgi->param('third_filter')) ) {
-  Perform_Third_Filter();
-} elsif ($path eq '/perform_search' and defined($cgi->param('blastsearch'))  ) {
-    my $input_sequence = $cgi->param('blastsearch');
-  Print_Blast('local',$input_sequence);
-} elsif ( $path eq '/perform_search') {
-  ## Perform the search outlined in searchform
-  ## Templates Read: multimatch_header.html multimatch_body.html multimatch_footer.html
-  ## Next Steps: /refinesearch /browse(see slipsites for accession)
-  ## If a single hit is found in the search, then do Browse_Single
-  ## Templates Read:
-  ## Next Steps:
-#  Print_Search_Form();
-  Perform_Search();
-} elsif ( $path eq '/start_filter' ) {
-  Start_Filter();
-} elsif ( $path eq '/browse' ) {
-  ## Look for individual slippery sites in a single accession
-  ## Templates Read: sliplist_header.html sliplist.html
-  ## Next Steps:
-#  Print_Search_Form();
-  Print_Single_Accession();
-} elsif ( $path eq '/list_slipsites' ) {
-  Print_Sliplist();
-} elsif ( $path eq '/detail' ) {
-  Print_Detail_Slipsite();
-} elsif ( $path eq '/local_blast' ) {
-  Print_Search_Form();
-  Print_Blast('local');
-} elsif ( $path eq '/remote_blast' ) {
-  Print_Search_Form();
-  Print_Blast('remote');
+    my $path = $cgi->path_info;
+    print $cgi->header;
+    $template->process( 'header.html', $vars ) or print $template->error(), die;
+    if ( $path eq '/start' or $path eq '' ) {
+	Print_Index();
+    } elsif ($path =~ /^\/accession\/(\w+)$/) {
+	print "TESTME: $1 <br>\n";
+	Print_Single_Accession($1);
+    } elsif ( $path eq '/download' ) {
+	Print_Download();
+    } elsif ( $path eq '/import' ) {
+	Print_Import_Form();
+    } elsif ( $path eq '/perform_import' ) {
+	Perform_Import();
+	Print_Import_Form();
+    } elsif ( $path eq '/landscape' ) {
+	Check_Landscape();
+    } elsif ($path eq '/cloudform') {
+	Print_Cloudform();
+    } elsif ( $path eq '/cloud' ) {
+	Cloud();
+    } elsif ( $path eq '/searchform' ) {
+	Print_Search_Form();
+    } elsif ($path eq '/blast_search') {
+	my $input_sequence = $cgi->param('blastsearch');
+	Print_Blast('local',$input_sequence);
+    } elsif ( $path eq '/perform_search') {
+	Perform_Search();
+    } elsif ( $path eq '/start_filter' ) {
+	Start_Filter();
+    } elsif ($path eq '/second_filter') {
+	Perform_Second_Filter();
+    } elsif ( $path eq '/third_filter') {
+	Perform_Third_Filter();
+    } elsif ( $path eq '/browse' ) {
+	Print_Single_Accession();
+    } elsif ( $path eq '/list_slipsites' ) {
+	Print_Sliplist();
+    } elsif ( $path eq '/detail' ) {
+	Print_Detail_Slipsite();
+    } elsif ( $path eq '/local_blast' ) {
+	Print_Search_Form();
+	Print_Blast('local');
+    } elsif ( $path eq '/remote_blast' ) {
+	Print_Search_Form();
+	Print_Blast('remote');
+    }
+    $template->process( 'footer.html', $vars ) or print $template->error(), die;
+    print $cgi->endform, $cgi->end_html;
+    exit(0);
 }
-$template->process( 'footer.html', $vars ) or print $template->error(), die;
-print $cgi->endform, $cgi->end_html;
-exit(0);
 
 sub Print_Index {
   $template->process( 'index.html', $vars ) or print $template->error(), die;
@@ -122,6 +115,15 @@ sub Print_Import_Form {
     $vars->{startform} = $cgi->startform( -action => "$base/perform_import" );
     $vars->{import} = $cgi->textfield( -name => 'import_accession', -size => 20 );
     $template->process( 'import.html', $vars ) or print $template->error(), die;
+}
+
+sub Print_Cloudform {
+    $vars->{newstartform} = $cgi->startform( -action => "$base/cloud" );
+    $vars->{species} = $cgi->popup_menu( -name => 'species',
+					-default => ['homo_sapiens'],
+					-values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus']);
+
+    $template->process( 'cloudform.html', $vars ) or print $template->error(), die;
 }
 
 sub Print_Detail_Slipsite {
@@ -331,13 +333,20 @@ sub Make_Nums {
 
 sub Print_Single_Accession {
   my $datum = shift;
+  my $fun = ref($datum);
   my $accession;
-  if ( !defined($datum) ) {
-    $accession          = $cgi->param('accession');
-    $datum              = Get_Accession_Info($accession);
-    $datum->{accession} = $accession;
-  } else {
-    $accession = $datum->{accession};
+  if (ref($datum) eq 'SCALAR' or $fun eq '' or !defined($fun)) {
+      $accession = $datum;
+      $datum = Get_Accession_Info($accession);
+      $datum->{accession} = $accession;
+  }
+  elsif ( !defined($datum) ) {
+      $accession          = $cgi->param('accession');
+      $datum              = Get_Accession_Info($accession);
+      $datum->{accession} = $accession;
+  } 
+  else {
+      $accession = $datum->{accession};
   }
   $vars->{id}              = $datum->{id};
   $vars->{counter}         = $datum->{counter};
@@ -465,7 +474,7 @@ sub Start_Filter {
 sub Perform_Second_Filter {
   my $species   = $cgi->param('species');
   my $algorithm = $cgi->param('algorithm');
-
+  $vars->{startform} = $cgi->startform( -action => "$base/third_filter" );
   my $stats_stmt = qq(SELECT * FROM stats WHERE species = ? AND algorithm = ? AND seqlength = ?);
   my $stats = $db->MySelect($stats_stmt, [$species, $algorithm, $config->{seqlength}], 'hash');
 
@@ -786,12 +795,25 @@ sub Check_Landscape {
 }
 
 sub Cloud {
-    my $species = 'homo_sapiens';
-    my $averages = $db->MySelect("SELECT avg_mfe, stddev_mfe, avg_zscore, stddev_zscore FROM stats WHERE species = '$species' AND seqlength = '100' AND algorithm = 'pknots'", [], 'row');
-    my ($avg_mfe, $stddev_mfe, $avg_zscore, $stddev_zscore) = (@{$averages});
-    my $points = $db->MySelect("SELECT mfe.mfe,boot.zscore FROM mfe,boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > '-80' AND boot.zscore > '-20' AND boot.zscore < '20' AND mfe.species = '$species' AND mfe.seqlength = '100' AND mfe.id = boot.mfe_id", []);
+    my $species = $cgi->param('species');
     my $cloud = new PRFGraph();
-    $cloud->Make_Cloud($species, $points);
+    my $cloud_output_filename = $cloud->Picture_Filename({type => 'cloud', species => $species});
+    my $cloud_url = $cloud->Picture_Filename({type => 'cloud', species => $species, url => 'url',});
+    $cloud_url = $basedir . '/' . $cloud_url;
+    if (!-f $cloud_output_filename) {
+	my $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
+	my $points = $db->MySelect($points_stmt, [$species]);
+	my $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
+	my $averages = $db->MySelect($averages_stmt, [$species], 'row');
+	my $cloud_data = $cloud->Make_Cloud($species, $points, $averages, $cloud_output_filename);
+    }
+    $vars->{species} = $species;
+    $vars->{cloud_file} = $cloud_output_filename;
+    $vars->{cloud_url} = $cloud_url;
+    $vars->{map_url} = "$vars->{cloud_url}" . '.map'; 
+    $vars->{map_file} = "$vars->{cloud_file}" . '.map';
+    
+
     $template->process( 'cloud.html', $vars ) or print $template->error(), die;
 
 }
