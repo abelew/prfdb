@@ -120,7 +120,7 @@ sub Print_Cloudform {
     $vars->{newstartform} = $cgi->startform( -action => "$base/cloud" );
     $vars->{species} = $cgi->popup_menu( -name => 'species',
 					-default => ['homo_sapiens'],
-					-values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus']);
+					-values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','all']);
 
     $template->process( 'cloudform.html', $vars ) or print $template->error(), die;
 }
@@ -133,8 +133,15 @@ sub Print_MFE_Z {
     my $mfe_plus = $mfe + 0.9;
     $z = sprintf('%.0f', $z);
     my $z_plus = $z + 1.0;
-    my $stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = ? AND mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-    my $stuff = $db->MySelect($stmt, [$species,$mfe,$mfe_plus,$z,$z_plus]);
+    my ($stmt, $stuff);
+    if ($species eq 'all') {
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	$stuff = $db->MySelect($stmt, [$mfe,$mfe_plus,$z,$z_plus]);
+    }
+    else {
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = ? AND mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	$stuff = $db->MySelect($stmt, [$species,$mfe,$mfe_plus,$z,$z_plus]);
+    }
     $vars->{mfe} = $mfe;
     $vars->{mfe_plus} = $mfe_plus;
     $vars->{z} = $z;
@@ -826,10 +833,19 @@ sub Cloud {
     my $cloud_url = $cloud->Picture_Filename({type => 'cloud', species => $species, url => 'url',});
     $cloud_url = $basedir . '/' . $cloud_url;
     if (!-f $cloud_output_filename) {
-	my $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
-	my $points = $db->MySelect($points_stmt, [$species]);
-	my $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
-	my $averages = $db->MySelect($averages_stmt, [$species], 'row');
+	my ($points_stmt, $averages_stmt, $points, $averages);
+	if ($species = 'all') {
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
+	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
+	    $points = $db->MySelect($points_stmt, []);
+	    $averages = $db->MySelect($averages_stmt, [], 'row');
+	}
+	else {
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
+	    my $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
+	    $points = $db->MySelect($points_stmt, [$species]);
+	    $averages = $db->MySelect($averages_stmt, [$species], 'row');
+	}
 	my $cloud_data = $cloud->Make_Cloud($species, $points, $averages, $cloud_output_filename);
     }
     $vars->{species} = $species;
@@ -837,8 +853,6 @@ sub Cloud {
     $vars->{cloud_url} = $cloud_url;
     $vars->{map_url} = "$vars->{cloud_url}" . '.map'; 
     $vars->{map_file} = "$vars->{cloud_file}" . '.map';
-    
-
     $template->process( 'cloud.html', $vars ) or print $template->error(), die;
 
 }
