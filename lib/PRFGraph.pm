@@ -108,7 +108,6 @@ sub Make_Cloud {
     my $average_z_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $averages->[1])) + $bottom_y_coord));
     my $tmp_filename = $filename;
     open(MAP, ">${tmp_filename}.map");
-    print MAP "base_url http://dinmanlab.umd.edu/prfdb_beta/index.cgi/accession/\n";
     foreach my $x_point (keys %{$points}) {
 	my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 	foreach my $y_point (keys %{$points->{$x_point}}) {
@@ -143,7 +142,7 @@ sub Make_Cloud {
 	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 4); 
 #	    my $string = "point\t${x_coord},${y_coord}\t${accession}\n";
 	    $accession =~ s/\://g;
-	    my $string = "point $accession ${x_coord},${y_coord}\n";
+	    my $string = "point http://dinmanlab.umd.edu/prfdb_beta/index.cgi/mfe_z?species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n";
 	    print MAP $string;
 	}
     }

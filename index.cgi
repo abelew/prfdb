@@ -49,8 +49,8 @@ sub MAIN {
     $template->process( 'header.html', $vars ) or print $template->error(), die;
     if ( $path eq '/start' or $path eq '' ) {
 	Print_Index();
-    } elsif ($path =~ /^\/accession\/(\w+)$/) {
-	Print_Single_Accession($1);
+    } elsif ($path eq '/mfe_z') {
+	Print_MFE_Z();
     } elsif ( $path eq '/download' ) {
 	Print_Download();
     } elsif ( $path eq '/import' ) {
@@ -123,6 +123,39 @@ sub Print_Cloudform {
 					-values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus']);
 
     $template->process( 'cloudform.html', $vars ) or print $template->error(), die;
+}
+
+sub Print_MFE_Z {
+    my $mfe = $cgi->param('mfe');
+    my $z = $cgi->param('z');
+    my $species = $cgi->param('species');
+    $mfe = sprintf('%.0f', $mfe);
+    my $mfe_plus = $mfe + 0.9;
+    $z = sprintf('%.0f', $z);
+    my $z_plus = $z + 1.0;
+    my $stmt = qq(SELECT mfe.id, mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = ? AND mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id);
+    my $stuff = $db->MySelect($stmt, [$species,$mfe,$mfe_plus,$z,$z_plus]);
+    $vars->{mfe} = $mfe;
+    $vars->{mfe_plus} = $mfe_plus;
+    $vars->{z} = $z;
+    $vars->{z_plus} = $z_plus;
+    $vars->{species} = $species;
+    $template->process('mfe_z_header.html', $vars) or print $template->error();
+    foreach my $datum (@{$stuff}) {
+	my $id = $datum->[0];
+	my $accession = $datum->[1];
+	my $start = $datum->[2];
+	my $gene_stmt = qq(SELECT genename,comment FROM genome WHERE accession = ?);
+	my $g = $db->MySelect($gene_stmt,[$accession],'row');
+	my $genename = $g->[0];
+	my $comments = $g->[1];
+	$vars->{id} = $id;
+	$vars->{accession} = $accession;
+	$vars->{start} = $start;
+	$vars->{genename} = $genename;
+	$vars->{comments} = $comments;
+	$template->process('mfe_z_body.html', $vars) or print $template->error();
+    }
 }
 
 sub Print_Detail_Slipsite {
@@ -334,13 +367,7 @@ sub Print_Single_Accession {
   my $datum = shift;
   my $fun = ref($datum);
   my $accession;
-  if (ref($datum) eq 'SCALAR' or $fun eq '' or !defined($fun)) {
-      $accession = $datum;
-      $accession =~ s/SGDID/SGDID\:/g;
-      $datum = Get_Accession_Info($accession);
-      $datum->{accession} = $accession;
-  }
-  elsif ( !defined($datum) ) {
+  if ( !defined($datum) ) {
       $accession          = $cgi->param('accession');
       $datum              = Get_Accession_Info($accession);
       $datum->{accession} = $accession;
