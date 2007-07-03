@@ -50,7 +50,6 @@ sub MAIN {
     if ( $path eq '/start' or $path eq '' ) {
 	Print_Index();
     } elsif ($path =~ /^\/accession\/(\w+)$/) {
-	print "TESTME: $1 <br>\n";
 	Print_Single_Accession($1);
     } elsif ( $path eq '/download' ) {
 	Print_Download();
@@ -337,6 +336,7 @@ sub Print_Single_Accession {
   my $accession;
   if (ref($datum) eq 'SCALAR' or $fun eq '' or !defined($fun)) {
       $accession = $datum;
+      $accession =~ s/SGDID/SGDID\:/g;
       $datum = Get_Accession_Info($accession);
       $datum->{accession} = $accession;
   }

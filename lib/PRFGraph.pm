@@ -142,6 +142,7 @@ sub Make_Cloud {
 #	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, );
 	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 4); 
 #	    my $string = "point\t${x_coord},${y_coord}\t${accession}\n";
+	    $accession =~ s/\://g;
 	    my $string = "point $accession ${x_coord},${y_coord}\n";
 	    print MAP $string;
 	}
