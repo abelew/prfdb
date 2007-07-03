@@ -834,7 +834,7 @@ sub Cloud {
     $cloud_url = $basedir . '/' . $cloud_url;
     if (!-f $cloud_output_filename) {
 	my ($points_stmt, $averages_stmt, $points, $averages);
-	if ($species = 'all') {
+	if ($species eq 'all') {
 	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
 	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
 	    $points = $db->MySelect($points_stmt, []);

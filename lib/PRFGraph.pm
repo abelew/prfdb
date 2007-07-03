@@ -117,10 +117,9 @@ sub Make_Cloud {
 	    
 	    ## Quadrant Color Code
 #	    my $color_value = 127 + (127*($max_counter/$counter));
-	    my $color_value = 220 - (500*($counter/$max_counter));
+	    my $color_value = 220 - (300*($counter/$max_counter));
 	    my $color = undef;
 	    # print "X: $x_coord Y: $y_coord AVGX: $average_mfe_coord AVGY: $average_z_coord CV: $color_value";
-#	    print "TESTME: $color_value<br>\n";
 	    if ( ($x_coord < $average_mfe_coord) and ($y_coord > $average_z_coord) ) {
 		$color = $gd->colorResolve($color_value,0,0);
 		# print " C: red<br>\n";
@@ -137,27 +136,15 @@ sub Make_Cloud {
 		$color = $gd->colorResolve(254,191,191);
 		# print " C: pink<br>\n";
 	    }
-	    #$gd->setAntiAliased($color);
-#	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, );
 	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 4); 
-#	    my $string = "point\t${x_coord},${y_coord}\t${accession}\n";
-	    $accession =~ s/\://g;
 	    my $string = "point http://dinmanlab.umd.edu/prfdb_beta/index.cgi/mfe_z?species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n";
 	    print MAP $string;
 	}
     }
     close MAP;
-    #$gd->setAntiAliased($green);
-    #$gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, 'gdAntiAliased');
-    #$gd->setAntiAliased($blue);
-    #$gd->filledRectangle($left_x_coord+1, $average_z_coord, $right_x_coord-1, $average_z_coord+1, 'gdAntiAliased');
-    #$gd->filledRectangle($average_mfe_coord, $average_z_coord, $average_mfe_coord+1, $average_z_coord+1, $gb);
-
     $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
     $gd->filledRectangle($left_x_coord+1, $average_z_coord, $right_x_coord-1, $average_z_coord+1, $black);
     $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
-#    $gd->filledRectangle($average_mfe_coord, $average_z_coord, $average_mfe_coord+1, $average_z_coord+1, $gb);
-
     open (IMG, ">$filename") or die $!;
     binmode IMG;
     print IMG $gd->png;
