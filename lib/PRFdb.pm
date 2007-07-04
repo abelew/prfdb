@@ -175,10 +175,18 @@ sub Keyword_Search {
 sub Mfeid_to_Bpseq {
     my $me = shift;
     my $mfeid = shift;
+    my $outputfile = shift;
     my $add_slipsite = shift;
-
-    my $fh = PRFdb::MakeTempfile({SUFFIX => '.bpseq'});
-    my $filename = $fh->filename;
+    my ($fh, $filename);
+    if (!defined($outputfile)) {
+     $fh = PRFdb::MakeTempfile({SUFFIX => '.bpseq'});
+     $filename = $fh->filename;
+    }
+    else {
+     $fh = \*OUT;
+     open($fh, ">$outputfile");
+     $filename = $outputfile;
+    }
 
     my $input_stmt = qq(SELECT sequence, output, slipsite FROM mfe WHERE id = ?);
     my $input = $me->MySelect($input_stmt, [$mfeid], 'row');
@@ -224,7 +232,7 @@ sub Genome_to_Fasta {
   my $me        = shift;
   my $output    = shift;
   my $species   = shift;
-  my $statement = qq(SELECT DISTINCT accession, species, comment,  mrna_seq FROM genome);
+  my $statement = qq(SELECT DISTINCT accession, species, comment, mrna_seq FROM genome);
   my $info;
   open( OUTPUT, ">blast/$output" ) or die("Could not open the fasta output file. $!");
   if ( defined($species) ) {
@@ -236,19 +244,23 @@ sub Genome_to_Fasta {
   my $count = 0;
   foreach my $datum ( @{$info} ) {
     $count++;
-    my $id        = $count;
-    my $accession = $datum->[0];
-    my $species   = $datum->[1];
-    my $comment   = $datum->[2];
-    my $sequence  = $datum->[3];
-    print OUTPUT ">gi|$id|gb|$accession $species $comment
+    if (!defined($datum)) {
+	print "Problem with $count element\n";
+	next;
+    }
+    else {	
+	my $id        = $count;
+	my $accession = $datum->[0];
+	my $species   = $datum->[1];
+	my $comment   = $datum->[2];
+	my $sequence  = $datum->[3];
+	print OUTPUT ">gi|$id|gb|$accession $species $comment
 $sequence
 ";
+    }
   }
   close(OUTPUT);
 }
-
-
 
 sub Sequence_to_Fasta {
   my $me   = shift;
@@ -271,6 +283,49 @@ sub MakeTempfile {
 			    );
     return ($fh);
 }
+
+sub MakeFasta {
+    my $seq = shift;
+    my $start = shift;
+    my $end = shift;
+    my $fh = PRFdb::MakeTempfile();
+    my $filename = $fh->filename;
+    my $output = {
+	fh => $fh,
+	filename => $filename,
+	string => '',
+	no_slipstring => '',
+    };
+    my @seq_array;
+    if (ref($seq) eq 'ARRAY') {
+	@seq_array = @{$seq};
+    }
+    else {
+	@seq_array = split(//, $seq);
+    }
+    my $slipstring = '';
+    foreach my $c ($start .. $end) {
+	if (defined($seq_array[$c])) {
+	    $output->{string} .= $seq_array[$c];
+	    if ($c >= ($start + 7)) {
+		$output->{no_slipstring} .= $seq_array[$c];
+	    }
+	    else {
+		$slipstring .= $seq_array[$c];
+	    }
+	}
+    }
+    $output->{slipsite} = $slipstring;
+    $output->{string} =~ tr/atgcu/AUGCU/;
+    $output->{no_slipstring} =~ tr/atgcu/AUGCU/;
+    my $data = ">$slipstring $start $end
+$output->{string}
+";
+    print $fh $data;
+    close($fh);
+    return($output);
+}
+
 
 ####
 ### Get and Set Bootstrap data

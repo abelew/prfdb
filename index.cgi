@@ -14,7 +14,7 @@ use Bootlace;
 umask(0000);
 our $config = $PRFConfig::config;
 ## All configuration information exists here
-chdir( $config->{basedir} );
+chdir( $config->{base} );
 ## Change into the home directory of the folder daemon
 our $db = new PRFdb;    
 ## Set up a database configuration

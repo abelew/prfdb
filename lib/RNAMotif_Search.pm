@@ -36,7 +36,6 @@ my %slippery_sites = (
 sub new {
   my ( $class, %arg ) = @_;
   my $me = bless {}, $class;
-  $me->{seqlength}          = $config->{seqlength};
   $me->{stem_length}        = 6;
   $me->{max_dist_from_slip} = 15;
   return ($me);
@@ -64,43 +63,20 @@ sub Search {
         ## We chop off the slippery site we will still have a window of the
         ## Desired size.
         my $no_slip_site_start = $start + 7;
-        my $end                = $c + (($me->{seqlength} - 1) + 7);  ## One day someone will look at this and wonder
+        my $end                = $c + (($config->{seqlength} - 1) + 7);  ## One day someone will look at this and wonder
       ##  WTF?  However it was done for a reason, to make explicit the removal of a single base so that the fasta file
       ##  Created by this function will have the correct number of bases -- without this -1 the fastafile will have n+1
       ##  bases rather than the expected n
-        my $fh                 = PRFdb::MakeTempfile();
-        ## OPEN $fh in Search
-        my $filename = $fh->filename;
-        my $string   = '';
-        ### Move start up 7 nucleotides in the case of a description file which does not specify a slippery site
-        #foreach my $c (($start + 7) .. $end) {
-        foreach my $c ( $start .. $end ) {
-          $string .= $information[$c] if ( defined( $information[$c] ) );
-        }
-        $string =~ tr/ATGCU/atgcu/ if ( defined($string) );
-        $string =~ tr/t/u/;
-        ## This will create a string for the file without the slippery site.
-        ## After we run rnamotif, we will overwrite the fastafile with this information.
-        my $no_slip_string = '';
-        foreach my $c ( $no_slip_site_start .. $end ) {
-          $no_slip_string .= $information[$c] if ( defined( $information[$c] ) );
-        }
-        $no_slip_string =~ tr/ATGCU/atgcu/ if ( defined($string) );
-        $no_slip_string =~ tr/t/u/;
-        ## Print out the text of the fasta file to be used for searching and folding
-        ## The start and end in full sequence takes into account
-        ## Sequences which are cds
+
+	my $inf = PRFdb::MakeFasta(\@information, $start, $end);
+	my $fh = $inf->{fh};
+	my $filename = $inf->{filename};
+	my $string = $inf->{string};
+	my $no_slip_string = $inf->{no_slipstring};
+	my $slipsite = $inf->{slipsite};
         my $start_in_full_sequence = $start + $orf_start + 1;
-#        my $end_in_full_sequence   = $end + $orf_start + 1;
         my $end_in_full_sequence   = $end + $orf_start + 1;
         ## These + 1's are required because thus far the start site has been incorrectly calculated.
-        my $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
-$string
-";
-        print $fh $data;
-        close($fh);
-        ## CLOSE $fh in Search
-        ### End of the fasta file.
         my $command = qq($config->{rnamotif} -context -descr $config->{rnamotif_descriptor} $filename 2>rnamotif.err | $config->{rmprune});
         open( RNAMOT, "$command |" ) or PRF_Error( "RNAMotif_Search:: Search, Unable to run rnamotif: $!", 'rnamotif', '' );
         ## OPEN RNAMOT in Search
@@ -130,7 +106,7 @@ $string
         ## CLOSE RNAMOT in Search
         ## Overwrite the fasta file with the same sequence minus the slippery site.
         open( NOSLIP, ">$filename" ) or die("Could not open $filename $!");
-        $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
+        my $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
 $no_slip_string
 ";
         print NOSLIP $data;
@@ -160,7 +136,7 @@ sub Descriptor {
   my $template_config = $config;
   $template_config->{PRE_PROCESS} = undef;
   my $template = new Template($template_config);
-  my $rnamotif_template_file = qq($config->{INCLUDE_PATH}$config->{rnamotif_template});
+  my $rnamotif_template_file = qq($config->{base}/$config->{INCLUDE_PATH}$config->{rnamotif_template});
   if (!-r $rnamotif_template_file) {
       die("Need an rnamotif template");
   }

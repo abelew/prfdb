@@ -12,7 +12,7 @@ $config->{POST_CHOMP}   = undef;
 my $template = new Template($config);
 my $dbh;
 my $workdir = $config->{tmpdir};
-my $basedir = $config->{basedir};
+my $base = $config->{base};
 
 sub new {
   my ( $class, %arg ) = @_;
@@ -59,7 +59,7 @@ sub Submit {
   my $command = qq(condor_submit -v ${slot}_${type}.job &);
   print "$command\n";
   system($command);
-  chdir($basedir);
+  chdir($base);
 }
 
 sub Check_Log {

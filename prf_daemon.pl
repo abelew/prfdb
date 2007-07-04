@@ -1,7 +1,6 @@
 #!/usr/local/bin/perl -w
 use strict;
 use DBI;
-use Time::HiRes;
 use Getopt::Long;
 
 use lib "$ENV{HOME}/usr/lib/perl5";
@@ -97,7 +96,7 @@ my $state = {
 };
 
 ### START DOING WORK NOW
-chdir( $config->{basedir} );
+chdir( $config->{base} );
 if ( $config->{checks} ) {
   Check_Environment();
   Check_Tables();
@@ -151,7 +150,13 @@ if (defined($config->{accession})) {
   $state->{queue_id}  = 0;                                              ## Dumb hack lives on
   $state->{accession} = $config->{accession};
   $state->{genome_id} = $db->Get_GenomeId_From_Accession($config->{accession});
-  Gather($state);
+  if (defined($config->{startpos})) {
+      Gather($state, $config->{startpos});
+  }
+  else {
+      Gather($state);
+  }
+  exit(0);
 }
 
 if ( defined( $config->{import_accession} )) {
@@ -239,6 +244,7 @@ sub Read_Accessions {
 ## Start Gather
 sub Gather {
   my $state = shift;
+  my $startpos = shift;
   my $ref   = $db->Id_to_AccessionSpecies( $state->{genome_id} );
   $state->{accession} = $ref->{accession};
   $state->{species}   = $ref->{species};
@@ -251,24 +257,41 @@ sub Gather {
     Landscape_Gatherer( $landscape_state, $message );
   }
 
-  PRF_Gatherer($state);
+  PRF_Gatherer($state, $startpos);
 }
 ## End Gather
 
 ## Start PRF_Gatherer
 sub PRF_Gatherer {
   my $state = shift;
+  my $startpos = shift;
   $state->{genome_information} = $db->Get_ORF( $state->{accession} );
   my $sequence             = $state->{genome_information}->{sequence};
   my $orf_start            = $state->{genome_information}->{orf_start};
   my $motifs               = new RNAMotif_Search();
-  my $rnamotif_information = $motifs->Search( $state->{genome_information}->{sequence}, $state->{genome_information}->{orf_start} );
-  $state->{rnamotif_information} = $rnamotif_information;
-  if ( !defined( $state->{rnamotif_information} ) ) {
-    $db->Insert_NoSlipsite( $state->{accession} );
+  my $rnamotif_information;
+  if (defined($startpos)) {
+#      $startpos = $startpos - $orf_start;
+      my $inf = PRFdb::MakeFasta($state->{genome_information}->{sequence},
+				 $startpos, 
+				 $startpos + $config->{seqlength}
+				 );
+      $rnamotif_information->{$startpos}{filename} = $inf->{filename};
+      $rnamotif_information->{$startpos}{sequence} = $inf->{string};
+      $state->{rnamotif_information} = $rnamotif_information;
   }
-  return (0) unless ( defined( $state->{rnamotif_information} ) );    ## If rnamotif_information is null
-  ## Now I should have 1 or more start sites
+  else {
+      $rnamotif_information = $motifs->Search(
+
+	  $state->{genome_information}->{sequence},
+	  $state->{genome_information}->{orf_start} );
+      $state->{rnamotif_information} = $rnamotif_information;
+      if ( !defined( $state->{rnamotif_information} ) ) {
+	  $db->Insert_NoSlipsite( $state->{accession} );
+      }
+      return (0) unless ( defined( $state->{rnamotif_information} ) );    ## If rnamotif_information is null
+      ## Now I should have 1 or more start sites
+  }
 STARTSITE: foreach my $slipsite_start ( keys %{$rnamotif_information} ) {
     if ($config->{do_utr} == 0) {
 	my $end_of_orf = $db->MySelect("SELECT orf_stop FROM genome WHERE accession = ?", [$state->{accession}], 'row');
@@ -279,7 +302,6 @@ STARTSITE: foreach my $slipsite_start ( keys %{$rnamotif_information} ) {
     my $seqlength;
     $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
     $state->{sequence}   = $rnamotif_information->{$slipsite_start}{sequence};
-    print "PRF_Gatherer: $slipsite_start\n";
     if ( !defined( $state->{fasta_file} or $state->{fasta_file} eq '' or !-r $state->{fasta_file} ) ) {
       print "The fasta file for: $state->{accession} $slipsite_start does not exist.\n";
       print "You may expect this script to die momentarily.\n";
@@ -480,7 +502,9 @@ sub Check_Tables {
 sub Check_Blast {
     my $testfile = qq($config->{blastdir}/nr.nni);
     unless (-r $testfile) {
+        print "Running Make_Blast, this may take a while.\n";
 	Make_Blast();
+        print "Finished Make_Blast.\n";
     }
 }
 
@@ -665,15 +689,15 @@ sub Check_Sequence_Length {
   } elsif ( $sequence =~ /aaaaaaa$/ and $sequence_length < $wanted_sequence_length ) {
     return ('polya');
   } elsif ( $sequence_length > $wanted_sequence_length ) {
-    open( OUT, ">$filename" ) or die("Could not open $filename $!");
-    ## OPEN OUT in Check_Sequence_Length
-    print OUT "$output\n";
-    foreach my $char ( 0 .. $sequence_length ) {
-      print OUT $out[$char];
-    }
-    print OUT "\n";
-    close(OUT);
-    ## CLOSE OUT in Check_Sequence_Length
+#    open( OUT, ">$filename" ) or die("Could not open $filename $!");
+#    ## OPEN OUT in Check_Sequence_Length
+#    print OUT "$output\n";
+#    foreach my $char ( 0 .. $sequence_length ) {
+#      print OUT $out[$char];
+#    }
+#    print OUT "\n";
+#    close(OUT);
+#    ## CLOSE OUT in Check_Sequence_Length
     return ('longer than wanted');
   } elsif ( $sequence_length == $wanted_sequence_length ) {
     return ('equal');

@@ -32,6 +32,7 @@ $PRFConfig::config->{add_to_path}          = "/usr/local/bin:/usr/bin";
 $PRFConfig::config->{has_modperl}          = 0;
 $PRFConfig::config->{species_limit}        = undef;
 $PRFConfig::config->{workdir}              = 'work';
+$PRFConfig::config->{blastdir}             = 'blast';
 $PRFConfig::config->{queue_table}          = 'queue';
 $PRFConfig::config->{check_webqueue}       = 1;
 $PRFConfig::config->{genome_table}         = 'genome';
@@ -43,7 +44,6 @@ $PRFConfig::config->{do_pknots}            = 1;
 $PRFConfig::config->{do_boot}              = 1;
 $PRFConfig::config->{do_landscape}         = 0;
 $PRFConfig::config->{do_utr}               = 0;
-$PRFConfig::config->{blastdir}             = 'blast';
 $PRFConfig::config->{nupack_nopairs_hack}  = 0;
 $PRFConfig::config->{arch_specific_exe}    = 0;
 $PRFConfig::config->{boot_iterations}      = 100;
@@ -133,13 +133,16 @@ $PRFConfig::config->{dsn}                 = qq(DBI:mysql:database=$PRFConfig::co
 my $err           = $PRFConfig::config->{errorfile};
 my $out           = $PRFConfig::config->{logfile};
 my $error_counter = 0;
+
+
 $PRFConfig::config->{workdir} = $PRFConfig::config->{'base'} . '/' . $PRFConfig::config->{workdir};
+$PRFConfig::config->{blastdir} = $PRFConfig::config->{'base'} . '/' . $PRFConfig::config->{blastdir};
 foreach my $dir (split(/:/, $PRFConfig::config->{add_to_path})) {
     $ENV{PATH} = $ENV{PATH} . ':' . $dir;
 }
 $ENV{PATH}    = $ENV{PATH} . ':' . $PRFConfig::config->{workdir};
 
-$ENV{BLASTDB} = qq($PRFConfig::config->{prefix}/blast);
+$ENV{BLASTDB} = qq($PRFConfig::config->{base}/blast);
 
 if ( $PRFConfig::config->{arch_specific_exe} == 1 ) {
   ## If we have architecture specific executables, then
