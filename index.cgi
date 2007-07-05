@@ -37,6 +37,7 @@ our $vars = {
   filterform   => "$base/start_filter",
   downloadform => "$base/download",
   cloudform => "$base/cloudform",
+  helpform => "$base/help",
   submit       => $cgi->submit,
 };
 
@@ -49,6 +50,8 @@ sub MAIN {
     $template->process( 'header.html', $vars ) or print $template->error(), die;
     if ( $path eq '/start' or $path eq '' ) {
 	Print_Index();
+    } elsif ($path eq '/help') {
+	Print_Help();
     } elsif ($path eq '/mfe_z') {
 	Print_MFE_Z();
     } elsif ( $path eq '/download' ) {
@@ -123,6 +126,10 @@ sub Print_Cloudform {
 					-values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','all']);
 
     $template->process( 'cloudform.html', $vars ) or print $template->error(), die;
+}
+
+sub Print_Help {
+    $template->process('help.html', $vars) or print $template->error(), die;
 }
 
 sub Print_MFE_Z {
