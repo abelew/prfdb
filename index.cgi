@@ -185,24 +185,26 @@ sub Print_MFE_Z {
     my $z = $cgi->param('z');
     my $species = $cgi->param('species');
     $mfe = sprintf('%.0f', $mfe);
-    my $mfe_plus = $mfe + 0.9;
-    my $mfe_minus = $mfe - 0.9;
+    my $mfe_plus = $mfe + 1.5;
+    my $mfe_minus = $mfe - 1.5;
     $z = sprintf('%.0f', $z);
     my $z_plus = $z + 0.5;
     my $z_minus = $z - 0.5;
     my ($stmt, $stuff);
     if ($species eq 'all') {
 	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-	$stuff = $db->MySelect({ statement => $stmt, vars => [$mfe,$mfe_plus,$z,$z_plus]});
+	$stuff = $db->MySelect({ statement => $stmt, vars => [$mfe_minus,$mfe_plus,$z,$z_plus]});
     }
     else {
 	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = ? AND mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-	$stuff = $db->MySelect({ statement => $stmt, vars => [$species,$mfe,$mfe_plus,$z,$z_plus]});
+	$stuff = $db->MySelect({ statement => $stmt, vars => [$species,$mfe_minus,$mfe_plus,$z,$z_plus]});
     }
     $vars->{mfe} = $mfe;
     $vars->{mfe_plus} = $mfe_plus;
+    $vars->{mfe_minus} = $mfe_minus;
     $vars->{z} = $z;
     $vars->{z_plus} = $z_plus;
+    $vars->{z_minus} = $z_minus;
     $vars->{species} = $species;
     $template->process('mfe_z_header.html', $vars) or
 	Print_Template_Error($template), die;
@@ -220,6 +222,10 @@ sub Print_MFE_Z {
 	$vars->{start} = $start;
 	$vars->{genename} = $genename;
 	$vars->{comments} = $comments;
+	if ($vars->{accession} =~ /^SGDID/) {
+	    $vars->{short_accession} = $vars->{accession};
+	    $vars->{short_accession} =~ s/^SGDID\://g;
+	}
 	$template->process('mfe_z_body.html', $vars) or
 	    Print_Template_Error($template), die;
     }
@@ -457,6 +463,10 @@ sub Print_Single_Accession {
   $vars->{id}              = $datum->{id};
   $vars->{counter}         = $datum->{counter};
   $vars->{accession}       = $accession;
+  if ($vars->{accession} =~ /^SGDID/) {
+      $vars->{short_accession} = $vars->{accession};
+      $vars->{short_accession} =~ s/^SGDID\://g;
+  }
   $vars->{species}         = $datum->{species};
   $vars->{species} =~ s/_/ /g;
   $vars->{species} = ucfirst($vars->{species});
@@ -550,7 +560,7 @@ sub Perform_Search {
       type => 'hash',
       descriptor => 1, });
   foreach my $c (keys %{$entries}) {
-      my $slip_stmt = qq(SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?");
+      my $slip_stmt = qq(SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?);
       my $slipsite_structure_count = $db->MySelect({
 	  statement => $slip_stmt,
 	  vars => [$entries->{$c}->{accession}],

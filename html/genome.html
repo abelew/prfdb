@@ -5,7 +5,11 @@
 <table width="100%" border="0" cellspacing="2" cellpadding="2">
   <tr align="left" valign="top">
     <td width="400">
-      <strong>Gene Name: <a href="[% base %]/browse?accession=[% accession %]">[% genename %]</a><br></strong>
+      <strong>Gene Name: <a href="[% base %]/browse?accession=[% accession %]">[% genename %]</a></strong>
+      [% IF short_accession %]
+      <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=[% short_accession %]">SGD Link</a>
+      [% END %]
+      <br>
       <strong>Accession:</strong> [% accession %]<br>
       <strong>Species:</strong><i> [% species %]</i><br>
       <strong>Run</strong>

@@ -47,17 +47,17 @@ sub Disconnect {
 sub MySelect {
   my $me         = shift;
   my $input = shift;
-
-  my $statement;
-  if (ref($input) eq 'SCALAR') {
+  my $input_type = ref($input);
+  my ($statement, $vars, $type, $descriptor);
+  if (!defined($input_type) or $input_type eq '' or $input_type eq 'SCALAR') {
       $statement = $input;
   }
   else {
       $statement = $input->{statement};
+      $vars = $input->{vars};
+      $type = $input->{type};
+      $descriptor = $input->{descriptor};
   }
-  my $vars = $input->{vars};
-  my $type = $input->{type};
-  my $descriptor = $input->{descriptor};
 
   my $return     = undef;
   if ( !defined($statement) ) {
