@@ -170,16 +170,18 @@ sub Print_MFE_Z {
     my $species = $cgi->param('species');
     $mfe = sprintf('%.0f', $mfe);
     my $mfe_plus = $mfe + 0.9;
+    my $mfe_minus = $mfe - 0.9;
     $z = sprintf('%.0f', $z);
-    my $z_plus = $z + 1.0;
+    my $z_plus = $z + 0.5;
+    my $z_minus = $z - 0.5;
     my ($stmt, $stuff);
     if ($species eq 'all') {
 	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-	$stuff = $db->MySelect($stmt, [$mfe,$mfe_plus,$z,$z_plus]);
+	$stuff = $db->MySelect($stmt, [$mfe_minus,$mfe_plus,$z_minus,$z_plus]);
     }
     else {
 	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = ? AND mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-	$stuff = $db->MySelect($stmt, [$species,$mfe,$mfe_plus,$z,$z_plus]);
+	$stuff = $db->MySelect($stmt, [$species,$mfe_minus,$mfe_plus,$z_minus,$z_plus]);
     }
     $vars->{mfe} = $mfe;
     $vars->{mfe_plus} = $mfe_plus;
@@ -330,7 +332,7 @@ $structure->[8]
     $vars->{pairs}      = $structure->[13];
     $vars->{knotp}      = $structure->[14];
     $vars->{barcode}    = $structure->[15];
-    $vars->{lastupdate} = $structure->[16];
+    # $vars->{lastupdate} = $structure->[16];
 
     my $delta = $vars->{seqlength} - length($vars->{parsed});
     $vars->{parsed} .= '.' x $delta;
@@ -375,7 +377,8 @@ sub Color_Stems {
 	    $bracket_string .= $br[$t];
 	}
 	else {
-	    my $append = qq(<font color="$colors[$pa[$t]]">$br[$t]</font>);
+	    my $color_code = $pa[$t] % @colors;
+	    my $append = qq(<font color="$colors[$color_code]">$br[$t]</font>);
 	    $bracket_string .= $append;
 	}
     }

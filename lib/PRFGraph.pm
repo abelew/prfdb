@@ -117,7 +117,7 @@ sub Make_Cloud {
 	    
 	    ## Quadrant Color Code
 #	    my $color_value = 127 + (127*($max_counter/$counter));
-	    my $color_value = 220 - (300*($counter/$max_counter));
+	    my $color_value = 220 - (220*($counter/$max_counter));
 	    my $color = undef;
 	    # print "X: $x_coord Y: $y_coord AVGX: $average_mfe_coord AVGY: $average_z_coord CV: $color_value";
 	    if ( ($x_coord < $average_mfe_coord) and ($y_coord > $average_z_coord) ) {
@@ -136,7 +136,9 @@ sub Make_Cloud {
 		$color = $gd->colorResolve(254,191,191);
 		# print " C: pink<br>\n";
 	    }
-	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 4); 
+	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 'gdNoFill'); 
+	    $x_coord = sprintf('%.0f', $x_coord);
+	    $y_coord = sprintf('%.0f', $y_coord);
 	    my $string = "point http://dinmanlab.umd.edu/prfdb_beta/index.cgi/mfe_z?species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n";
 	    print MAP $string;
 	}
