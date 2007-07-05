@@ -52,14 +52,16 @@ sub Make_Cloud {
 		x_labels_vertical => 1,
 		x_label_skip      => 0,
 		x_number_format   => "%.1f",
-		x_tick_number => 21,
+		x_tick_number => 20,
 		x_all_ticks => 1,
 
 		y_min_value => $z_min_value,
 		y_max_value => $z_max_value,
+		y_ticks => 1,
 		y_label           => 'Zscore',
 		y_label_skip      => 0,
 		y_number_format   => "%.2f",
+		y_tick_number => 20,
 		y_all_ticks => 1,
 
 		dclrs => ['black','black'],
