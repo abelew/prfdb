@@ -185,19 +185,22 @@ sub Print_MFE_Z {
     my $z = $cgi->param('z');
     my $species = $cgi->param('species');
     $mfe = sprintf('%.0f', $mfe);
-    my $mfe_plus = $mfe + 1.5;
-    my $mfe_minus = $mfe - 1.5;
+    my $mfe_plus = $mfe + 0.9;
+    my $mfe_minus = $mfe - 0.9;
     $z = sprintf('%.0f', $z);
-    my $z_plus = $z + 0.5;
-    my $z_minus = $z - 0.5;
+    my $z_plus = $z + 0.3;
+    my $z_minus = $z - 0.3;
     my ($stmt, $stuff);
     if ($species eq 'all') {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
 	$stuff = $db->MySelect({ statement => $stmt, vars => [$mfe_minus,$mfe_plus,$z,$z_plus]});
     }
     else {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = ? AND mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-	$stuff = $db->MySelect({ statement => $stmt, vars => [$species,$mfe_minus,$mfe_plus,$z,$z_plus]});
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = ? AND mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	$stuff = $db->MySelect({
+	    statement => $stmt,
+	    vars => [$species,$mfe_minus,$mfe_plus,$z_minus,$z_plus]
+	    });
     }
     $vars->{mfe} = $mfe;
     $vars->{mfe_plus} = $mfe_plus;

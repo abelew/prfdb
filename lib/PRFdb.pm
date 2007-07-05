@@ -66,7 +66,13 @@ sub MySelect {
   my $dbh = $me->MyConnect($statement);
   my $selecttype;
   my $sth = $dbh->prepare($statement);
-  my $rv  = $sth->execute( @{$vars} );
+  my $rv;
+  if (defined($vars)) {
+      $rv = $sth->execute(@{$vars});
+  }
+  else {
+      $rv  = $sth->execute();
+  }
   ## If $type AND $descriptor are defined, do selectall_hashref
   if ( defined($type) and defined($descriptor) ) {
     $return     = $sth->fetchall_hashref($descriptor);
