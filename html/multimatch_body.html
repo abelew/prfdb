@@ -2,7 +2,11 @@
 
   <tr>
     <td valign="top" width=35%">
-      <div align="left"><font size="-1">[% genename %]</font></div>
+      <div align="left"><font size="-1">[% genename %]</font>
+  [% IF short_accession %]
+  <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=[% short_accession %]">SGD Link</a>
+  [% END %]
+</div>
     </td>
     <td valign="top" width="10%">
       <div align="left">

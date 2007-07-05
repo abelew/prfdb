@@ -1,7 +1,7 @@
 <table width="100%" border="0" cellspacing="2" cellpadding="2">
  <tr align="left" valign="top">
   <td width="400">
-    <font color="#000000" size="-1" face="Courier New, Courier, mono"><strong>[% sliplist %]<br>
+    <font color="#000000" face="Courier New, Courier, mono"><strong>[% sliplist %]<br>
 	<font color="Green">Green</font>: 0 Frame Start Codon<br>
 	<font color="Red">Red</font>: 0 Frame Stop Codon<br>
 	<font color="Blue">Blue</font>: Slippery Site<br>
@@ -17,9 +17,14 @@
   </td>
  </tr>
  <tr align="left" valign="top">
-  <td colspan="2" bgcolor="#CCCCCC"><font size="-2" face="Courier New, Courier, mono">&nbsp;</font>
-    <p><strong><font color="#000000" size="-1" face="Courier New, Courier, mono">&gt;[% accession %] | [% genename %]<br>
-    </font></strong><font size="-1" face="Courier New, Courier, mono">[% pretty_mrna_seq %]</font></p>
+  <td colspan="2" bgcolor="#CCCCCC"><font face="Courier New, Courier, mono">&nbsp;</font>
+    <p><strong><font color="#000000" face="Courier New, Courier, mono">&gt;[% accession %] | [% genename %]<br>
+    </font></strong>
+    <font face="Courier New, Courier, mono">
+
+[% pretty_mrna_seq %]
+    </font>
+    </p>
   </td>
  </tr>
 </table>

@@ -46,6 +46,27 @@ MAIN();
 sub MAIN {
 #### MAIN BLOCK OF CODE RIGHT HERE
     my $path = $cgi->path_info;
+    if ($path eq '/download_sequence') {
+	Download_Sequence($cgi->param('accession'));
+	exit(0);
+    }
+    elsif ($path eq '/download_bpseq') {
+	Download_Bpseq($cgi->param('mfeid'));
+	exit(0);
+    }
+    elsif ($path eq '/download_subseq') {
+	Download_Subsequence($cgi->param('mfeid'));
+	exit(0);
+    }
+    elsif ($path eq '/download_parens') {
+	Download_Parens($cgi->param('mfeid'));
+	exit(0);
+    }
+    elsif ($path eq '/download_parsed') {
+	Download_Parsed($cgi->param('mfeid'));
+	exit(0);
+    }
+
     print $cgi->header;
     $template->process( 'header.html', $vars ) or print $template->error(), die;
     if ( $path eq '/start' or $path eq '' ) {
@@ -99,7 +120,18 @@ sub MAIN {
 }
 
 sub Print_Index {
-  $template->process( 'index.html', $vars ) or print $template->error(), die;
+    my $cerevisiae_count = $db->MySelect("SELECT count(id) FROM mfe WHERE species = 'saccharomyces_cerevisiae'", [], 'row');
+    my $sapiens_count = $db->MySelect("SELECT count(id) FROM mfe WHERE species = 'homo_sapiens'", [], 'row');
+    my $musculus_count = $db->MySelect("SELECT count(id) FROM mfe WHERE species = 'mus_musculus'", [], 'row');
+    my $lastupdate = $db->MySelect("SELECT species,lastupdate FROM mfe ORDER BY lastupdate DESC LIMIT 1", [], 'row');
+    $vars->{cerevisiae_count} = $cerevisiae_count->[0];
+    $vars->{sapiens_count} = $sapiens_count->[0];
+    $vars->{musculus_count} = $musculus_count->[0];
+    $vars->{last_species} = $lastupdate->[0];
+    $vars->{last_species} = ucfirst($vars->{last_species});
+    $vars->{last_species} =~ s/_/ /g;
+    $vars->{lastupdate} = $lastupdate->[1];
+    $template->process( 'index.html', $vars ) or print $template->error(), die;
 }
 
 sub Print_Download {
@@ -438,7 +470,7 @@ sub Print_Single_Accession {
 sub Print_Multiple_Accessions {
   my $data = shift;    ## From Perform_Search by default
   $template->process( 'multimatch_header.html', $vars ) or print $template->error() . "<br>\n";
-  foreach my $id ( sort { $data->{$b}->{slipsite_count} <=> $data->{$a}->{slipsite_count} } keys %{$data} ) {
+  foreach my $id ( sort { $data->{$b}->{slipsite_count} <=> $data->{$a}->{slipsite_count} } keys %{$data} ) {      
     $vars->{id}              = $data->{$id}->{id};
     $vars->{counter}         = $data->{$id}->{counter};
     $vars->{accession}       = $data->{$id}->{accession};
@@ -449,6 +481,10 @@ sub Print_Multiple_Accessions {
     $vars->{comments}        = $data->{$id}->{comment};
     $vars->{slipsite_count}  = $data->{$id}->{slipsite_count};
     $vars->{structure_count} = $data->{$id}->{structure_count};
+    if ($vars->{accession} =~ /^SGDID/) {
+	$vars->{short_accession} = $vars->{accession};
+	$vars->{short_accession} =~ s/^SGDID\://g;
+    }
     $template->process( 'multimatch_body.html', $vars ) or print $template->error(), die;
   }                    ## Foreach every entry in @entries
   $template->process( 'multimatch_footer.html', $vars ) or print $template->error(), die;
@@ -628,6 +664,7 @@ sub Create_Pretty_mRNA {
   my $orf_stop  = $info->[2];
   my $direction = $info->[3];
   my @seq_array = split( //, $mrna_seq );
+  my $total_seq_length = scalar(@seq_array);
   ## First step:  Figure out how many bases we need to pad to get the start codon in the 0 frame.
   ## The orf_start is a 1 indexed integer
   my $pre_padding_bases = $orf_start % 3;
@@ -644,6 +681,7 @@ sub Create_Pretty_mRNA {
   else {
       $start_padding_bases = 10;
   }
+  my $decrement = $start_padding_bases + 1;
   my $slipsite_positions = $db->MySelect( "SELECT DISTINCT start FROM mfe WHERE accession = ? ORDER BY start", [$accession], 'flat' );
   ## Each slipsite_position will probably have to have the number of start_padding_bases added to it
   ## Now move all attributes by the number of padding bases, otherwise the non bases will get colored.
@@ -657,12 +695,14 @@ sub Create_Pretty_mRNA {
 
   my $first_pass  = '';
   my @codon_array = ();
+
   while ( $start_padding_bases >= 0 ) { unshift( @seq_array, '&nbsp;' ), $start_padding_bases--; }
   my $new_seq_length    = $#seq_array;
   my $end_padding_bases = $new_seq_length % 3;
   while ( $end_padding_bases >= 0 ) { push( @seq_array, '&nbsp;' ), $end_padding_bases--; }
   my $codon_string          = '';
   my $minus_one_stop_switch = 'off';
+
   for my $seq_counter ( 0 .. $#seq_array ) {
 
     if ( $minus_one_stop_switch eq 'on' ) {
@@ -707,18 +747,42 @@ sub Create_Pretty_mRNA {
     $codon_string = $codon_string . $seq_array[$seq_counter];
   }    ## End the first pass of the sequence array
   my $codon_count = 0;
+  my $base_count = 1;
+  my $end_base_string = '';
+  my $start_base_string = '';
   foreach my $codon (@codon_array) {
-    $codon_count++;
-    if ( ( $codon_count % 15 ) == 0 ) {
-      $first_pass = join( '', $first_pass, $codon, "<br>\n" );
-    } else {
-      $first_pass = join( '', $first_pass, $codon, ' ' );
-    }
-  }
-
-  #  print "<font face=\"Courier\">
-  #$first_pass
-  #<br></font>\n";
+      if ($codon_count == 0) {
+	  my $prefix = qq(${base_count}&nbsp;&nbsp;&nbsp;&nbsp;);
+	  $base_count = $base_count - $decrement;
+	  $first_pass = join('', $prefix, $first_pass);
+      }
+      $codon_count++;
+      if ( ( $codon_count % 15 ) == 0 ) {
+	  $base_count = $base_count + 45;
+	  my $suffix_base_count = $base_count - 1;
+	  if ($base_count > 9999) { 
+	      $start_base_string = qq($base_count);
+	      $end_base_string = qq(&nbsp;$suffix_base_count);
+	  } elsif ($base_count > 999) {
+	      $start_base_string = qq(${base_count}&nbsp;); 
+	      $end_base_string = qq(&nbsp;&nbsp;$suffix_base_count);
+	  } elsif ($base_count > 99) {
+	      $start_base_string = qq(${base_count}&nbsp;&nbsp;); 
+	      $end_base_string = qq(&nbsp;&nbsp;&nbsp;$suffix_base_count);
+	  }
+	  elsif ($base_count > 9) {
+	      $start_base_string = qq(${base_count}&nbsp;&nbsp;&nbsp;); 
+	      $end_base_string = qq(&nbsp;&nbsp;&nbsp;&nbsp;$suffix_base_count);
+	  }
+	  
+	  $first_pass = join( '', $first_pass, $codon, "$end_base_string<br>\n$start_base_string" );
+      } 
+      else {
+	  $first_pass = join( '', $first_pass, $codon, ' ' );
+      }
+  }  ## End foreach codon
+  my $suffix = qq(&nbsp;$total_seq_length);
+  $first_pass = join( '', $first_pass, $suffix);
   return ($first_pass);
 }
 
@@ -862,4 +926,58 @@ sub Cloud {
     $vars->{map_file} = "$vars->{cloud_file}" . '.map';
     $template->process( 'cloud.html', $vars ) or print $template->error(), die;
 
+}
+
+sub Download_Sequence {
+    my $accession = shift;
+    my $stmt = qq(SELECT comment,mrna_seq FROM genome WHERE accession = ?);
+    my $seq = $db->MySelect($stmt, [$accession], 'row');
+    my @tmp = split(//, $seq->[1]);
+    print "Content-type: text/plain\n\n";
+    print ">$accession $seq->[0]";
+    foreach my $c (0 .. $#tmp) {
+	print "\n" if (($c %80) == 0);
+	print $tmp[$c];
+    }
+}
+
+sub Download_Bpseq {
+    my $id = shift;
+    my $fh = \*STDOUT;
+    my $ref = ref($fh);
+    print "Content-type: text/plain\n\n";
+    $db->Mfeid_to_Bpseq($id, $fh);
+}
+
+sub Download_Subsequence {
+    my $id = shift;
+    my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.sequence,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
+    my $seq = $db->MySelect($stmt, [$id], 'row');
+    my @tmp = split(//, $seq->[2]);
+    print "Content-type: text/plain\n\n";
+    print ">$seq->[1] starting at $seq->[3]: $seq->[0]";
+    foreach my $c (0 .. $#tmp) {
+	print "\n" if (($c %80) == 0);
+	print $tmp[$c];
+    }
+}
+
+sub Download_Parens {
+    my $id = shift;
+    my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.parens,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
+    my $seq = $db->MySelect($stmt, [$id], 'row');
+    print "Content-type: text/plain\n\n";
+    print "#$seq->[1] starting at $seq->[3]: $seq->[0]
+$seq->[2]
+";
+}
+
+sub Download_Parsed {
+    my $id = shift;
+    my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.parsed,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
+    my $seq = $db->MySelect($stmt, [$id], 'row');
+    print "Content-type: text/plain\n\n";
+    print "#$seq->[1] starting at $seq->[3]: $seq->[0]
+$seq->[2]
+";
 }

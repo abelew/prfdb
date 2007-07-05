@@ -182,6 +182,9 @@ sub Mfeid_to_Bpseq {
      $fh = PRFdb::MakeTempfile({SUFFIX => '.bpseq'});
      $filename = $fh->filename;
     }
+    elsif (ref($outputfile) eq 'GLOB') {
+	$fh = $outputfile;
+    }
     else {
      $fh = \*OUT;
      open($fh, ">$outputfile");
