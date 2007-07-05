@@ -68,7 +68,8 @@ sub MAIN {
     }
 
     print $cgi->header;
-    $template->process( 'header.html', $vars ) or print $template->error(), die;
+    $template->process( 'header.html', $vars ) or
+	Print_Template_Error($template), die;
     if ( $path eq '/start' or $path eq '' ) {
 	Print_Index();
     } elsif ($path eq '/help') {
@@ -114,41 +115,54 @@ sub MAIN {
 	Print_Search_Form();
 	Print_Blast('remote');
     }
-    $template->process( 'footer.html', $vars ) or print $template->error(), die;
+    $template->process( 'footer.html', $vars ) or
+	Print_Template_Error($template), die;
     print $cgi->endform, $cgi->end_html;
     exit(0);
 }
 
 sub Print_Index {
-    my $cerevisiae_count = $db->MySelect("SELECT count(id) FROM mfe WHERE species = 'saccharomyces_cerevisiae'", [], 'row');
-    my $sapiens_count = $db->MySelect("SELECT count(id) FROM mfe WHERE species = 'homo_sapiens'", [], 'row');
-    my $musculus_count = $db->MySelect("SELECT count(id) FROM mfe WHERE species = 'mus_musculus'", [], 'row');
-    my $lastupdate = $db->MySelect("SELECT species,lastupdate FROM mfe ORDER BY lastupdate DESC LIMIT 1", [], 'row');
-    $vars->{cerevisiae_count} = $cerevisiae_count->[0];
-    $vars->{sapiens_count} = $sapiens_count->[0];
-    $vars->{musculus_count} = $musculus_count->[0];
+    my $cerevisiae_count = $db->MySelect({
+	statement => "SELECT count(id) FROM mfe WHERE species = 'saccharomyces_cerevisiae'",
+	type => 'single'});
+    my $sapiens_count = $db->MySelect({
+	statement => "SELECT count(id) FROM mfe WHERE species = 'homo_sapiens'",
+	type => 'single'});
+    my $musculus_count = $db->MySelect({
+	statement => "SELECT count(id) FROM mfe WHERE species = 'mus_musculus'",
+	type => 'single'});
+    my $lastupdate = $db->MySelect({
+	statement => "SELECT species,lastupdate FROM mfe ORDER BY lastupdate DESC LIMIT 1",
+	type => 'row'});
+    $vars->{cerevisiae_count} = $cerevisiae_count;
+    $vars->{sapiens_count} = $sapiens_count;
+    $vars->{musculus_count} = $musculus_count;
     $vars->{last_species} = $lastupdate->[0];
     $vars->{last_species} = ucfirst($vars->{last_species});
     $vars->{last_species} =~ s/_/ /g;
     $vars->{lastupdate} = $lastupdate->[1];
-    $template->process( 'index.html', $vars ) or print $template->error(), die;
+    $template->process( 'index.html', $vars ) or
+	Print_Template_Error($template), die;
 }
 
 sub Print_Download {
-  $template->process( 'download.html', $vars ) or print $template->error(), die;
+  $template->process( 'download.html', $vars ) or
+      Print_Template_Error($template), die;
 }
 
 sub Print_Search_Form {
     $vars->{blast_startform} = $cgi->startform( -action => "$base/blast_search" );
     $vars->{blastsearch} = $cgi->textarea( -name => 'blastsearch', -rows => 12, -columns => 80, );
     $vars->{blast_submit} = $cgi->submit( -name => 'blastsearch', -value => 'Perform Blast Search');
-    $template->process( 'searchform.html', $vars ) or print $template->error(), die;
+    $template->process( 'searchform.html', $vars ) or
+	Print_Template_Error($template), die;
 }
 
 sub Print_Import_Form {
     $vars->{startform} = $cgi->startform( -action => "$base/perform_import" );
     $vars->{import} = $cgi->textfield( -name => 'import_accession', -size => 20 );
-    $template->process( 'import.html', $vars ) or print $template->error(), die;
+    $template->process( 'import.html', $vars ) or
+	Print_Template_Error($template), die;
 }
 
 sub Print_Cloudform {
@@ -157,11 +171,13 @@ sub Print_Cloudform {
 					-default => ['homo_sapiens'],
 					-values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','all']);
 
-    $template->process( 'cloudform.html', $vars ) or print $template->error(), die;
+    $template->process( 'cloudform.html', $vars ) or
+	Print_Template_Error($template), die;
 }
 
 sub Print_Help {
-    $template->process('help.html', $vars) or print $template->error(), die;
+    $template->process('help.html', $vars) or
+	Print_Template_Error($template), die;
 }
 
 sub Print_MFE_Z {
@@ -177,30 +193,35 @@ sub Print_MFE_Z {
     my ($stmt, $stuff);
     if ($species eq 'all') {
 	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-	$stuff = $db->MySelect($stmt, [$mfe_minus,$mfe_plus,$z_minus,$z_plus]);
+	$stuff = $db->MySelect({ statement => $stmt, vars => [$mfe,$mfe_plus,$z,$z_plus]});
     }
     else {
 	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = ? AND mfe.mfe > ? AND mfe.mfe < ? AND boot.zscore > ? AND boot.zscore < ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-	$stuff = $db->MySelect($stmt, [$species,$mfe_minus,$mfe_plus,$z_minus,$z_plus]);
+	$stuff = $db->MySelect({ statement => $stmt, vars => [$species,$mfe,$mfe_plus,$z,$z_plus]});
     }
     $vars->{mfe} = $mfe;
     $vars->{mfe_plus} = $mfe_plus;
     $vars->{z} = $z;
     $vars->{z_plus} = $z_plus;
     $vars->{species} = $species;
-    $template->process('mfe_z_header.html', $vars) or print $template->error();
+    $template->process('mfe_z_header.html', $vars) or
+	Print_Template_Error($template), die;
     foreach my $datum (@{$stuff}) {
 	my $accession = $datum->[0];
 	my $start = $datum->[1];
 	my $gene_stmt = qq(SELECT genename,comment FROM genome WHERE accession = ?);
-	my $g = $db->MySelect($gene_stmt,[$accession],'row');
+	my $g = $db->MySelect({
+	    statement => $gene_stmt,
+	    vars => [$accession],
+	    type => 'row'});
 	my $genename = $g->[0];
 	my $comments = $g->[1];
 	$vars->{accession} = $accession;
 	$vars->{start} = $start;
 	$vars->{genename} = $genename;
 	$vars->{comments} = $comments;
-	$template->process('mfe_z_body.html', $vars) or print $template->error();
+	$template->process('mfe_z_body.html', $vars) or
+	    Print_Template_Error($template), die;
     }
 }
 
@@ -211,7 +232,9 @@ sub Print_Detail_Slipsite {
   $vars->{accession} = $accession;
   $vars->{slipstart} = $slipstart;
   my $detail_stmt = qq(SELECT * FROM mfe WHERE accession = ? AND start = ? ORDER BY seqlength DESC);
-  my $info = $db->MySelect( $detail_stmt, [ $accession, $slipstart ] );
+  my $info = $db->MySelect({
+      statement => $detail_stmt,
+      vars => [ $accession, $slipstart ] });
   ## id,genome_id,accession,species,algorithm,start,slipsite,seqlength,sequence,output,parsed,parens,mfe,pairs,knotp,barcode,lastupdate
   ## 0  1         2         3       4         5     6        7         8        9      10     11     12  13    14    15      16
 
@@ -220,14 +243,21 @@ sub Print_Detail_Slipsite {
   $vars->{mfe_id} = $info->[0]->[0];
 
   my $genome_stmt = qq(SELECT genename FROM genome where id = ?);
-  my $genome_info = $db->MySelect( $genome_stmt, [ $vars->{genome_id} ] );
+  my $genome_info = $db->MySelect({
+      statement =>$genome_stmt,
+      vars => [ $vars->{genome_id} ],
+				  });
   $vars->{genename} = $genome_info->[0]->[0];
-  $template->process( "detail_header.html", $vars ) or print $template->error(), die;
+  $template->process( "detail_header.html", $vars ) or
+      Print_Template_Error($template), die;
   foreach my $structure ( @{$info} ) {
     my $id = $structure->[0];
     my $mfe = $structure->[12];
     my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = ?);
-    my $boot = $db->MySelect( $boot_stmt, [$id], 'row' );
+    my $boot = $db->MySelect({
+	statement => $boot_stmt,
+	vars => [$id],
+	type => 'row'});
     my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $boot_db );
 
     if (!defined($boot) and $config->{do_boot} == 2) {
@@ -236,7 +266,8 @@ sub Print_Detail_Slipsite {
     }
     elsif (!defined($boot) and $config->{do_boot} == 1) {
 	$vars->{accession} = $structure->[2];
-	$template->process( 'generate_boot.html', $vars) or print $template->error(), die;
+	$template->process( 'generate_boot.html', $vars) or
+	    Print_Template_Error($template), die;
 
 	my $data = ">tmp
 $structure->[8]
@@ -359,7 +390,8 @@ $structure->[8]
     $vars->{species} =~ s/_/ /g;
     $vars->{species} = ucfirst($vars->{species});
 
-    $template->process( "detail_body.html", $vars ) or print $template->error(), die;
+    $template->process( "detail_body.html", $vars ) or
+	Print_Template_Error($template), die;
   }    ## End foreach structure in the database
   $template->process( "detail_list_footer.html", $vars );
 }
@@ -443,9 +475,13 @@ sub Print_Single_Accession {
   else {
       $slipsite_information_stmt = qq/SELECT distinct start, slipsite, count(id) FROM mfe WHERE accession = ? AND start < (SELECT orf_stop FROM genome WHERE accession = ?) GROUP BY start ORDER BY start/;
   }
-  my $slipsite_information = $db->MySelect($slipsite_information_stmt, [$accession, $accession]);
-  $template->process( 'genome.html',          $vars ) or print $template->error(), die;
-  $template->process( 'sliplist_header.html', $vars ) or print $template->error(), die;
+  my $slipsite_information = $db->MySelect({
+      statement => $slipsite_information_stmt, 
+      vars => [$accession, $accession], });
+  $template->process( 'genome.html',          $vars ) or
+      Print_Template_Error($template), die;
+  $template->process( 'sliplist_header.html', $vars ) or
+      Print_Template_Error($template), die;
 
   my $num_stops_printed = 0;
   my $num_starts_printed = 0;
@@ -456,23 +492,29 @@ sub Print_Single_Accession {
     $vars->{sig_count} += $vars->{pknotscount};
     if ($vars->{orf_start} < $vars->{slipstart} and $num_starts_printed == 0) {
 	$num_starts_printed++;
-	$template->process( 'sliplist_start_codon.html', $vars ) or print $template->error(), die;
+	$template->process( 'sliplist_start_codon.html', $vars ) or 
+	    Print_Template_Error($template), die;
     }
     if ($vars->{orf_stop} <= $vars->{slipstart} and $num_stops_printed == 0) {
 	$num_stops_printed++;
-	$template->process( 'sliplist_stop_codon.html', $vars ) or print $template->error(), die;
+	$template->process( 'sliplist_stop_codon.html', $vars ) or
+	    Print_Template_Error($template), die;
     }
-    $template->process( 'sliplist.html', $vars ) or print $template->error(), die;
+    $template->process( 'sliplist.html', $vars ) or
+	Print_Template_Error($template), die;
   }
   $template->process( 'sliplist_start_codon.html', $vars ) if ($num_starts_printed == 0);
   $template->process( 'sliplist_stop_codon.html', $vars ) if ($num_stops_printed == 0);
-  $template->process( 'sliplist_footer.html', $vars ) or print $template->error(), die;
-  $template->process( 'mrna_sequence.html',   $vars ) or print $template->error(), die;
+  $template->process( 'sliplist_footer.html', $vars ) or
+      Print_Template_Error($template), die;
+  $template->process( 'mrna_sequence.html',   $vars ) or
+      Print_Template_Error($template), die;
 }
 
 sub Print_Multiple_Accessions {
   my $data = shift;    ## From Perform_Search by default
-  $template->process( 'multimatch_header.html', $vars ) or print $template->error() . "<br>\n";
+  $template->process( 'multimatch_header.html', $vars ) or
+      Print_Template_Error($template), die;
   foreach my $id ( sort { $data->{$b}->{slipsite_count} <=> $data->{$a}->{slipsite_count} } keys %{$data} ) {      
     $vars->{id}              = $data->{$id}->{id};
     $vars->{counter}         = $data->{$id}->{counter};
@@ -488,9 +530,11 @@ sub Print_Multiple_Accessions {
 	$vars->{short_accession} = $vars->{accession};
 	$vars->{short_accession} =~ s/^SGDID\://g;
     }
-    $template->process( 'multimatch_body.html', $vars ) or print $template->error(), die;
+    $template->process( 'multimatch_body.html', $vars ) or
+	Print_Template_Error($template), die;
   }                    ## Foreach every entry in @entries
-  $template->process( 'multimatch_footer.html', $vars ) or print $template->error(), die;
+  $template->process( 'multimatch_footer.html', $vars ) or
+      Print_Template_Error($template), die;
 }    ## Else there is more than one match for the given search string.
 
 sub Perform_Search {
@@ -501,9 +545,16 @@ sub Perform_Search {
   }
   $query_statement .= qq/(genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')/;
   
-  my $entries = $db->MySelect($query_statement, [], 'hash', 1);
+  my $entries = $db->MySelect({
+      statement => $query_statement,
+      type => 'hash',
+      descriptor => 1, });
   foreach my $c (keys %{$entries}) {
-      my $slipsite_structure_count = $db->MySelect( "SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?", [$entries->{$c}->{accession}], 'row' );
+      my $slip_stmt = qq(SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?");
+      my $slipsite_structure_count = $db->MySelect({
+	  statement => $slip_stmt,
+	  vars => [$entries->{$c}->{accession}],
+	  type => 'row', });
       $entries->{$c}->{slipsite_count} = $slipsite_structure_count->[0];
       $entries->{$c}->{structure_count} = $slipsite_structure_count->[1];
   }
@@ -523,15 +574,19 @@ sub Perform_Import {
   my $accession = $cgi->param('import_accession');
   my $result    = $db->Import_CDS($accession);
   $vars->{import_result} = $result;
-  $template->process( 'import_result.html', $vars ) or print $template->error(), die;
+  $template->process( 'import_result.html', $vars ) or
+      Print_Template_Error($template), die;
 }
 
 sub ErrorPage {
-  $template->process( 'error.html', $vars ) or print $template->error(), die;
+  $template->process( 'error.html', $vars ) or
+      Print_Template_Error($template), die;
 }
 
 sub Start_Filter {
-  my $species = $db->MySelect( "SELECT distinct(species) from genome", [], 'flat' );
+    my $species = $db->MySelect({
+	statement => "SELECT distinct(species) from genome", 
+	type => 'flat' });
 
   #  unshift (@{$species}, 'All');
   $vars->{startform} = $cgi->startform( -action => "$base/second_filter" );
@@ -546,7 +601,8 @@ sub Start_Filter {
     -values  => [ 'pknots', 'nupack' ],
     -default => 'pknots'
   );
-  $template->process( 'filterform.html', $vars ) or print $template->error(), die;
+  $template->process( 'filterform.html', $vars ) or
+      Print_Template_Error($template), die;
 }
 
 sub Perform_Second_Filter {
@@ -554,7 +610,10 @@ sub Perform_Second_Filter {
   my $algorithm = $cgi->param('algorithm');
   $vars->{startform} = $cgi->startform( -action => "$base/third_filter" );
   my $stats_stmt = qq(SELECT * FROM stats WHERE species = ? AND algorithm = ? AND seqlength = ?);
-  my $stats = $db->MySelect($stats_stmt, [$species, $algorithm, $config->{seqlength}], 'hash');
+  my $stats = $db->MySelect({
+      statement => $stats_stmt,
+      vars => [$species, $algorithm, $config->{seqlength}],
+      type => 'hash' });
 
   foreach my $k (sort keys %{$stats}) {
       $vars->{$k} = $stats->{$k};
@@ -598,7 +657,8 @@ sub Perform_Second_Filter {
   $vars->{hidden_species} = $cgi->hidden(-name => 'hidden_species', -value => $species);
   $vars->{hidden_algorithm} = $cgi->hidden( -name => 'hidden_algorithm', -value => $algorithm);
   $vars->{filter_submit} = $cgi->submit( -name => 'third_filter', -value => 'Filter PRFdb');
-  $template->process( 'secondfilterform.html', $vars ) or print "$! $template->error()", die;
+  $template->process( 'secondfilterform.html', $vars ) or
+      Print_Template_Error($template), die;
 }
 
 sub Perform_Third_Filter {
@@ -630,7 +690,7 @@ sub Perform_Third_Filter {
 	$statement .= " LIMIT $limit";
     }
 
-    my $info = $db->MySelect($statement, []);
+    my $info = $db->MySelect($statement);
     foreach my $datum (@{$info}) {
 	$vars->{id} = $datum->[0];
 	$vars->{genome_id} = $datum->[1];
@@ -649,9 +709,11 @@ sub Perform_Third_Filter {
 	$vars->{knotp} = $datum->[14];
 	$vars->{barcode} = $datum->[15];
 	$vars->{lastupdate} = $datum->[16];
-	$template->process('filter_finished.html', $vars ) or die $template->error();
+	$template->process('filter_finished.html', $vars ) or
+	    Print_Template_Error($template), die;
     }
-  $template->process( 'thirdfilter.html', $vars ) or print $template->error(), die;
+  $template->process( 'thirdfilter.html', $vars ) or
+      Print_Template_Error($template), die;
 }
 
 sub Print_Sliplist {
@@ -661,7 +723,11 @@ sub Print_Sliplist {
 sub Create_Pretty_mRNA {
   my $accession = shift;
   my $result    = '';
-  my $info      = $db->MySelect( "SELECT mrna_seq, orf_start, orf_stop, direction FROM genome WHERE accession = ?", [$accession], 'row' );
+  my $st = qq(SELECT mrna_seq, orf_start, orf_stop, direction FROM genome WHERE accession = ?);
+  my $info      = $db->MySelect({
+      statement => $st,
+      vars => [$accession], 
+      type => 'row'});
   my $mrna_seq  = $info->[0];
   my $orf_start = $info->[1];
   my $orf_stop  = $info->[2];
@@ -685,7 +751,10 @@ sub Create_Pretty_mRNA {
       $start_padding_bases = 10;
   }
   my $decrement = $start_padding_bases + 1;
-  my $slipsite_positions = $db->MySelect( "SELECT DISTINCT start FROM mfe WHERE accession = ? ORDER BY start", [$accession], 'flat' );
+  my $slipsite_positions = $db->MySelect({
+      statement =>"SELECT DISTINCT start FROM mfe WHERE accession = ? ORDER BY start",
+      vars => [$accession],
+      type =>'flat'});
   ## Each slipsite_position will probably have to have the number of start_padding_bases added to it
   ## Now move all attributes by the number of padding bases, otherwise the non bases will get colored.
   my $corrected_orf_start = $orf_start + $start_padding_bases;
@@ -792,9 +861,10 @@ sub Create_Pretty_mRNA {
 sub Get_Accession_Info {
   my $accession       = shift;
   my $query_statement = qq(SELECT id, species, genename, comment, orf_start, orf_stop, lastupdate, mrna_seq FROM genome WHERE accession = ?);
-
-  #  my $entries = $db->MySelect($query_statement, [$query, $query, $query, $query]);
-  my $entry = $db->MySelect( $query_statement, [$accession], 'row' );
+  my $entry = $db->MySelect({
+      statement => $query_statement,
+      vars => [$accession],
+      type => 'row', });
   my $data = {
     id         => $entry->[0],
     species    => $entry->[1],
@@ -805,7 +875,10 @@ sub Get_Accession_Info {
     lastupdate => $entry->[6],
     mrna_seq   => $entry->[7],
   };
-  my $slipsite_structure_count = $db->MySelect( "SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?", [$accession], 'row' );
+  my $slipsite_structure_count = $db->MySelect({
+      statement => "SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?",
+      vars => [$accession],
+      type => 'row', });
   $data->{slipsite_count}  = $slipsite_structure_count->[0];
   $data->{structure_count} = $slipsite_structure_count->[1];
   return ($data);
@@ -823,8 +896,10 @@ sub Print_Blast {
   }
   else {
       $accession  = $cgi->param('accession');
-      my $mrna_seq   = $db->MySelect( "SELECT mrna_seq FROM genome WHERE accession = ?", [$accession], 'row' );
-      $sequence   = $mrna_seq->[0];
+      $sequence   = $db->MySelect({
+	  statement => "SELECT mrna_seq FROM genome WHERE accession = ?",
+	  vars => [$accession],
+	  type => 'single', });
   }
   
   my $local_info = $blast->Search( $sequence, $local );
@@ -879,7 +954,8 @@ sub Print_Blast {
     hsps_length      => \%hsps_length,
     hsps_score       => \%hsps_score,
   };
-  $template->process( 'blast.html', $vars ) or die $template->error();
+  $template->process( 'blast.html', $vars ) or
+      Print_Template_Error($template), die;
 }
 
 sub Check_Landscape {
@@ -894,10 +970,13 @@ sub Check_Landscape {
   $vars->{picture}   = $url;
   $vars->{accession} = $accession;
   my $stmt = qq(SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession');
-  my $tmp  = $db->MySelect($stmt, [], 'row');
+  my $tmp  = $db->MySelect({
+      statement => $stmt,
+      type => 'row'});
   $vars->{start} = $tmp->[0];
   $vars->{stop} = $tmp->[1];
-  $template->process( 'landscape.html', $vars ) or print $template->error(), die;
+  $template->process( 'landscape.html', $vars ) or
+      Print_Template_Error($template), die;
 }
 
 sub Cloud {
@@ -911,30 +990,36 @@ sub Cloud {
 	if ($species eq 'all') {
 	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
 	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
-	    $points = $db->MySelect($points_stmt, []);
-	    $averages = $db->MySelect($averages_stmt, [], 'row');
+	    $points = $db->MySelect({statement => $points_stmt,});
+	    $averages = $db->MySelect({statement =>$averages_stmt, type => 'row',});
 	}
 	else {
 	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
 	    my $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
-	    $points = $db->MySelect($points_stmt, [$species]);
-	    $averages = $db->MySelect($averages_stmt, [$species], 'row');
+	    $points = $db->MySelect({statement => $points_stmt, vars => [$species]});
+	    $averages = $db->MySelect({
+		statement => $averages_stmt,
+		vars => [$species],
+		type => 'row', });
 	}
-	my $cloud_data = $cloud->Make_Cloud($species, $points, $averages, $cloud_output_filename);
+	my $cloud_data = $cloud->Make_Cloud($species, $points, $averages, $cloud_output_filename, $base);
     }
     $vars->{species} = $species;
     $vars->{cloud_file} = $cloud_output_filename;
     $vars->{cloud_url} = $cloud_url;
     $vars->{map_url} = "$vars->{cloud_url}" . '.map'; 
     $vars->{map_file} = "$vars->{cloud_file}" . '.map';
-    $template->process( 'cloud.html', $vars ) or print $template->error(), die;
-
+    $template->process( 'cloud.html', $vars ) or
+	Print_Template_Error($template), die;
 }
 
 sub Download_Sequence {
     my $accession = shift;
     my $stmt = qq(SELECT comment,mrna_seq FROM genome WHERE accession = ?);
-    my $seq = $db->MySelect($stmt, [$accession], 'row');
+    my $seq = $db->MySelect({
+	statement => $stmt,
+	vars => [$accession],
+	type => 'row', });
     my @tmp = split(//, $seq->[1]);
     print "Content-type: text/plain\n\n";
     print ">$accession $seq->[0]";
@@ -955,7 +1040,7 @@ sub Download_Bpseq {
 sub Download_Subsequence {
     my $id = shift;
     my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.sequence,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
-    my $seq = $db->MySelect($stmt, [$id], 'row');
+    my $seq = $db->MySelect({statement => $stmt, vars => [$id], type => 'row'});
     my @tmp = split(//, $seq->[2]);
     print "Content-type: text/plain\n\n";
     print ">$seq->[1] starting at $seq->[3]: $seq->[0]";
@@ -968,7 +1053,7 @@ sub Download_Subsequence {
 sub Download_Parens {
     my $id = shift;
     my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.parens,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
-    my $seq = $db->MySelect($stmt, [$id], 'row');
+    my $seq = $db->MySelect({statement =>$stmt, vars =>[$id], type =>'row'});
     print "Content-type: text/plain\n\n";
     print "#$seq->[1] starting at $seq->[3]: $seq->[0]
 $seq->[2]
@@ -978,9 +1063,16 @@ $seq->[2]
 sub Download_Parsed {
     my $id = shift;
     my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.parsed,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
-    my $seq = $db->MySelect($stmt, [$id], 'row');
+    my $seq = $db->MySelect({ statement => $stmt, vars => [$id], type =>'row'});
     print "Content-type: text/plain\n\n";
     print "#$seq->[1] starting at $seq->[3]: $seq->[0]
 $seq->[2]
 ";
+}
+
+sub Print_Template_Error {
+    my $t = shift;
+    my $err = $t->error();
+    my $string = $err->as_string();
+    print $string;
 }

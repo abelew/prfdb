@@ -35,6 +35,7 @@ sub Make_Cloud {
     my $data = shift;
     my $averages = shift;
     my $filename = shift;
+    my $url = shift;
     my $graph = new GD::Graph::points('800','800');
 
     my $mfe_min_value = -80;
@@ -116,7 +117,6 @@ sub Make_Cloud {
 	    my $counter = $points->{$x_point}->{$y_point}->{count};
 	    
 	    ## Quadrant Color Code
-#	    my $color_value = 127 + (127*($max_counter/$counter));
 	    my $color_value = 220 - (220*($counter/$max_counter));
 	    my $color = undef;
 	    # print "X: $x_coord Y: $y_coord AVGX: $average_mfe_coord AVGY: $average_z_coord CV: $color_value";
@@ -136,10 +136,10 @@ sub Make_Cloud {
 		$color = $gd->colorResolve(254,191,191);
 		# print " C: pink<br>\n";
 	    }
-	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 'gdNoFill'); 
+	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 4);
 	    $x_coord = sprintf('%.0f', $x_coord);
 	    $y_coord = sprintf('%.0f', $y_coord);
-	    my $string = "point http://dinmanlab.umd.edu/prfdb_beta/index.cgi/mfe_z?species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n";
+	    my $string = qq(point ${url}/mfe_z?species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
 	    print MAP $string;
 	}
     }
@@ -147,7 +147,7 @@ sub Make_Cloud {
     $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
     $gd->filledRectangle($left_x_coord+1, $average_z_coord, $right_x_coord-1, $average_z_coord+1, $black);
     $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
-    open (IMG, ">$filename") or die $!;
+    open (IMG, ">$filename") or die "error opening $filename to write image: $!";
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -160,7 +160,10 @@ sub Make_Landscape {
   my $filename  = $me->Picture_Filename( { type => 'landscape', } );
   system("touch $filename");
   my $db         = new PRFdb;
-  my $gene       = $db->MySelect("SELECT genename FROM genome WHERE accession='$accession'");
+#  my $gene       = $db->MySelect({
+#	  statement => "SELECT genename FROM genome WHERE accession='$accession'",
+#	  type => 'single'
+#				 });
   my $data       = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM landscape WHERE accession='$accession' ORDER BY start, algorithm");
   my $slipsites  = $db->MySelect("SELECT distinct(start) FROM mfe WHERE accession='$accession' ORDER BY start");
   my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession'");
