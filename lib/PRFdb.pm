@@ -1153,6 +1153,21 @@ sub Put_Nupack {
   return($mfe_id);
 }
 
+sub Put_Hotknots {
+  my $me    = shift;
+  my $data  = shift;
+  my $table = shift;
+  my $mfe_id = shift;
+  if ( defined($table) and $table eq 'landscape' ) {
+      $mfe_id = $me->Put_MFE_Landscape( 'hotknots', $data );
+  } elsif ( defined($table) ) {
+      $mfe_id = $me->Put_MFE( 'hotknots', $data, $table );
+  } else {
+      $mfe_id = $me->Put_MFE( 'hotknots', $data );
+  }
+  return($mfe_id);
+}
+
 sub Put_Pknots {
   my $me    = shift;
   my $data  = shift;

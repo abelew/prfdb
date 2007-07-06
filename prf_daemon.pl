@@ -303,9 +303,7 @@ STARTSITE: foreach my $slipsite_start ( keys %{$rnamotif_information} ) {
 	    type =>'row', });
 	next STARTSITE if ($end_of_orf->[0] < $slipsite_start);
     }
-    my $nupack_mfe_id;
-    my $pknots_mfe_id;
-#    my $seqlength;  ## Removed by trey to test if needed
+    my ($nupack_mfe_id, $pknots_mfe_id, $hotknots_mfe_id);
     $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
     $state->{sequence}   = $rnamotif_information->{$slipsite_start}{sequence};
     if ( !defined( $state->{fasta_file} or $state->{fasta_file} eq '' or !-r $state->{fasta_file} ) ) {
@@ -337,13 +335,17 @@ STARTSITE: foreach my $slipsite_start ( keys %{$rnamotif_information} ) {
 
     if ( $config->{do_nupack} ) {        ### Do we run a nupack fold?
       $nupack_mfe_id = Check_Nupack( $fold_search, $slipsite_start );
-      print "RAN CHECK_NUPACK AND GOT MFEID: $nupack_mfe_id\n";
+#      print "RAN CHECK_NUPACK AND GOT MFEID: $nupack_mfe_id\n";
 #      $seqlength = $db->Get_Seqlength($nupack_mfe_id);
 #      print "Ran Get_Seqlength with arg: $nupack_mfe_id and got: $seqlength\n";
     }    ### End check if we should do a nupack fold
 
     if ( $config->{do_pknots} ) {    ### Do we run a pknots fold?
       $pknots_mfe_id = Check_Pknots( $fold_search, $slipsite_start );
+    }
+    
+    if ($config->{do_hotknots}) {
+	$hotknots_mfe_id = Check_Folds('hotknots', $fold_search, $slipsite_start);
     }
 
     if ( $config->{do_boot} ) {
@@ -641,6 +643,48 @@ sub Check_Pknots {
   return ($pknots_mfe_id);
 }
 ## End Check_Pknots
+
+sub Check_Folds {
+    my $type = shift;
+    my $fold_search    = shift;
+    my $slipsite_start = shift;
+    my $mfe_id;
+    my $mfe_varname = qq(${type}_mfe_id);
+    my $folds = $db->Get_Num_RNAfolds( $type, $state->{genome_id}, $slipsite_start, $state->{seqlength} );
+  if ( $folds > 0 ) {    ### If there ARE existing folds...
+    print "$state->{genome_id} has $folds > 0 pknots_folds at position $slipsite_start\n";
+    $state->{$mfe_varname} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start,
+					     $state->{seqlength}, $type);
+    $mfe_id = $state->{$mfe_varname};
+    print "Check_Folds $type - already done: state: $mfe_id\n";
+  } else {                      ### If there are NO existing folds...
+    print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n";
+    my ($info, $mfe_id);
+    if ($type eq 'pknots') {
+	$info = $fold_search->Pknots();
+	$mfe_id = $db->Put_Pknots($info);
+	$state->{$mfe_varname} = $mfe_id;
+	print "Performed Put_Pknots and returned $mfe_id\n";
+    }
+    elsif ($type eq 'nupack') {
+	$info = $fold_search->Nupack_NOPAIRS();
+	$mfe_id = $db->Put_Nupack($info);
+	$state->{$mfe_varname} = $mfe_id;
+	print "Performed Put_Nupack and returned $mfe_id\n";
+    }
+    elsif ($type eq 'hotknots') {
+	$info = $fold_search->Hotknots();
+	$mfe_id = $db->Put_Hotknots($info);
+	$state->{$mfe_varname} = $mfe_id;
+	print "Performed Put_Hotknots and returned $mfe_id\n";
+    }
+    else {
+	die("Non existing type in Check_Folds");
+    }
+  }    ### Done checking for pknots folds
+  return ($mfe_id);
+}
+## End Check_Folds
 
 ## Start Clean_Up
 sub Clean_Up {

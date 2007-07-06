@@ -320,7 +320,7 @@ command: $command\n";
   } else {
     $parser = new PkParse( debug => 0 );
   }
-  my @struct_array = split( / /, $string );
+  my @struct_array = split( /\s+/, $string );
   my $out          = $parser->Unzip( \@struct_array );
   my $new_struc    = PkParse::ReBarcoder($out);
   my $barcode      = PkParse::Condense($new_struc);
@@ -538,6 +538,96 @@ sub Nupack_Boot_NOPAIRS {
   unlink($errorfile) if (-r $errorfile);
   $return->{pairs} = $pairs;
   return ($return);
+}
+
+sub Hotknots {
+    my $me = shift;
+    my $inputfile = $me->{file};
+    my $accession = $me->{accession};
+    my $start = $me->{start};
+    my $errorfile = qq(${inputfile}_hotknots.err);
+    my $slipsite = Get_Slipsite_From_Input($inputfile);
+    my $seq = Get_Sequence_From_Input($inputfile);
+    my $ret = {
+	start => $start,
+	slipsite => $slipsite,
+	knotp => 0,
+	genome_id => $me->{genome_id},
+	species => $me->{species},
+	accession => $accession,
+	sequence => $seq,
+	seqlength => length($seq),
+    };
+    chdir($config->{workdir});
+    my $seqname = $inputfile;
+    $seqname =~ s/\.fasta//g;
+    my $tempfile = $inputfile;
+    $tempfile =~ s/\.fasta/\.seq/g;
+    open(IN, ">$tempfile");
+    print IN $seq;
+    close(IN);
+    my $command = qq($config->{workdir}/$config->{hotknots} -I $seqname -noPS -b);
+    open(HK, "$command |");
+    while(my $line = <HK>) {
+	print $line;
+	$ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
+    }
+    close(HK);
+    my $bpseqfile = "${seqname}0.bpseq";
+    open(BPSEQ, "<$bpseqfile");
+    $ret->{output} = '';
+    $ret->{pairs} = 0;
+    while (my $bps = <BPSEQ>) {
+	my ($basenum, $base, $basepair) = split(/\s+/, $bps);
+	if ($basepair =~ /\d+/) {
+	    if ($basepair == 0) {
+		$ret->{output} .= '. ';
+	    }
+	    elsif ($basepair > 0) {
+		my $basepair_num = $basepair - 1;
+		$ret->{output} .= "$basepair_num ";
+		$ret->{pairs}++;
+	    }
+	    else {
+		die("Something is fubared");
+	    }
+	}
+	else {
+	    die("Something is fubared");
+	}
+    }
+    $ret->{pairs} = $ret->{pairs} / 2;
+    close(BPSEQ);
+    unlink($bpseqfile);
+    my $ctfile = qq(${seqname}.ct);
+    open(GETMFE, "grep ENERGY $ctfile | head -1 |");
+    while (my $getmfeline = <GETMFE>) {
+	my ($null, $num, $ENERGY, $eq, $mfe, $crap) = split(/\s+/, $getmfeline);
+	$ret->{mfe} = $mfe;
+    }
+    close(GETMFE);
+    unlink($bpseqfile);
+    my $parser = new PkParse( debug => 0);
+    my @struct_array = split(/\s+/, $ret->{output});
+    my $out = $parser->Unzip(\@struct_array);
+    my $new_struct = PkParse::ReBarcoder($out);
+    my $barcode = PkParse::Condense($new_struct);
+    my $parsed = '';
+    foreach my $char (@{$out}) {
+	$parsed .= $char . ' ';
+    }
+    $parsed = PkParse::ReOrder_Stems($parsed);
+    $ret->{parsed} = $parsed;
+    $ret->{barcode} = $barcode;
+    $ret->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
+    if ($parser->{pseudoknot} == 0) {
+	$ret->{knotp} = 0;
+    }
+    else {
+	$ret->{knotp} = 1;
+    }
+    chdir($config->{base});
+    return($ret);
 }
 
 sub Sequence_T_U {
