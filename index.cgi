@@ -840,7 +840,7 @@ sub Create_Pretty_mRNA {
   my $start_base_string = '';
   foreach my $codon (@codon_array) {
       if ($codon_count == 0) {
-	  my $prefix = qq(${base_count}&nbsp;&nbsp;&nbsp;&nbsp;);
+	  my $prefix = qq(${base_count}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;);
 	  $base_count = $base_count - $decrement;
 	  $first_pass = join('', $prefix, $first_pass);
       }
@@ -848,19 +848,22 @@ sub Create_Pretty_mRNA {
       if ( ( $codon_count % 15 ) == 0 ) {
 	  $base_count = $base_count + 45;
 	  my $suffix_base_count = $base_count - 1;
-	  if ($base_count > 9999) { 
-	      $start_base_string = qq($base_count);
+	  if ($base_count > 99999) { 
+	      $start_base_string = qq(${base_count}&nbsp;);
 	      $end_base_string = qq(&nbsp;$suffix_base_count);
-	  } elsif ($base_count > 999) {
-	      $start_base_string = qq(${base_count}&nbsp;); 
-	      $end_base_string = qq(&nbsp;&nbsp;$suffix_base_count);
-	  } elsif ($base_count > 99) {
+	  } elsif ($base_count > 9999) {
 	      $start_base_string = qq(${base_count}&nbsp;&nbsp;); 
+	      $end_base_string = qq(&nbsp;&nbsp;$suffix_base_count);
+	  } elsif ($base_count > 999) {
+	      $start_base_string = qq(${base_count}&nbsp;&nbsp;&nbsp;); 
 	      $end_base_string = qq(&nbsp;&nbsp;&nbsp;$suffix_base_count);
+	  } elsif ($base_count > 99) {
+	      $start_base_string = qq(${base_count}&nbsp;&nbsp;&nbsp;&nbsp;); 
+	      $end_base_string = qq(&nbsp;&nbsp;&nbsp;&nbsp;$suffix_base_count);
 	  }
 	  elsif ($base_count > 9) {
-	      $start_base_string = qq(${base_count}&nbsp;&nbsp;&nbsp;); 
-	      $end_base_string = qq(&nbsp;&nbsp;&nbsp;&nbsp;$suffix_base_count);
+	      $start_base_string = qq(${base_count}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;); 
+	      $end_base_string = qq(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$suffix_base_count);
 	  }
 	  
 	  $first_pass = join( '', $first_pass, $codon, "$end_base_string<br>\n$start_base_string" );
