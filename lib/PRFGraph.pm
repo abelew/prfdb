@@ -5,7 +5,7 @@ use DBI;
 use PRFConfig qw / PRF_Error PRF_Out /;
 use PRFdb;
 use GD::Graph::mixed;
-
+use GD::SVG;
 use Statistics::Basic::Mean;
 use Statistics::Basic::Variance;
 use Statistics::Basic::StdDev;
@@ -20,12 +20,10 @@ sub new {
   if ( defined( $arg->{config} ) ) {
     $config = $arg->{config};
   }
-  my $me = bless {
-    list_data => $arg->{list_data},
-    accession  => $arg->{accession},
-    real_mfe => $arg->{real_mfe},
-    mfe_id => $arg->{mfe_id},
-  }, $class;
+  my $me = bless {}, $class;
+  foreach my $key (%{$arg}) {
+      $me->{$key} = $arg->{$key};
+  }
   return ($me);
 }
 
@@ -382,12 +380,86 @@ sub Make_Distribution{
 
 sub Make_Feynman {
     my $me = shift;
-    my $input_file = shift;
-    my $acc_slip = $me->{acc_slip};
-    my $filename = $me->Picture_Filename( { type => 'feynman', } );
-    my $command = qq(DISPLAY=$config->{x_display} ; /usr/bin/java -jar $config->{workdir}/jViz.jar -t -i $input_file -l $filename 2>$config->{workdir}/java.out 1>&2);
-    my $output = system($command);
-    system("rm $input_file");
+    my $id = shift;
+    my $accession = $me->{accession};
+    my $db         = new PRFdb;
+    my $info = $db->MySelect("SELECT sequence, parsed, output FROM mfe WHERE id=?",{vars=>[$id], type=>'row'});
+    my $sequence = $info->[0];
+    my $parsed = $info->[1];
+    my $pkout = $info->[2];
+    my $seqlength = length($sequence);
+    my $character_size = 10;
+    my $width = ($seqlength * $character_size);
+    my $height = 300;
+    my $x_pad = 10;
+
+    my $fey = new GD::SVG::Image($width,$height);
+    my $white = $fey->colorAllocate(255, 255, 255);
+    my $black = $fey->colorAllocate(0, 0, 0);
+    my $blue = $fey->colorAllocate(0, 0, 191);
+    my $red = $fey->colorAllocate(248,0,0);
+    my $green = $fey->colorAllocate(0, 191, 0);
+    my $purple = $fey->colorAllocate(192,60,192);
+    my $orange = $fey->colorAllocate(255,165,0);
+    my $brown = $fey->colorAllocate(192,148,68);
+    my $darkslategray = $fey->colorAllocate(165,165,165);
+    my $gray   = $fey->colorAllocate(127,127,127);
+    my $aqua   = $fey->colorAllocate(127,255,212);
+    my $yellow = $fey->colorAllocate(255,255,0);
+    my $gb = $fey->colorAllocate(0, 97, 97);
+
+    $fey->transparent($white);
+    $fey->filledRectangle(0,0,$width,$height,$white);
+
+    my @colors = ($black, $blue, $red, $green, $purple, $orange, $brown, $darkslategray,
+		  $black, $blue, $red, $green, $purple, $orange, $brown, $darkslategray,
+		  $black, $blue, $red, $green, $purple, $orange, $brown, $darkslategray,
+	);
+
+    my $start_x = $x_pad;
+    my $start_y = $height - 10;
+
+    my $bounds = $fey->string(gdMediumBoldFont, $start_x, $start_y-10, $sequence, $black);
+
+    my $distance_per_char = $character_size - 2;
+    my $string_x_distance = $character_size * length($sequence);
+
+    my @stems = split(/\s+/, $parsed);
+    my @paired = split(/\s+/, $pkout);
+    my @seq = split(//, $sequence);
+    my $last_stem = $me->Get_Last(\@stems);
+    my $bp_per_stem = $me->Get_Stems(\@stems);
+
+    for my $c (0 .. $#seq) {
+	my $count = $c+1;
+	next if ($paired[$c] eq '.');
+	if ($paired[$c] =~ /\d+/) {
+	    my $current_stem = $stems[$c];
+	    my $bases_in_stem = $bp_per_stem->{$current_stem};
+	    my $center_characters = ($paired[$c] - $c) / 2;
+	    my $center_position = $center_characters * $distance_per_char;
+	    my $center_x = $center_position + ($c * $distance_per_char);
+	    my $center_y = $height;
+	    my $dist_x = $center_characters * $distance_per_char * 2;
+	    my $dist_nt = $paired[$c] - $c;
+	    my $dist_y = $dist_nt * 3.5;
+	    $center_x = $center_x + $x_pad + ($distance_per_char / 2);
+	    $center_y = $center_y - 20;
+	    $fey->setThickness(2);
+	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$stems[$c]]);
+	    $paired[$paired[$c]] = '.';
+	}
+    }
+    my $output = $me->Picture_Filename( {type => 'feynman',});
+    $output =~ s/\.png/\.svg/g;
+    open(OUT, ">$output");
+    binmode OUT;
+    print OUT $fey->svg;
+    close OUT;
+    my $command = qq(sed 's/font="Helvetica"/font-family="Courier New"/g' $output > ${output}.tmp);
+    system($command);
+    my $command2 = qq(mv ${output}.tmp $output);
+    system($command2);
 }
 
 sub Get_PPCC {
@@ -497,3 +569,30 @@ Make sure that user $< and/or group $( has write permissions: $!");
   }
   return ($directory);
 }
+
+sub Get_Last {
+    my $list = shift;
+    my $last = 0;
+    foreach my $char (@{$list}) {
+	next if ($char eq '.');
+	$last = $char if ($char > $last);
+    }
+    return($last);
+}
+
+sub Get_Stems {
+    my $me = shift;
+    my $list = shift;
+    my $dat = {};
+    foreach my $char (@{$list}) {
+	next if ($char eq '.');
+	if (!defined($dat->{$char})) {
+	    $dat->{$char} = 0.5;
+	}
+	else {
+	    $dat->{$char} = $dat->{$char} + 0.5;
+	}
+    }
+    return($dat);
+}
+

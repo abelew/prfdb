@@ -10,7 +10,8 @@ use PRF_Blast;
 use PRFGraph;
 use MoreRandom;
 use Bootlace;
-
+$ENV{HTTP_HOST} = 'funkytown' if (!defined($ENV{HTTP_HOST}));
+$ENV{SCRIPT_NAME} = 'index.cgi' if (!defined($ENV{SCRIPT_NAME}));
 umask(0000);
 our $config = $PRFConfig::config;
 ## All configuration information exists here
