@@ -380,19 +380,32 @@ sub Make_Distribution{
 
 sub Make_Feynman {
     my $me = shift;
-    my $id = shift;
-    my $accession = $me->{accession};
+    my $id = $me->{mfe_id};
     my $db         = new PRFdb;
-    my $info = $db->MySelect("SELECT sequence, parsed, output FROM mfe WHERE id=?",{vars=>[$id], type=>'row'});
+    my $stmt = qq(SELECT sequence, parsed, output FROM mfe WHERE id = ?);
+    my $info = $db->MySelect({statement => $stmt, vars => [$id], type => 'row' });
     my $sequence = $info->[0];
     my $parsed = $info->[1];
     my $pkout = $info->[2];
     my $seqlength = length($sequence);
     my $character_size = 10;
-    my $width = ($seqlength * $character_size);
-    my $height = 300;
-    my $x_pad = 10;
+    my $height_per_nt = 3.5;
 
+    my $x_pad = 10;
+    my $width = ($seqlength * ($character_size - 2)) + ($x_pad * 2);
+
+    my $pkt = $pkout;
+    my @pktmp = split(/\s+/, $pkt);
+    my $max_dist = 0;
+    for my $c (0 .. $#pktmp) {
+	my $count = $c + 1;
+	next if ($pktmp[$c] eq '.');
+	my $dist = $pktmp[$c] - $c;
+	$max_dist = $dist if ($dist > $max_dist);
+	$pktmp[$pktmp[$c]] = '.';
+    }
+    my $height = (($height_per_nt * $max_dist) /2) + ($character_size * 4);
+   
     my $fey = new GD::SVG::Image($width,$height);
     my $white = $fey->colorAllocate(255, 255, 255);
     my $black = $fey->colorAllocate(0, 0, 0);
@@ -409,7 +422,7 @@ sub Make_Feynman {
     my $gb = $fey->colorAllocate(0, 97, 97);
 
     $fey->transparent($white);
-    $fey->filledRectangle(0,0,$width,$height,$white);
+#1    $fey->filledRectangle(0,0,$width,$height,$white);
 
     my @colors = ($black, $blue, $red, $green, $purple, $orange, $brown, $darkslategray,
 		  $black, $blue, $red, $green, $purple, $orange, $brown, $darkslategray,
@@ -442,7 +455,7 @@ sub Make_Feynman {
 	    my $center_y = $height;
 	    my $dist_x = $center_characters * $distance_per_char * 2;
 	    my $dist_nt = $paired[$c] - $c;
-	    my $dist_y = $dist_nt * 3.5;
+	    my $dist_y = $dist_nt * $height_per_nt;
 	    $center_x = $center_x + $x_pad + ($distance_per_char / 2);
 	    $center_y = $center_y - 20;
 	    $fey->setThickness(2);
@@ -460,6 +473,11 @@ sub Make_Feynman {
     system($command);
     my $command2 = qq(mv ${output}.tmp $output);
     system($command2);
+    my $ret = {
+	width => $width,
+	height =>$height,
+    };
+    return($ret);
 }
 
 sub Get_PPCC {
@@ -571,6 +589,7 @@ Make sure that user $< and/or group $( has write permissions: $!");
 }
 
 sub Get_Last {
+    my $me = shift;
     my $list = shift;
     my $last = 0;
     foreach my $char (@{$list}) {
