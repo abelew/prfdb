@@ -133,7 +133,7 @@ sub Print_Index {
 	statement => "SELECT count(id) FROM mfe WHERE species = 'mus_musculus'",
 	type => 'single'});
     my $lastupdate = $db->MySelect({
-	statement => "SELECT species,lastupdate FROM mfe ORDER BY lastupdate DESC LIMIT 1",
+	statement => "SELECT species,lastupdate,accession FROM mfe ORDER BY lastupdate DESC LIMIT 1",
 	type => 'row'});
     $vars->{cerevisiae_count} = $cerevisiae_count;
     $vars->{sapiens_count} = $sapiens_count;
@@ -142,6 +142,7 @@ sub Print_Index {
     $vars->{last_species} = ucfirst($vars->{last_species});
     $vars->{last_species} =~ s/_/ /g;
     $vars->{lastupdate} = $lastupdate->[1];
+    $vars->{last_accession} = $lastupdate->[2];
     $template->process( 'index.html', $vars ) or
 	Print_Template_Error($template), die;
 }
@@ -168,6 +169,10 @@ sub Print_Import_Form {
 
 sub Print_Cloudform {
     $vars->{newstartform} = $cgi->startform( -action => "$base/cloud" );
+    $vars->{cloud_filters} = $cgi->checkbox_group(
+						  -name => 'cloud_filters',
+#						  -values => ['pseudoknots only', 'coding sequence only'],);
+						  -values => ['pseudoknots only',],);
     $vars->{species} = $cgi->popup_menu( -name => 'species',
 					-default => ['homo_sapiens'],
 					-values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','all']);
@@ -253,7 +258,6 @@ sub Print_Detail_Slipsite {
 
   $vars->{species} = $info->[0]->[3];
   $vars->{genome_id} = $info->[0]->[1];
-  $vars->{mfe_id} = $info->[0]->[0];
 
   my $genome_stmt = qq(SELECT genename FROM genome where id = ?);
   my $genome_info = $db->MySelect({
@@ -266,6 +270,7 @@ sub Print_Detail_Slipsite {
   foreach my $structure ( @{$info} ) {
     my $id = $structure->[0];
     my $mfe = $structure->[12];
+    $vars->{mfe_id} = $structure->[0];
     my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = ?);
     my $boot = $db->MySelect({
 	statement => $boot_stmt,
@@ -304,15 +309,19 @@ $structure->[8]
     }
 
     my $acc_slip         = qq/$accession-$slipstart/;
-    my $feynman_pic = new PRFGraph({mfe_id => $id, accession => $acc_slip});
+    my $feynman_pic = new PRFGraph({mfe_id => $id, accession => $accession});
     my $pre_feynman_url = $feynman_pic->Picture_Filename({type=> 'feynman', url => 'url',});
     my $feynman_url = $basedir . '/' . $pre_feynman_url;
+    $feynman_url =~ s/\.png/\.svg/g;
 #    ## Feynman
-    $ENV{DISPLAY}=":6";
     my $feynman_output_filename = $feynman_pic->Picture_Filename( {type => 'feynman', });
-    if (!-f $feynman_output_filename) {
-	my $feynman_input_file = $db->Mfeid_to_Bpseq($id);
-	$feynman_pic->Make_Feynman($feynman_input_file);
+    $feynman_output_filename =~ s/\.png/\.svg/g;
+    my $feynman_dimensions = {};
+    if (!-r $feynman_output_filename) {
+	$feynman_dimensions = $feynman_pic->Make_Feynman();
+    }
+    else {
+	$feynman_dimensions = Retarded($feynman_output_filename);
     }
 ## This requires an X server connection -- perhaps I can solve this
 ## By logging in at boot time as 'website' and starting a null Xserver on
@@ -402,6 +411,11 @@ $structure->[8]
     $vars->{parsed} = Color_Stems($vars->{parsed}, $vars->{parsed});
     $vars->{species} =~ s/_/ /g;
     $vars->{species} = ucfirst($vars->{species});
+
+    $vars->{feynman_height} = $feynman_dimensions->{height};
+    $vars->{feynman_height} += 1;
+    $vars->{feynman_width} = $feynman_dimensions->{width};
+    $vars->{feynman_width} += 1;
 
     $template->process( "detail_body.html", $vars ) or
 	Print_Template_Error($template), die;
@@ -1001,21 +1015,59 @@ sub Check_Landscape {
 
 sub Cloud {
     my $species = $cgi->param('species');
+    my @filters = $cgi->param('cloud_filters');
     my $cloud = new PRFGraph();
-    my $cloud_output_filename = $cloud->Picture_Filename({type => 'cloud', species => $species});
-    my $cloud_url = $cloud->Picture_Filename({type => 'cloud', species => $species, url => 'url',});
+
+    my $suffix = undef;
+    foreach my $filter (@filters) {
+	if ($filter eq 'pseudoknots only') {
+	    $suffix .= "-pknot";
+	}
+	elsif ($filter eq 'coding sequence only') {
+	    $suffix .= "-cs";
+	}
+    }
+
+    my $cloud_output_filename = $cloud->Picture_Filename({type => 'cloud', species => $species, suffix => $suffix,});
+    my $cloud_url = $cloud->Picture_Filename({type => 'cloud', species => $species, url => 'url', suffix => $suffix,});
     $cloud_url = $basedir . '/' . $cloud_url;
     if (!-f $cloud_output_filename) {
 	my ($points_stmt, $averages_stmt, $points, $averages);
 	if ($species eq 'all') {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
-	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    foreach my $filter (@filters) {
+		if ($filter eq 'pseudoknots only') {
+		    $points_stmt .= "mfe.knotp = '1' AND ";
+		    $averages_stmt .= "mfe.knotp = '1' AND ";
+		}
+		elsif ($filter eq 'coding sequence only') {
+		    $points_stmt .= "";
+		}
+	    }
+
+	    $points_stmt =~ s/AND $//g;
+	    $averages_stmt =~ s/AND $//g;
 	    $points = $db->MySelect({statement => $points_stmt,});
 	    $averages = $db->MySelect({statement =>$averages_stmt, type => 'row',});
 	}
 	else {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
-	    my $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id);
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+
+	    foreach my $filter (@filters) {
+		if ($filter eq 'pseudoknots only') {
+		    $points_stmt .= "mfe.knotp = '1' AND ";
+		    $averages_stmt .= "mfe.knotp = '1' AND ";
+		}
+		elsif ($filter eq 'coding sequence only') {
+		    $points_stmt .= "";
+		    $averages_stmt .= "";
+		}
+	    }
+
+	    $points_stmt =~ s/AND $//g;
+	    $averages_stmt =~ s/AND $//g;
 	    $points = $db->MySelect({statement => $points_stmt, vars => [$species]});
 	    $averages = $db->MySelect({
 		statement => $averages_stmt,
@@ -1097,3 +1149,28 @@ sub Print_Template_Error {
     print $string;
 }
 
+sub Retarded {
+    my $filename = shift;
+    my $FU = qq(grep height $filename  | awk -F'height="' '{print \$2}' | awk -F'"' '{print \$1}' | head -n 1);
+    open(F, "$FU |");
+    my $rep;
+    while (my $line = <F>) {
+	chomp $line;
+	$rep .= $line;
+    }
+    close(F);
+
+    my $FU2 = qq(grep width $filename  | awk -F'width="' '{print \$2}' | awk -F'"' '{print \$1}' | head -n 1);
+    open(F2, "$FU2 |");
+    my $rep2;
+    while (my $line = <F2>) {
+	chomp $line;
+	$rep2 .= $line;
+    }
+    close(F);
+
+    my $ret = {};
+    $ret->{height} = $rep;
+    $ret->{width} = $rep2;
+    return($ret);
+}

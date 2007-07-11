@@ -145,12 +145,28 @@ sub MyConnect {
   $dbh = DBI->connect_cached( $me->{dsn}, $config->{user}, $config->{pass} );
   $dbh->{mysql_auto_reconnect} = 1;
   $dbh->{InactiveDestroy}      = 1;
+
+  my $retry_count = 0;
+  if ( $dbh->errstr =~ /(?:lost connection|mysql server has gone away)/i ) {
+      my $success = 0;
+      while ($retry_count < 30 and $success == 0) {
+	  $retry_count++;
+	  sleep 120;
+	  $dbh = DBI->connect_cached($me->{dsn}, $config->{user}, $config->{pass});
+	  $dbh->{mysql_auto_reconnect} = 1;
+	  $dbh->{InactiveDestroy}      = 1;
+	  if ($dbh->errstr eq '') {
+	      $success++;
+	  }
+      }
+  }
+
   if ( !defined($dbh) ) {
-    if ( defined($statement) ) {
-      Write_SQL($statement);
-    }
-    my $error = "Could not open cached connection: $me->{dsn}, " . $DBI::err . ", " . $DBI::errstr;
-    die("$error");
+      if ( defined($statement) ) {
+	  Write_SQL($statement);
+      }
+      my $error = "Could not open cached connection: $me->{dsn}, " . $DBI::err . ", " . $DBI::errstr;
+      die("$error");
   }
   return ($dbh);
 }
@@ -1457,7 +1473,7 @@ sub Execute {
 
   if ( !$rc ) {
     if ( $dbh->errstr =~ /(?:lost connection|mysql server has gone away)/i ) {
-      while ( $retry_count < 5 and $success == 0 ) {
+      while ( $retry_count < 30 and $success == 0 ) {
         $retry_count++;
         sleep 120;
         $me->MyConnect($statement);

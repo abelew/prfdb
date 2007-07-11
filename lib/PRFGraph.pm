@@ -522,16 +522,24 @@ sub Picture_Filename {
   my $type = $args->{type};
   my $url = $args->{url};
   my $species = $args->{species};
+  my $suffix = $args->{suffix};
 
   my $accession = $me->{accession};
   my $mfe_id = $me->{mfe_id};
 
   if (defined($species)) {
       if (defined($url)) {
-	  return(qq(images/${type}/${species}.png));
-      }
-      else {
-	  return(qq($config->{base}/images/${type}/${species}.png));
+	  if (defined($suffix)) {
+	      return(qq(images/${type}/${species}${suffix}.png));
+	  } else {
+	      return(qq(images/${type}/${species}.png));
+	  }
+      } else {
+	  if (defined($suffix)) {
+	      return(qq($config->{base}/images/${type}/${species}${suffix}.png));
+	  } else {
+	      return(qq($config->{base}/images/${type}/${species}.png));
+	  }
       }
   }
 
@@ -539,12 +547,21 @@ sub Picture_Filename {
   my $filename;
 
   if (defined($mfe_id)) {
-      $filename = qq($directory/${accession}-${mfe_id}.png);
+      if (defined($suffix)) {
+	  $filename = qq($directory/${accession}-${mfe_id}${suffix}.png);
+      }
+      else {
+	  $filename = qq($directory/${accession}-${mfe_id}.png);
+      }
   }
   else {
-      $filename  = qq($directory/$accession.png);
+      if (defined($suffix)) {
+	  $filename  = qq($directory/$accession${suffix}.png);
+      }
+      else {
+	  $filename  = qq($directory/$accession.png);
+      }
   }
-
   return ($filename);
 }
 
