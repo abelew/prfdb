@@ -27,6 +27,7 @@ my $appconfig = AppConfig->new(
 ####
 ## Set up some reasonable defaults here
 ####
+$PRFConfig::config->{open_files} = [];
 $PRFConfig::config->{checks}               = 1;
 $PRFConfig::config->{add_to_path}          = "/usr/local/bin:/usr/bin";
 $PRFConfig::config->{has_modperl}          = 0;

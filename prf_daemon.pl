@@ -14,9 +14,17 @@ use Overlap;
 use MoreRandom;
 use PRF_Blast;
 
-my $config = $PRFConfig::config;
-my $db     = new PRFdb;
-my %conf   = ();
+$SIG{INT} = 'CLEANUP';
+$SIG{BUS} = 'CLEANUP';
+$SIG{SEGV} = 'CLEANUP';
+$SIG{PIPE} = 'CLEANUP';
+$SIG{ABRT} = 'CLEANUP';
+$SIG{QUIT} = 'CLEANUP';
+
+our $config = $PRFConfig::config;
+our $db     = new PRFdb;
+our %conf   = ();
+
 GetOptions(
   'nodaemon:i'    => \$conf{nodaemon},     ## If this gets set, then the prf_daemon will exit before it gets to the queue
   'help|version'  => \$conf{help},         ## Print some help information
@@ -76,7 +84,7 @@ foreach my $opt ( keys %conf ) {
   }
 }
 
-my $state = {
+our $state = {
   time_to_die          => undef,
   queue_table          => undef,
   queue_id             => undef,
@@ -285,43 +293,54 @@ sub PRF_Gatherer {
   }
   else {
       $rnamotif_information = $motifs->Search(
-
 	  $state->{genome_information}->{sequence},
 	  $state->{genome_information}->{orf_start} );
       $state->{rnamotif_information} = $rnamotif_information;
       if ( !defined( $state->{rnamotif_information} ) ) {
 	  $db->Insert_NoSlipsite( $state->{accession} );
       }
-      return (0) unless ( defined( $state->{rnamotif_information} ) );    ## If rnamotif_information is null
-      ## Now I should have 1 or more start sites
+  } ## End else, so all start sites should be collected.
+
+  if (!defined($rnamotif_information)) {
+      return(0);
   }
-STARTSITE: foreach my $slipsite_start ( keys %{$rnamotif_information} ) {
-    if ($config->{do_utr} == 0) {
-	my $end_of_orf = $db->MySelect({
-	    statement => "SELECT orf_stop FROM genome WHERE accession = ?",
-	    vars => [$state->{accession}], 
-	    type =>'row', });
-	next STARTSITE if ($end_of_orf->[0] < $slipsite_start);
-    }
-    my ($nupack_mfe_id, $pknots_mfe_id, $hotknots_mfe_id);
-    $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
-    $state->{sequence}   = $rnamotif_information->{$slipsite_start}{sequence};
-    if ( !defined( $state->{fasta_file} or $state->{fasta_file} eq '' or !-r $state->{fasta_file} ) ) {
+
+ STARTSITE: foreach my $slipsite_start ( keys %{$rnamotif_information} ) {
+   
+     if ($config->{do_utr} == 0) {
+	 my $end_of_orf = $db->MySelect({
+	     statement => "SELECT orf_stop FROM genome WHERE accession = ?",
+	     vars => [$state->{accession}], 
+	     type =>'row', });
+	 if ($end_of_orf->[0] < $slipsite_start) {
+	     PRFdb::RemoveFile($rnamotif_information->{$slipsite_start}{filename});
+	     next STARTSITE;
+	 }
+     }  ## End of if do_utr
+
+     my ($nupack_mfe_id, $pknots_mfe_id, $hotknots_mfe_id);
+     $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
+     $state->{sequence}   = $rnamotif_information->{$slipsite_start}{sequence};
+
+     if ( !defined( $state->{fasta_file} or
+		    $state->{fasta_file} eq ''
+		    or !-r $state->{fasta_file} ) ) {
       print "The fasta file for: $state->{accession} $slipsite_start does not exist.\n";
       print "You may expect this script to die momentarily.\n";
     }
-    my $check_seq = Check_Sequence_Length();
-    if ( $check_seq eq 'shorter than wanted' ) {
+
+     my $check_seq = Check_Sequence_Length();
+     if ( $check_seq eq 'shorter than wanted' ) {
       print "The sequence is: $check_seq and will be skipped.\n";
-      unlink( $state->{fasta_file} );
+      PRFdb::RemoveFile($state->{fasta_file});
       next STARTSITE;
     } elsif ( $check_seq eq 'null' ) {
       print "The sequence is null and will be skipped.\n";
-      unlink( $state->{fasta_file} );
+      PRFdb::RemoveFile($state->{fasta_file});
       next STARTSITE;
     } elsif ( $check_seq eq 'polya' ) {
       print "The sequence is polya and will be skipped.\n";
-      unlink( $state->{fasta_file} );    ## Get rid of each fasta file
+      PRFdb::RemoveFile($state->{fasta_file});
       next STARTSITE;
     }
 
@@ -392,7 +411,7 @@ STARTSITE: foreach my $slipsite_start ( keys %{$rnamotif_information} ) {
     }    ## End check to do an overlap
 
     ## Clean up after yourself!
-    unlink( $state->{fasta_file} );    ## Get rid of each fasta file
+    PRFdb::RemoveFile($state->{fasta_file});
   }    ### End foreach slipsite_start
   Clean_Up();
   ## Clean out state
@@ -444,7 +463,7 @@ sub Landscape_Gatherer {
     }
     ## The functional portion of the while loop is over, just set the state now
     $start_point = $start_point + $config->{window_space};
-    unlink( $state->{fasta_file} );    ## Get rid of each fasta file
+    PRFdb::RemoveFile($state->{fasta_file});
   }
   Clean_Up('landscape');
 }
@@ -737,7 +756,13 @@ sub Make_Jobs {
     }
 }
 
-sub DESTROY {
-  unlink( $state->{fasta_file} );
-  $db->Disconnect();
+sub CLEANUP {
+    $db->Disconnect();
+    PRFdb::RemoveFile('all');
+    print "\n\nCaught Fatal signal.\n\n";
+}
+
+END {
+    $db->Disconnect();
+    PRFdb::RemoveFile('all');
 }

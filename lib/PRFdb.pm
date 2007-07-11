@@ -310,12 +310,67 @@ sub MakeTempfile {
     my $args = shift;
     $File::Temp::KEEP_ALL = 1;
     my $fh = new File::Temp(
-			    DIR      => $config->{workdir},
-			    TEMPLATE => 'slip_XXXXX',
-			    UNLINK   => 0,
-			    SUFFIX   => defined($args->{SUFFIX}) ? $args->{SUFFIX} : '.fasta',
-			    );
+	DIR      => $config->{workdir},
+	TEMPLATE => 'slip_XXXXX',
+	UNLINK   => 0,
+	SUFFIX   => defined($args->{SUFFIX}) ? $args->{SUFFIX} : '.fasta',
+	);
+
+    my $filename = $fh->filename();
+    AddOpen($filename);
     return ($fh);
+}
+
+sub AddOpen {
+    my $file = shift;
+    my @open_files = @{$PRFConfig::config->{open_files}};
+
+    if (ref($file) eq 'ARRAY') {
+	foreach my $f (@{$file}) {
+	    push(@open_files, $f);
+	}
+    }
+    else {
+	push(@open_files, $file);
+    }
+    $PRFConfig::config->{open_files} = \@open_files;
+}
+
+sub RemoveFile {
+    my $file = shift;
+    my @open_files = @{$PRFConfig::config->{open_files}};
+    my @new_open_files = ();
+    my $num_deleted = 0;
+    my @comp = ();
+
+    if ($file eq 'all') {
+	foreach my $f (@{open_files}) {
+	    unlink($f);
+	    print "Deleting: $f\n";
+	    $num_deleted++;
+	}
+	$PRFConfig::config->{open_files} = \@new_open_files;
+	return($num_deleted);
+    }
+
+    elsif (ref($file) eq 'ARRAY') {
+	@comp = @{$file};
+    }
+    else {
+	push(@comp, $file);
+    }
+
+    foreach my $f (@open_files) {
+	foreach my $c (@comp) {
+	    if ($c eq $f) {
+		$num_deleted++;
+		unlink($f);
+	    }
+	}
+	push(@new_open_files, $f);
+    }
+    $PRFConfig::config->{open_files} = \@new_open_files;
+    return($num_deleted);
 }
 
 sub MakeFasta {
@@ -566,21 +621,26 @@ AND ${queue_table}.done = '0' AND ${queue_table}.genome_id = ${genome_table}.id 
 }
 
 sub Grab_Queue {
-  my $me    = shift;
-  my $queue = undef;
-  if ( $config->{check_webqueue} == 1 ) {
-    ### Then first see if anything is in the webqueue
-    $queue = $me->Get_Queue('webqueue');
-    if ( defined($queue) ) {
-      return ($queue);
-    } else {
-      $queue = $me->Get_Queue();
-      return ($queue);
+    my $me    = shift;
+    my $queue = undef;
+    if ( $config->{check_webqueue} == 1 ) {
+	### Then first see if anything is in the webqueue
+	$queue = $me->Get_Queue('webqueue');
+	if ( defined($queue) ) {
+	    return ($queue);
+	}
+	else {
+	    $queue = $me->Get_Queue();
+	    return ($queue);
+	}
+    } ## End check webqueue
+    else {
+	$queue = $me->Get_Queue();
+	if (!defined($queue)) {
+	    print "There are no more entries in the queue.\n";
+	}
+	return ($queue);
     }
-  } else {
-    $queue = $me->Get_Queue();
-    return ($queue);
-  }
 }
 
 sub Get_Queue {
@@ -620,7 +680,6 @@ sub Get_Queue {
       or !defined($genome_id)
       or $genome_id eq '' )
     {
-      print "There are no more entries in the queue to test.\n";
       return (undef);
     }
   }

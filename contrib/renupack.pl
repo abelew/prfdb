@@ -7,10 +7,10 @@ use RNAFolders;
 my $db     = new PRFdb;
 my $parser = new PkParse();
 my $start_mfe_id = $ARGV[0];
-my $default = 193768;
+my $default = 199563;
 $start_mfe_id = $default unless (defined($start_mfe_id));
 
-my $select = qq(SELECT id,genome_id,species,accession,start,sequence FROM mfe WHERE algorithm = 'nupack' and id > '$start_mfe_id' ORDER BY id);
+my $select = qq(SELECT id,genome_id,species,accession,start,sequence,parsed,output FROM mfe WHERE algorithm = 'nupack' and id > '$start_mfe_id' ORDER BY id);
 print "Starting $select\n";
 my $info = $db->MySelect($select);
 foreach my $id (@{$info}) {
@@ -20,6 +20,13 @@ foreach my $id (@{$info}) {
   my $accession = $id->[3];
   my $start = $id->[4];
   my $seq = $id->[5];
+  my $parsed = $id->[6];
+  my $output = $id->[7];
+  $parsed =~ s/\s+//g;
+  my $parsedlength = length($parsed);
+  my $seqlength = length($seq);
+  print "The parsed length is: $parsedlength and sequence is $seqlength\n";
+  next if ($parsedlength == $seqlength);
   my $data = ">tmp
 $seq
 ";

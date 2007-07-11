@@ -1096,3 +1096,4 @@ sub Print_Template_Error {
     my $string = $err->as_string();
     print $string;
 }
+
