@@ -147,7 +147,7 @@ sub MyConnect {
   $dbh->{InactiveDestroy}      = 1;
 
   my $retry_count = 0;
-  if ( $dbh->errstr =~ /(?:lost connection|mysql server has gone away)/i ) {
+  if ( defined($dbh->errstr) and $dbh->errstr =~ /(?:lost connection|mysql server has gone away)/i ) {
       my $success = 0;
       while ($retry_count < 30 and $success == 0) {
 	  $retry_count++;

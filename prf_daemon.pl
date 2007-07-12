@@ -32,6 +32,7 @@ GetOptions(
   ## Import it and then fold it.
   'blast:s'       => \$conf{blast},
   'makeblast'     => \$conf{makeblast},           ## Create a local blast database from the genome
+  'optimize:s'    => \$conf{optimize},            ## Use mysql to optimize a table
   'species:s'     => \$conf{species},
   'copyfrom:s'    => \$conf{copyfrom},            ## Another database from which to copy the genome table
   'import:s'      => \$conf{import_accession},    ## A single accession to import
@@ -120,6 +121,11 @@ if ( defined( $config->{help} ) ) {
 
 if ( defined( $config->{makeblast} ) ) {
   Make_Blast();
+  exit(0);
+}
+
+if (defined($config->{optimize})) {
+  Optimize($config->{optimize});
   exit(0);
 }
 
@@ -754,6 +760,12 @@ sub Make_Jobs {
 	    $template->process( $input_file, $vars, $output_file ) or die $template->error();
 	}
     }
+}
+
+sub Optimize {
+ my $table = shift;
+ my $stmt = qq(OPTiMIZE TABLE $table);
+ $db->Execute($stmt);
 }
 
 sub CLEANUP {
