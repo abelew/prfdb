@@ -193,11 +193,25 @@ sub Print_MFE_Z {
     my $seqlength = $cgi->param('seqlength');
     my $pknot = $cgi->param('pknot');
     $mfe = sprintf('%.0f', $mfe);
-    my $mfe_plus = $mfe + 0.9;
-    my $mfe_minus = $mfe - 0.9;
     $z = sprintf('%.0f', $z);
-    my $z_plus = $z + 0.5;
-    my $z_minus = $z - 0.5;
+    my $mfe_plus_factor;
+    my $mfe_minus_factor;
+    if ($species eq 'homo_sapiens') {
+	$mfe_plus_factor = 1.0;
+	$mfe_minus_factor = 1.0;
+    }
+    elsif ($species eq 'mus_musculus') {
+	$mfe_plus_factor = 0.8;
+	$mfe_minus_factor = 0.8;
+    }
+    else {
+	$mfe_plus_factor = 0.5;
+	$mfe_minus_factor = 0.3;
+    }
+    my $mfe_plus = $mfe + $mfe_plus_factor;
+    my $mfe_minus = $mfe - $mfe_minus_factor;
+    my $z_plus = $z + 0.3;
+    my $z_minus = $z - 0.3;
     my ($stmt, $stuff);
     if ($species eq 'all') {
 	if (defined($pknot) and $pknot == 1) {
