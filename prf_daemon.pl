@@ -686,12 +686,25 @@ sub Check_Sequence_Length {
   close(IN);
   ## CLOSE IN in Check_Sequence Length
   my $current_length = scalar(@out);
+  $sequence = uc($sequence);
   if ( !defined($sequence) or $sequence eq '' ) {
     return ('null');
   }
-  if ( $sequence =~ /^a+$/ ) {
+  if ( $sequence =~ /^A+$/ ) {
     return ('polya');
-  } elsif ( $sequence =~ /aaaaaaa$/ and $sequence_length < $wanted_sequence_length ) {
+  } elsif ($sequence =~ /^A+C+UCG+$/) {
+    return('polya');
+  } elsif ($sequence =~ /^A+U+$/) {
+    return('polya');
+  } elsif ($sequence =~ /^A+C+UGAG$/) {
+    return('polya');
+  } elsif ($sequence =~ /^A+U+A+$/) {
+    return('polya');
+  } elsif ($sequence =~ /^A+C{3,}G+$/) {
+    return('polya');
+  } elsif ($sequence =~ /^A+CCCUCG+$/) {
+    return('polya');
+  } elsif ( $sequence =~ /AAAAAAAA$/ and $sequence_length < $wanted_sequence_length ) {
     return ('polya');
   } elsif ( $sequence_length > $wanted_sequence_length ) {
 #    open( OUT, ">$filename" ) or die("Could not open $filename $!");
