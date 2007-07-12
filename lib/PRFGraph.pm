@@ -51,11 +51,20 @@ sub Make_Cloud {
     }
 
     my $graph = new GD::Graph::points('800','800');
-
-    my $mfe_min_value = -80;
-    my $mfe_max_value = 5;
+    my $db = new PRFdb;
+    my ($mfe_min_value, $mfe_max_value);
+    if ($species = 'all') {
+	$mfe_min_value = $db->MySelect({statement => qq/SELECT min(mfe) FROM mfe/, type => 'single'});
+	$mfe_max_value = $db->MySelect({statement => qq/SELECT max(mfe) FROM mfe/, type => 'single'});
+}
+    else {
+	$mfe_min_value = $db->MySelect({statement => qq/SELECT min(mfe) FROM mfe WHERE species = '$species'/, type => 'single'});
+	$mfe_max_value = $db->MySelect({statement => qq/SELECT max(mfe) FROM mfe WHERE species = '$species'/, type => 'single'});
+    }
+    $mfe_min_value -= 3.0;
+    $mfe_max_value += 3.0;
     my $z_min_value = -10;
-    my $z_max_value = 10;
+    my $z_max_value = 5;
     $graph->set(
 		bgclr => 'white',
 
@@ -89,7 +98,6 @@ sub Make_Cloud {
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $fun = [[-100,-100,-100],[0,0,0]];
     my $gd = $graph->plot($fun,) or die ($graph->error);
-    #$gd = GD::Image->TrueColor(1);
     my $black = $gd->colorResolve(0,0,0);
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);
