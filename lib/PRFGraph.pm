@@ -5,6 +5,7 @@ use DBI;
 use PRFConfig qw / PRF_Error PRF_Out /;
 use PRFdb;
 use GD::Graph::mixed;
+use GD::Graph::pie;
 use GD::SVG;
 use Statistics::Basic::Mean;
 use Statistics::Basic::Variance;
@@ -34,6 +35,21 @@ sub Make_Cloud {
     my $averages = shift;
     my $filename = shift;
     my $url = shift;
+    my $extra_args = shift;
+
+    my $seqlength;
+    if (defined($extra_args->{seqlength})) {
+	$seqlength = $extra_args->{seqlength};
+    }
+    else {
+	$seqlength = $config->{seqlength};
+    }
+
+    my $pknot = undef;
+    if (defined($extra_args->{pknot}) and $extra_args->{pknot} == 1) {
+	$pknot = 1;
+    }
+
     my $graph = new GD::Graph::points('800','800');
 
     my $mfe_min_value = -80;
@@ -78,6 +94,7 @@ sub Make_Cloud {
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);
     my $gb = $gd->colorResolve(0,97,97);
+    my $darkslategray = $gd->colorAllocate(165,165,165);
     my $axes_coords = $graph->get_feature_coordinates('axes');
     my $left_x_coord = $axes_coords->[1];
     my $top_y_coord = $axes_coords->[2];
@@ -88,14 +105,23 @@ sub Make_Cloud {
     my $mfe_range = $mfe_max_value - $mfe_min_value;
     my $z_range = $z_max_value - $z_min_value;
 
+    my $average_mfe_coord = sprintf("%.1f",((($x_range/$mfe_range)*($averages->[0] - $mfe_min_value)) + $left_x_coord));
+    my $average_z_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $averages->[1])) + $bottom_y_coord));
+    my $mfe_significant = $averages->[0] - $averages->[2];
+    my $z_significant = $averages->[1] - $averages->[3];
+    my $mfe_significant_coord = sprintf("%.1f", ((($x_range/$mfe_range)*($mfe_significant - $mfe_min_value)) + $left_x_coord));
+    my $z_significant_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $z_significant)) + $bottom_y_coord));
+
     my $points = {};
     my $max_counter = 1;
+
     foreach my $point (@{$data}) {
 	my $x_point = sprintf("%.1f",$point->[0]);
 	my $y_point = sprintf("%.1f",$point->[1]);
 	#print "MFE_value: $x_point Zscore: $y_point<br>\n";
 	if ( defined($points->{$x_point}->{$y_point})) {
 	    $points->{$x_point}->{$y_point}->{count}++;
+	    $points->{$x_point}->{$y_point}->{knotted} += $point->[3];
 	    if ( $max_counter < $points->{$x_point}->{$y_point}->{count} ) {
 		$max_counter = $points->{$x_point}->{$y_point}->{count};
 	    }
@@ -103,16 +129,23 @@ sub Make_Cloud {
 	else {
 	    $points->{$x_point}->{$y_point}->{count} = 1;
 	    $points->{$x_point}->{$y_point}->{accession} = $point->[2];
+	    $points->{$x_point}->{$y_point}->{knotted} = $point->[3];
 	}
     }
 
-    my $average_mfe_coord = sprintf("%.1f",((($x_range/$mfe_range)*($averages->[0] - $mfe_min_value)) + $left_x_coord));
-    my $average_z_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $averages->[1])) + $bottom_y_coord));
+    my $pie_numbers = {
+	total => 0,
+	num_pknots => 0,
+	num_significant => 0,
+	num_significant_pknots => 0,
+    };
     my $tmp_filename = $filename;
     open(MAP, ">${tmp_filename}.map");
     foreach my $x_point (keys %{$points}) {
 	my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 	foreach my $y_point (keys %{$points->{$x_point}}) {
+	    $pie_numbers->{total} += $points->{$x_point}->{$y_point}->{count};
+	    $pie_numbers->{num_pknots} += $points->{$x_point}->{$y_point}->{knotted};
 	    my $accession = $points->{$x_point}->{$y_point}->{accession};
 	    my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
 	    my $counter = $points->{$x_point}->{$y_point}->{count};
@@ -123,6 +156,10 @@ sub Make_Cloud {
 	    # print "X: $x_coord Y: $y_coord AVGX: $average_mfe_coord AVGY: $average_z_coord CV: $color_value";
 	    if ( ($x_coord < $average_mfe_coord) and ($y_coord > $average_z_coord) ) {
 		$color = $gd->colorResolve($color_value,0,0);
+		if (($x_coord < $mfe_significant_coord) and ($y_coord > $z_significant_coord)) {
+		    $pie_numbers->{num_significant} += $counter;
+		    $pie_numbers->{num_significant_pknots} += $points->{$x_point}->{$y_point}->{knotted};
+		}
 		# print " C: red<br>\n";
 	    } elsif ( $x_coord < $average_mfe_coord ) {
 		$color = $gd->colorResolve(0,$color_value,0);
@@ -140,19 +177,58 @@ sub Make_Cloud {
 	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 4);
 	    $x_coord = sprintf('%.0f', $x_coord);
 	    $y_coord = sprintf('%.0f', $y_coord);
-	    my $string = qq(point ${url}/mfe_z?species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
-	    print MAP $string;
-	}
-    }
+	    my $image_map_string;
+	    if (defined($pknot)) {
+		$image_map_string =  qq(point ${url}/mfe_z?pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+	    }
+	    else {
+		$image_map_string = qq(point ${url}/mfe_z?seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+	    }
+	    print MAP $image_map_string;
+	} ## Foreach y point
+    } ## Foreach x point
     close MAP;
     $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
+
     $gd->filledRectangle($left_x_coord+1, $average_z_coord, $right_x_coord-1, $average_z_coord+1, $black);
-    $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
+
+    $gd->filledRectangle($mfe_significant_coord, $z_significant_coord, $mfe_significant_coord, $top_y_coord, $darkslategray);
+    $gd->filledRectangle($left_x_coord, $z_significant_coord, $mfe_significant_coord, $z_significant_coord, $darkslategray);
+    ### FIXME:  The 'top_y_coord' is actually the bottom.
+
+    Make_Pie($pie_numbers, $filename);
+
     open (IMG, ">$filename") or die "error opening $filename to write image: $!";
     binmode IMG;
     print IMG $gd->png;
     close IMG;
     return($points);
+}
+
+sub Make_Pie {
+    my $data = shift;
+    my $filename = shift;
+    $filename =~ s/\.png//g;
+    $filename .= "-pie.png";
+    my $graph = new GD::Graph::pie(300, 300);
+    my $num_insig = $data->{total} - $data->{num_significant};
+    my $num_sig_noknot = $data->{num_significant} - $data->{num_significant_pknots};
+    my $num_sig_knot = $data->{num_significant_pknots};
+
+    my @pie = (['Insignificant', 'Significant, no pseudo', 'Significant, pseudoknot'],
+	       [ $num_insig,       $num_sig_noknot,        $num_sig_knot],);
+    $graph->set(
+	title           => "A pie chart",
+	axislabelclr    => 'black',
+	'3d'            => 1,
+	start_angle     => 90,
+	suppress_angle => 5,
+	) or warn $graph->error;
+    my $fun = $graph->plot(\@pie) or die $graph->error;
+    open (IMG, ">$filename") or die "error opening $filename to write image: $!";
+    binmode IMG;
+    print IMG $fun->png;
+    close IMG;
 }
 
 sub Make_Landscape {

@@ -190,6 +190,8 @@ sub Print_MFE_Z {
     my $mfe = $cgi->param('mfe');
     my $z = $cgi->param('z');
     my $species = $cgi->param('species');
+    my $seqlength = $cgi->param('seqlength');
+    my $pknot = $cgi->param('pknot');
     $mfe = sprintf('%.0f', $mfe);
     my $mfe_plus = $mfe + 0.9;
     my $mfe_minus = $mfe - 0.9;
@@ -198,14 +200,24 @@ sub Print_MFE_Z {
     my $z_minus = $z - 0.5;
     my ($stmt, $stuff);
     if ($species eq 'all') {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	if (defined($pknot) and $pknot == 1) {
+	    $stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	}
+	else {
+	    $stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	}
 	$stuff = $db->MySelect({
 	    statement => $stmt,
 	    vars => [$mfe_minus,$mfe_plus,$z,$z_plus],
 	});
-    }
+    } ## End if species is 'all'
     else {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = ? AND mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	if (defined($pknot) and $pknot == 1) {
+	    $stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.species = ? AND mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	}
+	else {
+	    $stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.species = ? AND mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	}
 	$stuff = $db->MySelect({
 	    statement => $stmt,
 	    vars => [$species,$mfe_minus,$mfe_plus,$z_minus,$z_plus],
@@ -1018,10 +1030,13 @@ sub Cloud {
     my @filters = $cgi->param('cloud_filters');
     my $cloud = new PRFGraph();
 
+    my $pknots_only = undef;
+
     my $suffix = undef;
     foreach my $filter (@filters) {
 	if ($filter eq 'pseudoknots only') {
 	    $suffix .= "-pknot";
+	    $pknots_only = 1;
 	}
 	elsif ($filter eq 'coding sequence only') {
 	    $suffix .= "-cs";
@@ -1034,8 +1049,8 @@ sub Cloud {
     if (!-f $cloud_output_filename) {
 	my ($points_stmt, $averages_stmt, $points, $averages);
 	if ($species eq 'all') {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
-	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 	    foreach my $filter (@filters) {
 		if ($filter eq 'pseudoknots only') {
 		    $points_stmt .= "mfe.knotp = '1' AND ";
@@ -1052,8 +1067,8 @@ sub Cloud {
 	    $averages = $db->MySelect({statement =>$averages_stmt, type => 'row',});
 	}
 	else {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
-	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 
 	    foreach my $filter (@filters) {
 		if ($filter eq 'pseudoknots only') {
@@ -1074,7 +1089,17 @@ sub Cloud {
 		vars => [$species],
 		type => 'row', });
 	}
-	my $cloud_data = $cloud->Make_Cloud($species, $points, $averages, $cloud_output_filename, $base);
+
+	my $cloud_data;
+	if (defined($pknots_only)) {
+	    $cloud_data = $cloud->Make_Cloud($species, $points, 
+					     $averages, $cloud_output_filename, $base,
+					     {pknot => 1});
+	}
+	else {
+	    $cloud_data = $cloud->Make_Cloud($species, $points,
+					     $averages, $cloud_output_filename, $base);
+	}
     }
     $vars->{species} = $species;
     $vars->{cloud_file} = $cloud_output_filename;
