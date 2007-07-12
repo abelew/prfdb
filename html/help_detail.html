@@ -1,0 +1,53 @@
+<table align="center" width="100%" border="0" cellspacing="2" cellpadding="2">
+<tr align="left" valign="top">
+ <td width="15%"></td>
+ <td width="70%">
+ <p>
+  Most information is kept on the 'detail' page.  Once a particular
+  gene and putative PRF site has been chosen, it is possible to view
+  some more specific information about that PRF signal here.<br>
+  Each group of information concerns one folding performed for the
+  given PRF signal.  Thus we see once again the gene's name, species,
+  accession, and position.<br>
+  The 'algorithm' field specifies which minimum free energy folding
+  program was used to fold this specific sequence window.<br>
+  'Barcode' provides a shorthand notation to quickly identify how many
+  stems exist in the putative secondary structure and how they are
+  oriented.  In this notation, a simple stem is '11' and a H-type
+  pseudoknot is '1212'.<br>
+  'Sequence length' and 'Slippery site' provide some information about
+  the context of the given sequence window.<br>
+  'Base pairs' and 'MFE' show the measurements provided by the mimimum
+  free energy heuristics of the given prediction algorithm.<br>
+  'Z score,' 'Randomized Mean MFE,' and 'PPCC' provide some
+  statistical information about how this particular sequence window
+  compares to a distribution of randomized sequences folded in a
+  similar fashion.<br>
+  'Z score' is defined as (Actual mfe - the mean mfe of the randomized
+  sequences) / the standard deviation of the randomized sequences.
+  As a result, the more negative a given Z score is, the more
+  interesting it should prove.<br>
+  PPCC is a measurement which can give a sense of how likely the Z
+  score is to be useful.  A Z score assumes its data is normally
+  distributed.  The PPCC provides a measurement of how close to
+  'normal' a given set of values actually is.<br>
+  These last few fields are summarized in the graph on the right side
+  of the table.  This bar graph shows a series of 'bins' and what
+  percentage of the randomized sequences have minimum free energies
+  falling into each 'bin.'  A red line provides a guide to how many
+  entries one would expect in each bin if the minimum free energy
+  values were normally distributed.  The green line shows where on
+  this distribution the actual minimum free energy lies.  If the
+  actual MFE is more negative than the mean of the distribution of
+  random values, that is a good sign for the significance of the
+  putative PRF signal.<br>
+  Below this graph lies a sequence view, and a few ways to visualize
+  the putative mRNA secondary structure, including a bracket notation,
+  a numeric stem diagram, and a linear feynman image.<br>
+
+
+
+ </td>
+ <td width="15%"></td>
+</tr>
+</table>

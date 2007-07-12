@@ -3,91 +3,42 @@
  <td width="15%"></td>
  <td width="70%">
  <p>
-  The computational <a href="[% base %]/html/pipeline.png">pipeline</a>
-  used by the PRFdb performs a series of filtration steps:
- </p>
- <p>
-  <ol>
-    <li>
-    Genomic sequences are imported into the database.  These must
-    contain a defined start and stop.  Most of these sequences were
-    provided by either the <a href="http://yeastgenome.org">
-    <i>Saccharomyces</i> Genome Database</a> or
-    <a href="http://mgc.nci.nih.gov/">The Mammalian Gene
-    Collection</a>.  Sequences may also be imported from Genbank as
-    long as they contain a 'CDS' feature with the start and stop
-    positions defined.
-    </li>
-    <li>
-    A simple pattern match is performed to find sequence windows
-    which have slippery heptamers in the correct reading frame.
-    </li>
-    <li>
-    Each remaining sequence window is scanned using <i>rnamotif</i>
-    <font size="-1"><a href="#rnamotif"><sup>1</sup></a></font>
-    for base patterns which have the potential to form a pseudoknot.
-    </li>
-    <li>
-    Sequence windows are folded <i>in silico</i> using
-    one or more minimum free energy secondary structure algorithms.
-    <a href="#secondary"><font size="-1"><sup>2,3,4</sup></font></a>
-    The output from these programs is saved.
-    </li>
-    <li>
-    Each sequence window is then randomized using one or more
-    randomization algorithms including: (Shuffling, shuffle with maintenance of
-    dinucleotides, amino acids, etc.  The resulting random sequences
-    are refolded, the resulting putative minimum free energies are
-    stored and used to generate a z-score to compare against the
-    putative minimum free energy of the initial folding.
-    </li>
-    <li>
-    A 'minimum free energy' landscape may be generated for the entire
-    sequence.  To do so, multiple Mfe folding algorithms are passed
-    over the entire sequence in overlapping windows, the resulting
-    minimum free energies are stored and used to generate a graph upon
-    which may be plotted the position of a given slippery heptamer.
-    </li>
-    <li>
-    All data is saved in a relational database.
-    </li>
-    <li>
-    Sequences which are of interest may then be taken and studied in
-    the laboratory.
-    </li>
- </p>
+ <font size="+2">Topics</font>
+ <ul>
+ <li>
+  The PRFdb <a href="[% base %]/help_pipeline">pipeline</a>.
+ </li>
+ <li>
+  The <a href="[% base %]/help_main">main page</a>.
+ </li>
+ <li>
+  <a href="[% base %]/help_search">Search interface</a>.
+ </li>
+ <li>
+  Looking at a <a href="[% base %]/help_genome">single gene</a>.
+ </li>
+ <li>
+  Looking at a <a href="[% base %]/help_detail">single PRF signal</a>.
+ </li>
+ <li>
+  <a href="[% base %]/help_import">Importing Sequences</a>.
+ </li>
+ <li>
+  <a href="[% base %]/help_filter">Filtering the PRFdb</a>.
+ </li>
+ <li>
+  <a href="[% base %]/help_download">Downloading information</a>.
+ </li>
+ <li>
+  The <a href="[% base %]/help_cloud">cloud</a>.
+ </li>
+ <li>
+  Using <a href="[% base %]/help_blast">BLAST</a> in the PRFdb.
+ </li>
+ <li>
+  The <a href="[% base %]/help_landscape">landscape</a>.
+ </li>
 
- <hr>
- <ol>
 
- <a name="rnamotif"></a>
-  <li>
-  T. Macke, D. Ecker, R. Gutell, D. Gautheret, D.A. Case and R. Sampath.
-  RNAMotif -- A new RNA secondary structure definition and discovery
-  algorithm. <i>Nucl. Acids Res.</i>
-  <b> 29,</b> 4724-4735 (2001).
-  </li>
-
-  <a name="#secondary"></a>
-  <li>
-  Rivas E., Eddy S.R. A dynamic programming algorithm for RNA
-  structure prediction including pseudoknots.  <i>J. Mol. Biol.</i>
-   <b> 285,</b> 2053-2068 (1999).
-  </li>
-  <li>
-  Dirks, R.M. and Pierce, N.A.  A partition function algorithm
-  for nucleic acid secondary structure including
-  pseudoknots. <i>J. Comput. Chem.</i>
-   <b>24,</b>1664&#150;1677. (2001)
-  </li>
-  <li>
-  Ren J., Rastegari B., Condon A., Hoos H.H. HotKnots: heuristic
-  prediction of RNA secondary structures including
-  pseudoknots. <i>RNA.</i>
-   <b> 11:</b> 1494-1504 (2005).
-  </li>
-
- </td>
- <td width="15%"></td>
 </tr>
 </table>

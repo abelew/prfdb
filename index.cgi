@@ -74,7 +74,12 @@ sub MAIN {
     if ( $path eq '/start' or $path eq '' ) {
 	Print_Index();
     } elsif ($path eq '/help') {
-	Print_Help();
+	$template->process('help.html', $vars) or
+	    Print_Template_Error($template), die;
+    } elsif ($path =~ /^\/help_(\w+$)/) {
+	my $helpfile = qq(help_${1}.html);
+	$template->process($helpfile, $vars) or
+	    Print_Template_Error($template), die;
     } elsif ($path eq '/mfe_z') {
 	Print_MFE_Z();
     } elsif ( $path eq '/download' ) {
@@ -178,11 +183,6 @@ sub Print_Cloudform {
 					-values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','all']);
 
     $template->process( 'cloudform.html', $vars ) or
-	Print_Template_Error($template), die;
-}
-
-sub Print_Help {
-    $template->process('help.html', $vars) or
 	Print_Template_Error($template), die;
 }
 
