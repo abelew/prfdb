@@ -2,7 +2,7 @@ package RNAMotif_Search;
 use strict;
 use lib '.';
 use PRFdb;
-use Template;
+#use Template;
 use PRFConfig qw / PRF_Error PRF_Out /;
 my $config = $PRFConfig::config;
 my %slippery_sites = (
