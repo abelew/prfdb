@@ -79,7 +79,7 @@ $PRFConfig::config->{stem2_spacer_min}     = 0;
 $PRFConfig::config->{stem2_spacer_max}     = 100;
 $PRFConfig::config->{using_pbs}            = 0;
 $PRFConfig::config->{pbs_template}         = 'pbs_template';
-$PRFConfig::config->{pbs_arches}           = 'aix4 irix6 linux';
+$PRFConfig::config->{pbs_arches}           = 'aix4 irix6 linux-ia64';
 $PRFConfig::config->{pbs_shell}            = '/bin/sh';
 $PRFConfig::config->{pbs_memory}           = '1600';
 $PRFConfig::config->{pbs_cpu}              = '1';
@@ -100,6 +100,7 @@ $PRFConfig::config->{rmprune}       = 'rmprune';
 $PRFConfig::config->{pknots}        = 'pknots';
 $PRFConfig::config->{hotknots}      = 'HotKnot';
 $PRFConfig::config->{nupack}        = 'Fold.out';
+$PRFConfig::config->{zcat}          = 'zcat';
 $PRFConfig::config->{nupack_boot}   = 'Fold.out.boot';
 $PRFConfig::config->{sql_id}        = 'int not null auto_increment';
 $PRFConfig::config->{sql_species}   = 'varchar(80)';
@@ -172,31 +173,19 @@ if ( $PRFConfig::config->{arch_specific_exe} == 1 ) {
   } elsif ( $arch =~ /AIX/ ) {
     $ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{workdir} . '/aix';
   }
+
   foreach my $exe (@modified_exes) {
-    my $dirvar = $exe . '_dir';
     if ( $arch =~ /IRIX/ ) {
-      my $dir = $PRFConfig::config->{$dirvar};
-      $dir .= '/irix';
-      $PRFConfig::config->{$dirvar} = $dir;
-      my $exe_path = join( '', $dir, '/', $PRFConfig::config->{$exe} );
+      my $exe_path = join('', $PRFConfig::config->{workdir} , '/irix/', $PRFConfig::config->{$exe});
       $PRFConfig::config->{$exe} = $exe_path;
     } elsif ( $arch =~ /AIX/ ) {
-      my $dir = $PRFConfig::config->{$dirvar};
-      $dir .= '/aix';
-      $PRFConfig::config->{$dirvar} = $dir;
-      my $exe_path = join( '', $dir, '/', $PRFConfig::config->{$exe} );
+      my $exe_path = join('', $PRFConfig::config->{workdir} , '/aix/', $PRFConfig::config->{$exe});
       $PRFConfig::config->{$exe} = $exe_path;
     } elsif ( $arch =~ /Darwin/ ) {
-      my $dir = $PRFConfig::config->{$dirvar};
-      $dir .= '/osx';
-      $PRFConfig::config->{$dirvar} = $dir;
-      my $exe_path = join( '', $dir, '/', $PRFConfig::config->{$exe} );
+      my $exe_path = join('', $PRFConfig::config->{workdir} , '/osx/', $PRFConfig::config->{$exe});
       $PRFConfig::config->{$exe} = $exe_path;
     } elsif ( $arch =~ /Linux/ ) {
-      my $dir = $PRFConfig::config->{$dirvar};
-      $dir .= '/linux';
-      $PRFConfig::config->{$dirvar} = $dir;
-      my $exe_path = join( '', $dir, '/', $PRFConfig::config->{$exe} );
+      my $exe_path = join('', $PRFConfig::config->{workdir} , '/linux/', $PRFConfig::config->{$exe});
       $PRFConfig::config->{$exe} = $exe_path;
     } else {
       die("Architecture $arch not available.");
