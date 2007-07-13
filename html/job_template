@@ -1,3 +1,3 @@
 #PBS -S [% pbs_shell %] -l pvmem=[% pbs_memory %]mb,ncpus=[% pbs_cpu %],cput=[% pbs_cput %],arch=[% pbs_arch %] -N [% pbs_name %]
-cd [% prefix %]
-[% perl %] -I [% incdir %] [% daemon_name %] [% job_num %]
+cd [% base %]
+[% perl %] -I [% incdir %] [% base %]/[% daemon_name %] [% job_num %] 2>[% base %]/outputs/[% pbs_arch %]_[% job_num %] 1>&2
