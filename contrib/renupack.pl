@@ -1,13 +1,22 @@
 #! /usr/bin/perl -w
 use strict;
 use lib '../lib';
+use PRFConfig;
 use PRFdb;
 use RNAFolders;
 
-my $db     = new PRFdb;
+$SIG{INT} = 'CLEANUP';
+$SIG{BUS} = 'CLEANUP';
+$SIG{SEGV} = 'CLEANUP';
+$SIG{PIPE} = 'CLEANUP';
+$SIG{ABRT} = 'CLEANUP';
+$SIG{QUIT} = 'CLEANUP';
+
+our $config = $PRFConfig::config;
+our $db     = new PRFdb;
 my $parser = new PkParse();
 my $start_mfe_id = $ARGV[0];
-my $default = 199563;
+my $default = 206163;
 $start_mfe_id = $default unless (defined($start_mfe_id));
 
 my $select = qq(SELECT id,genome_id,species,accession,start,sequence,parsed,output FROM mfe WHERE algorithm = 'nupack' and id > '$start_mfe_id' ORDER BY id);
@@ -47,7 +56,18 @@ $seq
   my ( $cp, $cf, $cl ) = caller();
   $db->Execute($update, [], [$cp,$cf,$cl]);
   print "Completed $mfe_id\n";
-  unlink($inputfile);
+  PRFdb::RemoveFile($inputfile);
 }
 
 
+
+sub CLEANUP {
+    $db->Disconnect();
+    PRFdb::RemoveFile('all');
+    print "\n\nCaught Fatal signal.\n\n";
+}
+
+END {
+    $db->Disconnect();
+    PRFdb::RemoveFile('all');
+}
