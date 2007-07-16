@@ -16,7 +16,7 @@ our $config = $PRFConfig::config;
 our $db     = new PRFdb;
 my $parser = new PkParse();
 my $start_mfe_id = $ARGV[0];
-my $default = 206163;
+my $default = 206246;
 $start_mfe_id = $default unless (defined($start_mfe_id));
 
 my $select = qq(SELECT id,genome_id,species,accession,start,sequence,parsed,output FROM mfe WHERE algorithm = 'nupack' and id > '$start_mfe_id' ORDER BY id);
