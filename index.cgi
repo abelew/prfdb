@@ -339,6 +339,7 @@ $structure->[8]
       );
 	my $bootlaces = $boot->Go();
 	$db->Put_Boot($bootlaces);
+	chdir($config->{base});
     }
 
     my $acc_slip         = qq/$accession-$slipstart/;
