@@ -297,11 +297,13 @@ sub Print_Detail_Slipsite {
     my $id = $structure->[0];
     my $mfe = $structure->[12];
     $vars->{mfe_id} = $structure->[0];
-    my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = ?);
+#    my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = ?);
+    my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = '$id');
     my $boot = $db->MySelect({
 	statement => $boot_stmt,
-	vars => [$id],
+#	vars => [$id],
 	type => 'row'});
+#    print "TESTME: $boot_stmt\n";
     my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $boot_db );
 
     if (!defined($boot) and $config->{do_boot} == 2) {
@@ -388,7 +390,7 @@ $structure->[8]
     }
     else {  ##Boot is not defined!
       $chart    = "undef";
-      $chartURL = "html/no_data.gif";
+      $chartURL = qq($basedir/html/no_data.gif);
       $mfe_mean = "undef";
       $mfe_sd   = "undef";
       $mfe_se   = "undef";

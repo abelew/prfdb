@@ -418,7 +418,7 @@ sub Make_Distribution{
     my @data = (\@xax, \@yax, \@dist_y, [0], );
     
     my $graph = GD::Graph::mixed->new($graph_x_size, $graph_y_size);
-    $graph->set_legend( "Random MFEs", "Normal Distribution", "Actual MFE");
+    $graph->set_legend( "Rand. MFEs", "Normal Dist.", "Actual MFE", "Mean Rand. MFE");
     $graph->set(
 		bgclr => 'white',
             types             => [ qw(bars lines lines) ],
@@ -429,7 +429,7 @@ sub Make_Distribution{
             x_labels_vertical => 1,
             x_label_skip      => 1,
             line_width => 3,
-            dclrs => [qw(blue red green)],
+            dclrs => [qw(blue red green black)],
             borderclrs => [ qw(black ) ]
     ) or die $graph->error;
 
@@ -450,10 +450,11 @@ sub Make_Distribution{
     my $x_interval = sprintf("%.1f", (($max-$min)/$num_bins) );
     my $x_interval_pixels = ( $bottom_x_coord - $top_x_coord )/($num_bins + 2);
     my $mfe_x_coord = $top_x_coord + ($x_interval_pixels) + (($real_mfe - $min) * ($x_interval_pixels/$x_interval));
-
+    my $mfe_xbar_coord = $top_x_coord + ($x_interval_pixels) + (($xbar - $min) * ($x_interval_pixels/$x_interval));
     my $green = $gd->colorAllocate(0,191,0);
     $gd->filledRectangle($mfe_x_coord, $bottom_y_coord+1 , $mfe_x_coord+1, $top_y_coord-1, $green);
-
+    my $bl = $gd->colorAllocate(0,0,0);
+    $gd->filledRectangle($mfe_xbar_coord, $bottom_y_coord+1 , $mfe_xbar_coord+1, $top_y_coord-1, $bl);
     my $filename = $me->Picture_Filename( { type => 'distribution', } );
     open(IMG, ">$filename") or die ("Unable to open $filename $!");
     binmode IMG;
