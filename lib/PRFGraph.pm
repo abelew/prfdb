@@ -415,13 +415,13 @@ sub Make_Distribution{
     }
 
     # Chart part
-    my @data = (\@xax, \@yax, \@dist_y, [0], );
+    my @data = (\@xax, \@yax, \@dist_y, [0], [0], );
     
     my $graph = GD::Graph::mixed->new($graph_x_size, $graph_y_size);
-    $graph->set_legend( "Rand. MFEs", "Normal Dist.", "Actual MFE", "Mean Rand. MFE");
+    $graph->set_legend( "Rand. MFEs", "Normal Dist.", "Actual MFE", "Mean MFE");
     $graph->set(
 		bgclr => 'white',
-            types             => [ qw(bars lines lines) ],
+            types             => [ qw(bars lines lines lines) ],
             x_label           => 'kcal/mol',
             y_label           => 'p(x)',
             y_label_skip      => 2,

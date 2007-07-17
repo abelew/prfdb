@@ -5,6 +5,8 @@
       <div align="left">[% genename %]
   [% IF short_accession %]
   <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=[% short_accession %]">SGD Link</a>
+  [% ELSIF genbank_accession %]
+  <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=[% genbank_accession %]&go=Go">GenBank Link</a>
   [% END %]
   </div>
     </td>

@@ -264,8 +264,13 @@ sub Print_MFE_Z {
 	    $vars->{short_accession} = $vars->{accession};
 	    $vars->{short_accession} =~ s/^SGDID\://g;
 	}
+        elsif ($vars->{accession} =~ /^BC/) {
+	    $vars->{short_accession} = undef;
+            $vars->{genbank_accession} = $vars->{accession};
+        }
 	$template->process('mfe_z_body.html', $vars) or
 	    Print_Template_Error($template), die;
+
     }
 }
 
@@ -516,6 +521,10 @@ sub Print_Single_Accession {
       $vars->{short_accession} = $vars->{accession};
       $vars->{short_accession} =~ s/^SGDID\://g;
   }
+  elsif ($vars->{accession} =~ /^BC/) {
+      $vars->{short_accession} = undef;
+      $vars->{genbank_accession} = $vars->{accession};
+  }
   $vars->{species}         = $datum->{species};
   $vars->{species} =~ s/_/ /g;
   $vars->{species} = ucfirst($vars->{species});
@@ -588,6 +597,10 @@ sub Print_Multiple_Accessions {
     if ($vars->{accession} =~ /^SGDID/) {
 	$vars->{short_accession} = $vars->{accession};
 	$vars->{short_accession} =~ s/^SGDID\://g;
+    }
+    elsif ($vars->{accession} =~ /^BC/) {
+	$vars->{short_accession} = undef;
+        $vars->{genbank_accession} = $vars->{accession};
     }
     $template->process( 'multimatch_body.html', $vars ) or
 	Print_Template_Error($template), die;
