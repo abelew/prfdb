@@ -237,16 +237,17 @@
   Below this graph lies a sequence view, and a few ways to visualize
   the putative mRNA secondary structure, including a bracket notation,
   a numeric stem diagram, and a linear feynman image.<br>
+<p><hr></p>
 
- <a name="help_species"></a>
  <p>
+ <a name="help_species">Species</a><br>
    The 'species' field tells just that.  Currently the only likely
    species one will see are <i>Saccharomyces cerevisiae</i>, <i>Homo
    sapiens</i>, and <i>Mus musculus</i>
  </p>
 
- <a name="help_graph"></a>
  <p>
+ <a name="help_graph">Graph</a><br>
   Every sequence window of the PRFdb is randomized using one of a few
   potential randomization strategies (shuffling, maintain nucleotide
   frequencies, maintain dinucleotide frequencies, maintain reading
@@ -264,15 +265,15 @@
   sequences.
  </p>
 
- <a name="#help_accession"></a>
  <p>
+ <a name="#help_accession">Accession</a><br>
   The accession provides the genbank or SGD accession of the given
   gene.  Clicking on the accession itself will take you back to the
   gene view.
  </p>
 
- <a name="help_position"></a>
  <p>
+ <a name="help_position">Position</a><br>
   This number defines how many bases from the beginning of the mRNA
   the actual PRF signal may be found.  In order to get a sense of
   where this is in the gene, it may be most useful to follow the
@@ -280,15 +281,15 @@
   representation of the message.
  </p>
 
- <a name="help_algorithm"></a>
  <p>
+ <a name="help_algorithm">Algorithm</a><br>
   The algorithm may be one of 'pknots,' 'nupack,' or 'hotknots.'
   These secondary structure prediction programs provide a putative
   mRNA structure as well as a putative minimum free energy.
  </p>
 
- <a name="help_barcode">
  <p>
+ <a name="help_barcode">Barcode</a><br>
    The 'barcode' is a shorthand representation of the secondary
    structureo of a given sequence window.  A sequence consisting of a
    single stem would thus show up as '11' while an H-type pseudoknot
@@ -296,33 +297,35 @@
    '121332'.
  </p>
 
- <a name="help_seqlength">
  <p>
+ <a name="help_seqlength">Sequence Length</a><br>
   The sequence lenght is usally 100 bases.  However this is
   variable in <i>Saccharomyces cerevisiae</i> sequences.
  <p>
 
- <a name="help_slipsite"></a>
+
  <p>
+ <a name="help_slipsite">Slipsite</a><br>
   There are 24 separate slippery heptamers which follow the motif
   NNNWWWH.  This field shows which heptamer is used by this sequence
   window.
  </p>
 
- <a name="help_bp"></a>
  <p>
+ <a name="help_bp">Number of Base Pairs</a><br>
   This field provides the number of bases which are paired in the
   sequence.
  </p>
 
- <a name="help_mfe"></a>
+
  <p>
+ <a name="help_mfe">MFE</a><br>
   The putative minimum free energy calculated by pknots for this
   sequence window is provided here.
  </p>
 
- <a name="help_z"></a>
  <p>
+ <a name="help_z">z score</a><br>
   The z score of a given sequence is calcuated as the difference
   between the mean mfe of the randomized sequences and the mfe of
   the given sequence divided by the standard deviation of the
@@ -330,8 +333,8 @@
   significant with respect to the randomized sequences.
  </p>
 
- <a name="help_rand_mfe"></a>
  <p>
+ <a name="help_rand_mfe">Randomized MFE</a><br>
    This field shows the mean of the randomized mfe values.  The
    standard error is reported.  It is calculated as the standard
    deviation divided by the square root of the number of iterations.
@@ -340,8 +343,8 @@
    score calculation.
  </p>
 
- <a name="help_ppcc"></a>
  <p>
+ <a name="help_ppcc">PPCC</a><br>
   PPCC stands for Probability Plot Correlation Coefficient.  This is
   calculated by taking the Correlation coefficient of an idealized
   normal distribution and the actual distribution provided by the
@@ -355,14 +358,14 @@
   to a normal distribution.
  </p>
 
- <a name="help_seq"></a>
  <p>
+ <a name="help_seq">Sequence Window</a>
   The actual sequence window folded.  You can download a fasta file of
   it to the right.
  </p>
 
- <a name="help_parens"></a>
  <p>
+ <a name="help_parens">Parens</a>
   Some MFE prediction algorithms present a parenthesis output
   shorthand where '()' describes bases taking part in stems and '{}'
   describes bases taking part in stems which are a part of a
@@ -370,13 +373,13 @@
   well as a link to download this output.
  </p>
 
- <a name="help_parsed"></a>
  <p>
+ <a name="help_parsed">Parsed</a>
   The 'parsed' output is a shorthand way to describe each stem.
  </p>
 
- <a name="help_feynman"></a>
  <p>
+ <a name="help_feynman">Feynman</a>
   A feynman diagram of this secondary structure is generated on the
   fly for each sequence window.  It is possible to download the .bpseq
   format of the secondary structure beside this image.

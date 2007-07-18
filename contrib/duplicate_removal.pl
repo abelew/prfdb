@@ -20,9 +20,10 @@ foreach my $in (@{$inf}) {
     my $fun = $db->MySelect($test_stmt);
     foreach my $f (@{$fun}) {
 	my ($final_mfe_id) = @{$f};
-	print "ID:$final_mfe_id, keeping $dup_min_id\n";
+#	print "ID:$final_mfe_id, keeping $dup_min_id\n";
 	my $del = qq(DELETE FROM mfe WHERE id = '$final_mfe_id');
-	$db->Execute($del);
+#	$db->Execute($del);
+        print "$del\n";
     }
 }
 
