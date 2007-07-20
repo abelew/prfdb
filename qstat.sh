@@ -10,5 +10,5 @@ echo "" >> ${HOME}/public_html/qstat.txt
 echo "" >> ${HOME}/public_html/qstat.txt 
 /usr/bin/chmod 644 ${HOME}/public_html/qstat.txt
 echo "The next refresh of this status will be:" >> ${HOME}/public_html/qstat.txt
-/usr/bin/at -l 2>> ${HOME}/public_html/qstat.txt 1>&2
 /usr/bin/at -f ${BASE}/qstat.sh 'now + 4 hours'
+/usr/bin/at -l 2>> ${HOME}/public_html/qstat.txt 1>&2
