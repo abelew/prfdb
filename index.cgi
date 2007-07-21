@@ -137,8 +137,13 @@ sub Print_Index {
     my $musculus_count = $db->MySelect({
 	statement => "SELECT count(id) FROM mfe WHERE species = 'mus_musculus'",
 	type => 'single'});
+    my $lastupdate_statement = qq(SELECT species, lastupdate, accession FROM mfe );
+    if (defined($config->{species_limit})) {
+	$lastupdate_statement .= qq(WHERE species = '$config->{species_limit}' );
+    }
+    $lastupdate_statement .= qq(ORDER BY lastupdate DESC LIMIT 1);
     my $lastupdate = $db->MySelect({
-	statement => "SELECT species,lastupdate,accession FROM mfe ORDER BY lastupdate DESC LIMIT 1",
+	statement => $lastupdate_statement,
 	type => 'row'});
     $vars->{cerevisiae_count} = $cerevisiae_count;
     $vars->{sapiens_count} = $sapiens_count;
