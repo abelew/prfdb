@@ -120,6 +120,11 @@ sub Make_Cloud {
     my $mfe_significant_coord = sprintf("%.1f", ((($x_range/$mfe_range)*($mfe_significant - $mfe_min_value)) + $left_x_coord));
     my $z_significant_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $z_significant)) + $bottom_y_coord));
 
+    my $mfe_2stds_significant = $averages->[0] - ($averages->[2] * 2);
+    my $mfe_2stds_significant_coord =  = sprintf("%.1f", ((($x_range/$mfe_range)*($mfe_2stds_significant - $mfe_min_value)) + $left_x_coord));
+    my $z_2stds_significant = $averages->[1] - ($averages->[3] * 2);
+    my $z_2stds_significant_coord =  = sprintf("%.1f", ((($x_range/$mfe_range)*($z_2stds_significant - $mfe_min_value)) + $left_x_coord));
+
     my $points = {};
     my $max_counter = 1;
 
@@ -202,6 +207,12 @@ sub Make_Cloud {
 
     $gd->filledRectangle($mfe_significant_coord, $z_significant_coord, $mfe_significant_coord, $top_y_coord, $darkslategray);
     $gd->filledRectangle($left_x_coord, $z_significant_coord, $mfe_significant_coord, $z_significant_coord, $darkslategray);
+
+    $gd->filledRectangle($left_x_coord, $z_2stds_significant_coord, $mfe_2stds_significant_coord,
+			 $z_2stds_significant_coord, $darkslategray);
+    $gd->filledRectangle($left_x_coord, $z_2stds_significant_coord, $mfe_2stds_significant_coord,
+			 $z_2stds_significant_coord, $darkslategray);
+
     ### FIXME:  The 'top_y_coord' is actually the bottom.
 
     Make_Pie($pie_numbers, $filename);
