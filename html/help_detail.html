@@ -21,7 +21,7 @@
 	    Saccharomyces cerevisiae</i>
 	  </td>
 	<td width="40%" rowspan="12" valign="top">
-	    <div align="left"><a href="#help_graph"><img src="http://dinmanlab.umd.edu/prfdb_beta/images/distribution/00/04/SGDID:S0004310-1995-443821.png" border="2"></a></div>
+	    <div align="left"><a href="#help_graph"><img src="[% basedir %]/images/distribution/00/04/SGDID:S0004310-1995-443821.png" border="2"></a></div>
 	    </td>
       </tr>
 
@@ -320,6 +320,12 @@
 
  <p>
  <a name="help_mfe">MFE</a><br>
+  The minimum free energy is calculated by summing the free energy
+  change associated with a group of known base pair configurations
+  including: stacking bases, GC/AU/GU base pairs, internal bulges,
+  hairpin loops, and known motifs like tetraloops.  Each secondary
+  structure prediction algorithm makes different assumptions about
+  these.<br>
   The putative minimum free energy calculated by pknots for this
   sequence window is provided here.
  </p>
@@ -367,26 +373,24 @@
  <p>
  <a name="help_parens">Parens</a>
   Some MFE prediction algorithms present a parenthesis output
-  shorthand where '()' describes bases taking part in stems and '{}'
-  describes bases taking part in stems which are a part of a
+  shorthand where '()' describes bases participating in stems and '{}'
+  describes bases participating in stems which are a part of a
   pseudoknot.  For those who prefer this output, this is provided, as
   well as a link to download this output.
  </p>
 
  <p>
  <a name="help_parsed">Parsed</a>
-  The 'parsed' output is a shorthand way to describe each stem.
+  The 'parsed' output is a shorthand way to describe each stem.  Each
+  base is either a '.' or number of a stem.
  </p>
 
  <p>
  <a name="help_feynman">Feynman</a>
-  A feynman diagram of this secondary structure is generated on the
-  fly for each sequence window.  It is possible to download the .bpseq
+  A feynman diagram of this secondary structure is generated for each
+  sequence window.  It is possible to download the .bpseq
   format of the secondary structure beside this image.
  </p>
-
- 
-
 
  </td>
  <td width="15%"></td>

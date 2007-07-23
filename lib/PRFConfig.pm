@@ -128,14 +128,20 @@ $PRFConfig::config->{x_display} = ':0';
 my $open = $appconfig->file('prfdb.conf');
 my %data = $appconfig->varlist("^.*");
 for my $config_option ( keys %data ) {
-
-  #  $PRFConfig::config->{$config_option} = $data{$config_option};
   $PRFConfig::config->{$config_option} = $data{$config_option};
   undef $data{$config_option};
 }
 
-$PRFConfig::config->{boot_mfe_algorithms} = eval( $PRFConfig::config->{boot_mfe_algorithms} );
-$PRFConfig::config->{boot_randomizers}    = eval( $PRFConfig::config->{boot_randomizers} );
+if (ref($PRFConfig::config->{boot_mfe_algorithms}) eq '') {
+    $PRFConfig::config->{boot_mfe_algorithms} = eval( $PRFConfig::config->{boot_mfe_algorithms} );
+}
+if (ref($PRFConfig::config->{boot_randomizers}) eq '') {
+    $PRFConfig::config->{boot_randomizers}    = eval( $PRFConfig::config->{boot_randomizers} );
+}
+if (ref($PRFConfig::config->{index_species}) eq '') {
+    $PRFConfig::config->{index_species} = eval($PRFConfig::config->{index_species});
+}
+
 $PRFConfig::config->{dsn} = qq(DBI:$PRFConfig::config->{database_type}:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host});
 my $err           = $PRFConfig::config->{errorfile};
 my $out           = $PRFConfig::config->{logfile};

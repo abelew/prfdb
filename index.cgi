@@ -39,6 +39,7 @@ our $vars = {
   downloadform => "$base/download",
   cloudform => "$base/cloudform",
   helpform => "$base/help",
+  seqlength => $config->{seqlength},
   submit       => $cgi->submit,
 };
 
@@ -183,10 +184,16 @@ sub Print_Cloudform {
 						  -name => 'cloud_filters',
 #						  -values => ['pseudoknots only', 'coding sequence only'],);
 						  -values => ['pseudoknots only',],);
-    $vars->{species} = $cgi->popup_menu( -name => 'species',
-					-default => ['homo_sapiens'],
-					-values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','all']);
-
+    if (defined($config->{species_limit})) {
+	$vars->{species} = $cgi->popup_menu(-name => 'species',
+					    -default => [$config->{species_limit}],
+					    -values => [$config->{species_limit}],);
+    }
+    else {
+	$vars->{species} = $cgi->popup_menu( -name => 'species',
+					     -default => ['homo_sapiens'],
+					     -values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','all']);
+    }
     $template->process( 'cloudform.html', $vars ) or
 	Print_Template_Error($template), die;
 }
@@ -661,10 +668,15 @@ sub ErrorPage {
 }
 
 sub Start_Filter {
-    my $species = $db->MySelect({
-	statement => "SELECT distinct(species) from genome", 
-	type => 'flat' });
-
+    my $species;
+    if (defined($config->{species_limit})) {
+	$species = [$config->{species_limit}];
+    }
+    else {
+	$species = $db->MySelect({
+	    statement => "SELECT distinct(species) from genome", 
+	    type => 'flat' });
+    }
   #  unshift (@{$species}, 'All');
   $vars->{startform} = $cgi->startform( -action => "$base/second_filter" );
   $vars->{filter_submit} = $cgi->submit( -name => 'second_filter', -value => 'Filter PRFdb');
