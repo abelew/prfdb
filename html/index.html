@@ -3,9 +3,10 @@
 <tr align="left" valign="top">
   <td width="20%">
     <p>
-      <i>Saccharomyces cerevisiae</i> Sequences: [% cerevisiae_count %]<br>
-      <i>Homo sapiens</i> Sequences: [% sapiens_count %]<br>
-      <i>Mus musculus</i> Sequences: [% musculus_count %]<br>
+[% FOREACH species = species_info.keys %]
+ <i><a href="[% base %]/cloud?species=[% species %]">[% species_info.$species.nicename %]</a></i> sequences: [% species_info.$species.count %]<br>
+
+[% END %]
     </p>
     <p>
       The last update was a <i>[% last_species %]</i> sequence at

@@ -128,15 +128,16 @@ sub MAIN {
 }
 
 sub Print_Index {
-    my $cerevisiae_count = $db->MySelect({
-	statement => "SELECT count(id) FROM mfe WHERE species = 'saccharomyces_cerevisiae'",
-	type => 'single'});
-    my $sapiens_count = $db->MySelect({
-	statement => "SELECT count(id) FROM mfe WHERE species = 'homo_sapiens'",
-	type => 'single'});
-    my $musculus_count = $db->MySelect({
-	statement => "SELECT count(id) FROM mfe WHERE species = 'mus_musculus'",
-	type => 'single'});
+    my %species_info = ();
+    foreach my $spec (@{$config->{index_species}}) {
+	$species_info{$spec}{count} = $db->MySelect({
+	    statement => "SELECT count(id) FROM mfe WHERE species = '$spec'",
+	    type => 'single'});
+	my $nicename = $spec;
+	$nicename =~ s/_/ /g;
+	$nicename = ucfirst($nicename);
+	$species_info{$spec}{nicename} = $nicename;	
+    }
     my $lastupdate_statement = qq(SELECT species, lastupdate, accession FROM mfe );
     if (defined($config->{species_limit})) {
 	$lastupdate_statement .= qq(WHERE species = '$config->{species_limit}' );
@@ -145,9 +146,8 @@ sub Print_Index {
     my $lastupdate = $db->MySelect({
 	statement => $lastupdate_statement,
 	type => 'row'});
-    $vars->{cerevisiae_count} = $cerevisiae_count;
-    $vars->{sapiens_count} = $sapiens_count;
-    $vars->{musculus_count} = $musculus_count;
+
+    $vars->{species_info} = \%species_info;
     $vars->{last_species} = $lastupdate->[0];
     $vars->{last_species} = ucfirst($vars->{last_species});
     $vars->{last_species} =~ s/_/ /g;
@@ -313,7 +313,6 @@ sub Print_Detail_Slipsite {
 	statement => $boot_stmt,
 #	vars => [$id],
 	type => 'row'});
-#    print "TESTME: $boot_stmt\n";
     my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $boot_db );
 
     if (!defined($boot) and $config->{do_boot} == 2) {

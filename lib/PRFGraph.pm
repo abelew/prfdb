@@ -53,7 +53,7 @@ sub Make_Cloud {
     my $graph = new GD::Graph::points('800','800');
     my $db = new PRFdb;
     my ($mfe_min_value, $mfe_max_value);
-    if ($species = 'all') {
+    if ($species eq 'all') {
 	$mfe_min_value = $db->MySelect({statement => qq/SELECT min(mfe) FROM mfe/, type => 'single'});
 	$mfe_max_value = $db->MySelect({statement => qq/SELECT max(mfe) FROM mfe/, type => 'single'});
 }

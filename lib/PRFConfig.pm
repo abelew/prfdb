@@ -31,6 +31,7 @@ $PRFConfig::config->{open_files} = [];
 $PRFConfig::config->{checks}               = 1;
 $PRFConfig::config->{add_to_path}          = "/usr/local/bin:/usr/bin";
 $PRFConfig::config->{has_modperl}          = 0;
+$PRFConfig::config->{index_species}        = ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus'];
 $PRFConfig::config->{species_limit}        = undef;
 $PRFConfig::config->{workdir}              = 'work';
 $PRFConfig::config->{blastdir}             = 'blast';
@@ -51,6 +52,7 @@ $PRFConfig::config->{arch_specific_exe}    = 0;
 $PRFConfig::config->{boot_iterations}      = 100;
 $PRFConfig::config->{boot_mfe_algorithms}  = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, };
 $PRFConfig::config->{boot_randomizers}     = { array => \&MoreRandom::ArrayShuffle, };
+$PRFConfig::config->{database_type}        = 'mysql';
 $PRFConfig::config->{db}                   = 'prfconfigdefault_db';
 $PRFConfig::config->{host}                 = 'prfconfigdefault_host';
 $PRFConfig::config->{user}                 = 'prfconfigdefault_user';
@@ -131,13 +133,13 @@ for my $config_option ( keys %data ) {
   $PRFConfig::config->{$config_option} = $data{$config_option};
   undef $data{$config_option};
 }
+
 $PRFConfig::config->{boot_mfe_algorithms} = eval( $PRFConfig::config->{boot_mfe_algorithms} );
 $PRFConfig::config->{boot_randomizers}    = eval( $PRFConfig::config->{boot_randomizers} );
-$PRFConfig::config->{dsn}                 = qq(DBI:mysql:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host});
+$PRFConfig::config->{dsn} = qq(DBI:$PRFConfig::config->{database_type}:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host});
 my $err           = $PRFConfig::config->{errorfile};
 my $out           = $PRFConfig::config->{logfile};
 my $error_counter = 0;
-
 
 $PRFConfig::config->{workdir} = $PRFConfig::config->{'base'} . '/' . $PRFConfig::config->{workdir};
 $PRFConfig::config->{blastdir} = $PRFConfig::config->{'base'} . '/' . $PRFConfig::config->{blastdir};
@@ -145,7 +147,6 @@ foreach my $dir (split(/:/, $PRFConfig::config->{add_to_path})) {
     $ENV{PATH} = $ENV{PATH} . ':' . $dir;
 }
 $ENV{PATH}    = $ENV{PATH} . ':' . $PRFConfig::config->{workdir};
-
 $ENV{BLASTDB} = qq($PRFConfig::config->{base}/blast);
 
 if ( $PRFConfig::config->{arch_specific_exe} == 1 ) {
