@@ -1177,6 +1177,9 @@ sub Cloud {
 	}
     }
     $vars->{species} = $species;
+    $vars->{nicespecies} = $species;
+    $vars->{nicespecies} =~ s/_/ /g;
+    $vars->{nicespecies} = ucfirst($vars->{nicespecies});
     $vars->{cloud_file} = $cloud_output_filename;
     $vars->{cloud_url} = $cloud_url;
     $vars->{map_url} = "$vars->{cloud_url}" . '.map'; 

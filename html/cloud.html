@@ -1,15 +1,15 @@
-<p>This is a cloud for [% species %]<br>
+<p>This is a cloud for <i>[% nicespecies %]</i><br>
 <a HREF="[% map_url %]">
   <img src="[% cloud_url %]" ismap>
 </a>
 <br>
 The x axis displays the range of putative <a href="[% base %]/help_detail#help_mfe">
-minimum free energy</a> values computed for all [% species %]
-sequences of length [% seqlength %].<br>
+minimum free energy</a> values computed for all <i>[% nicespecies %]</i>
+ sequences of length [% seqlength %].<br>
 The y axis displays the range of <a href="[% base %]/help_detail#help_z">
 z scores</a> for these same sequences.<br>
 Each dot thus represents a single (mfe, z score) in relation to all
-the others for [% species %].  The black lines delineate the mean mfe
+the others for <i>[% nicespecies %]</i>.  The black lines delineate the mean mfe
 and z score for this population.  Grey dots thus represent sequence
 windows which have less putative secondary structure than the mean
 <b>and</b> are less structured than their randomized counterparts, as

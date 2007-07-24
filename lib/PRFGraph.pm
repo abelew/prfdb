@@ -13,7 +13,6 @@ use Statistics::Basic::StdDev;
 use Statistics::Distributions;
 use Statistics::Basic::Correlation;
 
-# GD::Image->trueColor(1);
 my $config = $PRFConfig::config;
 
 sub new {
@@ -25,6 +24,7 @@ sub new {
   foreach my $key (%{$arg}) {
       $me->{$key} = $arg->{$key};
   }
+#  $me->{true} = GD::Image->trueColor(1);
   return ($me);
 }
 
@@ -102,7 +102,7 @@ sub Make_Cloud {
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);
     my $gb = $gd->colorResolve(0,97,97);
-    my $darkslategray = $gd->colorAllocate(165,165,165);
+    my $darkslategray = $gd->colorResolve(165,165,165);
     my $axes_coords = $graph->get_feature_coordinates('axes');
     my $left_x_coord = $axes_coords->[1];
     my $top_y_coord = $axes_coords->[2];
@@ -122,7 +122,7 @@ sub Make_Cloud {
 
     my $mfe_2stds_significant = $averages->[0] - ($averages->[2] * 2);
     my $mfe_2stds_significant_coord = sprintf("%.1f", ((($x_range/$mfe_range)*($mfe_2stds_significant - $mfe_min_value)) + $left_x_coord));
-    my $z_2stds_significant = $averages->[1] - $averages->[3] - $averages->[3];
+    my $z_2stds_significant = $averages->[1] - ($averages->[3] * 2);
     my $z_2stds_significant_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $z_2stds_significant)) + $bottom_y_coord));
 
     my $points = {};
@@ -187,7 +187,10 @@ sub Make_Cloud {
 		$color = $gd->colorResolve(254,191,191);
 		# print " C: pink<br>\n";
 	    }
+	    ##   filledArc(x,  y,  width, height, start degrees, end degrees, color, type)
+#	    $gd->setAntiAliased($color);
 	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 4);
+#	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, gdAntiAliased, 4);
 	    $x_coord = sprintf('%.0f', $x_coord);
 	    $y_coord = sprintf('%.0f', $y_coord);
 	    my $image_map_string;
