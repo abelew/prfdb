@@ -153,7 +153,7 @@ sub Make_Cloud {
 	num_significant_pknots => 0,
     };
     my $tmp_filename = $filename;
-    open(MAP, ">${tmp_filename}.map");
+
     foreach my $x_point (keys %{$points}) {
 	my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 	foreach my $y_point (keys %{$points->{$x_point}}) {
@@ -191,16 +191,53 @@ sub Make_Cloud {
 	    $x_coord = sprintf('%.0f', $x_coord);
 	    $y_coord = sprintf('%.0f', $y_coord);
 	    my $image_map_string;
-	    if (defined($pknot)) {
-		$image_map_string =  qq(point ${url}/mfe_z?pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
-	    }
-	    else {
-		$image_map_string = qq(point ${url}/mfe_z?seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
-	    }
-	    print MAP $image_map_string;
 	} ## Foreach y point
     } ## Foreach x point
+
+
+    open(MAP, ">${tmp_filename}.map");
+    my $image_map_string;
+    if ($extra_args->{slipsites} eq 'all') {
+	foreach my $x_point (keys %{$points}) {
+	    my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
+	    foreach my $y_point (keys %{$points->{$x_point}}) {
+		my $accession = $points->{$x_point}->{$y_point}->{accession};
+		my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
+		$x_coord = sprintf('%.0f', $x_coord);
+		$y_coord = sprintf('%.0f', $y_coord);
+		if (defined($pknot)) {
+		    $image_map_string =  qq(point ${url}/mfe_z?pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+		}
+		else {
+		    $image_map_string = qq(point ${url}/mfe_z?seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+		}
+		print MAP $image_map_string;
+	    }
+	}
+    }
+    else {
+	foreach my $point (@{$data}) {
+	    my $x_point = sprintf("%.1f",$point->[0]);
+	    my $y_point = sprintf("%.1f",$point->[1]);
+	    my $slipsite = $point->[4];
+	    if ($extra_args->{slipsites} eq $slipsite) {
+		my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
+		my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
+		$x_coord = sprintf('%.0f', $x_coord);
+		$y_coord = sprintf('%.0f', $y_coord);
+		$gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $black, 4);
+		if (defined($pknot)) {
+		    $image_map_string =  qq(point ${url}/mfe_z?slipsite=$extra_args->{slipsites}&pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+		}
+		else {
+		    $image_map_string = qq(point ${url}/mfe_z?slipsite=$extra_args->{slipsites}&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+		}
+		print MAP $image_map_string;
+	    }
+	}
+    }
     close MAP;
+
     $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
 
     $gd->filledRectangle($left_x_coord+1, $average_z_coord, $right_x_coord-1, $average_z_coord+1, $black);

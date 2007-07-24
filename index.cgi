@@ -180,6 +180,17 @@ sub Print_Import_Form {
 
 sub Print_Cloudform {
     $vars->{newstartform} = $cgi->startform( -action => "$base/cloud" );
+    $vars->{slipsites} = $cgi->popup_menu(-name => 'slipsites',
+					  -default => 'all',
+					  -values => ['all',
+						      'AAAAAAA', 'AAAAAAU', 'AAAAAAC',
+						      'AAAUUUA', 'AAAUUUU', 'AAAUUUC',
+						      'UUUAAAA', 'UUUAAAU', 'UUUAAAC',
+						      'UUUUUUA', 'UUUUUUU', 'UUUUUUC',
+						      'CCCAAAA', 'CCCAAAU', 'CCCAAAC',
+						      'CCCUUUA', 'CCCUUUU', 'CCCUUUC',
+						      'GGGAAAA', 'GGGAAAU', 'GGGAAAC',
+						      'GGGUUUA', 'GGGUUUU', 'GGGUUUC',]);
     $vars->{cloud_filters} = $cgi->checkbox_group(
 						  -name => 'cloud_filters',
 #						  -values => ['pseudoknots only', 'coding sequence only'],);
@@ -204,6 +215,7 @@ sub Print_MFE_Z {
     my $species = $cgi->param('species');
     my $seqlength = $cgi->param('seqlength');
     my $pknot = $cgi->param('pknot');
+    my $slipsites = $cgi->param('slipsite');
     $mfe = sprintf('%.0f', $mfe);
     $z = sprintf('%.0f', $z);
     my $mfe_plus_factor;
@@ -217,38 +229,46 @@ sub Print_MFE_Z {
 	$mfe_minus_factor = 0.8;
     }
     else {
-	$mfe_plus_factor = 0.5;
-	$mfe_minus_factor = 0.3;
+	$mfe_plus_factor = 1.0;
+	$mfe_minus_factor = 1.0;
     }
     my $mfe_plus = $mfe + $mfe_plus_factor;
     my $mfe_minus = $mfe - $mfe_minus_factor;
-    my $z_plus = $z + 0.3;
-    my $z_minus = $z - 0.3;
+    my $z_plus = $z + 0.4;
+    my $z_minus = $z - 0.4;
     my ($stmt, $stuff);
-    if ($species eq 'all') {
-	if (defined($pknot) and $pknot == 1) {
-	    $stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-	}
-	else {
-	    $stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-	}
-	$stuff = $db->MySelect({
-	    statement => $stmt,
-	    vars => [$mfe_minus,$mfe_plus,$z,$z_plus],
-	});
-    } ## End if species is 'all'
-    else {
-	if (defined($pknot) and $pknot == 1) {
-	    $stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.species = ? AND mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-	}
-	else {
-	    $stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.species = ? AND mfe.mfe >= ? AND mfe.mfe <= ? AND boot.zscore >= ? AND boot.zscore <= ? AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
-	}
-	$stuff = $db->MySelect({
-	    statement => $stmt,
-	    vars => [$species,$mfe_minus,$mfe_plus,$z_minus,$z_plus],
-	    });
+    
+    if (defined($slipsites) and $species eq 'all' and defined($pknot)) {
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_minus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.accession,mfe.start);
     }
+    elsif (defined($slipsites) and $species eq 'all' and !defined($pknot)) {
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.accession,mfe.start);
+    }
+    elsif (defined($slipsites) and $species ne 'all' and defined($pknot)) {
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.accession,mfe.start);
+    }
+    elsif (defined($slipsites) and $species ne 'all' and !defined($pknot)) {
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.accession,mfe.start);
+    }
+
+    elsif (!defined($slipsites) and $species eq 'all' and defined($pknot)) {
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+    }
+    elsif (!defined($slipsites) and $species eq 'all' and !defined($pknot)) {
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+    }
+    elsif (!defined($slipsites) and $species ne 'all' and defined($pknot)) {
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+    }
+    elsif (!defined($slipsites) and $species ne 'all' and !defined($pknot)) {
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+    }
+    else {
+	print "WTF<br>\n";
+	$stmt = qq(WTF);
+    }
+    print "TEST STATEMENT: $stmt<br>\n";
+    $stuff = $db->MySelect({statement => $stmt, });
     $vars->{mfe} = $mfe;
     $vars->{mfe_plus} = $mfe_plus;
     $vars->{mfe_minus} = $mfe_minus;
@@ -1074,6 +1094,7 @@ sub Check_Landscape {
 sub Cloud {
     my $species = $cgi->param('species');
     my @filters = $cgi->param('cloud_filters');
+    my $slipsites = $cgi->param('slipsites');
     my $cloud = new PRFGraph();
 
     my $pknots_only = undef;
@@ -1088,6 +1109,12 @@ sub Cloud {
 	    $suffix .= "-cs";
 	}
     }
+    if ($slipsites eq 'all') {
+	$suffix .= "-all";
+    }
+    else {
+	$suffix .= "-${slipsites}";
+    }
 
     my $cloud_output_filename = $cloud->Picture_Filename({type => 'cloud', species => $species, suffix => $suffix,});
     my $cloud_url = $cloud->Picture_Filename({type => 'cloud', species => $species, url => 'url', suffix => $suffix,});
@@ -1095,7 +1122,7 @@ sub Cloud {
     if (!-f $cloud_output_filename) {
 	my ($points_stmt, $averages_stmt, $points, $averages);
 	if ($species eq 'all') {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 #	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 	    foreach my $filter (@filters) {
@@ -1114,7 +1141,7 @@ sub Cloud {
 	    $averages = $db->MySelect({statement =>$averages_stmt, type => 'row',});
 	}
 	else {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 
 	    foreach my $filter (@filters) {
@@ -1141,11 +1168,12 @@ sub Cloud {
 	if (defined($pknots_only)) {
 	    $cloud_data = $cloud->Make_Cloud($species, $points, 
 					     $averages, $cloud_output_filename, $base,
-					     {pknot => 1});
+					     {pknot => 1, slipsites => $slipsites});
 	}
 	else {
 	    $cloud_data = $cloud->Make_Cloud($species, $points,
-					     $averages, $cloud_output_filename, $base);
+					     $averages, $cloud_output_filename, $base,
+					     {slipsites => $slipsites});
 	}
     }
     $vars->{species} = $species;
