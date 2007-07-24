@@ -9,8 +9,17 @@ minimum free energy</a> values computed for all <i>[% nicespecies %]</i>
 The y axis displays the range of <a href="[% base %]/help_detail#help_z">
 z scores</a> for these same sequences.<br>
 Each dot thus represents a single (mfe, z score) in relation to all
-the others for <i>[% nicespecies %]</i>.  The black lines delineate the mean mfe
-and z score for this population.  Grey dots thus represent sequence
+the others for <i>[% nicespecies %]</i>.  
+ The black lines delineate the mean mfe
+and z score for this population.
+[% IF slipsites %]
+The black dots represent all sequence windows with a [% slipsites %]
+ slippery site.
+[% ELSE %]
+This graph shows all points regardless of slipsite.
+[% END %]
+
+  Grey dots represent sequence
 windows which have less putative secondary structure than the mean
 <b>and</b> are less structured than their randomized counterparts, as
 such these are unlikely to be of interest.  Green dots have a minimum

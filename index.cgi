@@ -267,7 +267,6 @@ sub Print_MFE_Z {
 	print "WTF<br>\n";
 	$stmt = qq(WTF);
     }
-    print "TEST STATEMENT: $stmt<br>\n";
     $stuff = $db->MySelect({statement => $stmt, });
     $vars->{mfe} = $mfe;
     $vars->{mfe_plus} = $mfe_plus;
@@ -1044,28 +1043,28 @@ sub Print_Blast {
     }
   }
 
-  my $vars = {
-    query_length     => $local_info->{query_length},
-    num_hits         => $local_info->{num_hits},
-    hit_names        => \%hit_names,
-    accessions       => \%accessions,
-    lengths          => \%lengths,
-    descriptions     => \%descriptions,
-    scores           => \%scores,
-    hit_names        => \%hit_names,
-    significances    => \%significances,
-    bitses           => \%bitses,
-    hsps_evalue      => \%hsps_evalue,
-    hsps_expect      => \%hsps_expect,
-    hsps_gaps        => \%hsps_gaps,
-    hsps_querystring => \%hsps_querystring,
-    hsps_homostring  => \%hsps_homostring,
-    hsps_hitstring   => \%hsps_hitstring,
-    hsps_numid       => \%hsps_numid,
-    hsps_numcon      => \%hsps_numcon,
-    hsps_length      => \%hsps_length,
-    hsps_score       => \%hsps_score,
-  };
+
+  $vars->{query_length} = $local_info->{query_length};
+  $vars->{num_hits}         = $local_info->{num_hits};
+  $vars->{hit_names}        = \%hit_names;
+  $vars->{accessions}       = \%accessions;
+  $vars->{lengths}          = \%lengths;
+  $vars->{descriptions}     = \%descriptions;
+  $vars->{scores}           = \%scores;
+  $vars->{hit_names}        = \%hit_names;
+  $vars->{significances}    = \%significances;
+  $vars->{bitses}           = \%bitses;
+  $vars->{hsps_evalue}      = \%hsps_evalue;
+  $vars->{hsps_expect}      = \%hsps_expect;
+  $vars->{hsps_gaps}        = \%hsps_gaps;
+  $vars->{hsps_querystring} = \%hsps_querystring;
+  $vars->{hsps_homostring}  = \%hsps_homostring;
+  $vars->{hsps_hitstring}   = \%hsps_hitstring;
+  $vars->{hsps_numid}       = \%hsps_numid;
+  $vars->{hsps_numcon}      = \%hsps_numcon;
+  $vars->{hsps_length}      = \%hsps_length;
+  $vars->{hsps_score}       = \%hsps_score;
+
   $template->process( 'blast.html', $vars ) or
       Print_Template_Error($template), die;
 }
@@ -1182,6 +1181,9 @@ sub Cloud {
     $vars->{nicespecies} = ucfirst($vars->{nicespecies});
     $vars->{cloud_file} = $cloud_output_filename;
     $vars->{cloud_url} = $cloud_url;
+    if ($slipsites ne 'all') {
+	$vars->{slipsites} = $slipsites;
+    }
     $vars->{map_url} = "$vars->{cloud_url}" . '.map'; 
     $vars->{map_file} = "$vars->{cloud_file}" . '.map';
     $template->process( 'cloud.html', $vars ) or
