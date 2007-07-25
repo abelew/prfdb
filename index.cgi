@@ -116,10 +116,10 @@ sub MAIN {
     } elsif ( $path eq '/detail' ) {
 	Print_Detail_Slipsite();
     } elsif ( $path eq '/local_blast' ) {
-	Print_Search_Form();
+	print "Performing BLAST search now, this may take a moment.<br>\n";
 	Print_Blast('local');
     } elsif ( $path eq '/remote_blast' ) {
-	Print_Search_Form();
+	print "Performing BLAST search now, this may take a moment.<br>\n";
 	Print_Blast('remote');
     }
     $template->process( 'footer.html', $vars ) or
@@ -1018,6 +1018,10 @@ sub Print_Blast {
 
   my ( %hit_names, %accessions, %lengths, %descriptions, %scores, %significances, %bitses );
   my ( %hsps_evalue, %hsps_expect, %hsps_gaps, %hsps_querystring, %hsps_homostring, %hsps_hitstring, %hsps_numid, %hsps_numcon, %hsps_length, %hsps_score );
+  if (!defined($local_info->{hits})) {
+      print "There were no hits in the blast database.<br>\n";
+      return(0);
+  }
   my @hits = @{ $local_info->{hits} };
   foreach my $c ( 0 .. $#hits ) {
     $hit_names{$c}     = $local_info->{hits}->[$c]->{hit_name};
@@ -1043,7 +1047,6 @@ sub Print_Blast {
       $hsps_score{$c}{$d}       = $local_info->{hits}->[$c]->{hsps}->[$d]->{score};
     }
   }
-
 
   $vars->{query_length} = $local_info->{query_length};
   $vars->{num_hits}         = $local_info->{num_hits};
