@@ -8,6 +8,9 @@
   <br>
   <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=[% genbank_accession %]&go=Go">GenBank Link</a>
   [% END %]
+  [% IF omim_id %]
+   , <a href="http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=[% omim_id %]" title="View the omim entry associated with [% accession %]" rel="external" target="_blank">OMIM Link</a>
+  [% END %]
   </div>
     </td>
     <td valign="top" width="10%">

@@ -280,17 +280,20 @@ sub Print_MFE_Z {
     foreach my $datum (@{$stuff}) {
 	my $accession = $datum->[0];
 	my $start = $datum->[1];
-	my $gene_stmt = qq(SELECT genename,comment FROM genome WHERE accession = ?);
+	my $gene_stmt = qq(SELECT genename,comment,omim_id FROM genome WHERE accession = ?);
 	my $g = $db->MySelect({
 	    statement => $gene_stmt,
 	    vars => [$accession],
 	    type => 'row'});
 	my $genename = $g->[0];
 	my $comments = $g->[1];
+	my $omim_id = $g->[2];
+
 	$vars->{accession} = $accession;
 	$vars->{start} = $start;
 	$vars->{genename} = $genename;
 	$vars->{comments} = $comments;
+	$vars->{omim_id} = $omim_id;
 	if ($vars->{accession} =~ /^SGDID/) {
 	    $vars->{short_accession} = $vars->{accession};
 	    $vars->{short_accession} =~ s/^SGDID\://g;
@@ -327,8 +330,6 @@ sub Print_Detail_Slipsite {
       vars => [ $vars->{genome_id} ],
 				  });
   $vars->{genename} = $genome_info->[0]->[0];
-  $template->process( "detail_header.html", $vars ) or
-      Print_Template_Error($template), die;
   foreach my $structure ( @{$info} ) {
     my $id = $structure->[0];
     my $mfe = $structure->[12];
@@ -484,7 +485,6 @@ $structure->[8]
     $template->process( "detail_body.html", $vars ) or
 	Print_Template_Error($template), die;
   }    ## End foreach structure in the database
-  $template->process( "detail_list_footer.html", $vars );
 }
 
 sub Color_Stems {
@@ -541,13 +541,14 @@ sub Print_Single_Accession {
       $accession          = $cgi->param('accession');
       $datum              = Get_Accession_Info($accession);
       $datum->{accession} = $accession;
-  } 
+  }
   else {
       $accession = $datum->{accession};
   }
   $vars->{id}              = $datum->{id};
   $vars->{counter}         = $datum->{counter};
   $vars->{accession}       = $accession;
+  $vars->{omim_id}         = $datum->{omim_id};
   if ($vars->{accession} =~ /^SGDID/) {
       $vars->{short_accession} = $vars->{accession};
       $vars->{short_accession} =~ s/^SGDID\://g;
@@ -575,7 +576,7 @@ sub Print_Single_Accession {
       $slipsite_information_stmt = qq/SELECT distinct start, slipsite, count(id) FROM mfe WHERE accession = ? AND start < (SELECT orf_stop FROM genome WHERE accession = ?) GROUP BY start ORDER BY start/;
   }
   my $slipsite_information = $db->MySelect({
-      statement => $slipsite_information_stmt, 
+      statement => $slipsite_information_stmt,
       vars => [$accession, $accession], });
   $template->process( 'genome.html',          $vars ) or
       Print_Template_Error($template), die;
@@ -591,7 +592,7 @@ sub Print_Single_Accession {
     $vars->{sig_count} += $vars->{pknotscount};
     if ($vars->{orf_start} < $vars->{slipstart} and $num_starts_printed == 0) {
 	$num_starts_printed++;
-	$template->process( 'sliplist_start_codon.html', $vars ) or 
+	$template->process( 'sliplist_start_codon.html', $vars ) or
 	    Print_Template_Error($template), die;
     }
     if ($vars->{orf_stop} <= $vars->{slipstart} and $num_stops_printed == 0) {
@@ -913,7 +914,7 @@ sub Create_Pretty_mRNA {
 
     for my $c ( 0 .. $#corrected_slipsites ) {
       if ( $seq_counter >= $corrected_slipsites[$c] and $seq_counter < $corrected_slipsites[$c] + 7 ) {
-        $seq_array[$seq_counter] = qq(<strong><a href="$base/detail?accession=$accession&slipstart=$slipsite_positions->[$c]"><font color = "Blue">$seq_array[$seq_counter]</font></a></strong>);
+        $seq_array[$seq_counter] = qq(<strong><a href="$base/detail?accession=$accession&slipstart=$slipsite_positions->[$c]" title="View the details for $accession at posisition $slipsite_positions->[$c]"><font color = "Blue">$seq_array[$seq_counter]</font></a></strong>);
         $minus_one_stop_switch = 'on';
       }
     }    ## End foreach slipstart
@@ -971,7 +972,7 @@ sub Create_Pretty_mRNA {
 
 sub Get_Accession_Info {
   my $accession       = shift;
-  my $query_statement = qq(SELECT id, species, genename, comment, orf_start, orf_stop, lastupdate, mrna_seq FROM genome WHERE accession = ?);
+  my $query_statement = qq(SELECT id, species, genename, comment, orf_start, orf_stop, lastupdate, mrna_seq, omim_id FROM genome WHERE accession = ?);
   my $entry = $db->MySelect({
       statement => $query_statement,
       vars => [$accession],
@@ -1198,7 +1199,7 @@ sub Download_Sequence {
 	vars => [$accession],
 	type => 'row', });
     my @tmp = split(//, $seq->[1]);
-    print "Content-type: text/plain\n\n";
+    print "Content-type: application/x-download\n\n";
     print ">$accession $seq->[0]";
     foreach my $c (0 .. $#tmp) {
 	print "\n" if (($c %80) == 0);
@@ -1210,7 +1211,7 @@ sub Download_Bpseq {
     my $id = shift;
     my $fh = \*STDOUT;
     my $ref = ref($fh);
-    print "Content-type: text/plain\n\n";
+    print "Content-type: application/x-download\n\n";
     $db->Mfeid_to_Bpseq($id, $fh);
 }
 
@@ -1219,7 +1220,7 @@ sub Download_Subsequence {
     my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.sequence,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
     my $seq = $db->MySelect({statement => $stmt, vars => [$id], type => 'row'});
     my @tmp = split(//, $seq->[2]);
-    print "Content-type: text/plain\n\n";
+    print "Content-type: application/x-download\n\n";
     print ">$seq->[1] starting at $seq->[3]: $seq->[0]";
     foreach my $c (0 .. $#tmp) {
 	print "\n" if (($c %80) == 0);
@@ -1231,7 +1232,7 @@ sub Download_Parens {
     my $id = shift;
     my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.parens,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
     my $seq = $db->MySelect({statement =>$stmt, vars =>[$id], type =>'row'});
-    print "Content-type: text/plain\n\n";
+    print "Content-type: application/x-download\n\n";
     print "#$seq->[1] starting at $seq->[3]: $seq->[0]
 $seq->[2]
 ";
@@ -1241,7 +1242,7 @@ sub Download_Parsed {
     my $id = shift;
     my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.parsed,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
     my $seq = $db->MySelect({ statement => $stmt, vars => [$id], type =>'row'});
-    print "Content-type: text/plain\n\n";
+    print "Content-type: application/x-download\n\n";
     print "#$seq->[1] starting at $seq->[3]: $seq->[0]
 $seq->[2]
 ";
