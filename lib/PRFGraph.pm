@@ -299,7 +299,6 @@ sub Make_Cloud {
 
     ### FIXME:  The 'top_y_coord' is actually the bottom.
 
-    Make_Pie($pie_numbers, $filename);
     my ($bar_filename, $bar_sig_filename, $percent_sig_filename);
     $bar_filename = $filename;
     $bar_filename =~ s/\-[A-Z]+.*$//g;
@@ -315,10 +314,12 @@ sub Make_Cloud {
 	$percent_sig{$slip}{color} = $slips_significant{$slip}{color};
     }
 #    print "TEST: $slipsites_numbers{AAAAAAA}{num} vs $slips_significant{AAAAAAA}{num}<br>\n";
-    Make_SlipBars(\%slipsites_numbers, $bar_filename);
-    Make_SlipBars(\%slips_significant, $bar_sig_filename);
-    Make_SlipBars(\%percent_sig, $percent_sig_filename);
-
+    if (defined($extra_args->{slipsites}) and $extra_args->{slipsites} ne 'all') {
+      Make_SlipBars(\%slipsites_numbers, $bar_filename);
+      Make_SlipBars(\%slips_significant, $bar_sig_filename);
+      Make_SlipBars(\%percent_sig, $percent_sig_filename);
+      Make_Pie($pie_numbers, $filename);
+    }
     open (IMG, ">$filename") or die "error opening $filename to write image: $!";
     binmode IMG;
     print IMG $gd->png;
@@ -361,7 +362,7 @@ sub Make_SlipBars {
     $bargraph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $image = $bargraph->plot(\@data);
     open(IMG, ">$filename");
-    print IMG $image->png;
+    print IMG $image->png if (defined($image));
     close IMG;
 }
 
@@ -384,7 +385,7 @@ sub Make_Pie {
 	start_angle     => 90,
 	suppress_angle => 5,
 	) or warn $graph->error;
-    my $fun = $graph->plot(\@pie) or die $graph->error;
+    my $fun = $graph->plot(\@pie);
     open (IMG, ">$filename") or die "error opening $filename to write image: $!";
     binmode IMG;
     print IMG $fun->png;
