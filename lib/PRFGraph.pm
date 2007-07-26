@@ -1,4 +1,4 @@
-package PRFGraph;
+;package PRFGraph;
 
 use strict;
 use DBI;
@@ -292,7 +292,7 @@ sub Make_Cloud {
 sub Make_SlipBars {
     my $numbers = shift;
     my $filename = shift;
-    $filename =~ s/\-.*$//g;
+    $filename =~ s/\-[A-Z]+.*$//g;
     $filename .= '-bar.png';
     my (@keys, @values);
     my @colors;
@@ -304,10 +304,7 @@ sub Make_SlipBars {
 	push (@keys, $k);
 	push (@values, $numbers->{$k}{num});
     }
-#    print "TESTME: $color_string<br>\n";
     my @data = (\@keys, \@values);
-#    print "TESTME num keys: $#keys num values $#values num colors $#colors<Br>\n";
-#    print "TESTME $color_string <br>\n";
     my $bargraph = new GD::Graph::bars(700,400);
     $bargraph->set(
 	x_label => 'slipsite',

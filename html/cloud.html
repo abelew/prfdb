@@ -1,4 +1,10 @@
-<p>This is a cloud for <i>[% nicespecies %]</i><br>
+<p>This is a cloud for <i>[% nicespecies %]</i>
+[% IF pknots_only %]
+ for only those PRF signals with pseudoknots.
+[% ELSE %]
+ for all PRF signals.
+[% END %]
+<br>
 <a HREF="[% map_url %]">
   <img src="[% cloud_url %]" ismap>
 </a>
@@ -35,5 +41,9 @@ of each slippery site.  PRF signals which start with 'AAA' are red, 'UUU' are
 green, 'GGG' are blue, and 'CCC' are black.
 </p>
 <center>
+ [% IF pknots_only %]
+ <img src="[% basedir %]/images/cloud/[% species %]-pknot-bar.png">
+ [% ELSE %]
  <img src="[% basedir %]/images/cloud/[% species %]-bar.png">
+ [% END %]
 </center>

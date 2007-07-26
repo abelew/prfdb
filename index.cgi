@@ -1185,6 +1185,7 @@ sub Cloud {
     $vars->{nicespecies} = ucfirst($vars->{nicespecies});
     $vars->{cloud_file} = $cloud_output_filename;
     $vars->{cloud_url} = $cloud_url;
+    $vars->{pknots_only} = $pknots_only;
     if ($slipsites ne 'all') {
 	$vars->{slipsites} = $slipsites;
     }
