@@ -136,6 +136,65 @@ sub MySelect {
   return ($return);
 }
 
+sub MyGet {
+    my $me = shift;
+    my $vars = shift;
+
+    my $final_statement = qq(SELECT );
+    my $tables = $vars->{table};
+    delete($vars->{table});
+    my $order = $vars->{order};
+    delete($vars->{order});
+    my @select_columns = ();
+    my $select_count = 0;
+    foreach my $criterion (keys %{$vars}) {
+	if (!defined($vars->{$criterion})) {
+	    $select_count++;
+	    push(@select_columns, $criterion);
+	    $final_statement .= "$criterion, "
+	}
+    }
+    if ($select_count == 0) {
+	$final_statement .= "* ";
+    }
+    $final_statement =~ s/, $/ /g;
+    $final_statement .= "FROM $tables WHERE ";
+    my $criteria_count = 0;
+    foreach my $criterion (keys %{$vars}) {
+	if (defined($vars->{$criterion})) {
+	    $criteria_count++;
+	    if ($vars->{$criterion} =~ /\s+/) {
+		$final_statement .= "$criterion $vars->{$criterion} AND ";
+	    }
+	    else {
+		$final_statement .= "$criterion = '$vars->{$criterion}' AND ";
+	    }
+	}
+    }
+    if ($criteria_count == 0) {
+	$final_statement =~ s/ WHERE $//g;
+    }
+    $final_statement =~ s/ AND $//g;
+    if (defined($order)) {
+	$final_statement .= " ORDER BY $order";
+    }
+
+    print "TESTME: $final_statement\n";
+    my $dbh = $me->MyConnect($final_statement);
+    my $stuff = $me->MySelect({ statement => $final_statement,});
+
+    print "Column order: @select_columns\n";
+    my $c = 1;
+    foreach my $datum (@{$stuff}) {
+	print "$c\n";
+	$c++;
+	foreach my $c (0 .. $#select_columns) {
+	    print "  ${select_columns[$c]}: $datum->[$c]\n";
+	}
+    }
+    return($final_statement);
+}
+
 sub MyConnect {
   my $me        = shift;
   my $statement = shift;
