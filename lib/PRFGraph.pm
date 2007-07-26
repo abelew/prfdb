@@ -197,7 +197,7 @@ sub Make_Cloud {
 	} ## Foreach y point
     } ## Foreach x point
 
-
+    my %slipsites_numbers;
     open(MAP, ">${tmp_filename}.map");
     my $image_map_string;
     if ($extra_args->{slipsites} eq 'all') {
@@ -223,6 +223,29 @@ sub Make_Cloud {
 	    my $x_point = sprintf("%.1f",$point->[0]);
 	    my $y_point = sprintf("%.1f",$point->[1]);
 	    my $slipsite = $point->[4];
+
+	    if (!defined($slipsites_numbers{$slipsite})) {
+		$slipsites_numbers{$slipsite}{num} = 1;
+		if ($slipsite =~ /^AAA....$/) {
+		    $slipsites_numbers{$slipsite}{color} = 'red';
+		}
+		elsif ($slipsite =~ /^UUU....$/) {
+		    $slipsites_numbers{$slipsite}{color} = 'green';
+		}
+		elsif ($slipsite =~ /^GGG....$/) {
+		    $slipsites_numbers{$slipsite}{color} = 'blue';
+		}
+		elsif ($slipsite =~ /^CCC....$/) {
+		    $slipsites_numbers{$slipsite}{color} = 'black';
+		}
+		else {
+		    die("This sucks.");
+		}
+	    }
+	    else {
+		$slipsites_numbers{$slipsite}{num}++;
+	    }
+
 	    if ($extra_args->{slipsites} eq $slipsite) {
 		my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 		my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
@@ -240,6 +263,8 @@ sub Make_Cloud {
 	}
     }
     close MAP;
+
+    Make_SlipBars(\%slipsites_numbers, $filename);
 
     $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
 
@@ -262,6 +287,46 @@ sub Make_Cloud {
     print IMG $gd->png;
     close IMG;
     return($points);
+}
+
+sub Make_SlipBars {
+    my $numbers = shift;
+    my $filename = shift;
+    $filename =~ s/\-.*$//g;
+    $filename .= '-bar.png';
+    my (@keys, @values);
+    my @colors;
+    my $color_string = '';
+    foreach my $k (sort { $numbers->{$b}{num} <=> $numbers->{$a}{num} } keys %{$numbers}) {
+#    foreach my $k (sort  keys %{$numbers}) {
+	$color_string .= "$numbers->{$k}{color} ";
+	push (@colors, $numbers->{$k}{color});
+	push (@keys, $k);
+	push (@values, $numbers->{$k}{num});
+    }
+#    print "TESTME: $color_string<br>\n";
+    my @data = (\@keys, \@values);
+#    print "TESTME num keys: $#keys num values $#values num colors $#colors<Br>\n";
+#    print "TESTME $color_string <br>\n";
+    my $bargraph = new GD::Graph::bars(700,400);
+    $bargraph->set(
+	x_label => 'slipsite',
+	y_label => 'number',
+	title => 'How many of each slipsite',
+#	dclrs => [ qw($color_string) ],
+	dclrs => [ qw(blue black red green) ],
+	cycle_clrs => 1,
+	dclrs => \@colors,
+	show_values => 1,
+	values_vertical => 1,
+	x_labels_vertical => 1,
+	y_max_value => ($values[0] + 250),
+	);
+#    $bargraph->set(dclrs=>\@colors);
+    my $image = $bargraph->plot(\@data);
+    open(IMG, ">$filename");
+    print IMG $image->png;
+    close IMG;
 }
 
 sub Make_Pie {
