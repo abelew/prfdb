@@ -47,3 +47,26 @@ green, 'GGG' are blue, and 'CCC' are black.
  <img src="[% basedir %]/images/cloud/[% species %]-bar.png">
  [% END %]
 </center>
+
+<p>
+Below is a bar graph showing how many of these have values less than the mean
+MFE and zscore.
+</p>
+<center>
+ [% IF pknots_only %]
+ <img src="[% basedir %]/images/cloud/[% species %]-pknot-bar-sig.png">
+ [% ELSE %]
+ <img src="[% basedir %]/images/cloud/[% species %]-bar-sig.png">
+ [% END %]
+</center>
+
+<p>
+And percentage.
+</p>
+<center>
+ [% IF pknots_only %]
+ <img src="[% basedir %]/images/cloud/[% species %]-pknot-bar-percentsig.png">
+ [% ELSE %]
+ <img src="[% basedir %]/images/cloud/[% species %]-bar-percentsig.png">
+ [% END %]
+</center>

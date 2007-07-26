@@ -187,17 +187,15 @@ sub Make_Cloud {
 		$color = $gd->colorResolve(254,191,191);
 		# print " C: pink<br>\n";
 	    }
-	    ##   filledArc(x,  y,  width, height, start degrees, end degrees, color, type)
-#	    $gd->setAntiAliased($color);
 	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 4);
-#	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, gdAntiAliased, 4);
 	    $x_coord = sprintf('%.0f', $x_coord);
 	    $y_coord = sprintf('%.0f', $y_coord);
 	    my $image_map_string;
 	} ## Foreach y point
     } ## Foreach x point
 
-    my %slipsites_numbers;
+    my %slipsites_numbers = ();
+    my %slips_significant = ();
     open(MAP, ">${tmp_filename}.map");
     my $image_map_string;
     if ($extra_args->{slipsites} eq 'all') {
@@ -222,7 +220,33 @@ sub Make_Cloud {
 	foreach my $point (@{$data}) {
 	    my $x_point = sprintf("%.1f",$point->[0]);
 	    my $y_point = sprintf("%.1f",$point->[1]);
+	    my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
+	    my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
 	    my $slipsite = $point->[4];
+
+	    if ($x_coord <= $mfe_significant_coord and $y_coord <= $z_significant_coord) {
+		if (!defined($slips_significant{$slipsite})) {
+		    $slips_significant{$slipsite}{num} = 1;
+		    if ($slipsite =~ /^AAA....$/) {
+			$slips_significant{$slipsite}{color} = 'red';
+		    }
+		    elsif ($slipsite =~ /^UUU....$/) {
+			$slips_significant{$slipsite}{color} = 'green';
+		    }
+		    elsif ($slipsite =~ /^GGG....$/) {
+			$slips_significant{$slipsite}{color} = 'blue';
+		    }
+		    elsif ($slipsite =~ /^CCC....$/) {
+			$slips_significant{$slipsite}{color} = 'black';
+		    }
+		    else {
+			die("This sucks.");
+		    }
+		}
+		else {
+		    $slips_significant{$slipsite}{num}++;
+		}
+	    }
 
 	    if (!defined($slipsites_numbers{$slipsite})) {
 		$slipsites_numbers{$slipsite}{num} = 1;
@@ -264,15 +288,10 @@ sub Make_Cloud {
     }
     close MAP;
 
-    Make_SlipBars(\%slipsites_numbers, $filename);
-
     $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
-
     $gd->filledRectangle($left_x_coord+1, $average_z_coord, $right_x_coord-1, $average_z_coord+1, $black);
-
     $gd->filledRectangle($mfe_significant_coord, $z_significant_coord, $mfe_significant_coord, $top_y_coord, $darkslategray);
     $gd->filledRectangle($left_x_coord, $z_significant_coord, $mfe_significant_coord, $z_significant_coord, $darkslategray);
-
     $gd->filledRectangle($mfe_2stds_significant_coord, $z_2stds_significant_coord,
 			 $mfe_2stds_significant_coord, $top_y_coord, $darkslategray);
     $gd->filledRectangle($left_x_coord, $z_2stds_significant_coord, $mfe_2stds_significant_coord,
@@ -281,6 +300,24 @@ sub Make_Cloud {
     ### FIXME:  The 'top_y_coord' is actually the bottom.
 
     Make_Pie($pie_numbers, $filename);
+    my ($bar_filename, $bar_sig_filename, $percent_sig_filename);
+    $bar_filename = $filename;
+    $bar_filename =~ s/\-[A-Z]+.*$//g;
+    $bar_filename .= '-bar.png';
+    $bar_sig_filename = $bar_filename;
+    $bar_sig_filename =~ s/\.png$/-sig\.png/g;
+    $percent_sig_filename = $bar_filename;
+    $percent_sig_filename =~ s/\.png$/-percentsig\.png/g;
+    my %percent_sig;
+    foreach my $slip (keys %slipsites_numbers) {
+	$percent_sig{$slip}{num} = (($slips_significant{$slip}{num} / $slipsites_numbers{$slip}{num}) * 100.0);
+	$percent_sig{$slip}{num} = sprintf("%.1f", $percent_sig{$slip}{num});
+	$percent_sig{$slip}{color} = $slips_significant{$slip}{color};
+    }
+#    print "TEST: $slipsites_numbers{AAAAAAA}{num} vs $slips_significant{AAAAAAA}{num}<br>\n";
+    Make_SlipBars(\%slipsites_numbers, $bar_filename);
+    Make_SlipBars(\%slips_significant, $bar_sig_filename);
+    Make_SlipBars(\%percent_sig, $percent_sig_filename);
 
     open (IMG, ">$filename") or die "error opening $filename to write image: $!";
     binmode IMG;
@@ -292,8 +329,6 @@ sub Make_Cloud {
 sub Make_SlipBars {
     my $numbers = shift;
     my $filename = shift;
-    $filename =~ s/\-[A-Z]+.*$//g;
-    $filename .= '-bar.png';
     my (@keys, @values);
     my @colors;
     my $color_string = '';
@@ -317,9 +352,13 @@ sub Make_SlipBars {
 	show_values => 1,
 	values_vertical => 1,
 	x_labels_vertical => 1,
-	y_max_value => ($values[0] + 250),
+	y_max_value => $values[0],
 	);
-#    $bargraph->set(dclrs=>\@colors);
+    $bargraph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $bargraph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $bargraph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $bargraph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $bargraph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $image = $bargraph->plot(\@data);
     open(IMG, ">$filename");
     print IMG $image->png;

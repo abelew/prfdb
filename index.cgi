@@ -189,7 +189,7 @@ sub Print_Cloudform {
 						      'UUUUUUA', 'UUUUUUU', 'UUUUUUC',
 						      'CCCAAAA', 'CCCAAAU', 'CCCAAAC',
 						      'CCCUUUA', 'CCCUUUU', 'CCCUUUC',
-						      'GGGAAAA', 'GGGAAAU', 'GGGAAAC',
+						      'GGGAAAA', 'GGGAAAU', 'GGGAAAC', 'GGGAAAG',
 						      'GGGUUUA', 'GGGUUUU', 'GGGUUUC',]);
     $vars->{cloud_filters} = $cgi->checkbox_group(
 						  -name => 'cloud_filters',
