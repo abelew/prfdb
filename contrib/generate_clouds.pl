@@ -21,10 +21,14 @@ my @seqlength = (100);
 my @knotted = (0,1);
 my @slipsite = ('all', 'AAAAAAA', 'AAAAAAU', 'AAAAAAC', 'AAAUUUA', 'AAAUUUU', 'AAAUUUC', 'UUUAAAA', 'UUUAAAU', 'UUUAAAC', 'UUUUUUA', 'UUUUUUU', 'UUUUUUC', 'CCCAAAA', 'CCCAAAU', 'CCCAAAC', 'CCCUUUA', 'CCCUUUU', 'CCCUUUC', 'GGGAAAA', 'GGGAAAU', 'GGGAAAC', 'GGGAAAG', 'GGGUUUA', 'GGGUUUU', 'GGGUUUC');
 foreach my $spec (@species) {
+    print "Working on: Species: $spec\n";
     foreach my $seqlen (@seqlength) {
+	print "  Seqlength: $seqlen\n";
 	    foreach my $slip (@slipsite) {
+		print "    Slip: $slip\n";
 		my ($points_stmt, $averages_stmt);
 		foreach my $knotp (@knotted) {
+		    print "      Knot: $knotp\n";
 		    if (!$knotp) {
 			$points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = ? AND mfe.id = boot.mfe_id);
 			$averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = ? AND mfe.id = boot.mfe_id);
@@ -33,11 +37,8 @@ foreach my $spec (@species) {
 			$points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = ? AND mfe.id = boot.mfe_id AND mfe.knotp = '1');
 			$averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = ? AND mfe.id = boot.mfe_id AND mfe.knotp = '1');
 		    }
-		    print "POINTS TEST: $points_stmt\n";
-		    print "AVG TEST: $averages_stmt\n";
 		    my $points = $db->MySelect({statement => $points_stmt, vars => [$spec,$seqlen]});
 		    my $averages = $db->MySelect({statement => $averages_stmt, vars => [$spec,$seqlen], type => 'row', });
-		    print "HASH: $spec $points $averages $knotp $slip\n";
 		    my $cloud_args = {
 			species => $spec,
 			points => $points,
