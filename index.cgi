@@ -1122,6 +1122,7 @@ sub Cloud {
     my $cloud_output_filename = $cloud->Picture_Filename({type => 'cloud', species => $species, suffix => $suffix,});
     my $cloud_url = $cloud->Picture_Filename({type => 'cloud', species => $species, url => 'url', suffix => $suffix,});
     $cloud_url = $basedir . '/' . $cloud_url;
+
     if (!-f $cloud_output_filename) {
 	my ($points_stmt, $averages_stmt, $points, $averages);
 	if ($species eq 'all') {
@@ -1140,11 +1141,14 @@ sub Cloud {
 
 	    $points_stmt =~ s/AND $//g;
 	    $averages_stmt =~ s/AND $//g;
+	    print "TEST: $points_stmt
+$averages_stmt\n";
 	    $points = $db->MySelect({statement => $points_stmt,});
 	    $averages = $db->MySelect({statement =>$averages_stmt, type => 'row',});
 	}
 	else {
 	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 	
 	    foreach my $filter (@filters) {
 		if ($filter eq 'pseudoknots only') {
@@ -1165,7 +1169,6 @@ sub Cloud {
 		vars => [$species],
 		type => 'row', });
 	}
-
 	my $cloud_data;
 	my $args;
 	if (defined($pknots_only)) {

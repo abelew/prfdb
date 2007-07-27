@@ -30,23 +30,23 @@ sub new {
 
 sub Make_Cloud {
     my $me = shift;
-    my $species = shift;
-    my $data = shift;
-    my $averages = shift;
-    my $filename = shift;
-    my $url = shift;
-    my $extra_args = shift;
-
+    my $args = shift;
+    my $species = $args->{species};
+    my $data = $args->{points};
+    my $averages = $args->{averages};
+    my $filename = $args->{filename};
+    my $url = $args->{url};
+    my $args_slipsites = $args->{slipsites};
     my $seqlength;
-    if (defined($extra_args->{seqlength})) {
-	$seqlength = $extra_args->{seqlength};
+    if (defined($args->{seqlength})) {
+	$seqlength = $args->{seqlength};
     }
     else {
 	$seqlength = $config->{seqlength};
     }
 
     my $pknot = undef;
-    if (defined($extra_args->{pknot}) and $extra_args->{pknot} == 1) {
+    if (defined($args->{pknot}) and $args->{pknot} == 1) {
 	$pknot = 1;
     }
 
@@ -198,7 +198,7 @@ sub Make_Cloud {
     my %slips_significant = ();
     open(MAP, ">${tmp_filename}.map");
     my $image_map_string;
-    if ($extra_args->{slipsites} eq 'all') {
+    if ($args_slipsites eq 'all') {
 	foreach my $x_point (keys %{$points}) {
 	    my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 	    foreach my $y_point (keys %{$points->{$x_point}}) {
@@ -270,17 +270,17 @@ sub Make_Cloud {
 		$slipsites_numbers{$slipsite}{num}++;
 	    }
 
-	    if ($extra_args->{slipsites} eq $slipsite) {
+	    if ($args_slipsites eq $slipsite) {
 		my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 		my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
 		$x_coord = sprintf('%.0f', $x_coord);
 		$y_coord = sprintf('%.0f', $y_coord);
 		$gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $black, 4);
 		if (defined($pknot)) {
-		    $image_map_string =  qq(point ${url}/mfe_z?slipsite=$extra_args->{slipsites}&pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+		    $image_map_string =  qq(point ${url}/mfe_z?slipsite=$args_slipsites&pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
 		}
 		else {
-		    $image_map_string = qq(point ${url}/mfe_z?slipsite=$extra_args->{slipsites}&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+		    $image_map_string = qq(point ${url}/mfe_z?slipsite=$args_slipsites&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
 		}
 		print MAP $image_map_string;
 	    }
@@ -314,7 +314,7 @@ sub Make_Cloud {
 	$percent_sig{$slip}{color} = $slips_significant{$slip}{color};
     }
 #    print "TEST: $slipsites_numbers{AAAAAAA}{num} vs $slips_significant{AAAAAAA}{num}<br>\n";
-    if (defined($extra_args->{slipsites}) and $extra_args->{slipsites} ne 'all') {
+    if (defined($args_slipsites) and $args_slipsites ne 'all') {
       Make_SlipBars(\%slipsites_numbers, $bar_filename);
       Make_SlipBars(\%slips_significant, $bar_sig_filename);
       Make_SlipBars(\%percent_sig, $percent_sig_filename);
