@@ -1145,8 +1145,7 @@ sub Cloud {
 	}
 	else {
 	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
-	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
-
+	
 	    foreach my $filter (@filters) {
 		if ($filter eq 'pseudoknots only') {
 		    $points_stmt .= "mfe.knotp = '1' AND ";
@@ -1168,16 +1167,29 @@ sub Cloud {
 	}
 
 	my $cloud_data;
+	my $args;
 	if (defined($pknots_only)) {
-	    $cloud_data = $cloud->Make_Cloud($species, $points, 
-					     $averages, $cloud_output_filename, $base,
-					     {pknot => 1, slipsites => $slipsites});
+	    $args = {
+		species => $species,
+		points => $points,
+		averages => $averages,
+		filename => $cloud_output_filename,
+		url => $base,
+		pknot => 1,
+		slipsites => $slipsites
+	    };
 	}
 	else {
-	    $cloud_data = $cloud->Make_Cloud($species, $points,
-					     $averages, $cloud_output_filename, $base,
-					     {slipsites => $slipsites});
+	    $args = {
+		species => $species,
+		points => $points,
+		averages => $averages,
+		filename => $cloud_output_filename,
+		url => $base,
+		slipsites => $slipsites,
+	    };
 	}
+	$cloud_data = $cloud->Make_Cloud($args); 
     }
     $vars->{species} = $species;
     $vars->{nicespecies} = $species;

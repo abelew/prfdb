@@ -12,6 +12,7 @@ use Statistics::Basic::Variance;
 use Statistics::Basic::StdDev;
 use Statistics::Distributions;
 use Statistics::Basic::Correlation;
+use Image::Magick;
 
 my $config = $PRFConfig::config;
 
@@ -30,25 +31,16 @@ sub new {
 
 sub Make_Cloud {
     my $me = shift;
-    my $species = shift;
-    my $data = shift;
-    my $averages = shift;
-    my $filename = shift;
-    my $url = shift;
-    my $extra_args = shift;
+    my $args = shift;
 
-    my $seqlength;
-    if (defined($extra_args->{seqlength})) {
-	$seqlength = $extra_args->{seqlength};
-    }
-    else {
-	$seqlength = $config->{seqlength};
-    }
+    my $images_returned = {};
 
-    my $pknot = undef;
-    if (defined($extra_args->{pknot}) and $extra_args->{pknot} == 1) {
-	$pknot = 1;
-    }
+    my $species = $args->{species};
+    my $data = $args->{points};
+    my $averages = $args->{averages};
+    my $seqlength =  defined($args->{seqlength}) ? $args->{seqlength} : $config->{seqlength};
+    my $pknot = $args->{pknot};
+    my $slipsites = $args->{slipsites};
 
     my $graph = new GD::Graph::points('800','800');
     my $db = new PRFdb;
@@ -152,7 +144,6 @@ sub Make_Cloud {
 	num_significant => 0,
 	num_significant_pknots => 0,
     };
-    my $tmp_filename = $filename;
 
     foreach my $x_point (keys %{$points}) {
 	my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
@@ -196,9 +187,7 @@ sub Make_Cloud {
 
     my %slipsites_numbers = ();
     my %slips_significant = ();
-    open(MAP, ">${tmp_filename}.map");
-    my $image_map_string;
-    if ($extra_args->{slipsites} eq 'all') {
+    if ($slipsites eq 'all') {
 	foreach my $x_point (keys %{$points}) {
 	    my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 	    foreach my $y_point (keys %{$points->{$x_point}}) {
@@ -207,15 +196,14 @@ sub Make_Cloud {
 		$x_coord = sprintf('%.0f', $x_coord);
 		$y_coord = sprintf('%.0f', $y_coord);
 		if (defined($pknot)) {
-		    $image_map_string =  qq(point ${url}/mfe_z?pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+		    $images_returned->{imagemap} .= qq(point [% base %]/mfe_z?pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
 		}
 		else {
-		    $image_map_string = qq(point ${url}/mfe_z?seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+		    $images_returned->{imagemap} .= qq(point [% base %]/mfe_z?seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
 		}
-		print MAP $image_map_string;
-	    }
-	}
-    }
+	    } ## foreach y in points
+	} ## Foreach x in points
+    } ## If slipsites does not equal 'all'
     else {
 	foreach my $point (@{$data}) {
 	    my $x_point = sprintf("%.1f",$point->[0]);
@@ -223,7 +211,7 @@ sub Make_Cloud {
 	    my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 	    my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
 	    my $slipsite = $point->[4];
-
+	    print "WTF: $x_point $y_point $slipsite\n";
 	    if ($x_coord <= $mfe_significant_coord and $y_coord <= $z_significant_coord) {
 		if (!defined($slips_significant{$slipsite})) {
 		    $slips_significant{$slipsite}{num} = 1;
@@ -270,24 +258,21 @@ sub Make_Cloud {
 		$slipsites_numbers{$slipsite}{num}++;
 	    }
 
-	    if ($extra_args->{slipsites} eq $slipsite) {
+	    if ($slipsites eq $slipsite) {
 		my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 		my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
 		$x_coord = sprintf('%.0f', $x_coord);
 		$y_coord = sprintf('%.0f', $y_coord);
 		$gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $black, 4);
 		if (defined($pknot)) {
-		    $image_map_string =  qq(point ${url}/mfe_z?slipsite=$extra_args->{slipsites}&pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+		    $images_returned->{imagemap} .= qq(point [% base %]/mfe_z?slipsite=$slipsites&pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
 		}
 		else {
-		    $image_map_string = qq(point ${url}/mfe_z?slipsite=$extra_args->{slipsites}&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
+		    $images_returned->{imagemap} .= qq(point [% base %]/mfe_z?slipsite=$slipsites&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
 		}
-		print MAP $image_map_string;
 	    }
 	}
     }
-    close MAP;
-
     $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
     $gd->filledRectangle($left_x_coord+1, $average_z_coord, $right_x_coord-1, $average_z_coord+1, $black);
     $gd->filledRectangle($mfe_significant_coord, $z_significant_coord, $mfe_significant_coord, $top_y_coord, $darkslategray);
@@ -297,39 +282,33 @@ sub Make_Cloud {
     $gd->filledRectangle($left_x_coord, $z_2stds_significant_coord, $mfe_2stds_significant_coord,
 			 $z_2stds_significant_coord, $darkslategray);
 
-    ### FIXME:  The 'top_y_coord' is actually the bottom.
+    ### FIXME:  The 'top_y_coord' is actually the bottom.s
+    if ($slipsites ne 'all') {
+	my %percent_sig;
+	foreach my $slip (keys %slipsites_numbers) {
+	    $percent_sig{$slip}{num} = (($slips_significant{$slip}{num} / $slipsites_numbers{$slip}{num}) * 100.0);
+	    $percent_sig{$slip}{num} = sprintf("%.1f", $percent_sig{$slip}{num});
+	    $percent_sig{$slip}{color} = $slips_significant{$slip}{color};
+	}
+    }
 
-    my ($bar_filename, $bar_sig_filename, $percent_sig_filename);
-    $bar_filename = $filename;
-    $bar_filename =~ s/\-[A-Z]+.*$//g;
-    $bar_filename .= '-bar.png';
-    $bar_sig_filename = $bar_filename;
-    $bar_sig_filename =~ s/\.png$/-sig\.png/g;
-    $percent_sig_filename = $bar_filename;
-    $percent_sig_filename =~ s/\.png$/-percentsig\.png/g;
-    my %percent_sig;
-    foreach my $slip (keys %slipsites_numbers) {
-	$percent_sig{$slip}{num} = (($slips_significant{$slip}{num} / $slipsites_numbers{$slip}{num}) * 100.0);
-	$percent_sig{$slip}{num} = sprintf("%.1f", $percent_sig{$slip}{num});
-	$percent_sig{$slip}{color} = $slips_significant{$slip}{color};
-    }
-#    print "TEST: $slipsites_numbers{AAAAAAA}{num} vs $slips_significant{AAAAAAA}{num}<br>\n";
+
     if (defined($extra_args->{slipsites}) and $extra_args->{slipsites} ne 'all') {
-      Make_SlipBars(\%slipsites_numbers, $bar_filename);
-      Make_SlipBars(\%slips_significant, $bar_sig_filename);
-      Make_SlipBars(\%percent_sig, $percent_sig_filename);
-      Make_Pie($pie_numbers, $filename);
+	print "TEST: $slipsites_numbers{AAAAAAA}{num} vs $slips_significant{AAAAAAA}{num}<br>\n";
+	$images_returned->{bar_total} = $me->Make_SlipBars(\%slipsites_numbers);
+	$images_returned->{bar_significant} = $me->Make_SlipBars(\%slips_significant);
+	$images_returned->{bar_percent} = $me->Make_SlipBars(\%percent_sig);
+#    Make_Pie($pie_numbers, $filename);
     }
-    open (IMG, ">$filename") or die "error opening $filename to write image: $!";
-    binmode IMG;
-    print IMG $gd->png;
-    close IMG;
-    return($points);
+
+    my $cloud_data = $gd->png;
+    $images_returned->{cloud} = $cloud_data;
+    return($images_returned);
 }
 
 sub Make_SlipBars {
+    my $me = shift;
     my $numbers = shift;
-    my $filename = shift;
     my (@keys, @values);
     my @colors;
     my $color_string = '';
@@ -340,6 +319,9 @@ sub Make_SlipBars {
 	push (@keys, $k);
 	push (@values, $numbers->{$k}{num});
     }
+    print "TESTME: @keys 
+@values
+";
     my @data = (\@keys, \@values);
     my $bargraph = new GD::Graph::bars(700,400);
     $bargraph->set(
@@ -361,9 +343,8 @@ sub Make_SlipBars {
     $bargraph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $bargraph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $image = $bargraph->plot(\@data);
-    open(IMG, ">$filename");
-    print IMG $image->png if (defined($image));
-    close IMG;
+    my $bar_data = $image->png;
+    return($bar_data);
 }
 
 sub Make_Pie {

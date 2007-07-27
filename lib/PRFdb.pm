@@ -1587,6 +1587,73 @@ PRIMARY KEY (id))/;
   $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
 }
 
+sub Create_DistributionImages {
+    my $me = shift;
+    my $statement = qq/CREATE table dist_images (
+mfe_id int,
+start int,
+rand_method varchar(20),
+slipsite char(7),
+data blob,
+INDEX(accession),
+PRIMARY KEY(mfe_id))/;
+    my ( $cp, $cf, $cl ) = caller();
+    $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+}
+
+sub Create_FeynmannImages {
+    my $me = shift;
+    my $statement = qq/CREATE table feyn_images (
+mfe_id int,
+data blob,
+PRIMARY KEY(mfe_id))/;
+    my ( $cp, $cf, $cl ) = caller();
+    $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+}
+
+sub Create_LandscapeImages {
+    my $me = shift;
+    my $statement = qq/CREATE table land_images (
+genome_id int,
+data blob,
+PRIMARY KEY(genome_id))/;
+    my ( $cp, $cf, $cl ) = caller();
+    $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+}
+
+sub Create_CloudImages {
+    my $me = shift;
+    my $statement = qq/CREATE table cloud_images (
+id $config->{sql_id},
+species $config->{sql_species},
+seqlength int,
+knotted bool,
+slipsite char(7),
+map text,
+data blob,
+INDEX(slipsite),
+INDEX(species),
+PRIMARY KEY(id))/;
+  my ( $cp, $cf, $cl ) = caller();
+  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+}
+
+sub Create_BarImages {
+    my $me = shift;
+    my $statement = qq/CREATE table bar_images (
+id $config->{sql_id},
+species $config->{sql_species},
+seqlength int,
+knotted bool,
+total blob,
+significant blob,
+percent_sig blob,
+INDEX(species),
+PRIMARY KEY(id))/;
+  my ( $cp, $cf, $cl ) = caller();
+  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+}
+
 sub Create_NoSlipsite {
   my $me        = shift;
   my $statement = qq/CREATE table noslipsite (
@@ -1672,7 +1739,6 @@ PRIMARY KEY (id)));
   $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
 }
 
-### prfdb05 queue should be recreated.
 sub Create_Queue {
   my $me    = shift;
   my $table = shift;
