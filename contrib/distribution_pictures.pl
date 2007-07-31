@@ -10,7 +10,7 @@ our $db = new PRFdb;
 our $graph = new PRFGraph;
 
 my $hunk = $db->MySelect({
-    statement => 'SELECT * FROM boot LIMIT 1000',
+    statement => 'SELECT * FROM boot',
     type => 'hash',
     descriptor => 1});
 foreach my $boot_id (keys %{$hunk}) {
@@ -33,15 +33,13 @@ foreach my $boot_id (keys %{$hunk}) {
 	my $num_undefined = scalar(@undefined_boot_values);
 	if ($num_undefined > 0) {
 	    foreach my $undefined_value (@undefined_boot_values) {
-		if ($undefined_value eq 'zscore') {
-		    my $zscore = sprintf("%.3f", ($mfe_check->{$mfe_id}->{mfe} - $hunk->{$boot_id}->{mfe_mean}) / $hunk->{$boot_id}->{mfe_sd});
-#		    my $update = $db->Execute(
-		    my $update_stmt = qq(UPDATE boot SET zscore = '$zscore' WHERE id = '$boot_id');
-		    print "$update_stmt \n";
+		if ($undefined_value eq 'accession') {
+		    my $accession = $mfe_check->{$mfe_id}->{accession};
+		    my $update_stmt = qq(UPDATE boot SET accession = '$accession' WHERE id = '$boot_id');
+		    print "$update_stmt\n";
 		    $db->Execute($update_stmt);
 		    $num_undefined--;
-#		    print "Imported $undefined_value: $zscore\n";
-		} ## End if the undefined value is zscore
+		}
 		elsif ($undefined_value eq 'seqlength') {
 		    my $seqlength = $mfe_check->{$mfe_id}->{seqlength};
 		    my $update_stmt = qq(UPDATE boot SET seqlength = '$seqlength' WHERE id = '$boot_id');
@@ -56,19 +54,47 @@ foreach my $boot_id (keys %{$hunk}) {
 		    $db->Execute($update_stmt);
 		    $num_undefined--;
 		}
-		elsif ($undefined_value eq 'accession') {
-		    my $accession = $mfe_check->{$mfe_id}->{accession};
-		    my $update_stmt = qq(UPDATE boot SET accession = '$accession' WHERE id = '$boot_id');
-		    print "$update_stmt\n";
+		elsif ($undefined_value eq 'zscore') {
+		    my $zscore = sprintf("%.3f", ($mfe_check->{$mfe_id}->{mfe} - $hunk->{$boot_id}->{mfe_mean}) / $hunk->{$boot_id}->{mfe_sd});
+		    my $update_stmt = qq(UPDATE boot SET zscore = '$zscore' WHERE id = '$boot_id');
+		    print "$update_stmt \n";
 		    $db->Execute($update_stmt);
 		    $num_undefined--;
-		}
+#		    print "Imported $undefined_value: $zscore\n";
+		} ## End if the undefined value is zscore
+
 	    } ## End foreach undefined value
 	    print "There is still an undefined value: @undefined_boot_values\n\n";
 	}
 	Check_Distribution($hunk->{$boot_id}, $mfe_check->{$mfe_id}, $mfe_id);
     }  ## End foreach mfe_id  -- THERE SHOULD ONLY BE 1
     if ($mfe_count == 0) {
+	if (!defined($hunk->{$boot_id}->{accession}) or $hunk->{$boot_id}->{accession} eq '') {
+	    my $get_accession = qq(SELECT accession FROM genome WHERE id = '$hunk->{$boot_id}->{genome_id}');
+	    my $accession_name = $db->MySelect({statement => $get_accession, type => 'single'});
+	    print "The accession was not defined, but it has been found to be $accession_name\n";
+	    my $update_stmt = qq(UPDATE boot SET accession = '$accession_name' WHERE id = '$boot_id');
+	    $db->Execute($update_stmt);
+	    $hunk->{$boot_id}->{accession} = $accession_name;
+	}
+	if (!defined($hunk->{$boot_id}->{species}) or $hunk->{$boot_id}->{species} eq '') {
+	    my $get_species = qq(SELECT species FROM genome WHERE id = '$hunk->{$boot_id}->{genome_id}');
+	    my $species_name = $db->MySelect({statement => $get_species, type => 'single'});
+	    print "The species was not defined, but it has been found to be $species_name\n";
+	    my $update_stmt = qq(UPDATE boot SET species = '$species_name' WHERE id = '$boot_id');
+	    $db->Execute($update_stmt);
+	    $hunk->{$boot_id}->{species} = $species_name;
+	}
+	if (!defined($hunk->{$boot_id}->{seqlength}) or $hunk->{$boot_id}->{seqlength} eq '') {
+	    my $get_seqlength = qq(SELECT seqlength FROM mfe WHERE id = '$hunk->{$boot_id}->{mfe_id}');
+	    my $seqlength_name = $db->MySelect({statement => $get_seqlength, type => 'single'});
+	    if (defined($seqlength_name)) {
+		print "The seqlength was not defined, but it has been found to be $seqlength_name\n";
+		my $update_stmt = qq(UPDATE boot SET seqlength = '$seqlength_name' WHERE id = '$boot_id');
+		$db->Execute($update_stmt);
+		$hunk->{$boot_id}->{seqlength} = $seqlength_name;	    
+	    }
+	}
 	my $test_stmt = qq(SELECT id, mfe FROM mfe WHERE accession = '$hunk->{$boot_id}->{accession}' AND algorithm = '$hunk->{$boot_id}->{mfe_method}');
 	print "TESTME: $test_stmt\n";
 	my $possible_mfe_ids = $db->MySelect($test_stmt);
@@ -85,18 +111,18 @@ foreach my $boot_id (keys %{$hunk}) {
 	    }
 	}
 	if ($matches == 0) {
-	    foreach my $possible (@{$possible_mfe_ids}) {
-		print "ID: $possible->[0] has MFE: $possible->[1]\n";
-	    }
-	    print "Choose ID:";
-	    my $chosen_id = <STDIN>;
-	    chomp $chosen_id;
-	    print "You chose $chosen_id, correct?\n";
-	    my $response = <STDIN>;
-	    my $update_stmt = qq(UPDATE boot SET mfe_id = '$chosen_id' WHERE id = '$boot_id');
-	    $db->Execute($update_stmt);
-	    print "\n";
-	    die("$boot_id has no matching mfe ids.\n\n");
+#	    foreach my $possible (@{$possible_mfe_ids}) {
+#		print "ID: $possible->[0] has MFE: $possible->[1]\n";
+#	    }
+#	    print "Choose ID:";
+#	    my $chosen_id = <STDIN>;
+#	    chomp $chosen_id;
+#	    print "You chose $chosen_id, correct?\n";
+#	    my $response = <STDIN>;
+#	    my $update_stmt = qq(UPDATE boot SET mfe_id = '$chosen_id' WHERE id = '$boot_id');
+#	    $db->Execute($update_stmt);
+#	    print "\n";
+	    print("$boot_id has no matching mfe ids.\n\n");
 	}
     }
 }
