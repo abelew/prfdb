@@ -16,7 +16,7 @@ our $config = $PRFConfig::config;
 our $db     = new PRFdb;
 my $parser = new PkParse();
 my $start_mfe_id = $ARGV[0];
-my $default = 327106;
+my $default = 354402;
 
 $start_mfe_id = $default unless (defined($start_mfe_id));
 
