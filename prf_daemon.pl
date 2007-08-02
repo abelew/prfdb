@@ -606,7 +606,10 @@ sub Check_Boot_Connectivity {
         $new_mfe_id = Check_Pknots( $fold_search, $slipsite_start );
       }    ### End if there is no mfe_id and pknots was the algorithm
       my $update_mfe_id_statement = qq(UPDATE boot SET mfe_id = ? WHERE id = ?);
-      $db->Execute( $update_mfe_id_statement, [ $new_mfe_id, $boot_id ] );
+      my ($cp,$cf, $cl) = caller(0);
+      $db->MyExecute({ statement => $update_mfe_id_statement,
+		       vars =>[ $new_mfe_id, $boot_id ],
+		       caller =>"$cp $cf $cl",});
       $num_fixed++;
     }    ### End if there is no mfe_id
   }    ### End foreach boot in the list
@@ -778,7 +781,7 @@ sub Make_Jobs {
 sub Optimize {
  my $table = shift;
  my $stmt = qq(OPTiMIZE TABLE $table);
- $db->Execute($stmt);
+ $db->MyExecute({statement => $stmt});
 }
 
 sub CLEANUP {

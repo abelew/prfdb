@@ -26,7 +26,6 @@ sub new {
   $dbh->{mysql_auto_reconnect} = 1;
   $dbh->{InactiveDestroy}      = 1;
   if ( $config->{checks} ) {
-    my $answer = $me->Tablep('genome');
     $me->Create_Genome()    unless ( $me->Tablep('genome') );
     $me->Create_Queue()     unless ( $me->Tablep( $config->{queue_table} ) );
     $me->Create_Boot()      unless ( $me->Tablep('boot') );
@@ -37,6 +36,7 @@ sub new {
     $me->Create_Errors()     unless ( $me->Tablep('errors') );
     $me->Create_NoSlipsite() unless ( $me->Tablep('noslipsite') );
   }
+  $me->{errors} = undef;
   return ($me);
 }
 
@@ -61,8 +61,9 @@ sub MySelect {
 
   my $return     = undef;
   if ( !defined($statement) ) {
-    die("WTF, no statement in MySelect");
+    die("No statement in MySelect");
   }
+
   my $dbh = $me->MyConnect($statement);
   my $selecttype;
   my $sth = $dbh->prepare($statement);
@@ -73,6 +74,16 @@ sub MySelect {
   else {
       $rv  = $sth->execute();
   }
+
+  if (!defined($rv)) {
+	  $me->{errors}->{statement} = $statement;
+	  $me->{errors}->{errstr} = $DBI::errstr;
+	  if (defined($input->{caller})) {
+	      $me->{errors}->{caller} = $input->{caller};
+	  }
+	  return(undef);
+  }
+
   ## If $type AND $descriptor are defined, do selectall_hashref
   if ( defined($type) and defined($descriptor) ) {
     $return     = $sth->fetchall_hashref($descriptor);
@@ -126,6 +137,11 @@ sub MySelect {
   }
 
   if ( !defined($return) or $return eq 'null' ) {
+	  $me->{errors}->{statement} = $statement;
+	  $me->{errors}->{errstr} = $DBI::errstr;
+	  if (defined($vars->{caller})) {
+	      $me->{errors}->{caller} = $vars->{caller};
+	  }
     Write_SQL($statement);
     my $errorstring = "DBH: <$dbh> $selecttype return is undefined in MySelect: $statement, ";
     if ( defined($DBI::errstr) ) {
@@ -134,6 +150,35 @@ sub MySelect {
   }
 
   return ($return);
+}
+
+sub MyExecute {
+  my $me        = shift;
+  my $input = shift;
+  if (!defined($input->{statement})) {
+      die("No Statement in Execute.");
+  }
+
+  my $dbh = $me->MyConnect($input->{statement});
+  my $sth = $dbh->prepare($input->{statement});
+  my $rv;
+  if (defined($input->{vars})) {
+      $rv = $sth->execute( @{$input->{vars}});
+  }
+  else {
+      $rv = $sth->execute();
+  }
+
+  if (!defined($rv)) {
+	  $me->{errors}->{statement} = $input->{statement};
+	  $me->{errors}->{errstr} = $DBI::errstr;
+	  if (defined($input->{caller})) {
+	      $me->{errors}->{caller} = $input->{caller};
+	  }
+	  return(undef);
+  }
+  my $rows = $rv->rows();
+  return($rows);
 }
 
 sub MyGet {
@@ -210,7 +255,7 @@ sub MyConnect {
       my $success = 0;
       while ($retry_count < 30 and $success == 0) {
 	  $retry_count++;
-	  sleep 120;
+	  sleep 10;
 	  $dbh = DBI->connect_cached($me->{dsn}, $config->{user}, $config->{pass});
 	  $dbh->{mysql_auto_reconnect} = 1;
 	  $dbh->{InactiveDestroy}      = 1;
@@ -221,9 +266,8 @@ sub MyConnect {
   }
 
   if ( !defined($dbh) ) {
-      if ( defined($statement) ) {
-	  Write_SQL($statement);
-      }
+      $me->{errors}->{statement} = $statement, Write_SQL($statement) if (defined($statement));
+      $me->{errors}->{errstr} = $DBI::errstr;
       my $error = "Could not open cached connection: $me->{dsn}, " . $DBI::err . ", " . $DBI::errstr;
       die("$error");
   }
@@ -587,7 +631,7 @@ sub Set_Queue {
   else {
       my $statement = qq(INSERT INTO $table (genome_id, checked_out, done) VALUES (?, 0, 0));
       my ( $cp, $cf, $cl ) = caller();
-      my $rc = $me->Execute($statement, [$id], [$cp,$cf,$cl]);
+      my $rc = $me->MyExecute({statement => $statement, vars => [$id], caller => "$cp,$cf,$cl",});
       my $last_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'row'});
       return ($last_id);
   }
@@ -599,7 +643,7 @@ sub Clean_Table {
   my $table     = $type . '_' . $config->{species};
   my $statement = "DELETE from $table";
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement =>$statement, caller=>"$cp, $cf, $cl"});
 }
 
 sub Drop_Table {
@@ -607,7 +651,7 @@ sub Drop_Table {
   my $table     = shift;
   my $statement = "DROP table $table";
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl"});
 }
 
 sub FillQueue {
@@ -619,7 +663,7 @@ sub FillQueue {
   $me->Create_Queue() unless ( $me->Tablep($table) );
   my $best_statement = "INSERT into $table (genome_id, checked_out, done) SELECT id, 0, 0 from genome";
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $best_statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $best_statement, caller =>"$cp, $cf, $cl"});
 }
 
 sub Copy_Genome {
@@ -630,7 +674,7 @@ sub Copy_Genome {
 (accession,species,genename,locus,ontology_function,ontology_component,ontology_process,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction,omim_id)
 SELECT accession,species,genename,locus,ontology_function,ontology_component,ontology_process,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction,omim_id from ${old_db}.genome/;
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl"});
 }
 
 sub Reset_Queue {
@@ -652,7 +696,7 @@ sub Reset_Queue {
     $statement = "UPDATE $table SET checked_out = '0' where done = '0' and checked_out = '1'";
   }
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement, caller => "$cp, $cf, $cl"});
 }
 
 sub Get_Input {
@@ -682,7 +726,7 @@ AND ${queue_table}.done = '0' AND ${queue_table}.genome_id = ${genome_table}.id 
   }
   my $update = qq(UPDATE $queue_table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?);
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $update, [$id], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $update,  vars => [$id], caller => "$cp, $cf, $cl"});
   my $return = {
     queue_id  => $id,
     genome_id => $genome_id,
@@ -760,7 +804,7 @@ sub Get_Queue {
   }
   my $update = qq(UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?);
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $update, [$id], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $update, vars=> [$id], caller =>"$cp, $cf, $cl"});
   my $return = {
     queue_table => $table,
     queue_id  => $id,
@@ -775,7 +819,7 @@ sub Copy_Queue {
   my $new_table = shift;
   my $statement = "INSERT INTO $new_table SELECT * FROM $old_table";
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl"});
 }
 
 sub Done_Queue {
@@ -794,7 +838,7 @@ sub Done_Queue {
 
   my $update = qq(UPDATE $table SET done='1', done_time=current_timestamp() WHERE genome_id=?);
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $update, [$id], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $update, vars => [$id], caller =>"$cp, $cf, $cl"});
 }
 
 sub Import_Fasta {
@@ -1049,7 +1093,7 @@ sub Get_OMIM {
     }    ## CDS features
     $statement = qq(UPDATE genome SET omim_id = ? WHERE id = ?);
     my ( $cp, $cf, $cl ) = caller();
-    $me->Execute( $statement, [ $omim_id, $id ], [ $cp, $cf, $cl ] );
+    $me->MyExecute({ statement => $statement, vars => [ $omim_id, $id ], caller =>"$cp, $cf, $cl",});
     return ($omim_id);
   }
 }
@@ -1226,7 +1270,9 @@ sub Insert_Genome_Entry {
 (accession, species, genename, version, comment, mrna_seq, protein_seq, orf_start, orf_stop, direction)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?));
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [ $datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{protein_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction} ], [ $cp, $cf, $cl ] );
+  $me->MyExecute({ statement => $statement,
+		   vars => [ $datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{protein_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction} ],
+		   caller => "$cp, $cf, $cl",});
   ## The following line is very important to ensure that multiple
   ##calls to this don't end up with
   ## Increasingly long sequences
@@ -1242,7 +1288,7 @@ sub Insert_Noslipsite {
 (accession)
 VALUES($accession)";
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement =>$statement, caller => "$cp, $cf, $cl"});
   my $last_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
   return ($last_id);
 }
@@ -1332,8 +1378,12 @@ sub Put_MFE {
   }
   $data->{sequence} =~ tr/actgu/ACTGU/;
   my $statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?));
+
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [ $data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{slipsite}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode} ], [ $cp, $cf, $cl ], $data->{genome_id} );
+  $me->MyExecute({statement => $statement,
+		  vars => [ $data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{slipsite}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode} ], 
+		  caller => "$cp, $cf, $cl",});
+
   my $put_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
   return ( $put_id );
 }    ## End of Put_MFE
@@ -1351,9 +1401,12 @@ sub Put_MFE_Landscape {
   }
   $data->{sequence} =~ tr/actgu/ACTGU/;
   my $statement = qq(INSERT INTO landscape (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
+
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [ $data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode} ], [ $cp, $cf, $cl ], $data->{genome_id} );
-  my $dbh             = DBI->connect( $me->{dsn}, $config->{user}, $config->{pass} );
+  $me->MyExecute({ statement => $statement,
+		   vars => [ $data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode} ],
+		   caller =>"$cp, $cf, $cl",});
+
   my $get_inserted_id = qq(SELECT LAST_INSERT_ID());
   my $id              = $me->MySelect(statement => $get_inserted_id, type => 'single');
   return ($id);
@@ -1389,7 +1442,8 @@ VALUES
 (SELECT stddev(zscore) FROM boot WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength')
 )/;
           my ( $cp, $cf, $cl ) = caller();
-          $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+          $me->MyExecute({statement => $statement,
+			  caller => "$cp, $cf, $cl",});
         }
       }
     }
@@ -1440,7 +1494,10 @@ VALUES
         print "$errorstring, $species, $accession\n";
       }
       my ( $cp, $cf, $cl ) = caller();
-      $me->Execute( $statement, [ $data->{genome_id}, $mfe_id, $species, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ], [ $cp, $cf, $cl ] );
+      $me->MyExecute({ statement => $statement,
+		       vars => [ $data->{genome_id}, $mfe_id, $species, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ], 
+		       caller => "$cp, $cf, $cl",});
+
        my $boot_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
        push(@boot_ids, $boot_id);
     }    ### Foreach random method
@@ -1455,7 +1512,9 @@ sub Put_Overlap {
 (genome_id, species, accession, start, plus_length, plus_orf, minus_length, minus_orf) VALUES
 (?,?,?,?,?,?,?,?));
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [ $data->{genome_id}, $data->{species}, $data->{accession}, $data->{start}, $data->{plus_length}, $data->{plus_orf}, $data->{minus_length}, $data->{minus_orf} ], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement,
+		  vars => [ $data->{genome_id}, $data->{species}, $data->{accession}, $data->{start}, $data->{plus_length}, $data->{plus_orf}, $data->{minus_length}, $data->{minus_orf} ], 
+		  caller =>"$cp, $cf, $cl",});
   my $id = $data->{overlap_id};
   return ($id);
 }    ## End of Put_Overlap
@@ -1516,49 +1575,6 @@ sub Tablep {
   return ( scalar( @{$info} ) );
 }
 
-sub Execute {
-  my $me        = shift;
-  my $statement = shift;
-  my $vars      = shift;
-  my $caller    = shift;
-  my $genome_id = shift;
-  $me->MyConnect($statement);
-  my $errorstr;
-  my $retry_count = 0;
-  my $success     = 0;
-  my $sth         = $dbh->prepare($statement)
-    or $errorstr = "Error at: line $caller->[2] of $caller->[0]: Could not prepare: $statement " . $dbh->errstr, Write_SQL( $statement, $genome_id ), PRF_Error($errorstr);
-  my $rc = $sth->execute( @{$vars} );
-
-  if ( !$rc ) {
-    if ( $dbh->errstr =~ /(?:lost connection|mysql server has gone away)/i ) {
-      while ( $retry_count < 30 and $success == 0 ) {
-        $retry_count++;
-        sleep 120;
-        $me->MyConnect($statement);
-        $sth = $dbh->prepare($statement);
-        $rc  = $sth->execute( @{$vars} );
-        if ($rc) {
-          $success = 1;
-        }    ## End checking for success in the 5 try while loop
-      }    ## End the 5 try while loop
-    }    ## End the if checking for a lost connection
-    elsif ( $dbh->errstr =~ /(?:called with)/i ) {
-      $errorstr = "Error at: line $caller->[2] of $caller->[0]: Could not execute: $statement\n";
-      print $errorstr;
-    } elsif ( $dbh->errstr =~ /(?:You have an error)/i ) {
-      $errorstr = "Error at: line $caller->[2] of $caller->[0]: Could not execute: $statement\n";
-      print $errorstr;
-    }
-  }    ## End the top level check for success.
-
-  if ( $success == 0 and $retry_count >= 5 ) {
-    $errorstr = "Tried to connect 5 times: " . $dbh->errstr, Write_SQL( $statement, $genome_id ), PRF_Error($errorstr);
-    die("Could not connect after 5 tries.");
-  }
-  return ($rc);
-}
-
 sub Create_Genome {
   my $me        = shift;
   my $statement = qq/CREATE table genome (
@@ -1584,7 +1600,9 @@ INDEX(accession),
 INDEX(genename),
 PRIMARY KEY (id))/;
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({
+      statement =>$statement, 
+      caller => "$cp, $cf, $cl",});
 }
 
 sub Create_NoSlipsite {
@@ -1595,7 +1613,8 @@ accession $config->{sql_accession},
 lastupdate $config->{sql_timestamp},
 PRIMARY KEY (id))/;
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement,
+		  caller => "$cp, $cf, $cl",});
 }
 
 sub Create_Evaluate {
@@ -1610,18 +1629,8 @@ pseudoknot bool,
 min_mfe float,
 PRIMARY KEY (id)));
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
-}
-
-sub Create_Globals {
-  my $me        = shift;
-  my $statement = "CREATE TABLE globals (
-id $config->{sql_id},
-seqlength text,
-species text,
-mean_mfe float,
-primary key(id))";
-  $me->Execute($statement);
+  $me->MyExecute({statement => $statement,
+		caller => "$cp, $cf, $cl",})
 }
 
 sub Create_Stats {
@@ -1651,7 +1660,8 @@ avg_zscore float,
 stddev_zscore float,
 PRIMARY KEY (id)));
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement,
+		  caller => "$cp, $cf, $cl",});
 }
 
 sub Create_Overlap {
@@ -1669,7 +1679,7 @@ minus_orf text,
 lastupdate $config->{sql_timestamp},
 PRIMARY KEY (id)));
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({ statement => $statement, caller =>"$cp, $cf, $cl",});
 }
 
 ### prfdb05 queue should be recreated.
@@ -1692,7 +1702,7 @@ done bool,
 done_time timestamp default 0,
 PRIMARY KEY (id))\;
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement =>$statement,  caller =>"$cp, $cf, $cl",});
 }
 
 sub Create_MFE {
@@ -1719,7 +1729,7 @@ INDEX(genome_id),
 INDEX(accession),
 PRIMARY KEY(id))\;
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement,  caller =>"$cp, $cf, $cl",});
 }
 
 sub Create_Variations {
@@ -1738,7 +1748,7 @@ INDEX(dbSNP),
 INDEX(accession),
 PRIMARY KEY(id))\;
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement,caller=>"$cp, $cf, $cl",});
 }
 
 sub Create_Landscape {
@@ -1764,7 +1774,7 @@ INDEX(genome_id),
 INDEX(accession),
 PRIMARY KEY(id))\;
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement =>$statement, caller => "$cp, $cf, $cl",});
 }
 
 sub Create_Boot {
@@ -1794,7 +1804,7 @@ INDEX(mfe_id),
 INDEX(accession),
 PRIMARY KEY(id))\;
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl",});
 }
 
 sub Create_Analysis {
@@ -1811,7 +1821,7 @@ z_score float,
 lastupdate $config->{sql_timestamp},
 PRIMARY KEY(id))\;
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl",});
 }
 
 sub Create_Errors {
@@ -1823,7 +1833,7 @@ message blob,
 accession $config->{sql_accession},
 PRIMARY KEY(id))\;
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cf, $cl ] );
+  $me->MyExecute({statement => $statement, caller => "$cp, $cf, $cl"});
 }
 
 sub Create_TermCount {
@@ -1834,7 +1844,7 @@ term text,
 count int,
 PRIMARY KEY(id))\;
   my ( $cp, $cf, $cl ) = caller();
-  $me->Execute( $statement, [], [ $cp, $cl, $cl ] );
+  $me->MyExecute({statement => $statement, caller =>"$cp, $cl, $cl",});
 }
 
 1;

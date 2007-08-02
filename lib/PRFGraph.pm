@@ -130,7 +130,7 @@ sub Make_Cloud {
 
     foreach my $point (@{$data}) {
 	my $x_point = sprintf("%.1f",$point->[0]);
-	my $y_point = sprintf("%.1f",$point->[1]);
+	my $y_point = sprintf("%.2f",$point->[1]);
 	#print "MFE_value: $x_point Zscore: $y_point<br>\n";
 	if ( defined($points->{$x_point}->{$y_point})) {
 	    $points->{$x_point}->{$y_point}->{count}++;
@@ -160,11 +160,12 @@ sub Make_Cloud {
 	    $pie_numbers->{total} += $points->{$x_point}->{$y_point}->{count};
 	    $pie_numbers->{num_pknots} += $points->{$x_point}->{$y_point}->{knotted};
 	    my $accession = $points->{$x_point}->{$y_point}->{accession};
-	    my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
+	    my $y_coord = sprintf("%.2f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
 	    my $counter = $points->{$x_point}->{$y_point}->{count};
 	    
 	    ## Quadrant Color Code
 	    my $color_value = 220 - (220*($counter/$max_counter));
+	    # my $color_value = 64 + (191*($counter/$max_counter));
 	    my $color = undef;
 	    # print "X: $x_coord Y: $y_coord AVGX: $average_mfe_coord AVGY: $average_z_coord CV: $color_value";
 	    if ( ($x_coord < $average_mfe_coord) and ($y_coord > $average_z_coord) ) {
@@ -187,7 +188,8 @@ sub Make_Cloud {
 		$color = $gd->colorResolve(254,191,191);
 		# print " C: pink<br>\n";
 	    }
-	    $gd->filledRectangle($x_coord-1, $y_coord-1, $x_coord+1, $y_coord+1, $color);
+	    # $gd->filledRectangle($x_coord-1, $y_coord-1, $x_coord+1, $y_coord+1, $color);
+	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 4);
 	    $x_coord = sprintf('%.0f', $x_coord);
 	    $y_coord = sprintf('%.0f', $y_coord);
 	    my $image_map_string;
@@ -275,8 +277,8 @@ sub Make_Cloud {
 		my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
 		$x_coord = sprintf('%.0f', $x_coord);
 		$y_coord = sprintf('%.0f', $y_coord);
-		$gd->filledRectangle($x_coord-1, $y_coord-1, $x_coord+1, $y_coord+1, $black);
-		# $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $black, 4);
+		# $gd->filledRectangle($x_coord-1, $y_coord-1, $x_coord+1, $y_coord+1, $black);
+		$gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $black, 4);
 		if (defined($pknot)) {
 		    $image_map_string =  qq(point ${url}/mfe_z?slipsite=$args_slipsites&pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
 		}
