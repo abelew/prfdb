@@ -8,12 +8,14 @@ use PRFGraph;
 our $config = $PRFConfig::config;
 our $db = new PRFdb;
 our $graph = new PRFGraph;
-
+my $nomatches = 0;
+my $num_looked = 0;
 my $hunk = $db->MySelect({
     statement => 'SELECT * FROM boot',
     type => 'hash',
     descriptor => 1});
-foreach my $boot_id (keys %{$hunk}) {
+foreach my $boot_id (keys %{$hunk}) { 
+    $num_looked++;
     ## Columns:
     # id, genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method,
     # mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_sd, pairs_se, mfe_values, zscores
@@ -122,10 +124,15 @@ foreach my $boot_id (keys %{$hunk}) {
 #	    my $update_stmt = qq(UPDATE boot SET mfe_id = '$chosen_id' WHERE id = '$boot_id');
 #	    $db->Execute($update_stmt);
 #	    print "\n";
-	    print("$boot_id has no matching mfe ids.\n\n");
+            $nomatches++;
+	    print("$boot_id has no matching mfe ids: $nomatches of $num_looked.\n");
+            my $del = qq/DELETE FROM boot WHERE id = '$boot_id'/;
+            $db->Execute($del);
 	}
     }
 }
+print "There were $nomatches without MFE ids.\n";
+
 
 sub Check_Distribution {
     my $boot_info = shift;

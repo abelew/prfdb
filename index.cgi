@@ -385,9 +385,9 @@ $structure->[8]
     if (!-r $feynman_output_filename) {
 	$feynman_dimensions = $feynman_pic->Make_Feynman();
     }
-    else {
-	$feynman_dimensions = Retarded($feynman_output_filename);
-    }
+ #   else {
+#	$feynman_dimensions = Retarded($feynman_output_filename);
+#    }
 ## This requires an X server connection -- perhaps I can solve this
 ## By logging in at boot time as 'website' and starting a null Xserver on
 ## :6 and then setting env{display} to :6
@@ -477,10 +477,10 @@ $structure->[8]
     $vars->{species} =~ s/_/ /g;
     $vars->{species} = ucfirst($vars->{species});
 
-    $vars->{feynman_height} = $feynman_dimensions->{height};
-    $vars->{feynman_height} += 1;
-    $vars->{feynman_width} = $feynman_dimensions->{width};
-    $vars->{feynman_width} += 1;
+#    $vars->{feynman_height} = $feynman_dimensions->{height};
+#    $vars->{feynman_height} += 1;
+#    $vars->{feynman_width} = $feynman_dimensions->{width};
+#    $vars->{feynman_width} += 1;
 
     $template->process( "detail_body.html", $vars ) or
 	Print_Template_Error($template), die;
@@ -1274,28 +1274,3 @@ sub Print_Template_Error {
     print $string;
 }
 
-sub Retarded {
-    my $filename = shift;
-    my $FU = qq(grep height $filename  | awk -F'height="' '{print \$2}' | awk -F'"' '{print \$1}' | head -n 1);
-    open(F, "$FU |");
-    my $rep;
-    while (my $line = <F>) {
-	chomp $line;
-	$rep .= $line;
-    }
-    close(F);
-
-    my $FU2 = qq(grep width $filename  | awk -F'width="' '{print \$2}' | awk -F'"' '{print \$1}' | head -n 1);
-    open(F2, "$FU2 |");
-    my $rep2;
-    while (my $line = <F2>) {
-	chomp $line;
-	$rep2 .= $line;
-    }
-    close(F);
-
-    my $ret = {};
-    $ret->{height} = $rep;
-    $ret->{width} = $rep2;
-    return($ret);
-}

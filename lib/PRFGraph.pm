@@ -187,7 +187,7 @@ sub Make_Cloud {
 		$color = $gd->colorResolve(254,191,191);
 		# print " C: pink<br>\n";
 	    }
-	    $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $color, 4);
+	    $gd->filledRectangle($x_coord-1, $y_coord-1, $x_coord+1, $y_coord+1, $color);
 	    $x_coord = sprintf('%.0f', $x_coord);
 	    $y_coord = sprintf('%.0f', $y_coord);
 	    my $image_map_string;
@@ -275,7 +275,8 @@ sub Make_Cloud {
 		my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
 		$x_coord = sprintf('%.0f', $x_coord);
 		$y_coord = sprintf('%.0f', $y_coord);
-		$gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $black, 4);
+		$gd->filledRectangle($x_coord-1, $y_coord-1, $x_coord+1, $y_coord+1, $black);
+		# $gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $black, 4);
 		if (defined($pknot)) {
 		    $image_map_string =  qq(point ${url}/mfe_z?slipsite=$args_slipsites&pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point} ${x_coord},${y_coord}\n);
 		}
@@ -670,8 +671,7 @@ sub Make_Feynman {
     my $start_x = $x_pad;
     my $start_y = $height - 10;
 
-    my $bounds = $fey->string(gdMediumBoldFont, $start_x, $start_y-10, $sequence, $black);
-
+    #my $bounds = $fey->string(gdMediumBoldFont, $start_x, $start_y-10, $sequence, $black);
     my $distance_per_char = $character_size - 2;
     my $string_x_distance = $character_size * length($sequence);
 
@@ -681,10 +681,20 @@ sub Make_Feynman {
     my $last_stem = $me->Get_Last(\@stems);
     my $bp_per_stem = $me->Get_Stems(\@stems);
 
+    my $character_x = $start_x;
+    my $character_y = $start_y - 10;
+
     for my $c (0 .. $#seq) {
 	my $count = $c+1;
-	next if ($paired[$c] eq '.');
-	if ($paired[$c] =~ /\d+/) {
+	if ($paired[$c] eq '.') {
+	    if ($stems[$c] =~ /\d+/) {
+		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
+	    }
+	    elsif ($stems[$c] eq '.') {
+		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
+	    }
+	}
+	elsif ($paired[$c] =~ /\d+/) {
 	    my $current_stem = $stems[$c];
 	    my $bases_in_stem = $bp_per_stem->{$current_stem};
 	    my $center_characters = ($paired[$c] - $c) / 2;
@@ -699,18 +709,41 @@ sub Make_Feynman {
 	    $fey->setThickness(2);
 	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$stems[$c]]);
 	    $paired[$paired[$c]] = '.';
+	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
 	}
+### Why are there spaces?
+	else {
+#	    print "Crap in a hat the character is $paired[$c]\n";
+	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
+	}
+	$character_x = $character_x + 8;
     }
+
     my $output = $me->Picture_Filename( {type => 'feynman',});
     $output =~ s/\.png/\.svg/g;
+    my $output2 = $output . 'z';
     open(OUT, ">$output");
     binmode OUT;
     print OUT $fey->svg;
     close OUT;
-    my $command = qq(sed 's/font="Helvetica"/font-family="Courier New"/g' $output > ${output}.tmp);
+    my $command = qq(sed 's/font=\"Helvetica\"/font-family="Courier New"/g' ${output} > ${output}.tmp);
+#    print "TESTME: $command<br>\n";
     system($command);
-    my $command2 = qq(mv ${output}.tmp $output);
-    system($command2);
+    $command = qq(mv ${output}.tmp ${output});
+#    print "TESTME: $command<br>\n";
+    system($command);
+#    $command = qq(/usr/bin/gzip ${output});
+#    print "TESTME: $command<br>\n";
+#    system($command);
+#    $command = qq(/bin/mv ${output}.gz ${output2});
+#    print "TESTME: $command<br>\n";
+#    system($command);
+
+#    my $command = qq(sed 
+#    system($command);
+#    my $command2 = qq(mv ${output}.tmp $output);
+#    system($command2);
+
     my $ret = {
 	width => $width,
 	height =>$height,

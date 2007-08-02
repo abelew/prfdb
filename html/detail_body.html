@@ -138,7 +138,7 @@
       </tr>
       <tr>
 	<td>
-	  <font face="Courier New, Courier, mono" size="-1">[% pk_input %]</font>
+	  <b><font face="Courier New, Courier, mono" size="-1">[% pk_input %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
 	    <a href="[% base %]/download_subseq?mfeid=[% mfe_id %]">Download subsequence</a>
 	  </font>
@@ -146,7 +146,7 @@
       </tr>
       <tr>
 	<td>
-	  <font face="Courier New, Courier, mono" size="-1">[% brackets %]</font>
+	  <b><font face="Courier New, Courier, mono" size="-1">[% brackets %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
 	    <a href="[% base %]/download_parens?mfeid=[% mfe_id %]">Download brackets</a>
 	  </font>
@@ -154,7 +154,7 @@
       </tr>
       <tr>
         <td>
-    	  <font face="Courier New, Courier, mono" size="-1">[% parsed %]</font>
+    	  <b><font face="Courier New, Courier, mono" size="-1">[% parsed %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
 	    <a href="[% base %]/download_parsed?mfeid=[% mfe_id %]">Download parsed</a>
 	  </font>
@@ -162,7 +162,7 @@
       </tr>
       <tr>
         <td>
-          <embed src="[% feynman_url %]"  width = [% feynman_width %] height = [% feynman_height %] border = "0">
+          <embed id="feynman" src="[% feynman_url %]" align="bottom" width="100%" height="250" border="0">
 	  <font face="Courier New, Courier, mono" size="-3">
 	    <a href="[% base %]/download_bpseq?mfeid=[% mfe_id %]">Download bpseq</a>
 	  </font>
