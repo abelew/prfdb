@@ -484,7 +484,7 @@ sub Nupack_Boot {
     }
     PRFdb::RemoveFile($errorfile);
     my $out_pair = qq($config->{workdir}/out.pair);
-    PRFdb::AddFile($out_pair);
+    PRFdb::AddOpen($out_pair);
     open( PAIRS, "<$out_pair" ) or PRF_Error( "Could not open the nupack pairs file: $!", $accession );
     ## OPEN PAIRS in Nupack_Boot
     my $pairs         = 0;

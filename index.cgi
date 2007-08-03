@@ -377,20 +377,15 @@ $structure->[8]
     my $feynman_pic = new PRFGraph({mfe_id => $id, accession => $accession});
     my $pre_feynman_url = $feynman_pic->Picture_Filename({type=> 'feynman', url => 'url',});
     my $feynman_url = $basedir . '/' . $pre_feynman_url;
-    $feynman_url =~ s/\.png/\.svg/g;
-#    ## Feynman
     my $feynman_output_filename = $feynman_pic->Picture_Filename( {type => 'feynman', });
-    $feynman_output_filename =~ s/\.png/\.svg/g;
     my $feynman_dimensions = {};
     if (!-r $feynman_output_filename) {
 	$feynman_dimensions = $feynman_pic->Make_Feynman();
     }
- #   else {
-#	$feynman_dimensions = Retarded($feynman_output_filename);
-#    }
-## This requires an X server connection -- perhaps I can solve this
-## By logging in at boot time as 'website' and starting a null Xserver on
-## :6 and then setting env{display} to :6
+    else {
+	$feynman_dimensions = $feynman_pic->Get_Feynman_ImageSize($feynman_output_filename);
+    }
+
     if ( defined($boot) ) {
       my $mfe_values       = $boot->[0];
       my @mfe_values_array = split( /\s+/, $mfe_values );
@@ -477,10 +472,8 @@ $structure->[8]
     $vars->{species} =~ s/_/ /g;
     $vars->{species} = ucfirst($vars->{species});
 
-#    $vars->{feynman_height} = $feynman_dimensions->{height};
-#    $vars->{feynman_height} += 1;
-#    $vars->{feynman_width} = $feynman_dimensions->{width};
-#    $vars->{feynman_width} += 1;
+    $vars->{feynman_height} = $feynman_dimensions->{height};
+    $vars->{feynman_width} = $feynman_dimensions->{width};
 
     $template->process( "detail_body.html", $vars ) or
 	Print_Template_Error($template), die;

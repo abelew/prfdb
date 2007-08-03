@@ -723,33 +723,18 @@ sub Make_Feynman {
     }
 
     my $output = $me->Picture_Filename( {type => 'feynman',});
-    $output =~ s/\.png/\.svg/g;
-    my $output2 = $output . 'z';
     open(OUT, ">$output");
     binmode OUT;
     print OUT $fey->svg;
     close OUT;
     my $command = qq(sed 's/font=\"Helvetica\"/font-family="Courier New"/g' ${output} > ${output}.tmp);
-#    print "TESTME: $command<br>\n";
     system($command);
     $command = qq(mv ${output}.tmp ${output});
-#    print "TESTME: $command<br>\n";
     system($command);
-#    $command = qq(/usr/bin/gzip ${output});
-#    print "TESTME: $command<br>\n";
-#    system($command);
-#    $command = qq(/bin/mv ${output}.gz ${output2});
-#    print "TESTME: $command<br>\n";
-#    system($command);
-
-#    my $command = qq(sed 
-#    system($command);
-#    my $command2 = qq(mv ${output}.tmp $output);
-#    system($command2);
 
     my $ret = {
-	width => $width,
-	height =>$height,
+	width => $width + 1,
+	height =>$height + 1,
     };
     return($ret);
 }
@@ -798,21 +783,28 @@ sub Picture_Filename {
   my $species = $args->{species};
   my $suffix = $args->{suffix};
 
+  my $extension; 
+  if ($type eq 'feynman') {
+    $extension = '.svg'; 
+  } else {
+    $extension = '.png';
+  }
+
   my $accession = $me->{accession};
   my $mfe_id = $me->{mfe_id};
 
   if (defined($species)) {
       if (defined($url)) {
 	  if (defined($suffix)) {
-	      return(qq(images/${type}/${species}${suffix}.png));
+	      return(qq(images/${type}/${species}${suffix}$extension));
 	  } else {
-	      return(qq(images/${type}/${species}.png));
+	      return(qq(images/${type}/${species}$extension));
 	  }
       } else {
 	  if (defined($suffix)) {
-	      return(qq($config->{base}/images/${type}/${species}${suffix}.png));
+	      return(qq($config->{base}/images/${type}/${species}${suffix}$extension));
 	  } else {
-	      return(qq($config->{base}/images/${type}/${species}.png));
+	      return(qq($config->{base}/images/${type}/${species}$extension));
 	  }
       }
   }
@@ -822,18 +814,18 @@ sub Picture_Filename {
 
   if (defined($mfe_id)) {
       if (defined($suffix)) {
-	  $filename = qq($directory/${accession}-${mfe_id}${suffix}.png);
+	  $filename = qq($directory/${accession}-${mfe_id}${suffix}$extension);
       }
       else {
-	  $filename = qq($directory/${accession}-${mfe_id}.png);
+	  $filename = qq($directory/${accession}-${mfe_id}$extension);
       }
   }
   else {
       if (defined($suffix)) {
-	  $filename  = qq($directory/$accession${suffix}.png);
+	  $filename  = qq($directory/$accession${suffix}$extension);
       }
       else {
-	  $filename  = qq($directory/$accession.png);
+	  $filename  = qq($directory/$accession$extension);
       }
   }
   return ($filename);
@@ -906,3 +898,21 @@ sub Get_Stems {
     return($dat);
 }
 
+sub Get_Feynman_ImageSize {
+    my $me = shift;
+    my $filename = shift;
+    open(IN, "<$filename");
+    my($svg, $height, $width, $stuff);
+    while(my $line = <IN>) {
+     next unless ($line =~ /^\<svg/);
+     ($svg, $height, $width, $stuff) = split(/\s+/, $line);
+     $height =~ s/height="(\d+).*/$1/g;
+     $width =~ s/width="(\d+).*/$1/g;
+     last;
+    }
+    close(IN);
+    my $ret = {};
+    $ret->{height} = $height + 1; ### To correct for truncated decimal points in the svg file
+    $ret->{width} = $width + 1;   ## Because we hate those god damn scroll bars so very much
+    return($ret);
+}

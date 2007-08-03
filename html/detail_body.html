@@ -1,3 +1,4 @@
+<style> .fixedfont { font-size : 14px } </style>
     <table width="95%" border="0" align="center" cellpadding="2" cellspacing="1">
 
       <tr valign="top" bgcolor="#E9EBF7">
@@ -138,37 +139,36 @@
       </tr>
       <tr>
 	<td>
-	  <b><font face="Courier New, Courier, mono" size="-1">[% pk_input %]</font></b>
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;[% pk_input %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
 	    <a href="[% base %]/download_subseq?mfeid=[% mfe_id %]">Download subsequence</a>
-	  </font>
+	  </font></div>
         </td>
       </tr>
       <tr>
 	<td>
-	  <b><font face="Courier New, Courier, mono" size="-1">[% brackets %]</font></b>
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;[% brackets %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
 	    <a href="[% base %]/download_parens?mfeid=[% mfe_id %]">Download brackets</a>
-	  </font>
+	  </font></div>
 	</td>
       </tr>
       <tr>
         <td>
-    	  <b><font face="Courier New, Courier, mono" size="-1">[% parsed %]</font></b>
+    	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;[% parsed %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
 	    <a href="[% base %]/download_parsed?mfeid=[% mfe_id %]">Download parsed</a>
-	  </font>
+	  </font></div>
 	</td>
       </tr>
       <tr>
         <td>
-          <embed id="feynman" src="[% feynman_url %]" align="bottom" width="100%" height="250" border="0">
+	  <embed id="feynman" src="[% feynman_url %]" align="bottom" width="[% feynman_width %]" height="[% feynman_height %]" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
 	  <font face="Courier New, Courier, mono" size="-3">
 	    <a href="[% base %]/download_bpseq?mfeid=[% mfe_id %]">Download bpseq</a>
 	  </font>
         </td>
       </tr>
-
     </table>
 <p/>
 <hr>
