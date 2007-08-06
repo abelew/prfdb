@@ -30,36 +30,36 @@ sub Search {
   my $factory;
   my $blast_output = new Bio::SearchIO( -format => 'blast' );
   my $result;
+
+    print "HERE?<br>\n";
+
   $sequence =~ s/\s+//g;
   my $seq = new Bio::Seq(
     -display_id => 'query',
     -seq        => $sequence
   );
-
   if ( $location eq 'local' ) {
     my @params = (
       program => 'blastn',
-
-      #                database => 'prfdb',
       I => 't',    ## -I tells blast to output the GI identifier, which is the id in the genome db
     );
     ## The param array just takes the first letter of the key and passes its value as the argument eg.
     ## -p blastn -d prfdb -I t
     $factory = new Bio::Tools::Run::StandAloneBlast(@params);
     ### New versions of Bio::Tools::Run::StandAloneBlast return Bio::SearchIO::blast objects
-
+    chdir("$config->{blastdb}");
     $blast_output = $factory->blastall($seq);     ## A Bio::SearchIO
+    chdir("$config->{base}");
     $result       = $blast_output->next_result;
-  } else {
+
+  } else { ## not local
     my @params = (
       -readmethod => 'SearchIO',
       -prog       => 'blastn',
       -data       => 'nr',
     );
     $factory = new Bio::Tools::Run::RemoteBlast(@params);
-
-    #    my $r = $factory->submit_blast($seq);
-
+    print "HERE?<br>\n";
     my $r = $factory->submit_blast($seq);
   LOOP: while ( my @rids = $factory->each_rid() ) {
       foreach my $rid (@rids) {

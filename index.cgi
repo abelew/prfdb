@@ -116,10 +116,10 @@ sub MAIN {
     } elsif ( $path eq '/detail' ) {
 	Print_Detail_Slipsite();
     } elsif ( $path eq '/local_blast' ) {
-	print "Performing BLAST search now, this may take a moment.<br>\n";
+	print "Performing Local BLAST search now, this may take a moment.<br>\n";
 	Print_Blast('local');
     } elsif ( $path eq '/remote_blast' ) {
-	print "Performing BLAST search now, this may take a moment.<br>\n";
+	print "Performing Remote BLAST search now, this may take a moment.<br>\n";
 	Print_Blast('remote');
     }
     $template->process( 'footer.html', $vars ) or
@@ -165,7 +165,6 @@ sub Print_Download {
 
 sub Print_Search_Form {
     $vars->{blast_startform} = $cgi->startform( -action => "$base/blast_search" );
-    $vars->{blastsearch} = $cgi->textarea( -name => 'blastsearch', -rows => 12, -columns => 80, );
     $vars->{blast_submit} = $cgi->submit( -name => 'blastsearch', -value => 'Perform Blast Search');
     $template->process( 'searchform.html', $vars ) or
 	Print_Template_Error($template), die;
@@ -990,10 +989,9 @@ sub Get_Accession_Info {
 }
 
 sub Print_Blast {
-  my $local      = shift;
+  my $is_local      = shift;
   my $input_sequence = shift;
   my $blast      = new PRF_Blast;
-  
   my $accession;
   my $sequence;
   if (defined($input_sequence)) {
@@ -1006,8 +1004,11 @@ sub Print_Blast {
 	  vars => [$accession],
 	  type => 'single', });
   }
-  
-  my $local_info = $blast->Search( $sequence, $local );
+
+  $sequence =~ tr/Uu/Tt/;
+  $sequence =~ s/\s//g;
+
+  my $local_info = $blast->Search( $sequence, $is_local );
 
   my ( %hit_names, %accessions, %lengths, %descriptions, %scores, %significances, %bitses );
   my ( %hsps_evalue, %hsps_expect, %hsps_gaps, %hsps_querystring, %hsps_homostring, %hsps_hitstring, %hsps_numid, %hsps_numcon, %hsps_length, %hsps_score );

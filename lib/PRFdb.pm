@@ -387,13 +387,12 @@ sub Genome_to_Fasta {
   my $species   = shift;
   my $statement = qq(SELECT DISTINCT accession, species, comment, mrna_seq FROM genome);
   my $info;
-  open( OUTPUT, ">blast/$output" ) or die("Could not open the fasta output file. $!");
+  system("mkdir $config->{base}/blast") if (!-r  "$config->{base}/blast");
+  open( OUTPUT, ">$config->{base}/blast/$output" ) or die("Could not open the fasta output file. $!");
   if ( defined($species) ) {
-    $statement .= ' WHERE species = ?';
+    $statement .= ' WHERE species = \'$species\'';
   }
-  $info->$me->MySelect({
-      statement => $statement,
-      vars => [$species], });
+  $info = $me->MySelect($statement);
   my $count = 0;
   foreach my $datum ( @{$info} ) {
     $count++;

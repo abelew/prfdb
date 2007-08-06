@@ -104,7 +104,7 @@ sub Make_Cloud {
     my $gb = $gd->colorResolve(0,97,97);
     my $darkslategray = $gd->colorResolve(165,165,165);
     my $axes_coords = $graph->get_feature_coordinates('axes');
-    print "@{$axes_coords}\n";
+    # print "@{$axes_coords}\n";
     my $left_x_coord = $axes_coords->[1];
     my $top_y_coord = $axes_coords->[2];
     my $right_x_coord = $axes_coords->[3];
