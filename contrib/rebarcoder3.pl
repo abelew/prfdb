@@ -24,18 +24,23 @@ foreach my $inf ( @{$info} ) {
   my $pk_parsed = $inf->[2];
   $pk_output =~ s/^\s+//g;
   $pk_output =~ s/\s+/ /g;
-  my @start         = split( / /, $pk_output );
+  my @start         = split( /\s+/, $pk_output );
   my $struct        = $parser->Unzip( \@start );
   my $new_struc     = PkParse::ReBarcoder($struct);
   my $condensed     = PkParse::Condense($new_struc);
-  my $brackets      = PkParse::MAKEBRACKETS( \@start );
-  my @parens        = split( //, $brackets );
+  my $brackets      = PkParse::MyBrackets(\@start, $new_struc);
+  my @parens        = split( //, $struct );
   my $parsed_string = '';
   foreach my $char ( @{$new_struc} ) {
     $parsed_string .= "$char ";
   }
+  my $brackets_string = '';
+  foreach my $char ( @{$brackets} ) {
+    $brackets_string .= "$char ";
+  }
 
-  my $update_string = qq(UPDATE mfe SET barcode = '$condensed', parsed = '$parsed_string', WHERE id = '$mfe_id');
-  #my $update_string = qq(UPDATE mfe SET barcode = '$condensed' WHERE id = '$mfe_id');
+  $brackets_string =~ s/\s+//g;
+  my $update_string = qq(UPDATE mfe SET barcode = '$condensed', parsed = '$parsed_string', parens='$brackets_string' WHERE id = '$mfe_id');
+ # #my $update_string = qq(UPDATE mfe SET barcode = '$condensed' WHERE id = '$mfe_id');
   print "${update_string};\n";
 }

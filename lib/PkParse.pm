@@ -16,6 +16,7 @@ sub new {
 my $stemid = 0;
 ## The current stemid;
 my $out_pattern = [];
+my $parens_pattern = [];
 ## The output
 my $three_back = 0;
 my $two_back   = 0;
@@ -51,6 +52,7 @@ sub Unzip {
   for my $pos ( 0 .. $#$in_pattern ) {
     if ( $in_pattern->[$pos] eq '.' ) {
       $out_pattern->[$pos] = '.';
+      $parens_pattern->[$pos] = '.';
     } else {
       $out_pattern->[$pos] = -1;    ### Placeholders
       $positions_remaining++;       ### Counter of how many places need to be filled.
@@ -264,6 +266,82 @@ sub Clean_State {
   $positions_filled = 0;
   $times_in_stem    = 0;
   $old              = 0;
+}
+
+sub MyBrackets {
+    my $pk_output = shift;
+    my $barcode = shift;
+    my @parens = @{$pk_output};
+
+    my %stuff = ();
+    for my $c (0 .. $#parens) {
+	next if ($parens[$c] eq '.');
+	next if ($parens[$c] eq ')');
+	next if ($parens[$c] eq '(');
+	if (!defined($stuff{$barcode->[$c]}{"fiveprime"})) {
+	    my @fiveprime = ();
+	    push(@fiveprime, $parens[$c]);
+	    $stuff{$barcode->[$c]}{"fiveprime"} = \@fiveprime;
+	}
+	else {
+	    my @fiveprime = @{$stuff{$barcode->[$c]}{"fiveprime"}};
+	    push(@fiveprime, $parens[$c]);
+	    $stuff{$barcode->[$c]}{"fiveprime"} = \@fiveprime;
+	}
+
+	if (!defined($stuff{$barcode->[$c]}{"threeprime"})) {
+	    my @threeprime = ();
+	    push(@threeprime, $parens[$parens[$c]]);
+	    $stuff{$barcode->[$c]}{"threeprime"} = \@threeprime;
+	}
+	else {
+	    my @threeprime = @{$stuff{$barcode->[$c]}{"threeprime"}};
+	    push(@threeprime, $parens[$parens[$c]]);
+	    $stuff{$barcode->[$c]}{"threeprime"} = \@threeprime;
+	}
+	print "TESTME: Element: $c points to: $parens[$c]\n";
+    }  ## End of each element in parens
+    print "Early TEST: @parens\n";
+    
+    my %stem_info = ();
+    my $last_stem = 0;
+    foreach my $stem (sort keys %stuff) {
+	$last_stem = $stem if ($stem > $last_stem);
+	my @temp = @{$stuff{$stem}{"threeprime"}};
+	$stem_info{$stem}{"last_threeprime"} = $stuff{$stem}{"threeprime"}->[$#temp];
+	$stem_info{$stem}{"first_threeprime"} = $stuff{$stem}{"threeprime"}->[0];
+    }
+    
+  OUTER: foreach my $stem (sort keys %stem_info) {
+    INNER: foreach my $second_stem (sort keys %stem_info) {
+	next INNER if ($second_stem <= $stem);
+	if ($stem_info{$stem}{"last_threeprime"} > $stem_info{$second_stem}{"first_threeprime"}) {
+	    foreach my $position (@{$stuff{$second_stem}{"threeprime"}}) {
+		$parens[$position] = '}';
+	    }
+	    foreach my $position (@{$stuff{$second_stem}{"fiveprime"}}) {
+		$parens[$position] = '{';
+	    }
+	}
+	else {
+	    foreach my $position (@{$stuff{$second_stem}{"threeprime"}}) {
+		$parens[$position] = ')';
+	    }
+	    foreach my $position (@{$stuff{$second_stem}{"fiveprime"}}) {
+		$parens[$position] = '(';
+	   }
+
+	}
+    } ## END iNNER
+      foreach my $position(@{$stuff{1}{"threeprime"}}) {
+	  $parens[$position] = ')';
+      }
+      foreach my $position(@{$stuff{1}{"fiveprime"}}) {
+	  $parens[$position] = '(';
+      }
+      
+  } ## END OUTER
+    return(\@parens);
 }
 
 sub MAKEBRACKETS {
