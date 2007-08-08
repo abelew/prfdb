@@ -10,6 +10,7 @@ sub new {
   my ( $class, %arg ) = @_;
   my $me = bless {
     genome_id     => $arg{genome_id},
+    mfe_id => $arg{mfe_id},
     nupack_mfe_id => $arg{nupack_mfe_id},
     pknots_mfe_id => $arg{pknots_mfe_id},
     inputfile     => $arg{inputfile},
@@ -73,6 +74,9 @@ sub Go {
     } elsif ( $boot_mfe_algo_name eq 'pknots' ) {
       $mfe_id = $me->{pknots_mfe_id},;
     }
+    if (!defined($mfe_id)) {
+	$mfe_id = $me->{mfe_id};
+    }
     my @randers = keys( %{ $me->{randomizers} } );
     foreach my $rand_name ( keys %{ $me->{randomizers} } ) {
       my $ret = {
@@ -109,7 +113,7 @@ sub Go {
         my $rand_algo           = $me->{randomizers}->{$rand_name};
         my $array_reference     = $me->{fasta_arrayref};
         my $randomized_sequence = &{$rand_algo}($array_reference);
-        $me->Overwrite_Inputfile($randomized_sequence);
+        my $new_sequence = $me->Overwrite_Inputfile($randomized_sequence);
 
         #	      my $mfe = &{$boot_mfe_algo}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
         my $mfe = &{$boot_mfe_algo}( $me->{inputfile}, $me->{accession}, $me->{start} );
@@ -161,6 +165,7 @@ $string
 ";
   close OUT;
   ## CLOSE OUT in Overwrite_Inputfile
+  return($string);
 }
 
 1;

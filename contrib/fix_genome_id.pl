@@ -3,8 +3,8 @@ use strict;
 use lib '../lib';
 
 use PRFdb;
-my $db     = new PRFdb;
-my $select = qq(SELECT genome_id, accession from mfe ORDER BY genome_id);
+my $db = new PRFdb;
+my $select = qq(SELECT genome_id, accession from mfe where species='homo_sapiens' ORDER BY genome_id);
 
 my $ids = $db->MySelect( $select, [] );
 foreach my $entry (@{$ids}) {

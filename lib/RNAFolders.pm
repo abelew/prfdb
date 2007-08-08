@@ -52,7 +52,7 @@ sub Nupack {
   }
   print "NUPACK: infile: $inputfile accession: $accession start: $start
 command: $command\n";
-  my $nupack_pid = open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack, Could not run nupack: $!", $accession );
+  my $nupack_pid = open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack, Could not run nupack: $command $!", $accession );
   ## OPEN NU in Nupack
   my $count = 0;
   while ( my $line = <NU> ) {
@@ -89,8 +89,8 @@ command: $command\n";
   ## CLOSE NU in Nupack
   my $nupack_return = $?;
   unless ( $nupack_return eq '0' or $nupack_return eq '256' ) {
-      PRFConfig::PRF_Error( "Nupack Error running $nupack: $!", $accession );
-      die("Nupack Error running $nupack: $!");
+      PRFConfig::PRF_Error( "Nupack Error running $nupack: $command $!", $accession );
+      die("Nupack Error running $nupack: $command $!");
   }
   PRFdb::RemoveFile($errorfile);
   my $out_pair = qq($config->{workdir}/out.pair);
@@ -174,7 +174,7 @@ sub Nupack_NOPAIRS {
     }
     print "NUPACK_NOPAIRS: infile: $inputfile accession: $accession start: $start
 command: $command\n";
-    my $nupack_pid = open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_NOPAIRS, Could not run nupack: $!", $accession );
+    my $nupack_pid = open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_NOPAIRS, Could not run nupack: $command $!", $accession );
     ## OPEN NU in Nupack_NOPAIRS
     my $count         = 0;
     my @nupack_output = ();
@@ -221,7 +221,7 @@ command: $command\n";
     unless ( $nupack_return eq '0' or $nupack_return eq '256' ) {
 	PRFConfig::PRF_Error( "Nupack Error running $command: $!", $accession );
 	die("Nupack Error running $command\n
-Error: $!
+Error:  $command $!
 Return: $nupack_return\n");
     }
     PRFdb::RemoveFile($errorfile);
@@ -285,7 +285,7 @@ sub Pknots {
     }
     print "PKNOTS: infile: $inputfile accession: $accession start: $start
 command: $command\n";
-    open( PK, "$command |" ) or PRF_Error( "RNAFolders::Pknots, Could not run pknots: $!", $accession );
+    open( PK, "$command |" ) or PRF_Error( "RNAFolders::Pknots, Could not run pknots: $command $!", $accession );
     ## OPEN PK in Pknots
     my $counter = 0;
     my ( $line_to_read, $crap ) = undef;
@@ -406,7 +406,7 @@ sub Pknots_Boot {
     };
     chdir( $config->{workdir} );
     my $command = qq($config->{pknots} $inputfile 2>$errorfile);
-    open( PK, "$command |" ) or PRF_Error( "RNAFolders::Pknots_Boot, Failed to run pknots: $!", $accession );
+    open( PK, "$command |" ) or PRF_Error( "RNAFolders::Pknots_Boot, Failed to run pknots: $command $!", $accession );
     ## OPEN PK in Pknots_Boot
     my $counter = 0;
     my ( $line_to_read, $crap ) = undef;
@@ -435,8 +435,8 @@ sub Pknots_Boot {
     ## CLOSE PK in Pknots_Boot
     my $pknots_return = $?;
     unless ( $pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134' ) {
-	PRFConfig::PRF_Error( "Pknots Error: $!", $accession );
-#    die("Pknots Error! $!");
+	PRFConfig::PRF_Error( "Pknots Error: $command $!", $accession );
+#    die("Pknots Error! $command $!");
     }
     PRFdb::RemoveFile($errorfile);
     return ($return);
@@ -460,7 +460,7 @@ sub Nupack_Boot {
     die("$config->{workdir}/dataS_G.dna is missing.")            unless ( -r "$config->{workdir}/dataS_G.dna" );
     die("$config->{workdir}/dataS_G.rna is missing.")            unless ( -r "$config->{workdir}/dataS_G.rna" );
     my $command = qq($nupack_boot $inputfile 2>$errorfile);
-    open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_Boot, Failed to run nupack: $!", $accession );
+    open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_Boot, Failed to run nupack: $command $!", $accession );
     ## OPEN NU in Nupack_Boot
     my $count = 0;
     while ( my $line = <NU> ) {
@@ -521,7 +521,7 @@ sub Nupack_Boot_NOPAIRS {
     warn("The nupack executable does not have 'nopairs' in its name") unless ( $config->{nupack} =~ /nopairs/ );
     my $command = qq($nupack_boot $inputfile 2>$errorfile);
     my @nupack_output;
-    open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_Boot_NOPAIRS, Failed to run nupack: $!", $accession );
+    open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_Boot_NOPAIRS, Failed to run nupack:  $command $!", $accession );
     ## OPEN NU in Nupack_Boot_NOPAIRS
     my $counter = 0;
     my $pairs   = 0;

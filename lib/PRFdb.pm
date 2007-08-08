@@ -168,6 +168,7 @@ sub MyExecute {
       $rv = $sth->execute();
   }
 
+  my $rows = 0;
   if (!defined($rv)) {
 	  $me->{errors}->{statement} = $input->{statement};
 	  $me->{errors}->{errstr} = $DBI::errstr;
@@ -176,7 +177,9 @@ sub MyExecute {
 	  }
 	  return(undef);
   }
-  my $rows = $rv->rows();
+  else {
+      $rows = $dbh->rows();
+  }
   return($rows);
 }
 
@@ -223,7 +226,6 @@ sub MyGet {
 	$final_statement .= " ORDER BY $order";
     }
 
-    print "TESTME: $final_statement\n";
     my $dbh = $me->MyConnect($final_statement);
     my $stuff = $me->MySelect({ statement => $final_statement,});
 
@@ -1452,15 +1454,17 @@ sub Put_Boot {
   my $me   = shift;
   my $data = shift;
   my $id   = $data->{genome_id};
+
   my @boot_ids = ();
   ## What fields are required?
   foreach my $mfe_method ( keys %{ $config->{boot_mfe_algorithms} } ) {
-    my $mfe_id = $data->{mfe_id};
+#  foreach my $mfe_method ( keys %{$data}) {
+#      next if ($mfe_method =~ /\d+/);
+      my $mfe_id = $data->{mfe_id};
 
-    #foreach my $mfe_method (keys %{$data}) {
     foreach my $rand_method ( keys %{ $config->{boot_randomizers} } ) {
-
-      #foreach my $rand_method (keys %{$data->{$mfe_method}}) {
+#      foreach my $rand_method (keys %{$data->{$mfe_method}}) {
+#	  next if ($rand_method =~ /\d+/);
       my $iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{iterations};
       my $mfe_mean   = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
       my $mfe_sd     = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
@@ -1502,6 +1506,56 @@ VALUES
   }    ## Foreach mfe method
   return(\@boot_ids);
 }    ## End of Put_Boot
+
+
+sub Put_Single_Boot {
+  my $me   = shift;
+  my $data = shift;
+  my $mfe_method = shift;
+  my $rand_method = shift;
+  my $id   = $data->{genome_id};
+  my $mfe_id = $data->{mfe_id};
+  my @boot_ids = ();
+  my $iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{iterations};
+  my $mfe_mean   = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
+  my $mfe_sd     = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
+  my $mfe_se     = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_se};
+  my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
+  my $pairs_sd   = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
+  my $pairs_se   = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
+  my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
+  my $species    = $data->{$mfe_method}->{$rand_method}->{stats}->{species};
+  my $accession  = $data->{$mfe_method}->{$rand_method}->{stats}->{accession};
+  $mfe_id = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_id};
+  my $start       = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
+  my $seqlength   = $data->{$mfe_method}->{$rand_method}->{stats}->{seqlength};
+  my @boot        = ('genome_id');
+  my $errorstring = Check_Insertion( \@boot, $data );
+
+  if ( defined($errorstring) ) {
+      $errorstring = "Undefined value(s) in Put_Boot: $errorstring";
+      PRF_Error( $errorstring, $species, $accession );
+  }
+  my $statement = qq(INSERT INTO boot 
+(genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
+VALUES
+('$data->{genome_id}' ,'$mfe_id', '$species', '$accession', '$start', '$seqlength', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_sd', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
+
+  my $undefined_values = Check_Defined( { genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values } );
+
+  if ($undefined_values) {
+    $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
+    PRF_Error( $errorstring, $species, $accession );
+    print "$errorstring, $species, $accession\n";
+  }
+  my ( $cp, $cf, $cl ) = caller();
+  my $rows = $me->MyExecute({ statement => $statement,
+		   caller => "$cp, $cf, $cl",});
+
+  my $boot_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
+print "Inserted $boot_id\n";
+  return($boot_id);
+}
 
 sub Put_Overlap {
   my $me        = shift;
