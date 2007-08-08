@@ -158,7 +158,6 @@ sub MyExecute {
   if (!defined($input->{statement})) {
       die("No Statement in Execute.");
   }
-
   my $dbh = $me->MyConnect($input->{statement});
   my $sth = $dbh->prepare($input->{statement});
   my $rv;

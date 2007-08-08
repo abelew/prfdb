@@ -42,6 +42,8 @@ our $vars = {
   seqlength => $config->{seqlength},
   submit       => $cgi->submit,
 };
+our $download_header = qq(Content-type: application/x-octet-stream
+Content-Disposition:attachment;filename=);
 
 MAIN();
 
@@ -68,7 +70,18 @@ sub MAIN {
 	Download_Parsed($cgi->param('mfeid'));
 	exit(0);
     }
-
+    elsif ($path eq '/download_all_genome') {
+	Download_All($cgi->param('species'), 'genome');
+	exit(0);
+    }
+    elsif ($path eq '/download_all_mfe') {
+	Download_All($cgi->param('species'), 'mfe');
+	exit(0);
+    }
+    elsif ($path eq '/download_all_boot') {
+	Download_All($cgi->param('species'), 'boot');
+	exit(0);
+    }
     print $cgi->header;
     $template->process( 'header.html', $vars ) or
 	Print_Template_Error($template), die;
@@ -85,6 +98,8 @@ sub MAIN {
 	Print_MFE_Z();
     } elsif ( $path eq '/download' ) {
 	Print_Download();
+    } elsif ($path eq '/choose_download') {
+	Print_Choose_Download();
     } elsif ( $path eq '/import' ) {
 	Print_Import_Form();
     } elsif ( $path eq '/perform_import' ) {
@@ -137,7 +152,13 @@ sub Print_Index {
 	my $nicename = $spec;
 	$nicename =~ s/_/ /g;
 	$nicename = ucfirst($nicename);
-	$species_info{$spec}{nicename} = $nicename;	
+	$species_info{$spec}{nicename} = $nicename;
+	$species_info{$spec}{genes} = $db->MySelect({
+	    statement => "SELECT count(id) FROM genome WHERE species = '$spec'",
+	    type => 'single'});
+	$species_info{$spec}{done_genes} = $db->MySelect({
+	    statement => "SELECT count(distinct(genome_id)) FROM mfe WHERE species = '$spec'",
+	    type => 'single'});
     }
     my $lastupdate_statement = qq(SELECT species, lastupdate, accession FROM mfe );
     if (defined($config->{species_limit})) {
@@ -159,8 +180,26 @@ sub Print_Index {
 }
 
 sub Print_Download {
-  $template->process( 'download.html', $vars ) or
-      Print_Template_Error($template), die;
+    if (defined($config->{species_limit})) {
+	$vars->{species} = $cgi->popup_menu(-name => 'species',
+					    -default => [$config->{species_limit}],
+					    -values => [$config->{species_limit}],);
+    }
+    else {
+	$vars->{species} = $cgi->popup_menu( -name => 'species',
+					     -default => ['homo_sapiens'],
+					     -values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','all']);
+    }
+    $vars->{download_submit} = $cgi->submit(-name=>'download_species', -value => 'Choose Download');
+    $vars->{download_startform} = $cgi->startform(-action => "$base/choose_download");
+    $template->process( 'download.html', $vars ) or
+	Print_Template_Error($template), die;
+}
+
+sub Print_Choose_Download {
+    $vars->{chosen_species} = $cgi->param('species');
+    $template->process('chosen_download.html', $vars) or
+	Print_Template_Error($template), die;
 }
 
 sub Print_Search_Form {
@@ -1135,8 +1174,6 @@ sub Cloud {
 
 	    $points_stmt =~ s/AND $//g;
 	    $averages_stmt =~ s/AND $//g;
-	    print "TEST: $points_stmt
-$averages_stmt\n";
 	    $points = $db->MySelect({statement => $points_stmt,});
 	    $averages = $db->MySelect({statement =>$averages_stmt, type => 'row',});
 	}
@@ -1204,6 +1241,38 @@ $averages_stmt\n";
 	Print_Template_Error($template), die;
 }
 
+sub Download_All {
+    my $species = shift;
+    my $table = shift;
+
+    my $filename = qq(${table}_${species}.csv);
+    print $download_header;
+    print "$filename\n\n";
+
+    my $keys = $db->MySelect("DESCRIBE $table");
+    my $key_string = '';
+    foreach my $k (@{$keys}) {
+	$key_string .= "$k->[0], ";
+    }
+    $key_string =~ s/, $//g;
+    print "$key_string\n";
+
+
+    my $stmt = qq(SELECT * FROM $table);
+    if ($species ne 'all') {
+	$stmt .= " WHERE species = '$species'";
+    }
+    my $big_stuff = $db->MySelect($stmt);
+    my $stuff_string = '';
+    foreach my $stuff (@{$big_stuff}) {
+	foreach my $item (@{$stuff}) {
+	    $stuff_string .= "$item, ";
+	}
+	$stuff_string =~ s/, $//g;
+	print "$stuff_string\n";
+    }
+}
+
 sub Download_Sequence {
     my $accession = shift;
     my $stmt = qq(SELECT comment,mrna_seq FROM genome WHERE accession = ?);
@@ -1212,7 +1281,10 @@ sub Download_Sequence {
 	vars => [$accession],
 	type => 'row', });
     my @tmp = split(//, $seq->[1]);
-    print "Content-type: application/x-download\n\n";
+    my $filename = qq(${accession}.fasta);
+    $filename =~ s/SGDID://g;
+    print $download_header;
+    print "$filename\n\n";
     print ">$accession $seq->[0]";
     foreach my $c (0 .. $#tmp) {
 	print "\n" if (($c %80) == 0);
@@ -1224,7 +1296,9 @@ sub Download_Bpseq {
     my $id = shift;
     my $fh = \*STDOUT;
     my $ref = ref($fh);
-    print "Content-type: application/x-download\n\n";
+    my $filename = qq(${id}.bpseq);
+    print $download_header;
+    print "$filename\n\n";
     $db->Mfeid_to_Bpseq($id, $fh);
 }
 
@@ -1233,7 +1307,10 @@ sub Download_Subsequence {
     my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.sequence,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
     my $seq = $db->MySelect({statement => $stmt, vars => [$id], type => 'row'});
     my @tmp = split(//, $seq->[2]);
-    print "Content-type: application/x-download\n\n";
+    my $filename = qq($seq->[1]_$seq->[3].fasta);
+    $filename =~ s/SGDID://g;
+    print $download_header;
+    print "$filename\n\n";
     print ">$seq->[1] starting at $seq->[3]: $seq->[0]";
     foreach my $c (0 .. $#tmp) {
 	print "\n" if (($c %80) == 0);
@@ -1245,7 +1322,10 @@ sub Download_Parens {
     my $id = shift;
     my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.parens,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
     my $seq = $db->MySelect({statement =>$stmt, vars =>[$id], type =>'row'});
-    print "Content-type: application/x-download\n\n";
+    my $filename = qq($seq->[1]_$seq->[3].parens);
+    $filename =~ s/SGDID://g;
+    print $download_header;
+    print "$filename\n\n";
     print "#$seq->[1] starting at $seq->[3]: $seq->[0]
 $seq->[2]
 ";
@@ -1255,7 +1335,10 @@ sub Download_Parsed {
     my $id = shift;
     my $stmt = qq(SELECT genome.comment,mfe.accession,mfe.parsed,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id);
     my $seq = $db->MySelect({ statement => $stmt, vars => [$id], type =>'row'});
-    print "Content-type: application/x-download\n\n";
+    my $filename = qq($seq->[1]_$seq->[3].parsed);
+    $filename =~ s/SGDID://g;
+    print $download_header;
+    print "$filename\n\n";
     print "#$seq->[1] starting at $seq->[3]: $seq->[0]
 $seq->[2]
 ";
