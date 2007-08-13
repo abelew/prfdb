@@ -155,11 +155,18 @@ sub MySelect {
 sub MyExecute {
   my $me        = shift;
   my $input = shift;
-  if (!defined($input->{statement})) {
-      die("No Statement in Execute.");
+  my $input_type = ref($input);
+  my $statement;
+  if (!defined($input_type) or $input_type eq '' or $input_type eq 'SCALAR') {
+      $statement = $input;
   }
-  my $dbh = $me->MyConnect($input->{statement});
-  my $sth = $dbh->prepare($input->{statement});
+  else {
+      $statement = $input->{statement};
+  }
+
+
+  my $dbh = $me->MyConnect($statement);
+  my $sth = $dbh->prepare($statement);
   my $rv;
   if (defined($input->{vars})) {
       $rv = $sth->execute( @{$input->{vars}});
@@ -170,7 +177,7 @@ sub MyExecute {
 
   my $rows = 0;
   if (!defined($rv)) {
-	  $me->{errors}->{statement} = $input->{statement};
+	  $me->{errors}->{statement} = $statement;
 	  $me->{errors}->{errstr} = $DBI::errstr;
 	  if (defined($input->{caller})) {
 	      $me->{errors}->{caller} = $input->{caller};
@@ -465,7 +472,7 @@ sub RemoveFile {
     if ($file eq 'all') {
 	foreach my $f (@{open_files}) {
 	    unlink($f);
-	    print "Deleting: $f\n";
+	    print STDERR "Deleting: $f\n";
 	    $num_deleted++;
 	}
 	$PRFConfig::config->{open_files} = \@new_open_files;

@@ -16,7 +16,7 @@ our $config = $PRFConfig::config;
 our $db     = new PRFdb;
 my $parser = new PkParse();
 my $start_mfe_id = $ARGV[0];
-my $default = 354402;
+my $default = 458339;
 
 $start_mfe_id = $default unless (defined($start_mfe_id));
 
@@ -54,8 +54,7 @@ $seq
   my $new_parsed = $nupack->{parsed};
   my $update = qq(UPDATE mfe set output = '$new_output', parens = '$new_parens', parsed = '$new_parsed' WHERE id = '$mfe_id');
 #  print "$update\n";
-  my ( $cp, $cf, $cl ) = caller();
-  $db->Execute($update, [], [$cp,$cf,$cl]);
+  $db->MyExecute($update);
   print "Completed $mfe_id\n";
   PRFdb::RemoveFile($inputfile);
 }

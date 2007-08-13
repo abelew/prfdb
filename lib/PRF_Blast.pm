@@ -58,8 +58,8 @@ sub Search {
       -prog       => 'blastn',
       -data       => 'nr',
     );
+
     $factory = new Bio::Tools::Run::RemoteBlast(@params);
-    print "HERE?<br>\n";
     my $r = $factory->submit_blast($seq);
   LOOP: while ( my @rids = $factory->each_rid() ) {
       foreach my $rid (@rids) {
@@ -69,7 +69,7 @@ sub Search {
             $factory->remove_rid($rid);
           }
           print ". ";
-          sleep(5);
+          sleep(1);
         } else {
           $result = $blast_output->next_result();
 

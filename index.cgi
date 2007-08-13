@@ -7,7 +7,7 @@ use lib "lib";
 use PRFConfig;
 use PRFdb;
 use PRF_Blast;
-use PRFGraph;
+use PRFGraph2;
 use MoreRandom;
 use Bootlace;
 $ENV{HTTP_HOST} = 'funkytown' if (!defined($ENV{HTTP_HOST}));
@@ -1131,7 +1131,7 @@ sub Cloud {
     my $species = $cgi->param('species');
     my @filters = $cgi->param('cloud_filters');
     my $slipsites = $cgi->param('slipsites');
-    my $cloud = new PRFGraph();
+    my $cloud = new PRFGraph2();
 
     my $pknots_only = undef;
 
