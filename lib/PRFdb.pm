@@ -20,11 +20,10 @@ sub new {
   my $me = bless {
     dsn  => $config->{dsn},
     user => $config->{user},
+    num_retries => 60,
+    retry_time => 15,
   }, $class;
 
-  #  $dbh = DBI->connect_cached($me->{dsn}, $config->{user}, $config->{pass});
-  $dbh->{mysql_auto_reconnect} = 1;
-  $dbh->{InactiveDestroy}      = 1;
   if ( $config->{checks} ) {
     $me->Create_Genome()    unless ( $me->Tablep('genome') );
     $me->Create_Queue()     unless ( $me->Tablep( $config->{queue_table} ) );
@@ -251,23 +250,17 @@ sub MyGet {
 sub MyConnect {
   my $me        = shift;
   my $statement = shift;
-  if ( !defined($statement) or $statement eq '' ) {
-    die("Statement is not defined in MyConnect!");
-  }
   $dbh = DBI->connect_cached( $me->{dsn}, $config->{user}, $config->{pass} );
-  $dbh->{mysql_auto_reconnect} = 1;
-  $dbh->{InactiveDestroy}      = 1;
-
   my $retry_count = 0;
-  if ( defined($dbh->errstr) and $dbh->errstr =~ /(?:lost connection|mysql server has gone away)/i ) {
+  if ( !defined($dbh) or
+       $DBI::errstr =~ m/(?:lost connection|Unknown MySQL server host|mysql server has gone away)/ix) {
       my $success = 0;
-      while ($retry_count < 30 and $success == 0) {
+      while ($retry_count < $me->{num_retries} and $success == 0) {
 	  $retry_count++;
-	  sleep 10;
+	  sleep $me->{retry_time};
 	  $dbh = DBI->connect_cached($me->{dsn}, $config->{user}, $config->{pass});
-	  $dbh->{mysql_auto_reconnect} = 1;
-	  $dbh->{InactiveDestroy}      = 1;
-	  if ($dbh->errstr eq '') {
+	  if (defined($dbh) and
+	      (!defined($dbh->errstr) or $dbh->errstr eq '')) {
 	      $success++;
 	  }
       }
@@ -279,6 +272,8 @@ sub MyConnect {
       my $error = "Could not open cached connection: $me->{dsn}, " . $DBI::err . ", " . $DBI::errstr;
       die("$error");
   }
+  $dbh->{mysql_auto_reconnect} = 1;
+  $dbh->{InactiveDestroy}      = 1;
   return ($dbh);
 }
 
