@@ -6,7 +6,12 @@
 	  <div align="right"><a href="[% base %]/help_detail#help_genename"><strong>Gene Name: </strong></a></div>
 	</td>
 	<td>
-	  [% genename %]
+        [% genename %],
+	[% IF short_accession %]
+	  <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=[% short_accession %]" rel="external" target="_blank">SGD link</a>
+        [% ELSIF genbank_accession %]
+          <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=[% genbank_accession %]&go=Go" rel="external" target="_blank">NCBI link</a>
+        [% END %]
 	</td>
       </tr>
 
@@ -134,7 +139,10 @@
     <table align="center" width="95%" border="0" cellpadding="2" cellspacing="0" bgcolor="#E9EBF7">
       <tr>
 	<td>
-	  <font face="Courier New, Courier, mono" size="-1">[% numbers %]</font>
+	  <div class="fixedfont"><font face="Courier New, Courier, mono">&nbsp;[% numbers %]</font>
+	  <font face="Courier New, Courier, mono" size="-3">
+	    <a href="[% base %]/local_blast?accession=[% accession %]&start=[% slipstart %]">Blast subsequence</a>
+          </font></div>
         </td>
       </tr>
       <tr>

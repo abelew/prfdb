@@ -7,7 +7,7 @@ use lib "lib";
 use PRFConfig;
 use PRFdb;
 use PRF_Blast;
-use PRFGraph2;
+use PRFGraph;
 use MoreRandom;
 use Bootlace;
 $ENV{HTTP_HOST} = 'funkytown' if (!defined($ENV{HTTP_HOST}));
@@ -180,10 +180,11 @@ sub Print_Index {
 }
 
 sub Print_Download {
-    if (defined($config->{species_limit})) {
+    if (defined($config->{index_species})) {
+        my @values = @{$config->{index_species}};
+        push(@values, 'all');
 	$vars->{species} = $cgi->popup_menu(-name => 'species',
-					    -default => [$config->{species_limit}],
-					    -values => [$config->{species_limit}],);
+					    -values => \@values,);
     }
     else {
 	$vars->{species} = $cgi->popup_menu( -name => 'species',
@@ -233,10 +234,11 @@ sub Print_Cloudform {
 						  -name => 'cloud_filters',
 #						  -values => ['pseudoknots only', 'coding sequence only'],);
 						  -values => ['pseudoknots only',],);
-    if (defined($config->{species_limit})) {
+    if (defined($config->{index_species})) {
+        my @values = @{$config->{index_species}};
+        push(@values, 'all');
 	$vars->{species} = $cgi->popup_menu(-name => 'species',
-					    -default => [$config->{species_limit}],
-					    -values => [$config->{species_limit}],);
+					    -values => \@values,);
     }
     else {
 	$vars->{species} = $cgi->popup_menu( -name => 'species',
@@ -512,6 +514,15 @@ $structure->[8]
 
     $vars->{feynman_height} = $feynman_dimensions->{height};
     $vars->{feynman_width} = $feynman_dimensions->{width};
+
+    if ($vars->{accession} =~ /^SGDID/) {
+	$vars->{short_accession} = $vars->{accession};
+	$vars->{short_accession} =~ s/^SGDID\://g;
+    }
+    elsif ($vars->{accession} =~ /^BC/) {
+	$vars->{short_accession} = undef;
+	$vars->{genbank_accession} = $vars->{accession};
+    }
 
     $template->process( "detail_body.html", $vars ) or
 	Print_Template_Error($template), die;
@@ -1032,16 +1043,26 @@ sub Print_Blast {
   my $input_sequence = shift;
   my $blast      = new PRF_Blast;
   my $accession;
+  my $start;
   my $sequence;
   if (defined($input_sequence)) {
       $sequence = $input_sequence;
   }
   else {
       $accession  = $cgi->param('accession');
-      $sequence   = $db->MySelect({
-	  statement => "SELECT mrna_seq FROM genome WHERE accession = ?",
-	  vars => [$accession],
-	  type => 'single', });
+      $start = $cgi->param('start');
+      if (defined($start)) {
+	  $sequence = $db->MySelect({
+	      statement => "SELECT sequence FROM mfe WHERE accession = ? AND start = ? LIMIT 1",
+	      vars => [$accession,$start],
+	      type => 'single',});
+      }
+      else {
+	  $sequence   = $db->MySelect({
+	      statement => "SELECT mrna_seq FROM genome WHERE accession = ? LIMIT 1",
+	      vars => [$accession],
+	      type => 'single', });
+      }
   }
 
   $sequence =~ tr/Uu/Tt/;
@@ -1131,7 +1152,7 @@ sub Cloud {
     my $species = $cgi->param('species');
     my @filters = $cgi->param('cloud_filters');
     my $slipsites = $cgi->param('slipsites');
-    my $cloud = new PRFGraph2();
+    my $cloud = new PRFGraph();
 
     my $pknots_only = undef;
 

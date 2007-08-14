@@ -31,8 +31,6 @@ sub Search {
   my $blast_output = new Bio::SearchIO( -format => 'blast' );
   my $result;
 
-    print "HERE?<br>\n";
-
   $sequence =~ s/\s+//g;
   my $seq = new Bio::Seq(
     -display_id => 'query',

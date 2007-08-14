@@ -254,7 +254,8 @@ sub MyConnect {
   $dbh = DBI->connect_cached( $me->{dsn}, $config->{user}, $config->{pass} );
   my $retry_count = 0;
   if ( !defined($dbh) or
-       $DBI::errstr =~ m/(?:lost connection|Unknown MySQL server host|mysql server has gone away)/ix) {
+       (defined($DBI::errstr) and
+		$DBI::errstr =~ m/(?:lost connection|Unknown MySQL server host|mysql server has gone away)/ix)) {
       my $success = 0;
       while ($retry_count < $me->{num_retries} and $success == 0) {
 	  $retry_count++;

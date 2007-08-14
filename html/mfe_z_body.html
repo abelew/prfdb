@@ -1,14 +1,14 @@
 
 
   <tr>
-    <td valign="top" width=40%">
+    <td valign="top" width="40%">
       <div align="left">[% genename %]
   [% IF short_accession %]
   <br>
-  <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=[% short_accession %]">SGD Link</a>
+  <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=[% short_accession %]" rel="external" target="_blank">SGD Link</a>
   [% ELSIF genbank_accession %]
   <br>
-  <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=[% genbank_accession %]&go=Go">GenBank Link</a>
+  <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=[% genbank_accession %]&go=Go" rel="external" target="_blank">GenBank Link</a>
   [% END %]
   </div>
     </td>
