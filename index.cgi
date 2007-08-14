@@ -464,6 +464,16 @@ $structure->[8]
 	$feynman_dimensions = $feynman_pic->Get_Feynman_ImageSize($feynman_output_filename);
     }
 
+    my $cfeynman_pic = new PRFGraph({mfe_id => $id, accession => $accession});
+    my $pre_cfeynman_url = $cfeynman_pic->Picture_Filename({type=> 'cfeynman', url => 'url',});
+    my $cfeynman_url = $basedir . '/' . $pre_cfeynman_url;
+    my $cfeynman_output_filename = $cfeynman_pic->Picture_Filename( {type => 'cfeynman', });
+    my $cfeynman_dimensions = {};
+    if (!-r $cfeynman_output_filename) {
+	$cfeynman_dimensions = $cfeynman_pic->Make_CFeynman();
+    }
+    
+
     if ( defined($boot) ) {
       my $mfe_values       = $boot->[0];
       my @mfe_values_array = split( /\s+/, $mfe_values );

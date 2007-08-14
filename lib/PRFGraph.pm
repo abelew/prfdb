@@ -1,6 +1,6 @@
-;package PRFGraph;
-
+package PRFGraph;
 use strict;
+use constant PI => scalar(4 * atan2 1, 1);
 use DBI;
 use PRFConfig qw / PRF_Error PRF_Out /;
 use PRFdb;
@@ -14,6 +14,8 @@ use Statistics::Distributions;
 use Statistics::Basic::Correlation;
 
 my $config = $PRFConfig::config;
+
+sub deg2rad { PI * $_[0] / 180 }
 
 sub new {
   my ( $class, $arg ) = @_;
@@ -723,6 +725,132 @@ sub Make_Feynman {
     }
 
     my $output = $me->Picture_Filename( {type => 'feynman',});
+    open(OUT, ">$output");
+    binmode OUT;
+    print OUT $fey->svg;
+    close OUT;
+    my $command = qq(sed 's/font=\"Helvetica\"/font-family="Courier New"/g' ${output} > ${output}.tmp);
+    system($command);
+    $command = qq(mv ${output}.tmp ${output});
+    system($command);
+
+    my $ret = {
+	width => $width + 1,
+	height =>$height + 1,
+    };
+    return($ret);
+}
+
+sub Make_CFeynman {
+    my $me = shift;
+    my $id = $me->{mfe_id};
+    my $db         = new PRFdb;
+    my $stmt = qq(SELECT sequence, parsed, output FROM mfe WHERE id = ?);
+    my $info = $db->MySelect({statement => $stmt, vars => [$id], type => 'row' });
+    my $sequence = $info->[0];
+    my $parsed = $info->[1];
+    my $pkout = $info->[2];
+    my $seqlength = length($sequence);
+    my $character_size = 10;
+    my $height_per_nt = 3.5;
+
+    my $x_pad = 10;
+    my $width = 800;
+    my $height = 800;
+
+    my $pkt = $pkout;
+    my @pktmp = split(/\s+/, $pkt);
+    my $max_dist = 0;
+    for my $c (0 .. $#pktmp) {
+	my $count = $c + 1;
+	next if ($pktmp[$c] eq '.');
+	my $dist = $pktmp[$c] - $c;
+	$max_dist = $dist if ($dist > $max_dist);
+	$pktmp[$pktmp[$c]] = '.';
+    }
+
+    my $fey = new GD::SVG::Image($width,$height);
+    my $white = $fey->colorAllocate(255, 255, 255);
+    my $black = $fey->colorAllocate(0, 0, 0);
+    my $blue = $fey->colorAllocate(0, 0, 191);
+    my $red = $fey->colorAllocate(248,0,0);
+    my $green = $fey->colorAllocate(0, 191, 0);
+    my $purple = $fey->colorAllocate(192,60,192);
+    my $orange = $fey->colorAllocate(255,165,0);
+    my $brown = $fey->colorAllocate(192,148,68);
+    my $darkslategray = $fey->colorAllocate(165,165,165);
+    my $gray   = $fey->colorAllocate(127,127,127);
+    my $aqua   = $fey->colorAllocate(127,255,212);
+    my $yellow = $fey->colorAllocate(255,255,0);
+    my $gb = $fey->colorAllocate(0, 97, 97);
+
+    $fey->transparent($white);
+#1    $fey->filledRectangle(0,0,$width,$height,$white);
+
+    my @colors = ($black, $blue, $red, $green, $purple, $orange, $brown, $darkslategray,
+		  $black, $blue, $red, $green, $purple, $orange, $brown, $darkslategray,
+		  $black, $blue, $red, $green, $purple, $orange, $brown, $darkslategray,
+	);
+
+    my $center_x = $width / 2;
+    my $center_y = $height / 2;
+
+    my $distance_per_char = $character_size - 2;
+    my $string_x_distance = $character_size * length($sequence);
+
+    my @stems = split(/\s+/, $parsed);
+    my @paired = split(/\s+/, $pkout);
+    my @seq = split(//, $sequence);
+    my $last_stem = $me->Get_Last(\@stems);
+    my $bp_per_stem = $me->Get_Stems(\@stems);
+
+    my $character_x = $start_x;
+    my $character_y = $start_y - 10;
+
+    my $num_characters = scalar(@seq);
+    for my $c (0 .. $#seq) {
+	my $rads = deg2rad((360 / $num_characters) * $c);
+	my $position_x = ($width - 20) * cos($rads);
+	my $position_y = ($height - 20) * sin($rads);
+	my $count = $c+1;
+	if ($paired[$c] eq '.') {
+	    if ($stems[$c] =~ /\d+/) {
+		$fey->stringFT($colors[$stems[$c]], gdMediumBoldFont, 14, $rads, $position_x, $position_y, $seq[$c]);
+#		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
+	    }
+	    elsif ($stems[$c] eq '.') {
+		$fey->stringFT($black, gdMediumBoldFont, 14, $rads, $position_x, $position_y, $seq[$c]);
+#		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
+	    }
+	}
+	elsif ($paired[$c] =~ /\d+/) {
+#	    my $current_stem = $stems[$c];
+#	    my $bases_in_stem = $bp_per_stem->{$current_stem};
+#	    my $center_characters = ($paired[$c] - $c) / 2;
+#	    my $center_position = $center_characters * $distance_per_char;
+#	    my $center_x = $center_position + ($c * $distance_per_char);
+#	    my $center_y = $height;
+#	    my $dist_x = $center_characters * $distance_per_char * 2;
+#	    my $dist_nt = $paired[$c] - $c;
+#	    my $dist_y = $dist_nt * $height_per_nt;
+#	    $center_x = $center_x + $x_pad + ($distance_per_char / 2);
+#	    $center_y = $center_y - 20;
+#	    $fey->setThickness(2);
+#	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$stems[$c]]);
+#	    $paired[$paired[$c]] = '.';
+#	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
+	    $fey->stringFT($colors[$stems[$c]], gdMediumBoldFont, 14, $rads, $position_x, $position_y, $seq[$c]);
+	}
+### Why are there spaces?
+	else {
+#	    print "Crap in a hat the character is $paired[$c]\n";
+#	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
+	    $fey->stringFT($black, gdMediumBoldFont, 14, $rads, $position_x, $position_y, $seq[$c]);
+	}
+	$character_x = $character_x + 8;
+    }
+
+    my $output = $me->Picture_Filename( {type => 'cfeynman',});
     open(OUT, ">$output");
     binmode OUT;
     print OUT $fey->svg;
