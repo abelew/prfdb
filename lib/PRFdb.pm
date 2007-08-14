@@ -269,8 +269,10 @@ sub MyConnect {
   if ( !defined($dbh) ) {
       $me->{errors}->{statement} = $statement, Write_SQL($statement) if (defined($statement));
       $me->{errors}->{errstr} = $DBI::errstr;
-      my $error = "Could not open cached connection: $me->{dsn}, " . $DBI::err . ", " . $DBI::errstr;
-      die("$error");
+      my $time = localtime();
+
+      my $error = qq($time: Could not open cached connection: $me->{dsn}, " . $DBI::err . ", " . $DBI::errstr);
+      die($error);
   }
   $dbh->{mysql_auto_reconnect} = 1;
   $dbh->{InactiveDestroy}      = 1;
