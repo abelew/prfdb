@@ -82,9 +82,11 @@ sub MAIN {
 	Download_All($cgi->param('species'), 'boot');
 	exit(0);
     }
+
     print $cgi->header;
     $template->process( 'header.html', $vars ) or
 	Print_Template_Error($template), die;
+
     if ( $path eq '/start' or $path eq '' ) {
 	Print_Index();
     } elsif ($path eq '/help') {
@@ -180,16 +182,34 @@ sub Print_Index {
 }
 
 sub Print_Download {
+    my %labels = ();
     if (defined($config->{index_species})) {
         my @values = @{$config->{index_species}};
         push(@values, 'all');
+	foreach my $value (@values) {
+	    my $long_name = $value;
+	    $long_name =~ s/_/ /g;
+	    $long_name = ucfirst($long_name);
+	    $labels{$value} = $long_name;
+	}
 	$vars->{species} = $cgi->popup_menu(-name => 'species',
-					    -values => \@values,);
+					    -values => \@values,
+					    -labels => \%labels,
+					    );
     }
     else {
-	$vars->{species} = $cgi->popup_menu( -name => 'species',
-					     -default => ['homo_sapiens'],
-					     -values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','all']);
+	my @values = ('saccharomyces_cerevisiae','homo_sapiens','mus_musculus','danio_rerio','all');
+	foreach my $value (@values) {
+	    my $long_name = $value;
+	    $long_name =~ s/_/ /g;
+	    $long_name = ucfirst($long_name);
+	    $labels{$value} = $long_name;
+	}
+	$vars->{species} = $cgi->popup_menu(-name => 'species',
+					    -default => ['homo_sapiens'],
+					    -values => \@values,
+					    -labels => \%labels,
+					    );
     }
     $vars->{download_submit} = $cgi->submit(-name=>'download_species', -value => 'Choose Download');
     $vars->{download_startform} = $cgi->startform(-action => "$base/choose_download");
@@ -218,6 +238,7 @@ sub Print_Import_Form {
 }
 
 sub Print_Cloudform {
+    my %labels;
     $vars->{newstartform} = $cgi->startform( -action => "$base/cloud" );
     $vars->{slipsites} = $cgi->popup_menu(-name => 'slipsites',
 					  -default => 'all',
@@ -237,13 +258,30 @@ sub Print_Cloudform {
     if (defined($config->{index_species})) {
         my @values = @{$config->{index_species}};
         push(@values, 'all');
+	foreach my $value (@values) {
+	    my $long_name = $value;
+	    $long_name =~ s/_/ /g;
+	    $long_name = ucfirst($long_name);
+	    $labels{$value} = $long_name;
+	}
 	$vars->{species} = $cgi->popup_menu(-name => 'species',
-					    -values => \@values,);
+					    -values => \@values,
+					    -labels => \%labels,
+					    );
     }
     else {
-	$vars->{species} = $cgi->popup_menu( -name => 'species',
-					     -default => ['homo_sapiens'],
-					     -values => ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','all']);
+	my @values = ('saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','danio_rerio','all');
+	foreach my $value (@values) {
+	    my $long_name = $value;
+	    $long_name =~ s/_/ /g;
+	    $long_name = ucfirst($long_name);
+	    $labels{$value} = $long_name;
+	}
+	$vars->{species} = $cgi->popup_menu(-name => 'species',
+					    -default => ['homo_sapiens'],
+					    -values => \@values,
+					    -labels =>  \%labels,
+					    );
     }
     $template->process( 'cloudform.html', $vars ) or
 	Print_Template_Error($template), die;
@@ -742,11 +780,20 @@ sub Start_Filter {
   #  unshift (@{$species}, 'All');
   $vars->{startform} = $cgi->startform( -action => "$base/second_filter" );
   $vars->{filter_submit} = $cgi->submit( -name => 'second_filter', -value => 'Filter PRFdb');
+
+    my %labels = ();
+    foreach my $value (@{$species}) {
+	my $long_name = $value;
+	$long_name =~ s/_/ /g;
+	$long_name = ucfirst($long_name);
+	$labels{$value} = $long_name;
+    }
   $vars->{species} = $cgi->popup_menu(
-    -name    => 'species',
-    -values  => $species,
-    -default => 'saccharomyces_cerevisiae',
-  );
+				      -name => 'species',
+				      -values => $species,
+				      -labels => \%labels,
+				      -default => 'saccharomyces_cerevisiae',
+				      );
   $vars->{algorithm} = $cgi->popup_menu(
     -name    => 'algorithm',
     -values  => [ 'pknots', 'nupack' ],
