@@ -158,6 +158,7 @@ sub MyExecute {
   my $statement;
   if (!defined($input_type) or $input_type eq '' or $input_type eq 'SCALAR') {
       $statement = $input;
+      $input = undef;
   }
   else {
       $statement = $input->{statement};
@@ -1764,6 +1765,33 @@ PRIMARY KEY (id))\;
 sub Create_MFE {
   my $me        = shift;
   my $statement = qq\CREATE TABLE mfe (
+id $config->{sql_id},
+genome_id int,
+species $config->{sql_species},
+accession $config->{sql_accession},
+algorithm char(10),
+start int,
+slipsite char(7),
+seqlength int,
+sequence text,
+output text,
+parsed text,
+parens text,
+mfe float,
+pairs int,
+knotp bool,
+barcode text,
+lastupdate $config->{sql_timestamp},
+INDEX(genome_id),
+INDEX(accession),
+PRIMARY KEY(id))\;
+  my ( $cp, $cf, $cl ) = caller();
+  $me->MyExecute({statement => $statement,  caller =>"$cp, $cf, $cl",});
+}
+
+sub Create_MFE_Utr {
+  my $me        = shift;
+  my $statement = qq\CREATE TABLE mfe_utr (
 id $config->{sql_id},
 genome_id int,
 species $config->{sql_species},
