@@ -135,19 +135,14 @@ sub MySelect {
     $selecttype = 'selectall_arrayref';
   }
 
-  if ( !defined($return) or $return eq 'null' ) {
-	  $me->{errors}->{statement} = $statement;
-	  $me->{errors}->{errstr} = $DBI::errstr;
-	  if (defined($vars->{caller})) {
-	      $me->{errors}->{caller} = $vars->{caller};
-	  }
-    Write_SQL($statement);
-    my $errorstring = "DBH: <$dbh> $selecttype return is undefined in MySelect: $statement, ";
-    if ( defined($DBI::errstr) ) {
-      $errorstring .= $DBI::errstr;
-    }
+  if (defined($DBI::errstr)) {
+      $me->{errors}->{statement} = $statement;
+      $me->{errors}->{errstr} = $DBI::errstr;
+      if (defined($vars->{caller})) {
+	  $me->{errors}->{caller} = $vars->{caller};
+      }
+      Write_SQL($statement);
   }
-
   return ($return);
 }
 
@@ -628,18 +623,20 @@ sub Set_Queue {
       $table = $override_table;
   }
   my $num_existing = $me->MySelect({
-      statement => "SELECT count(id) FROM $table WHERE genome_id = ? and done = '0'",
-      vars => [$id],
-      type => 'single'});
-  if ($num_existing > 0) {
-      return(0);
-  }
-  else {
-      my $statement = qq(INSERT INTO $table (genome_id, checked_out, done) VALUES (?, 0, 0));
+      statement => qq(SELECT count(id) FROM $table WHERE genome_id='$id' and done = '0'),
+      type => 'single'
+				   });
+
+  if (!defined($num_existing) or $num_existing > 0) {
+      my $statement = qq/INSERT INTO $table (genome_id, checked_out, done) VALUES (?, 0, 0)/;
+      print "TESTME: $statement\n";
       my ( $cp, $cf, $cl ) = caller();
       my $rc = $me->MyExecute({statement => $statement, vars => [$id], caller => "$cp,$cf,$cl",});
       my $last_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'row'});
       return ($last_id);
+  }
+  else {
+      return(0);
   }
 }
 
@@ -842,7 +839,7 @@ sub Done_Queue {
       }
   }
 
-  my $update = qq(UPDATE $table SET done='1', done_time=current_timestamp() WHERE genome_id=?);
+  my $update = qq/UPDATE $table SET done='1', done_time=current_timestamp() WHERE genome_id=?/;
   my ( $cp, $cf, $cl ) = caller();
   $me->MyExecute({statement => $update, vars => [$id], caller =>"$cp, $cf, $cl"});
 }
@@ -1043,7 +1040,7 @@ sub Import_CDS {
     my $genome_id = $me->Insert_Genome_Entry( \%datum );
     if ( defined($genome_id) ) {
       $return .= "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
-      $me->Set_Queue( $genome_id, \%datum );
+#      $me->Set_Queue( $genome_id, \%datum );
     } else {
       $return .= "Did not insert anything into the genome table.\n";
     }
@@ -1166,7 +1163,7 @@ sub Get_Num_RNAfolds {
   my $table          = shift;
   $table = 'mfe' unless ( defined($table) );
   my $return          = {};
-  my $statement       = qq(SELECT count(id) FROM $table WHERE genome_id = ? AND algorithm = ? AND start = ? AND seqlength = ?);
+  my $statement       = qq/SELECT count(id) FROM $table WHERE genome_id = ? AND algorithm = ? AND start = ? AND seqlength = ?/;
   my $count           = $me->MySelect({
       statement =>$statement,
       vars => [ $genome_id, $algo, $slipsite_start, $seqlength ],
@@ -1183,7 +1180,7 @@ sub Get_Num_Bootfolds {
   my $start           = shift;
   my $seqlength       = shift;
   my $return          = {};
-  my $statement       = qq(SELECT count(id) FROM boot WHERE genome_id = ? and start = ? and seqlength = ?);
+  my $statement       = qq/SELECT count(id) FROM boot WHERE genome_id = ? and start = ? and seqlength = ?/;
   my $count           = $me->MySelect({
       statement => $statement,
       vars => [ $genome_id, $start, $seqlength ],
@@ -1194,7 +1191,7 @@ sub Get_Num_Bootfolds {
 sub Get_mRNA {
   my $me        = shift;
   my $accession = shift;
-  my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?);
+  my $statement = qq/SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?/;
   my $info      = $me->MySelect({
       statement => $statement,
       vars => [$accession],
@@ -1276,9 +1273,11 @@ sub Insert_Genome_Entry {
 (accession, species, genename, version, comment, mrna_seq, protein_seq, orf_start, orf_stop, direction)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?));
   my ( $cp, $cf, $cl ) = caller();
-  $me->MyExecute({ statement => $statement,
-		   vars => [ $datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{protein_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction} ],
-		   caller => "$cp, $cf, $cl",});
+  $me->MyExecute({
+     statement => $statement,
+     vars => [ $datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{protein_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction} ],
+     caller => "$cp, $cf, $cl",
+  });
   ## The following line is very important to ensure that multiple
   ##calls to this don't end up with
   ## Increasingly long sequences
@@ -1653,6 +1652,8 @@ orf_start int,
 orf_stop int,
 direction char(7) DEFAULT 'forward',
 omim_id varchar(30),
+found_snp bool,
+snp_lastupdate TIMESTAMP DEFAULT '00:00:00',
 lastupdate $config->{sql_timestamp},
 INDEX(accession),
 INDEX(genename),
