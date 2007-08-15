@@ -741,6 +741,19 @@ sub Make_Feynman {
     return($ret);
 }
 
+sub Char_Position {
+    my $char_num = shift;
+    my $num_characters = shift;
+    my $width = shift;
+    my $height = shift;
+    my $degrees = (360 / $num_characters) * $char_num;
+    my $rads = deg2rad($degrees);
+    my $position_x = (($width / 2) - 20) * cos($rads) + ($width / 2);
+    my $position_y = (($height / 2) - 20) * sin($rads) + ($height / 2);
+    my @ret = ($position_x, $position_y, $degrees, $rads);
+    return(\@ret);
+}
+
 sub Make_CFeynman {
     my $me = shift;
     my $id = $me->{mfe_id};
@@ -802,28 +815,33 @@ sub Make_CFeynman {
     my @paired = split(/\s+/, $pkout);
     my @seq = split(//, $sequence);
     my $last_stem = $me->Get_Last(\@stems);
-    my $bp_per_stem = $me->Get_Stems(\@stems);
+    my $bp_per_tsem = $me->Get_Stems(\@stems);
 
-    my $character_x = $start_x;
-    my $character_y = $start_y - 10;
-
-    my $num_characters = scalar(@seq);
+    my $num_characters = scalar(@seq) + 5;
     for my $c (0 .. $#seq) {
-	my $rads = deg2rad((360 / $num_characters) * $c);
-	my $position_x = ($width - 20) * cos($rads);
-	my $position_y = ($height - 20) * sin($rads);
+	my $position_info = Char_Position($c, $num_characters, $width, $height);
+	my $degrees = $position_info->[2];
+	my $rads = $position_info->[3];
+	my $position_x = $position_info->[0];
+	my $position_y = $position_info->[1];
 	my $count = $c+1;
 	if ($paired[$c] eq '.') {
 	    if ($stems[$c] =~ /\d+/) {
-		$fey->stringFT($colors[$stems[$c]], gdMediumBoldFont, 14, $rads, $position_x, $position_y, $seq[$c]);
-#		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
+		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
 	    }
 	    elsif ($stems[$c] eq '.') {
-		$fey->stringFT($black, gdMediumBoldFont, 14, $rads, $position_x, $position_y, $seq[$c]);
-#		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
+		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
 	    }
 	}
 	elsif ($paired[$c] =~ /\d+/) {
+	    my $old_position = Char_Position($paired[$c], $num_characters, $width, $height);
+	    my $old_degrees = $old_position->[2];
+	    my $old_x = $old_position->[0];
+	    my $old_y = $old_position->[1];
+	    
+	    my $c_x = abs($position_x - $old_x) / 2;
+	    my $c_y = abs($position_y - $old_y) / 2;
+
 #	    my $current_stem = $stems[$c];
 #	    my $bases_in_stem = $bp_per_stem->{$current_stem};
 #	    my $center_characters = ($paired[$c] - $c) / 2;
@@ -835,19 +853,22 @@ sub Make_CFeynman {
 #	    my $dist_y = $dist_nt * $height_per_nt;
 #	    $center_x = $center_x + $x_pad + ($distance_per_char / 2);
 #	    $center_y = $center_y - 20;
-#	    $fey->setThickness(2);
+	    $fey->setThickness(2);
+#	    print "CX: $c_x CY: $c_y old deg: $old_degrees deg: $degrees<br>\n";
+#	    $fey->arc($c_x, $c_y, 100, 100, $old_degrees, $degrees, $colors[$stems[$c]]);
+	    $fey->line($old_x+5, $old_y+5, $position_x+5, $position_y+5, $colors[$stems[$c]]);
 #	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$stems[$c]]);
-#	    $paired[$paired[$c]] = '.';
-#	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
-	    $fey->stringFT($colors[$stems[$c]], gdMediumBoldFont, 14, $rads, $position_x, $position_y, $seq[$c]);
+	    $paired[$paired[$c]] = '.';
+#	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]
+	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
 	}
 ### Why are there spaces?
 	else {
 #	    print "Crap in a hat the character is $paired[$c]\n";
 #	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
-	    $fey->stringFT($black, gdMediumBoldFont, 14, $rads, $position_x, $position_y, $seq[$c]);
+	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
 	}
-	$character_x = $character_x + 8;
+#	$character_x = $character_x + 8;
     }
 
     my $output = $me->Picture_Filename( {type => 'cfeynman',});
@@ -912,7 +933,7 @@ sub Picture_Filename {
   my $suffix = $args->{suffix};
 
   my $extension; 
-  if ($type eq 'feynman') {
+  if ($type =~ /feynman/) {
     $extension = '.svg'; 
   } else {
     $extension = '.png';

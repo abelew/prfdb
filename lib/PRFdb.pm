@@ -1637,6 +1637,7 @@ sub Create_Genome {
   my $statement = qq/CREATE table genome (
 id $config->{sql_id},
 accession $config->{sql_accession},
+gi_number $config->{gi_number},
 species $config->{sql_species},
 genename $config->{sql_genename},
 locus text,

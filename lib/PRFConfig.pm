@@ -107,6 +107,7 @@ $PRFConfig::config->{nupack_boot}   = 'Fold.out.boot';
 $PRFConfig::config->{sql_id}        = 'int not null auto_increment';
 $PRFConfig::config->{sql_species}   = 'varchar(80)';
 $PRFConfig::config->{sql_accession} = 'varchar(40)';
+$PRFConfig::config->{gi_number}	    = 'int';
 $PRFConfig::config->{sql_genename}  = 'varchar(120)';
 $PRFConfig::config->{sql_comment}   = 'text not null';
 $PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
