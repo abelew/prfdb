@@ -242,15 +242,25 @@ sub Print_Cloudform {
     $vars->{newstartform} = $cgi->startform( -action => "$base/cloud" );
     $vars->{slipsites} = $cgi->popup_menu(-name => 'slipsites',
 					  -default => 'all',
+#					  -values => ['all',
+#						      'AAAAAAA', 'AAAAAAU', 'AAAAAAC',
+#						      'AAAUUUA', 'AAAUUUU', 'AAAUUUC',
+#						      'UUUAAAA', 'UUUAAAU', 'UUUAAAC',
+#						      'UUUUUUA', 'UUUUUUU', 'UUUUUUC',
+#						      'CCCAAAA', 'CCCAAAU', 'CCCAAAC',
+#						      'CCCUUUA', 'CCCUUUU', 'CCCUUUC',
+#						      'GGGAAAA', 'GGGAAAU', 'GGGAAAC', 'GGGAAAG',
+#						      'GGGUUUA', 'GGGUUUU', 'GGGUUUC',]);
 					  -values => ['all',
-						      'AAAAAAA', 'AAAAAAU', 'AAAAAAC',
-						      'AAAUUUA', 'AAAUUUU', 'AAAUUUC',
-						      'UUUAAAA', 'UUUAAAU', 'UUUAAAC',
-						      'UUUUUUA', 'UUUUUUU', 'UUUUUUC',
-						      'CCCAAAA', 'CCCAAAU', 'CCCAAAC',
-						      'CCCUUUA', 'CCCUUUU', 'CCCUUUC',
-						      'GGGAAAA', 'GGGAAAU', 'GGGAAAC', 'GGGAAAG',
-						      'GGGUUUA', 'GGGUUUU', 'GGGUUUC',]);
+						      'AAAUUUA', 'UUUAAAU', 'AAAAAAA',
+						      'UUUAAAA', 'UUUUUUA', 'AAAUUUU',
+						      'UUUUUUU', 'UUUAAAC', 'AAAAAAU',
+						      'AAAUUUC', 'AAAAAAC', 'GGGUUUA',
+						      'UUUUUUC', 'GGGAAAA', 'CCCUUUA',
+						      'CCCAAAC', 'CCCAAAA', 'GGGAAAU',
+						      'GGGUUUU', 'GGGAAAC', 'CCCUUUC',
+						      'CCCUUUU', 'GGGAAAG', 'GGGUUUC',]);
+
     $vars->{cloud_filters} = $cgi->checkbox_group(
 						  -name => 'cloud_filters',
 #						  -values => ['pseudoknots only', 'coding sequence only'],);
@@ -317,29 +327,29 @@ sub Print_MFE_Z {
     my ($stmt, $stuff);
     
     if (defined($slipsites) and $species eq 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_minus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.accession,mfe.start);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_minus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
     }
     elsif (defined($slipsites) and $species eq 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.accession,mfe.start);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
     }
     elsif (defined($slipsites) and $species ne 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.accession,mfe.start);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
     }
     elsif (defined($slipsites) and $species ne 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.accession,mfe.start);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
     }
 
     elsif (!defined($slipsites) and $species eq 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
     }
     elsif (!defined($slipsites) and $species eq 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
     }
     elsif (!defined($slipsites) and $species ne 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
     }
     elsif (!defined($slipsites) and $species ne 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id ORDER BY mfe.accession,mfe.start);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
     }
     else {
 	print "WTF<br>\n";
