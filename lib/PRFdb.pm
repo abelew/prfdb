@@ -123,6 +123,11 @@ sub MySelect {
     $return = \@ret;
   }    ## Endif flat
 
+  elsif ( defined($type) and $type eq 'list_of_hashes' ) { 
+    $return     = $sth->fetchall_arrayref({});
+    $selecttype = 'selectall_arrayref({})';     
+  }
+
   ## If only $type is defined, do a selectrow_hashref
   elsif ( defined($type) ) {    ## Usually defined as 'hash'
     $return     = $sth->fetchrow_hashref();
