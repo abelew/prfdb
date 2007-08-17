@@ -817,6 +817,7 @@ sub Make_CFeynman {
     my $last_stem = $me->Get_Last(\@stems);
     my $bp_per_tsem = $me->Get_Stems(\@stems);
 
+    my %return_position = ();
     my $num_characters = scalar(@seq) + 5;
     for my $c (0 .. $#seq) {
 	my $position_info = Char_Position($c, $num_characters, $width, $height);
@@ -824,6 +825,11 @@ sub Make_CFeynman {
 	my $rads = $position_info->[3];
 	my $position_x = $position_info->[0];
 	my $position_y = $position_info->[1];
+	$return_position{$c}->{x} = $position_x;
+	$return_position{$c}->{y} = $position_y;
+	$return_position{$c}->{char} = $seq[$c];
+	$return_position{$c}->{stem} = $stems[$c];
+	$return_position{$c}->{paired} = $paired[$c];
 	my $count = $c+1;
 	if ($paired[$c] eq '.') {
 	    if ($stems[$c] =~ /\d+/) {
@@ -842,35 +848,16 @@ sub Make_CFeynman {
 	    my $c_x = abs($position_x - $old_x) / 2;
 	    my $c_y = abs($position_y - $old_y) / 2;
 
-#	    my $current_stem = $stems[$c];
-#	    my $bases_in_stem = $bp_per_stem->{$current_stem};
-#	    my $center_characters = ($paired[$c] - $c) / 2;
-#	    my $center_position = $center_characters * $distance_per_char;
-#	    my $center_x = $center_position + ($c * $distance_per_char);
-#	    my $center_y = $height;
-#	    my $dist_x = $center_characters * $distance_per_char * 2;
-#	    my $dist_nt = $paired[$c] - $c;
-#	    my $dist_y = $dist_nt * $height_per_nt;
-#	    $center_x = $center_x + $x_pad + ($distance_per_char / 2);
-#	    $center_y = $center_y - 20;
 	    $fey->setThickness(2);
-#	    print "CX: $c_x CY: $c_y old deg: $old_degrees deg: $degrees<br>\n";
-#	    $fey->arc($c_x, $c_y, 100, 100, $old_degrees, $degrees, $colors[$stems[$c]]);
 	    $fey->line($old_x+5, $old_y+5, $position_x+5, $position_y+5, $colors[$stems[$c]]);
-#	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$stems[$c]]);
 	    $paired[$paired[$c]] = '.';
-#	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]
 	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
 	}
 ### Why are there spaces?
 	else {
-#	    print "Crap in a hat the character is $paired[$c]\n";
-#	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
 	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
 	}
-#	$character_x = $character_x + 8;
     }
-
     my $output = $me->Picture_Filename( {type => 'cfeynman',});
     open(OUT, ">$output");
     binmode OUT;
@@ -881,11 +868,25 @@ sub Make_CFeynman {
     $command = qq(mv ${output}.tmp ${output});
     system($command);
 
-    my $ret = {
-	width => $width + 1,
-	height =>$height + 1,
-    };
-    return($ret);
+    return(\%return_position);
+}
+
+sub Make_Struct {
+    my $initial = shift;
+    my $new = {};
+    foreach my $k (keys %$initial) {
+	foreach my $l (keys %{$initial->{$k}}) {
+	    $new->{$k}->{$l} = $initial->{$k}->{$l};
+	}
+    }
+    foreach my $k (keys %{$new}) {
+	next if (!defined($new->{$k}->{paired}));
+	my $other = $new->{$k}->{paired};
+	my $half_way_x = ($new->{$k}->{x} + $new->{$other}->{x}) / 2;
+	my $half_way_y = ($new->{$k}->{x} + $new->{$other}->{y}) / 2;
+    }
+
+    return($new);
 }
 
 sub Get_PPCC {

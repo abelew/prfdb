@@ -7,7 +7,7 @@ use lib "../lib";
 use PRFConfig qw / PRF_Error PRF_Out /;
 use PRFdb;
 use Bio::DB::GenBank;
-use Bio::DB::EUtilities;
+#use Bio::DB::EUtilities;
 use LWP;
 use IO::String;
 
