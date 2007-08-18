@@ -1039,14 +1039,14 @@ sub Create_Pretty_mRNA {
     }    ## End if the current bases are a part of a stop codon
 
       if ( defined($snp_struct->{$seq_counter}) ) {
-	  if ( $snp_struct->{$seq_counter} !~ /REF/ ) {
+	  if ( !defined($snp_struct->{$seq_counter}->{cluster_id}) ) {
 	      my $snp_end = $snp_struct->{$seq_counter};
 	      my $link = qq(http://www.ncbi.nlm.nih.gov/sites/entrez?db=snp&cmd=search&term=$snp_struct->{$snp_end}->{cluster_id});
-	      $seq_array[$seq_counter] = qq(<strong><font color = "#800517"><a href=$link title="View dbSNP entry for cluster id $snp_struct->{$snp_end}->{cluster_id}">$seq_array[$seq_counter]);
+	      $seq_array[$seq_counter] = qq(<strong><font color = "Red"><a href=$link title="View dbSNP entry for cluster id $snp_struct->{$snp_end}->{cluster_id}" rel="external" target="_blank">$seq_array[$seq_counter]);
 	      $seq_array[$snp_struct->{$seq_counter}] = qq($seq_array[$snp_struct->{$seq_counter}]</a></font></strong>);
 	  } else {
 	      my $link = qq(http://www.ncbi.nlm.nih.gov/sites/entrez?db=snp&cmd=search&term=$snp_struct->{$seq_counter}->{cluster_id});
-	      $seq_array[$seq_counter] = qq(<strong><font color = "#800517"><a href=$link title="View dbSNP entry for cluster id $snp_struct->{$seq_counter}->{cluster_id}">$seq_array[$seq_counter]</a></font></strong>);
+	      $seq_array[$seq_counter] = qq(<strong><font color = "Red"><a href=$link title="View dbSNP entry for cluster id $snp_struct->{$seq_counter}->{cluster_id}" rel="external" target="_blank">$seq_array[$seq_counter]</a></font></strong>);
 	  }
       }
 
