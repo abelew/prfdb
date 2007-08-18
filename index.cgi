@@ -978,6 +978,23 @@ sub Create_Pretty_mRNA {
   my $corrected_orf_start = $orf_start + $start_padding_bases;
   my $corrected_orf_stop  = $orf_stop + $start_padding_bases;
   my @corrected_slipsites = ();
+  my $snp_statement = qq(SELECT id, cluster_id, location, alleles FROM snp WHERE gene_acc = ?);
+  my $snp_data = $db->MySelect({ statement => $snp_statement,
+				 vars => [$accession],
+				 type => 'list_of_hashes' });
+  
+  my $snp_struct = {};
+  foreach my $snp_row (@{$snp_data}) {
+      my $snp_start = $snp_row->{location};
+      my $snp_end = '';
+      if ($snp_start =~ /\.\./) {
+	  ($snp_start, $snp_end) = split(/\.\./, $snp_start);
+	  $snp_struct->{($snp_start + $start_padding_bases)} = ($snp_end + $start_padding_bases);
+	  $snp_struct->{($snp_end + $start_padding_bases)} = $snp_row;
+      } else {
+	  $snp_struct->{($snp_start + $start_padding_bases)} = $snp_row;
+      }
+  }
   for my $d ( 0 .. $#$slipsite_positions ) {
     $corrected_slipsites[$d] = $slipsite_positions->[$d] + $start_padding_bases;    ## Lazy
   }
@@ -1020,6 +1037,18 @@ sub Create_Pretty_mRNA {
     if ( $seq_counter >= ( $corrected_orf_stop - 2 ) and ( $seq_counter < ( $corrected_orf_stop + 1 ) ) ) {
       $seq_array[$seq_counter] = qq(<strong><font color = "Red">$seq_array[$seq_counter]</font></strong>);
     }    ## End if the current bases are a part of a stop codon
+
+      if ( defined($snp_struct->{$seq_counter}) ) {
+	  if ( $snp_struct->{$seq_counter} !~ /REF/ ) {
+	      my $snp_end = $snp_struct->{$seq_counter};
+	      my $link = qq(http://www.ncbi.nlm.nih.gov/sites/entrez?db=snp&cmd=search&term=$snp_struct->{$snp_end}->{cluster_id});
+	      $seq_array[$seq_counter] = qq(<strong><font color = "#800517"><a href=$link title="View dbSNP entry for cluster id $snp_struct->{$snp_end}->{cluster_id}">$seq_array[$seq_counter]);
+	      $seq_array[$snp_struct->{$seq_counter}] = qq($seq_array[$snp_struct->{$seq_counter}]</a></font></strong>);
+	  } else {
+	      my $link = qq(http://www.ncbi.nlm.nih.gov/sites/entrez?db=snp&cmd=search&term=$snp_struct->{$seq_counter}->{cluster_id});
+	      $seq_array[$seq_counter] = qq(<strong><font color = "#800517"><a href=$link title="View dbSNP entry for cluster id $snp_struct->{$seq_counter}->{cluster_id}">$seq_array[$seq_counter]</a></font></strong>);
+	  }
+      }
 
     for my $c ( 0 .. $#corrected_slipsites ) {
       if ( $seq_counter >= $corrected_slipsites[$c] and $seq_counter < $corrected_slipsites[$c] + 7 ) {

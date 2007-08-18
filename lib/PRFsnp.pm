@@ -41,13 +41,12 @@ sub report {
 }
 
 sub EUtil {
-    my $me = shift;
     my $args = shift;
     my $url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/' . (delete $args->{util}) . '.fcgi?';
     foreach my $key (keys %{$args}) {
 	$url .= $key . '=' . $args->{$key} . '&'; 
     }
-    $me->report("Now Fetching: $url\n"); 
+    # print ("Now Fetching: $url\n"); 
     chop($url);
     my $response = $browser->get($url);
     if (defined($response)) {
@@ -97,11 +96,11 @@ sub Fill_Table_snp {
 				 type      => 'flat', });
     while ($#$update > 0) {
 	my @small_update = splice(@{$update}, 0, 49);
-	my $string = $me->EUtil({ util       => 'efetch',
-				  db         => 'nucleotide',
-				  id         => join(',', @small_update),
-				  extrafeat  => 1,
-				  rettype    => 'genbank', });
+	my $string = EUtil({ util       => 'efetch',
+			     db         => 'nucleotide',
+			     id         => join(',', @small_update),
+			     extrafeat  => 1,
+			     rettype    => 'genbank', });
 	my $stringio = IO::String->new($string);
 	my $fetch = Bio::SeqIO->new( -fh => $stringio,
 				     -format => 'genbank', );
@@ -165,6 +164,7 @@ sub Create_Table_snp {
 					 alleles varchar(40),
 					 orientation tinyint,
 					 frameshift varchar(1),
+					 mfe_ids text,
 					 timestamp $config->{sql_timestamp},
 					 INDEX(cluster_id),
 					 INDEX(gene_gi),
@@ -185,21 +185,22 @@ sub Compute_Frameshift {
     foreach my $mfe_row (@{$mfe_data}) {
 	my $mfe_id = $mfe_row->{id};
 	my $acc = $mfe_row->{accession};
-	my $mfe_start = 1 + $mfe_row->{start}; ## MFE table is 0-indexed, while snp is 1-indexed.
+	my $mfe_start = $mfe_row->{start}; ## MFE table is 1-indexed?, while snp is 1-indexed.
 	my $mfe_end = $mfe_start + $mfe_row->{seqlength};
+	# $me->report("MFE START: $mfe_start MFE END: $mfe_end\n");
 	if ($mfe_start eq '' or $mfe_end eq '') {
 	    $me->report("THROW MFE: $mfe_id\n");
 	}
 	my @parsed = split(/\s+/, $mfe_row->{parsed});
-	my $conditional = 'WHERE gene_acc = ?';
-	if (defined($args->{mode}) and $args->{mode} ne 'replace') {
-	    $conditional .= 'and frameshift IS NULL ';
+	my $conditional = '';
+	if (!defined($args->{mode}) or $args->{mode} ne 'replace') {
+	    $conditional .= 'AND frameshift IS NULL ';
 	}
-	$statement = "SELECT id, location FROM snp $conditional";
+	$statement = "SELECT id, location, mfe_ids FROM snp WHERE gene_acc = ? $conditional";
 	chop($statement); ## trim trailing whitespace
 	my $snp_data = $db->MySelect({ statement => $statement,
 				       type      => 'list_of_hashes',
-				       vars => [$acc], });
+				       vars      => [$acc], });
 	foreach my $snp_row (@{$snp_data}) {
 	    my $snp_id = $snp_row->{id};
 	    my $snp_start = $snp_row->{location};
@@ -209,26 +210,45 @@ sub Compute_Frameshift {
 	    } else {
 		$snp_end = $snp_start;
 	    }
-	    $me->report("SNP START: $snp_start SNP END: $snp_end\n");
+	    # $me->report("SNP START: $snp_start SNP END: $snp_end\n");
 	    if ($snp_start eq '' or $snp_end eq '') {
 		$me->report("THROW SNP: $snp_id\n");
 	    }
+	    my $snp_mfe_ids = '';
+	    if ( defined($snp_row->{mfe_ids}) and $snp_row->{mfe_ids} ne '' ) {
+		my @snp_mfe_tmp = ( $snp_row->{mfe_ids} );
+		@snp_mfe_tmp = split(/,\s+/, $snp_row->{mfe_ids}) if ($snp_row->{mfe_ids} =~ /,\s+/);
+		my $mfe_id_insert = 1;
+		foreach my $mid (@snp_mfe_tmp) {
+		    $mfe_id_insert = 0 if ($mid eq $mfe_id);
+		}
+		push(@snp_mfe_tmp, $mfe_id) if ($mfe_id_insert);
+		$snp_mfe_ids = join(', ', @snp_mfe_tmp);
+	    } else {
+		$snp_mfe_ids = $mfe_id;
+	    }
 	    my $frameshift = 'n';
-	    if ( $snp_start >= $mfe_start and $snp_start <= ($mfe_start + 7) ) {
+	    if ( $snp_start >= $mfe_start and $snp_start < ($mfe_start + 7) ) {
 		$frameshift = 's'; 
-	    } elsif ($snp_start > ($mfe_start + 7) and $snp_start <= $mfe_end ) {
+	    } elsif ( $snp_start >= ($mfe_start + 7) and $snp_start <= $mfe_end ) {
 		$frameshift = 'f';
 		my $f = 1000000;
-		for (my $i = 0; $i <= ($mfe_end - $mfe_start); $i++ ) {
-		    my $loc = $snp_start - 1 + $i - $mfe_start;
+		for (my $i = 0; $i <= ($snp_end - $snp_start); $i++ ) {
+		    my $loc = $snp_start - $mfe_start - 1 + $i;
+		    # $me->report("LOCATION: $loc" . join('', @parsed) . "\n");
 		    $f = $parsed[$loc] if ($parsed[$loc] ne '.' and $f > $parsed[$loc]);
 		}
 		$frameshift = $f if ($f < 1000000);
 	    }
-	    $statement = 'UPDATE IGNORE snp SET frameshift = ? WHERE id = ?';
-	    $me->report("Now Executing: $statement With Vars: $frameshift, $snp_id\n");
+	    if ($frameshift eq 's' or $frameshift =~ /\d+/ or $frameshift eq 'f') {
+		my $statement = 'UPDATE IGNORE mfe SET has_snp = TRUE WHERE id = ?';
+		$db->MyExecute({ statement => $statement,
+				 vars      => [$mfe_id], });
+	    }
+	    $statement = 'UPDATE IGNORE snp SET frameshift = ?, mfe_ids = ? WHERE id = ?';
+	    $me->report("Now Executing: $statement With Vars: $frameshift, $snp_mfe_ids, $snp_id\n");
 	    $db->MyExecute({ statement => $statement,
-			     vars      => [$frameshift, $snp_id], });
+			     vars      => [$frameshift, $snp_mfe_ids, $snp_id], });
 	}
     }
 }
