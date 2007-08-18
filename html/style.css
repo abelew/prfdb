@@ -7,6 +7,13 @@ body {
   margin : 0pt; 
 }
 
+a.snp {
+  color : #FF0080;
+  text-decoration : none;
+  background : transparent;
+  font-weight : bold;
+}
+
 a {
   color : #366e6d;
   text-decoration : none;

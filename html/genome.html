@@ -3,17 +3,17 @@
 
 <table width="100%" border="0" cellspacing="2" cellpadding="2">
  <tr align="left" valign="top">
-  <td width="50%">
-   <strong>
-    <a href="[% base %]/help_genome#help_genename" title="The gene name is provided by genbank or the SGD" rel="external" target="_blank">Gene Name:</a>
-   </strong> [% genename %],<br>
+   <td width="50%">
+    <strong>
+     <a href="[% base %]/help_genome#help_genename" title="The gene name is provided by genbank or the SGD" rel="external" target="_blank">Gene Name:</a>
+    </strong> [% genename %]
    [% IF short_accession %]
-   <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=[% short_accession %]" title="View [% accession %] at yeastgenome.org" rel="external" target="_blank">SGD Link</a>
+   , <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=[% short_accession %]" title="View [% accession %] at yeastgenome.org" rel="external" target="_blank">SGD Link</a>
    [% ELSIF genbank_accession %]
-   <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=[% genbank_accession %]&go=Go" title="View [% accession %] at NCBI" rel="external" target="_blank">GenBank Link</a>
+   , <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=[% genbank_accession %]&go=Go" title="View [% accession %] at NCBI" rel="external" target="_blank">GenBank Link</a>
    [% END %]
    [% IF omim_id %]
-   , <a href="http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=[% omim_id %]" title="View the omim entry associated with [% accession %]" rel="external" target="_blank">OMIM Link</a>
+   , <a href="http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=[% omim_id %]" title="View associated OMIM:[% omim_id %] at NCBI" rel="external" target="_blank">OMIM Link</a>
    [% END %]
    <br>
    <strong>
