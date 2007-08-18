@@ -252,3 +252,52 @@ sub Compute_Frameshift {
 	}
     }
 }
+
+sub Get_Set_OMIMs {
+    my $me = shift;
+    my $args = shift;
+    my $statement = "SELECT gi_number FROM genome WHERE omim_id IS NULL AND species = ?";
+    my $update = $db->MySelect({ statement => $statement,
+				 vars      => [$me->{species}],
+				 type      => 'flat', });
+    while ($#$update > 0) {
+	my @small_update = splice(@{$update}, 0, 49);
+	my $string = EUtil({ util       => 'efetch',
+			     db         => 'nucleotide',
+			     id         => join(',', @small_update),
+			     rettype    => 'genbank', });
+	my $stringio = IO::String->new($string);
+	my $fetch = Bio::SeqIO->new( -fh => $stringio,
+				     -format => 'genbank', );
+	while ( my $seq = $fetch->next_seq() ) {
+	    my $acc = $seq->accession_number();
+	    my $gid = $seq->primary_id();
+	    my @features = $seq->get_SeqFeatures();
+	    foreach my $feat (@features) {
+		if ($feat->primary_tag eq 'gene') {
+		    my $omim = '';
+		    my $anno_group = $feat->annotation;
+		    foreach my $key ($anno_group->get_all_annotation_keys) {
+			my @annotations = $anno_group->get_Annotations($key);
+			foreach my $annotation (@annotations) {
+			    if ($annotation->tagname eq 'db_xref') {
+				my $tmp = $annotation->as_text;
+				my ($stuff, $value) = split(/:\s+/, $tmp);
+				my ($dbid, $cid) = split(/:/, $value);
+				if ($dbid eq 'MIM') {
+				    $omim = $cid;
+				}
+			    }
+			}
+		    }
+		    if ( $omim ne '' ) {
+			my $update_stmt = 'UPDATE genome SET omim_id = ? WHERE accession = ?';
+			$me->report("Now Executing: $update_stmt With Vars: $omim, $acc\n");
+			$db->MyExecute({ statement => $update_stmt,
+					 vars => [$omim, $acc] });
+		    }
+		}
+	    }
+	}
+    }
+}

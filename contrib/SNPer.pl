@@ -13,5 +13,7 @@ use IO::String;
 
 my $prfsnp = new PRFsnp({ species => 'homo_sapiens', });
 
-$prfsnp->Compute_Frameshift();
-
+# $prfsnp->Get_Set_GI_Numbers();
+# $prfsnp->Fill_Table_snp();
+# $prfsnp->Compute_Frameshift();
+$prfsnp->Get_Set_OMIMs();
