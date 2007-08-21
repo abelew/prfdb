@@ -30,12 +30,13 @@ $basedir =~ s/\/index.cgi.*//g;
 our $vars = {
   base         => $base,
   basedir      => $basedir,
-  startsearchform => $cgi->startform( -action => "$base/perform_search"),
+  startsearchform => $cgi->startform( -action => "$base/perform_search" ),
   searchquery => $cgi->textfield(-name => 'query', -size => 20),
   searchform   => "$base/searchform",
   endsearchform => $cgi->endform(),
   importform   => "$base/import",
   filterform   => "$base/start_filter",
+  snpform      => "$base/snpstart",
   downloadform => "$base/download",
   cloudform => "$base/cloudform",
   helpform => "$base/help",
@@ -138,6 +139,10 @@ sub MAIN {
     } elsif ( $path eq '/remote_blast' ) {
 	print "Performing Remote BLAST search now, this may take a moment.<br>\n";
 	Print_Blast('remote');
+    } elsif ( $path eq '/snpstart' ) {
+	Start_SNP_Filter();
+    } elsif ( $path eq '/snpfilter' ) {
+	#Perform_SNP_Filter();
     }
     $template->process( 'footer.html', $vars ) or
 	Print_Template_Error($template), die;
@@ -742,36 +747,48 @@ sub Print_Multiple_Accessions {
 }    ## Else there is more than one match for the given search string.
 
 sub Perform_Search {
-  my $query = $cgi->param('query');
-  my $query_statement = qq/SELECT *  FROM genome WHERE /;
-  if (defined($config->{species_limit})) {
-      $query_statement .= qq/species = '$config->{species_limit}' AND /;
-  }
-  $query_statement .= qq/(genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')/;
-  
-  my $entries = $db->MySelect({
-      statement => $query_statement,
-      type => 'hash',
-      descriptor => 1, });
-  foreach my $c (keys %{$entries}) {
-      my $slip_stmt = qq(SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?);
-      my $slipsite_structure_count = $db->MySelect({
-	  statement => $slip_stmt,
-	  vars => [$entries->{$c}->{accession}],
-	  type => 'row', });
-      $entries->{$c}->{slipsite_count} = $slipsite_structure_count->[0];
-      $entries->{$c}->{structure_count} = $slipsite_structure_count->[1];
-  }
-  my $entries_count = scalar keys %{$entries};
-  if ( $entries_count == 0) {
-    $vars->{error} = "No entry was found in the database with genename, accession, locus, nor comment $query<br>\n";
-  } elsif ( $entries_count == 1 ) {
-      my @id = keys %{$entries};
-    Print_Single_Accession( $entries->{$id[0]} );
-  }         ## Elsif there is a single match for this search
-  else {    ## More than 1 return from the search...
-    Print_Multiple_Accessions($entries);
-  }
+    my $mode = shift;
+    my $query = $cgi->param('query');
+    my $query_statement = qq/SELECT * FROM genome WHERE /;
+    if (defined($config->{species_limit})) {
+	$query_statement .= qq/species = '$config->{species_limit}' AND /;
+    }
+    if (defined($mode) and $mode eq 'snp') {
+	my $bool_genefilter = $cgi->param('gene');
+	if ($bool_genefilter eq 'on') {
+	    if ( defined($cgi->param('gene_text')) ) {
+		$query_statement .= '';
+	    } elsif ( defined($cgi->param('gene_upload')) ) {
+		$query_statement .= '';
+	    }
+	}
+	# STUFF STUFF STUFF STUFF STUFF STUFF....
+	$query_statement .= '';
+    } else {
+	$query_statement .= qq/(genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')/;
+    }    
+    my $entries = $db->MySelect({ statement => $query_statement,
+				  type => 'hash',
+				  descriptor => 1, });
+    foreach my $c (keys %{$entries}) {
+	my $slip_stmt = qq(SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?);
+	my $slipsite_structure_count = $db->MySelect({
+	    statement => $slip_stmt,
+	    vars => [$entries->{$c}->{accession}],
+	    type => 'row', });
+	$entries->{$c}->{slipsite_count} = $slipsite_structure_count->[0];
+	$entries->{$c}->{structure_count} = $slipsite_structure_count->[1];
+    }
+    my $entries_count = scalar keys %{$entries};
+    if ( $entries_count == 0) {
+	$vars->{error} = "No entry was found in the database with genename, accession, locus, nor comment $query<br>\n";
+    } elsif ( $entries_count == 1 ) {
+	my @id = keys %{$entries};
+	Print_Single_Accession( $entries->{$id[0]} );
+    }         ## Elsif there is a single match for this search
+    else {    ## More than 1 return from the search...
+	Print_Multiple_Accessions($entries);
+    }
 }
 
 sub Perform_Import {
@@ -1469,5 +1486,63 @@ sub Print_Template_Error {
     my $err = $t->error();
     my $string = $err->as_string();
     print $string;
+}
+
+sub Start_SNP_Filter {
+    my $species;
+    if (defined($config->{species_limit})) {
+	$species = [$config->{species_limit}];
+    } else {
+	$species = $db->MySelect({ statement => "SELECT distinct(species) from genome", 
+				   type => 'flat' });
+    }
+    #  unshift (@{$species}, 'All');
+    $vars->{startform} = $cgi->start_multipart_form( -action => "$base/snpfilter",
+					  -name   => 'snpform', );
+
+    my %labels = ();
+    foreach my $value (@{$species}) {
+	my $long_name = $value;
+	$long_name =~ s/_/ /g;
+	$long_name = ucfirst($long_name);
+	$labels{$value} = $long_name;
+    }
+    $vars->{species} = $cgi->popup_menu( -name => 'species',
+					 -values => $species,
+					 -labels => \%labels,
+					 -default => 'homo_sapiens', );
+
+    $vars->{frameshift} = $cgi->popup_menu( -id      => 'frameshift',
+					    -name    => 'frameshift',
+					    -values  => [ 's', 'd', 'sdf', 'n', 'null' ],
+					    -labels  => { 's' => 'slippery site',
+							  'd' => 'stem',
+							  'sdf' => 'PRF signal',
+							  'n' => 'NOT PRF signal',
+							  'null' => 'No SNPs' },
+					    -default => 's',
+					    -onChange => 'stemdigit()', );
+    $vars->{snp_digit} = $cgi->textfield( -name  => 'snp_digit',
+					  -size  => '5',
+					  -maxlength => '10',);
+    $vars->{gene}      = $cgi->checkbox( -name    => 'gene', 
+					 -value   => 'off',
+					 -label   => '', 
+					 -onClick => 'toggleinput()');
+    $vars->{gene_toggle} = $cgi->radio_group( -name    => 'genetoggle',
+					      -values  => ['text', 'upload'],
+					      -default => 'text', 
+					      -labels  => { 'text' => 'Text Input', 'upload' => 'Upload List', },
+					      -onclick => 'togglegene(this)', );
+    $vars->{gene_text} = $cgi->textarea( -name    => 'gene_text',
+					 -rows    => 12,
+					 -columns => 100, );
+    $vars->{gene_upload} = $cgi->filefield( -name    => 'gene_upload',
+					    -default => '',
+					    -size    => 25, );
+    $vars->{filter_submit} = $cgi->submit( -name => 'snpfilter', -value => 'Filter PRFdb for SNPs');
+    
+    $template->process( 'snpform.html', $vars ) or
+	Print_Template_Error($template), die;
 }
 

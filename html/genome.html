@@ -7,14 +7,6 @@
     <strong>
      <a href="[% base %]/help_genome#help_genename" title="The gene name is provided by genbank or the SGD" rel="external" target="_blank">Gene Name:</a>
     </strong> [% genename %]
-   [% IF short_accession %]
-   , <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=[% short_accession %]" title="View [% accession %] at yeastgenome.org" rel="external" target="_blank">SGD Link</a>
-   [% ELSIF genbank_accession %]
-   , <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=[% genbank_accession %]&go=Go" title="View [% accession %] at NCBI" rel="external" target="_blank">GenBank Link</a>
-   [% END %]
-   [% IF omim_id %]
-   , <a href="http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=[% omim_id %]" title="View associated OMIM:[% omim_id %] at NCBI" rel="external" target="_blank">OMIM Link</a>
-   [% END %]
    <br>
    <strong>
     <a href="[% base %]/help_detail#help_accession" title="Check the help for accession" rel="external" target="_blank">Accession:</a>
@@ -27,6 +19,15 @@
    </strong> [% comments %]<br>
   </td>
   <td width="50%">
+   [% IF short_accession %]
+   <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=[% short_accession %]" title="View [% accession %] at yeastgenome.org" rel="external" target="_blank">SGD Link</a>
+   [% ELSIF genbank_accession %]
+   <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=[% genbank_accession %]&go=Go" title="View [% accession %] at NCBI" rel="external" target="_blank">GenBank Link</a>
+   [% END %]
+   [% IF omim_id %]
+   , <a href="http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=[% omim_id %]" title="View associated OMIM:[% omim_id %] at NCBI" rel="external" target="_blank">OMIM Link</a>
+   [% END %]
+   <br>
    Run <a href="[% base %]/local_blast?accession=[% accession %]" title="Run BLAST to search the PRFdb for sequences similar to this gene.">Local Blast</a>
 
 <!----

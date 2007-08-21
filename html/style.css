@@ -7,6 +7,10 @@ body {
   margin : 0pt; 
 }
 
+.snphid {
+  visibility : hidden;
+}
+
 a.snp {
   color : #FF0080;
   text-decoration : none;
