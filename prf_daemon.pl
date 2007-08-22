@@ -49,6 +49,7 @@ GetOptions(
   'landscape_length:i'     => \$conf{landscape_seqlength},
   'nupack:i'               => \$conf{do_nupack},              ## If no type definition is given, it is boolean
   'pknots:i'               => \$conf{do_pknots},              ## The question is, will these be set to 0 if not applied?
+  'hotknots:i'             => \$conf{do_hotknots},              ## The question is, will these be set to 0 if not applied?
   'boot:i'                 => \$conf{do_boot},
   'utr:i'                  => \$conf{do_utr},
   'workdir:s'              => \$conf{workdir},
@@ -239,7 +240,32 @@ until ( defined( $state->{time_to_die} ) ) {
 }    ### End waiting for time to die
 
 sub Print_Help {
-  print "This is the help.\n";
+  print "The prf_daemon script takes many possible options including:
+accession      fold a particular accession
+blast          provide it an accession and it will blast it to the rest of the prfdb
+makeblast      create a local blast database from all the sequences in the genome table
+optimize       perform a mysql specific optimization of the tables in the db
+species        specify a species to work with
+copyfrom       copy the genome table from one database to another
+import         provide a single accession to import into the prfdb
+input_file     provide the filename containing one accession per line
+input_fasta    provide the filename containing fasta input (keep in mind the NCBI format)
+fasta_style    see input_fasta -- currently can handle sgd and ncbi styles
+fillqueue      fill up the queue with everything from the genome table
+resetqueue     set all entries in the queue to unexamined
+startpos       explicitly set the start position for a folding -- for use with --accession
+startmotif     start at a particular subsequence (I don't think this is completed)
+length         set the window size
+landscape_length set the landscape window size
+nupack         explicitly turn on/off nupack
+pknots         explicitly turn on/off pknots
+hotknots       explicitly turn on/off hotknots
+boot           turn on/off randomization
+utr            turn on/off the folding in the 3' utr
+checks         perform a series of checks to see if the database is ready for use
+make_jobs      create job files for PBS
+
+";
   exit(0);
 }
 

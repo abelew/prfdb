@@ -144,9 +144,9 @@ sub MAIN {
     } elsif ( $path eq '/snpfilter' ) {
 	#Perform_SNP_Filter();
     }
+    print $cgi->endform;
     $template->process( 'footer.html', $vars ) or
 	Print_Template_Error($template), die;
-    print $cgi->endform, $cgi->end_html;
     exit(0);
 }
 
