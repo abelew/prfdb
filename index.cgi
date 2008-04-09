@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl -w  -I/usr/share/httpd/prfdb/usr/lib/perl5/site_perl/
 use strict;
 use CGI qw/:standard :html3/;
 use CGI::Carp qw(fatalsToBrowser carpout);
@@ -17,7 +17,7 @@ our $config = $PRFConfig::config;
 ## All configuration information exists here
 chdir( $config->{base} );
 ## Change into the home directory of the folder daemon
-our $db = new PRFdb;    
+our $db = new PRFdb;
 ## Set up a database configuration
 our $cgi = new CGI;
 ## Start a new CGI object
@@ -27,21 +27,38 @@ our $base    = "http://" . $ENV{HTTP_HOST} . $ENV{SCRIPT_NAME};
 our $basedir = $base;
 $ENV{BLASTDB} = $config->{blastdir};
 $basedir =~ s/\/index.cgi.*//g;
+my $path = $cgi->path_info;
+my $category = $path;
+$category =~ s/\///g;
+$category = substr($category,0,5);
+
+my @species_values = @{$config->{index_species}};
+push(@species_values, 'all');
+push(@species_values, 'virus');
+my %species_labels;
+foreach my $value (@species_values) {
+  my $long_name = $value;
+  $long_name =~ s/_/ /g;
+  $long_name = ucfirst($long_name);
+  $species_labels{$value} = $long_name;
+}
+
 our $vars = {
   base         => $base,
   basedir      => $basedir,
-  startsearchform => $cgi->startform( -action => "$base/perform_search" ),
+  startsearchform => $cgi->startform( -action => "$base/search_perform" ),
+  search_species_limit => $cgi->popup_menu(-name =>'search_species_limit', -values => \@species_values, -labels => \%species_labels, -default => 'all'),
   searchquery => $cgi->textfield(-name => 'query', -size => 20),
   searchform   => "$base/searchform",
-  endsearchform => $cgi->endform(),
   importform   => "$base/import",
-  filterform   => "$base/start_filter",
+  filterform   => "$base/filter_start",
   snpform      => "$base/snpstart",
   downloadform => "$base/download",
   cloudform => "$base/cloudform",
   helpform => "$base/help",
   seqlength => $config->{seqlength},
-  submit       => $cgi->submit,
+  searchsubmit => $cgi->submit,
+  category => $category,
 };
 our $download_header = qq(Content-type: application/x-octet-stream
 Content-Disposition:attachment;filename=);
@@ -50,7 +67,6 @@ MAIN();
 
 sub MAIN {
 #### MAIN BLOCK OF CODE RIGHT HERE
-    my $path = $cgi->path_info;
     if ($path eq '/download_sequence') {
 	Download_Sequence($cgi->param('accession'));
 	exit(0);
@@ -97,7 +113,7 @@ sub MAIN {
 	my $helpfile = qq(help_${1}.html);
 	$template->process($helpfile, $vars) or
 	    Print_Template_Error($template), die;
-    } elsif ($path eq '/mfe_z') {
+    } elsif ($path eq '/cloud_mfe_z') {
 	Print_MFE_Z();
     } elsif ( $path eq '/download' ) {
 	Print_Download();
@@ -119,13 +135,13 @@ sub MAIN {
     } elsif ($path eq '/blast_search') {
 	my $input_sequence = $cgi->param('blastsearch');
 	Print_Blast('local',$input_sequence);
-    } elsif ( $path eq '/perform_search') {
+    } elsif ( $path eq '/search_perform') {
 	Perform_Search();
-    } elsif ( $path eq '/start_filter' ) {
+    } elsif ( $path eq '/filter_start' ) {
 	Start_Filter();
-    } elsif ($path eq '/second_filter') {
+    } elsif ($path eq '/filter_second') {
 	Perform_Second_Filter();
-    } elsif ( $path eq '/third_filter') {
+    } elsif ( $path eq '/filter_third') {
 	Perform_Third_Filter();
     } elsif ( $path eq '/browse' ) {
 	Print_Single_Accession();
@@ -144,9 +160,9 @@ sub MAIN {
     } elsif ( $path eq '/snpfilter' ) {
 	#Perform_SNP_Filter();
     }
+    print $cgi->endform;
     $template->process( 'footer.html', $vars ) or
 	Print_Template_Error($template), die;
-    print $cgi->endform, $cgi->end_html;
     exit(0);
 }
 
@@ -154,17 +170,17 @@ sub Print_Index {
     my %species_info = ();
     foreach my $spec (@{$config->{index_species}}) {
 	$species_info{$spec}{count} = $db->MySelect({
-	    statement => "SELECT count(id) FROM mfe WHERE species = '$spec'",
+	    statement => "SELECT count(id) FROM mfe WHERE species LIKE '%$spec%'",
 	    type => 'single'});
 	my $nicename = $spec;
 	$nicename =~ s/_/ /g;
 	$nicename = ucfirst($nicename);
 	$species_info{$spec}{nicename} = $nicename;
 	$species_info{$spec}{genes} = $db->MySelect({
-	    statement => "SELECT count(id) FROM genome WHERE species = '$spec'",
+	    statement => "SELECT count(id) FROM genome WHERE species LIKE '%$spec%'",
 	    type => 'single'});
 	$species_info{$spec}{done_genes} = $db->MySelect({
-	    statement => "SELECT count(distinct(genome_id)) FROM mfe WHERE species = '$spec'",
+	    statement => "SELECT count(distinct(genome_id)) FROM mfe WHERE species LIKE '%$spec%'",
 	    type => 'single'});
     }
     my $lastupdate_statement = qq(SELECT species, lastupdate, accession FROM mfe );
@@ -187,76 +203,59 @@ sub Print_Index {
 }
 
 sub Print_Download {
-    my %labels = ();
-    if (defined($config->{index_species})) {
-        my @values = @{$config->{index_species}};
-        push(@values, 'all');
+  my %labels = ();
+  if (defined($config->{index_species})) {
+	$vars->{species} = $cgi->popup_menu(-name => 'species',
+										-values => \@species_values,
+										-labels => \%species_labels,
+									   );
+  }
+  else {
+	my @values = ('saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','danio_rerio','bos_taurus', 'xenopus_laevis', 'xenopus_tropicalis', 'rattus_norvegicus', 'all');
 	foreach my $value (@values) {
-	    my $long_name = $value;
-	    $long_name =~ s/_/ /g;
-	    $long_name = ucfirst($long_name);
-	    $labels{$value} = $long_name;
+	  my $long_name = $value;
+	  $long_name =~ s/_/ /g;
+	  $long_name = ucfirst($long_name);
+	  $labels{$value} = $long_name;
 	}
 	$vars->{species} = $cgi->popup_menu(-name => 'species',
-					    -values => \@values,
-					    -labels => \%labels,
-					    );
-    }
-    else {
-	my @values = ('saccharomyces_cerevisiae','homo_sapiens','mus_musculus','danio_rerio','all');
-	foreach my $value (@values) {
-	    my $long_name = $value;
-	    $long_name =~ s/_/ /g;
-	    $long_name = ucfirst($long_name);
-	    $labels{$value} = $long_name;
-	}
-	$vars->{species} = $cgi->popup_menu(-name => 'species',
-					    -default => ['homo_sapiens'],
-					    -values => \@values,
-					    -labels => \%labels,
-					    );
-    }
-    $vars->{download_submit} = $cgi->submit(-name=>'download_species', -value => 'Choose Download');
-    $vars->{download_startform} = $cgi->startform(-action => "$base/choose_download");
-    $template->process( 'download.html', $vars ) or
+										-default => ['homo_sapiens'],
+										-values => \@values,
+										-labels => \%labels,
+									   );
+  }
+  $vars->{download_submit} = $cgi->submit(-name=>'download_species', -value => 'Choose Download');
+  $vars->{download_startform} = $cgi->startform(-action => "$base/choose_download");
+  $template->process( 'download.html', $vars ) or
 	Print_Template_Error($template), die;
 }
 
 sub Print_Choose_Download {
-    $vars->{chosen_species} = $cgi->param('species');
-    $template->process('chosen_download.html', $vars) or
+  $vars->{chosen_species} = $cgi->param('species');
+  $template->process('chosen_download.html', $vars) or
 	Print_Template_Error($template), die;
 }
 
 sub Print_Search_Form {
-    $vars->{blast_startform} = $cgi->startform( -action => "$base/blast_search" );
-    $vars->{blast_submit} = $cgi->submit( -name => 'blastsearch', -value => 'Perform Blast Search');
-    $template->process( 'searchform.html', $vars ) or
+  $vars->{blast_startform} = $cgi->startform( -action => "$base/blast_search" );
+  $vars->{blast_submit} = $cgi->submit( -name => 'blastsearch', -value => 'Perform Blast Search');
+  $template->process( 'searchform.html', $vars ) or
 	Print_Template_Error($template), die;
 }
 
 sub Print_Import_Form {
-    $vars->{startform} = $cgi->startform( -action => "$base/perform_import" );
-    $vars->{import} = $cgi->textfield( -name => 'import_accession', -size => 20 );
-    $template->process( 'import.html', $vars ) or
+  $vars->{startform} = $cgi->startform( -action => "$base/perform_import" );
+  $vars->{import} = $cgi->textfield( -name => 'import_accession', -size => 20 );
+  $template->process( 'import.html', $vars ) or
 	Print_Template_Error($template), die;
 }
 
 sub Print_Cloudform {
-    my %labels;
-    $vars->{newstartform} = $cgi->startform( -action => "$base/cloud" );
-    $vars->{slipsites} = $cgi->popup_menu(-name => 'slipsites',
-					  -default => 'all',
-#					  -values => ['all',
-#						      'AAAAAAA', 'AAAAAAU', 'AAAAAAC',
-#						      'AAAUUUA', 'AAAUUUU', 'AAAUUUC',
-#						      'UUUAAAA', 'UUUAAAU', 'UUUAAAC',
-#						      'UUUUUUA', 'UUUUUUU', 'UUUUUUC',
-#						      'CCCAAAA', 'CCCAAAU', 'CCCAAAC',
-#						      'CCCUUUA', 'CCCUUUU', 'CCCUUUC',
-#						      'GGGAAAA', 'GGGAAAU', 'GGGAAAC', 'GGGAAAG',
-#						      'GGGUUUA', 'GGGUUUU', 'GGGUUUC',]);
-					  -values => ['all',
+  my %labels;
+  $vars->{newstartform} = $cgi->startform( -action => "$base/cloud" );
+  $vars->{slipsites} = $cgi->popup_menu(-name => 'slipsites',
+										-default => 'all',
+										-values => ['all',
 						      'AAAUUUA', 'UUUAAAU', 'AAAAAAA',
 						      'UUUAAAA', 'UUUUUUA', 'AAAUUUU',
 						      'UUUUUUU', 'UUUAAAC', 'AAAAAAU',
@@ -266,101 +265,74 @@ sub Print_Cloudform {
 						      'GGGUUUU', 'GGGAAAC', 'CCCUUUC',
 						      'CCCUUUU', 'GGGAAAG', 'GGGUUUC',]);
 
-    $vars->{cloud_filters} = $cgi->checkbox_group(
-						  -name => 'cloud_filters',
+  $vars->{cloud_filters} = $cgi->checkbox_group(
+         					  -name => 'cloud_filters',
 #						  -values => ['pseudoknots only', 'coding sequence only'],);
 						  -values => ['pseudoknots only',],);
-    if (defined($config->{index_species})) {
-        my @values = @{$config->{index_species}};
-        push(@values, 'all');
-	foreach my $value (@values) {
-	    my $long_name = $value;
-	    $long_name =~ s/_/ /g;
-	    $long_name = ucfirst($long_name);
-	    $labels{$value} = $long_name;
-	}
-	$vars->{species} = $cgi->popup_menu(-name => 'species',
-					    -values => \@values,
-					    -labels => \%labels,
-					    );
-    }
-    else {
-	my @values = ('saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','danio_rerio','all');
-	foreach my $value (@values) {
-	    my $long_name = $value;
-	    $long_name =~ s/_/ /g;
-	    $long_name = ucfirst($long_name);
-	    $labels{$value} = $long_name;
-	}
-	$vars->{species} = $cgi->popup_menu(-name => 'species',
-					    -default => ['homo_sapiens'],
-					    -values => \@values,
-					    -labels =>  \%labels,
-					    );
-    }
-    $template->process( 'cloudform.html', $vars ) or
+  $vars->{species} = $cgi->popup_menu(-name => 'species',
+									  -values => \@species_values,
+									  -labels => \%species_labels,
+									 );
+  $vars->{cloudsubmit} = $cgi->submit();
+  $template->process( 'cloudform.html', $vars ) or
 	Print_Template_Error($template), die;
 }
 
 sub Print_MFE_Z {
     my $mfe = $cgi->param('mfe');
     my $z = $cgi->param('z');
+#    print "MFE: $mfe Z: $z<br>\n";
     my $species = $cgi->param('species');
     my $seqlength = $cgi->param('seqlength');
     my $pknot = $cgi->param('pknot');
     my $slipsites = $cgi->param('slipsite');
-    $mfe = sprintf('%.0f', $mfe);
-    $z = sprintf('%.0f', $z);
+#    $mfe = sprintf('%.0f', $mfe);
+#    $z = sprintf('%.0f', $z);
     my $mfe_plus_factor;
     my $mfe_minus_factor;
-    if ($species eq 'homo_sapiens') {
-	$mfe_plus_factor = 1.0;
-	$mfe_minus_factor = 1.0;
-    }
-    elsif ($species eq 'mus_musculus') {
-	$mfe_plus_factor = 0.8;
-	$mfe_minus_factor = 0.8;
-    }
-    else {
-	$mfe_plus_factor = 1.0;
-	$mfe_minus_factor = 1.0;
-    }
-    my $mfe_plus = $mfe + $mfe_plus_factor;
-    my $mfe_minus = $mfe - $mfe_minus_factor;
-    my $z_plus = $z + 0.4;
-    my $z_minus = $z - 0.4;
+    my $mfe_plus = $mfe + 0.1;
+    my $mfe_minus = $mfe - 0.1;
+    my $z_plus = $z + 0.1;
+    my $z_minus = $z - 0.1;
     my ($stmt, $stuff);
-    
+
     if (defined($slipsites) and $species eq 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_minus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
     }
     elsif (defined($slipsites) and $species eq 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
     }
     elsif (defined($slipsites) and $species ne 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
     }
     elsif (defined($slipsites) and $species ne 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2)  AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
     }
-
     elsif (!defined($slipsites) and $species eq 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2)  AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
     }
     elsif (!defined($slipsites) and $species eq 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
     }
     elsif (!defined($slipsites) and $species ne 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1)  AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
     }
     elsif (!defined($slipsites) and $species ne 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND mfe.mfe >= $mfe_minus AND mfe.mfe <= $mfe_plus AND boot.zscore >= $z_minus AND boot.zscore <= $z_plus AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
+	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1)  AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
     }
     else {
 	print "WTF<br>\n";
 	$stmt = qq(WTF);
     }
     $stuff = $db->MySelect({statement => $stmt, });
+    if ($#$stuff == 0) {
+	  $cgi->param(-name => 'id', -value => $stuff->[0]->[2]);
+	  $cgi->param(-name => 'accession', -value => $stuff->[0]->[0]);
+	  $cgi->param(-name => 'slipstart', -value => $stuff->[0]->[1]);
+	  ## Go directly to the accession/slipsite detail...
+	  Print_Detail_Slipsite();
+	}
+	else {
     $vars->{mfe} = $mfe;
     $vars->{mfe_plus} = $mfe_plus;
     $vars->{mfe_minus} = $mfe_minus;
@@ -397,12 +369,12 @@ sub Print_MFE_Z {
         }
 	$template->process('mfe_z_body.html', $vars) or
 	    Print_Template_Error($template), die;
-
     }
+  }
 }
 
 sub Print_Detail_Slipsite {
-  my $id        = $cgi->param('id');
+  my $id = $cgi->param('id');
   my $accession = $cgi->param('accession');
   my $slipstart = $cgi->param('slipstart');
   $vars->{accession} = $accession;
@@ -479,15 +451,14 @@ $structure->[8]
 	$feynman_dimensions = $feynman_pic->Get_Feynman_ImageSize($feynman_output_filename);
     }
 
-    my $cfeynman_pic = new PRFGraph({mfe_id => $id, accession => $accession});
-    my $pre_cfeynman_url = $cfeynman_pic->Picture_Filename({type=> 'cfeynman', url => 'url',});
-    my $cfeynman_url = $basedir . '/' . $pre_cfeynman_url;
-    my $cfeynman_output_filename = $cfeynman_pic->Picture_Filename( {type => 'cfeynman', });
-    my $cfeynman_dimensions = {};
-    if (!-r $cfeynman_output_filename) {
-	$cfeynman_dimensions = $cfeynman_pic->Make_CFeynman();
-    }
-    
+#    my $cfeynman_pic = new PRFGraph({mfe_id => $id, accession => $accession});
+#    my $pre_cfeynman_url = $cfeynman_pic->Picture_Filename({type=> 'cfeynman', url => 'url',});
+#    my $cfeynman_url = $basedir . '/' . $pre_cfeynman_url;
+#    my $cfeynman_output_filename = $cfeynman_pic->Picture_Filename( {type => 'cfeynman', });
+#    my $cfeynman_dimensions = {};
+#    if (!-r $cfeynman_output_filename) {
+#	$cfeynman_dimensions = $cfeynman_pic->Make_CFeynman();
+#    }
 
     if ( defined($boot) ) {
       my $mfe_values       = $boot->[0];
@@ -550,6 +521,11 @@ $structure->[8]
     $vars->{barcode}    = $structure->[15];
     # $vars->{lastupdate} = $structure->[16];
 
+    my @in = split(//, $vars->{pk_input});
+    my @par = split(//, $vars->{parsed});
+    $vars->{gc_content} = Get_GC(\@in);
+    $vars->{gc_stems} = Get_GC(\@in, \@par);
+
     my $delta = $vars->{seqlength} - length($vars->{parsed});
     $vars->{parsed} .= '.' x $delta;
     $vars->{brackets} .= '.' x $delta;
@@ -568,6 +544,7 @@ $structure->[8]
     $vars->{ppcc}     = $ppcc;
     $vars->{boot_db}  = $boot_db;
 
+    $vars->{minus_stop} = Color_Stems(Make_Minus($vars->{pk_input}), $vars->{parsed});
     $vars->{numbers} = Make_Nums($vars->{pk_input});
     $vars->{pk_input} = Color_Stems($vars->{pk_input}, $vars->{parsed});
     $vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
@@ -592,6 +569,33 @@ $structure->[8]
   }    ## End foreach structure in the database
 }
 
+sub Get_GC {
+    my $arr = shift;
+    my $par = shift;
+    my $gc;
+    if (!defined($par)) {
+	my $len = scalar(@{$arr});
+	my $num_strong = 0;
+	foreach my $char (@{$arr}) {
+	    $num_strong++ if ($char eq 'c' or $char eq 'g' or $char eq 'G' or $char eq 'C');
+	}
+	$gc = $num_strong * 100.0 / $len;
+    }
+    else {
+	my $num_strong = 0;
+	my $total = 0;
+	for my $c (0 .. $#$par) {
+	    next if ($par->[$c] eq '.');
+	    $num_strong++ if ($arr->[$c] eq 'c' or $arr->[$c] eq 'g' or $arr->[$c] eq 'C' or $arr->[$c] eq 'G');
+	    $total++;
+	}
+	$gc = (($total == 0) ? 0 : $num_strong * 100.0 / $total);
+#	$gc = $num_strong * 100.0 / $total;
+    }
+    $gc = sprintf('%.1f', $gc);
+    return($gc);
+}
+
 sub Color_Stems {
     my $brackets = shift;
     my $parsed = shift;
@@ -613,9 +617,40 @@ sub Color_Stems {
     return($bracket_string);
 }
 
+sub Make_Minus {
+    my $sequence = shift;
+    my $minus_string = '..';
+    my @seq = split(//, $sequence);
+    shift @seq;
+    shift @seq;
+    my $c = 2;
+    my $codon = '';
+    foreach my $char (@seq) {
+	$c++;	
+	next if ($c == 3);  ## Hack to make it work
+	if (($c % 3) == 0) {
+	    if ($codon eq 'UAG' or $codon eq 'UAA' or $codon eq 'UGA' or
+		$codon eq 'uag' or $codon eq 'uaa' or $codon eq 'uga') {
+		$minus_string .= $codon;
+	    }
+	    else {
+		$minus_string .= '...';
+	    }
+	    $codon = $char;
+	}  ## if on a third base of the -1 frame
+	else {
+	    $codon .= $char;
+	}
+    } ## End foreach character of the sequence
+    while (length($minus_string) < $config->{seqlength}) {
+	$minus_string .= '.';
+    }
+    return($minus_string);
+}
+
 sub Make_Nums {
     my $sequence = shift;
-    my $num_string = '';
+    my $num_string = '      0';
     my @seq = split(//, $sequence);
     my $c = 0;
     my $count = 10;
@@ -747,16 +782,21 @@ sub Print_Multiple_Accessions {
 }    ## Else there is more than one match for the given search string.
 
 sub Perform_Search {
-    my $mode = shift;
-    my $query = $cgi->param('query');
-    my $query_statement = qq/SELECT * FROM genome WHERE /;
-    if (defined($config->{species_limit})) {
+  my $mode = shift;
+  my $query = $cgi->param('query');
+  my $query_statement = qq/SELECT * FROM genome WHERE /;
+  if (defined($config->{species_limit})) {
 	$query_statement .= qq/species = '$config->{species_limit}' AND /;
-    }
-    if (defined($mode) and $mode eq 'snp') {
+  }
+  elsif ($cgi->param('search_species_limit') ne 'all') {
+	my $sp = $cgi->param('search_species_limit');
+	$query_statement .= qq/species LIKE '%$sp%' AND /;
+  }
+
+  if (defined($mode) and $mode eq 'snp') {
 	my $bool_genefilter = $cgi->param('gene');
 	if ($bool_genefilter eq 'on') {
-	    if ( defined($cgi->param('gene_text')) ) {
+	  if ( defined($cgi->param('gene_text')) ) {
 		$query_statement .= '';
 	    } elsif ( defined($cgi->param('gene_upload')) ) {
 		$query_statement .= '';
@@ -766,7 +806,7 @@ sub Perform_Search {
 	$query_statement .= '';
     } else {
 	$query_statement .= qq/(genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')/;
-    }    
+    }
     my $entries = $db->MySelect({ statement => $query_statement,
 				  type => 'hash',
 				  descriptor => 1, });
@@ -805,32 +845,24 @@ sub ErrorPage {
 }
 
 sub Start_Filter {
-    my $species;
-    if (defined($config->{species_limit})) {
+  my $species;
+  if (defined($config->{species_limit})) {
 	$species = [$config->{species_limit}];
-    }
-    else {
-	$species = $db->MySelect({
-	    statement => "SELECT distinct(species) from genome", 
-	    type => 'flat' });
-    }
+	$vars->{species} = $cgi->popup_menu(
+										-name => 'species',
+										-values => $species,
+									   );
+  }
+  else {
+	$vars->{species} = $cgi->popup_menu(
+										-name => 'species',
+										-values => \@species_values,
+										-labels => \%species_labels,
+									   );
+  }
   #  unshift (@{$species}, 'All');
-  $vars->{startform} = $cgi->startform( -action => "$base/second_filter" );
-  $vars->{filter_submit} = $cgi->submit( -name => 'second_filter', -value => 'Filter PRFdb');
-
-    my %labels = ();
-    foreach my $value (@{$species}) {
-	my $long_name = $value;
-	$long_name =~ s/_/ /g;
-	$long_name = ucfirst($long_name);
-	$labels{$value} = $long_name;
-    }
-  $vars->{species} = $cgi->popup_menu(
-				      -name => 'species',
-				      -values => $species,
-				      -labels => \%labels,
-				      -default => 'saccharomyces_cerevisiae',
-				      );
+  $vars->{startform} = $cgi->startform( -action => "$base/filter_second" );
+  $vars->{filter_submit} = $cgi->submit( -name => 'filter_second', -value => 'Filter PRFdb');
   $vars->{algorithm} = $cgi->popup_menu(
     -name    => 'algorithm',
     -values  => [ 'pknots', 'nupack' ],
@@ -843,7 +875,7 @@ sub Start_Filter {
 sub Perform_Second_Filter {
   my $species   = $cgi->param('species');
   my $algorithm = $cgi->param('algorithm');
-  $vars->{startform} = $cgi->startform( -action => "$base/third_filter" );
+  $vars->{startform} = $cgi->startform( -action => "$base/filter_third" );
   my $stats_stmt = qq(SELECT * FROM stats WHERE species = ? AND algorithm = ? AND seqlength = ?);
   my $stats = $db->MySelect({
       statement => $stats_stmt,
@@ -874,9 +906,10 @@ sub Perform_Second_Filter {
 #stddev_pairs: 5.02694
 #stddev_pairs_knotted: 4.14184
 #stddev_pairs_noknot: 5.06703
-  $vars->{choose_limit} = $cgi->textfield(-name => 'choose_limit',);
+  $vars->{choose_limit} = $cgi->textfield(-name => 'choose_limit', -value => 200);
   $vars->{choose_mfe} = $cgi->textfield(-name => 'choose_mfe', -value => ($vars->{avg_mfe} - $vars->{stddev_mfe}));
   $vars->{choose_pairs} = $cgi->textfield(-name => 'choose_pairs', -value => ($vars->{avg_pairs} + $vars->{stddev_pairs}));
+  $vars->{choose_format} = $cgi->popup_menu(-name => 'output_format', -values => ['tab delimited', 'text',],);
 
   $vars->{filters} = $cgi->checkbox_group(
     -name   => 'filters',
@@ -891,64 +924,90 @@ sub Perform_Second_Filter {
 
   $vars->{hidden_species} = $cgi->hidden(-name => 'hidden_species', -value => $species);
   $vars->{hidden_algorithm} = $cgi->hidden( -name => 'hidden_algorithm', -value => $algorithm);
-  $vars->{filter_submit} = $cgi->submit( -name => 'third_filter', -value => 'Filter PRFdb');
+  $vars->{filter_submit} = $cgi->submit( -name => 'filter_third', -value => 'Filter PRFdb');
   $template->process( 'secondfilterform.html', $vars ) or
       Print_Template_Error($template), die;
 }
 
 sub Perform_Third_Filter {
-    my @filters   = $cgi->param('filters');
-    my $species = $cgi->param('hidden_species');
-    my $algorithm = $cgi->param('hidden_algorithm');
-    my $max_mfe = $cgi->param('choose_mfe');
-    my $seqlength = $config->{seqlength};
-    my $limit = $cgi->param('choose_limit');
-    $vars->{choose_limit} = $limit;
-    $vars->{species} = $species;
-    $vars->{algorithm} = $algorithm;
-    $vars->{hidden_species} = $cgi->hidden(-name =>'hidden_species', -value => $species);
-    $vars->{hidden_algorithm} = $cgi->hidden(-name => 'hidden_algorithm', -value => $algorithm);
+  my @filters   = $cgi->param('filters');
+  my $species = $cgi->param('hidden_species');
+  my $algorithm = $cgi->param('hidden_algorithm');
+  my $max_mfe = $cgi->param('choose_mfe');
+  my $seqlength = $config->{seqlength};
+  my $limit = $cgi->param('choose_limit');
+  my $format = $cgi->param('output_format');
 
-    my $statement = qq(SELECT * FROM mfe WHERE species = '$species' AND algorithm = '$algorithm' AND seqlength = '$seqlength' AND );
-    foreach my $filter (@filters) {
+  $vars->{output_format} = $format;
+  $vars->{choose_limit} = $limit;
+  $vars->{species} = $species;
+  $vars->{algorithm} = $algorithm;
+  $vars->{hidden_species} = $cgi->hidden(-name =>'hidden_species', -value => $species);
+  $vars->{hidden_algorithm} = $cgi->hidden(-name => 'hidden_algorithm', -value => $algorithm);
+
+  my $columns;
+  if ($format eq 'tab delimited') {
+	$columns = '*';
+  }
+  else {
+	$columns = 'id, accession, start';
+  }
+	
+  my $statement = qq(SELECT $columns FROM mfe WHERE species = '$species' AND algorithm = '$algorithm' AND seqlength = '$seqlength' AND );
+  foreach my $filter (@filters) {
 	if ( $filter eq 'pseudoknots only' ) {
-	    $statement .= "knotp = '1' AND ";
+	  $statement .= "knotp = '1' AND ";
 	}
-    }
-    if (defined($max_mfe)) {
+  }
+
+  if (defined($max_mfe)) {
 	$statement .= "mfe < '$max_mfe' AND ";
-    }
+  }
 
   $statement =~ s/AND $/ORDER BY accession,mfe/g;
 
-    if (defined($limit) and $limit ne '') {
+  if (defined($limit) and $limit ne '') {
 	$statement .= " LIMIT $limit";
-    }
-
-    my $info = $db->MySelect($statement);
+  }
+  my $info = $db->MySelect($statement);
+  if ($format eq 'text') {
     foreach my $datum (@{$info}) {
-	$vars->{id} = $datum->[0];
-	$vars->{genome_id} = $datum->[1];
-	$vars->{accession} = $datum->[2];
-      #species: saccharomyces_cerevisiae = $datum->[3];
-      #algorithm: pknots = $datum->[4];
-	$vars->{start} = $datum->[5];
-	$vars->{slipsite} = $datum->[6];
-	$vars->{seqlength} = $datum->[7];
-	$vars->{sequence} = $datum->[8];
-	$vars->{output} = $datum->[9];
-	$vars->{parsed} = $datum->[10];
-	$vars->{parens} = $datum->[11];
-	$vars->{mfe} = $datum->[12];
-	$vars->{pairs} = $datum->[13];
-	$vars->{knotp} = $datum->[14];
-	$vars->{barcode} = $datum->[15];
-	$vars->{lastupdate} = $datum->[16];
-	$template->process('filter_finished.html', $vars ) or
-	    Print_Template_Error($template), die;
-    }
-  $template->process( 'thirdfilter.html', $vars ) or
-      Print_Template_Error($template), die;
+	  $cgi->param(-name => 'id', -value => $datum->[0]);
+	  $cgi->param(-name => 'accession', -value => $datum->[1]);
+	  $cgi->param(-name => 'slipstart', -value => $datum->[2]);
+	  Print_Detail_Slipsite();
+	}
+#	  $vars->{id} = $datum->[0];
+#	  $vars->{genome_id} = $datum->[1];
+#	  $vars->{accession} = $datum->[2];
+#      #species: saccharomyces_cerevisiae = $datum->[3];
+#      #algorithm: pknots = $datum->[4];
+#	  $vars->{start} = $datum->[5];
+#	  $vars->{slipsite} = $datum->[6];
+#	  $vars->{seqlength} = $datum->[7];
+#	  $vars->{sequence} = $datum->[8];
+#	  $vars->{output} = $datum->[9];
+#	  $vars->{parsed} = $datum->[10];
+#	  $vars->{parens} = $datum->[11];
+#	  $vars->{mfe} = $datum->[12];
+#	  $vars->{pairs} = $datum->[13];
+#	  $vars->{knotp} = $datum->[14];
+#	  $vars->{barcode} = $datum->[15];
+#	  $vars->{lastupdate} = $datum->[16];
+#	  $template->process('filter_finished.html', $vars ) or
+#	    Print_Template_Error($template), die;
+#	}
+#	$template->process( 'thirdfilter.html', $vars ) or
+#	  Print_Template_Error($template), die;
+#  } ## end if the format is 'text'
+  }	
+  else {  ## Then the format is tab delimited
+		print $download_header;
+		print "Species\tAccession\tAlgorithm\tSequence Length\tStart\tSlipsite\tMFE\tBase Pairs\tPseudoknotted\tSequence\tPknots output\tParsed output\tParenthesis output\tBarcode\n";
+		foreach my $datum (@{$info}) {
+		  print "$datum->[3]\t$datum->[2]\t$datum->[4]\t$datum->[7]\t$datum->[5]\t$datum->[6]\t$datum->[12]\t$datum->[13]\t$datum->[14]\t$datum->[8]\t$datum->[9]\t$datum->[11]\t$datum->[15]\n";
+		}
+	  }
 }
 
 sub Print_Sliplist {
@@ -999,7 +1058,7 @@ sub Create_Pretty_mRNA {
   my $snp_data = $db->MySelect({ statement => $snp_statement,
 				 vars => [$accession],
 				 type => 'list_of_hashes' });
-  
+
   my $snp_struct = {};
   foreach my $snp_row (@{$snp_data}) {
       my $snp_start = $snp_row->{location};
@@ -1288,7 +1347,6 @@ sub Cloud {
     else {
 	$suffix .= "-${slipsites}";
     }
-
     my $cloud_output_filename = $cloud->Picture_Filename({type => 'cloud', species => $species, suffix => $suffix,});
     my $cloud_url = $cloud->Picture_Filename({type => 'cloud', species => $species, url => 'url', suffix => $suffix,});
     $cloud_url = $basedir . '/' . $cloud_url;
@@ -1296,7 +1354,7 @@ sub Cloud {
     if (!-f $cloud_output_filename) {
 	my ($points_stmt, $averages_stmt, $points, $averages);
 	if ($species eq 'all') {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 #	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 	    foreach my $filter (@filters) {
@@ -1315,7 +1373,7 @@ sub Cloud {
 	    $averages = $db->MySelect({statement =>$averages_stmt, type => 'row',});
 	}
 	else {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
 	
 	    foreach my $filter (@filters) {

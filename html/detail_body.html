@@ -86,6 +86,14 @@
 	</td>
       </tr>
 
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td width="25%">
+	  <div align="right"><a href="[% base %]/help_detail#help_gc"><strong>GC Content: </strong></a></div>
+	</td>
+	<td>
+	  [% gc_content %]% and [% gc_stems %]% in stems.
+	</td>
+      </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td width="25%">
@@ -111,8 +119,7 @@
 	  <div align="right"><a href="[% base %]/help_detail#help_z"><strong>Z Score: </strong></a></div>
 	</td>
 	<td>
-	  [% zscore %] 
-	  [% IF boot_db %] and [% boot_db %] from the db. [% END %]
+ [% IF boot_db %] [% boot_db %] [% ELSE %] [% zscore %] [% END %]
 	</td>
       </tr>
 
@@ -132,51 +139,69 @@
 	<td>
 	  [% ppcc %]
 	</td>
+        <td></td>
       </tr>
+
 </table>
 
-
     <table align="center" width="95%" border="0" cellpadding="2" cellspacing="0" bgcolor="#E9EBF7">
+
       <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
 	<td>
-	  <div class="fixedfont"><font face="Courier New, Courier, mono">&nbsp;[% numbers %]</font>
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[% minus_stop %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    <a href="[% base %]/local_blast?accession=[% accession %]&start=[% slipstart %]">Blast subsequence</a>
+	  &nbsp;&nbsp;&nbsp;&nbsp;<b>-1 Frame stop codons</b>
+          </font></div>
+        </td>
+      </tr>
+
+      <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	<td>
+	  <div class="fixedfont"><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[% numbers %]</font>
+	  <font face="Courier New, Courier, mono" size="-3">
+	    <a href="[% base %]/local_blast?accession=[% accession %]&start=[% slipstart %]">&nbsp;&nbsp;Blast subsequence</a>
           </font></div>
         </td>
       </tr>
       <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
 	<td>
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;[% pk_input %]</font></b>
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;<u>[% slipsite %]</u>[% pk_input %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    <a href="[% base %]/download_subseq?mfeid=[% mfe_id %]">Download subsequence</a>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="[% base %]/download_subseq?mfeid=[% mfe_id %]">Download subsequence</a>
 	  </font></div>
         </td>
       </tr>
       <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
 	<td>
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;[% brackets %]</font></b>
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[% brackets %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    <a href="[% base %]/download_parens?mfeid=[% mfe_id %]">Download brackets</a>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="[% base %]/download_parens?mfeid=[% mfe_id %]">Download brackets</a>
 	  </font></div>
 	</td>
       </tr>
       <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
         <td>
-    	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;[% parsed %]</font></b>
+    	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[% parsed %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    <a href="[% base %]/download_parsed?mfeid=[% mfe_id %]">Download parsed</a>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="[% base %]/download_parsed?mfeid=[% mfe_id %]">Download parsed</a>
 	  </font></div>
 	</td>
       </tr>
       <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
         <td>
 	  <embed id="feynman" src="[% feynman_url %]" align="bottom" width="[% feynman_width %]" height="[% feynman_height %]" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    <a href="[% base %]/download_bpseq?mfeid=[% mfe_id %]">Download bpseq</a>
+	    &nbsp;&nbsp;&nbsp;<a href="[% base %]/download_bpseq?mfeid=[% mfe_id %]">Download bpseq</a>
 	  </font>
         </td>
       </tr>
     </table>
+
 <p/>
 <hr>

@@ -40,7 +40,7 @@ sub new {
 }
 
 sub Disconnect {
-  $dbh->disconnect();
+  $dbh->disconnect() if (defined($dbh));
 }
 
 sub MySelect {
@@ -251,7 +251,7 @@ sub MyGet {
 sub MyConnect {
   my $me        = shift;
   my $statement = shift;
-  $dbh = DBI->connect_cached( $me->{dsn}, $config->{user}, $config->{pass} );
+  $dbh = DBI->connect_cached( $me->{dsn}, $config->{user}, $config->{pass}, { AutoCommit => 1}, );
   my $retry_count = 0;
   if ( !defined($dbh) or
        (defined($DBI::errstr) and
@@ -627,16 +627,16 @@ sub Set_Queue {
   if (defined($override_table)) {
       $table = $override_table;
   }
+  my $num_existing_stmt = qq(SELECT count(id) FROM $table WHERE genome_id = '$id');
   my $num_existing = $me->MySelect({
-      statement => qq(SELECT count(id) FROM $table WHERE genome_id='$id' and done = '0'),
+      statement => $num_existing_stmt,
       type => 'single'
 				   });
 
-  if (!defined($num_existing) or $num_existing > 0) {
-      my $statement = qq/INSERT INTO $table (genome_id, checked_out, done) VALUES (?, 0, 0)/;
-      print "TESTME: $statement\n";
+  if (!defined($num_existing) or $num_existing == 0) {
+      my $statement = qq/INSERT INTO $table VALUES('','$id','0','','0','')/;
       my ( $cp, $cf, $cl ) = caller();
-      my $rc = $me->MyExecute({statement => $statement, vars => [$id], caller => "$cp,$cf,$cl",});
+      my $rc = $me->MyExecute({statement => $statement, caller => "$cp,$cf,$cl",});
       my $last_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'row'});
       return ($last_id);
   }
@@ -1046,8 +1046,14 @@ sub Import_CDS {
     if ( defined($genome_id) ) {
       $return .= "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
 #      $me->Set_Queue( $genome_id, \%datum );
+      $me->Set_Queue($genome_id);
     } else {
       $return .= "Did not insert anything into the genome table.\n";
+      my $gid = $me->MySelect({
+	  statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",
+	  type => 'single' });
+      print "Doing set_Queue with genome_id $gid\n";
+      $me->Set_Queue($gid);
     }
     print $return;
   }
