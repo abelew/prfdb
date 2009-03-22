@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w  -I/usr/share/httpd/prfdb/usr/lib/perl5/site_perl/
 use strict;
 use DBI;
 use Getopt::Long;
@@ -14,76 +14,80 @@ use Overlap;
 use MoreRandom;
 use PRF_Blast;
 
-$SIG{INT} = 'CLEANUP';
-$SIG{BUS} = 'CLEANUP';
-$SIG{SEGV} = 'CLEANUP';
-$SIG{PIPE} = 'CLEANUP';
-$SIG{ABRT} = 'CLEANUP';
-$SIG{QUIT} = 'CLEANUP';
+ $SIG{INT} = 'CLEANUP';
+ $SIG{BUS} = 'CLEANUP';
+ $SIG{SEGV} = 'CLEANUP';
+ $SIG{PIPE} = 'CLEANUP';
+ $SIG{ABRT} = 'CLEANUP';
+ $SIG{QUIT} = 'CLEANUP';
 
-our $config = $PRFConfig::config;
-our $db     = new PRFdb;
-our %conf   = ();
+ our $config = $PRFConfig::config;
+ our $db     = new PRFdb;
+ our %conf   = ();
 
-GetOptions(
-  'nodaemon:i'    => \$conf{nodaemon},     ## If this gets set, then the prf_daemon will exit before it gets to the queue
-  'help|version'  => \$conf{help},         ## Print some help information
-  'accession|i:s' => \$conf{accession},    ## An accession to specifically fold.  If it is not already in the db
-  ## Import it and then fold it.
-  'blast:s'       => \$conf{blast},
-  'makeblast'     => \$conf{makeblast},           ## Create a local blast database from the genome
-  'optimize:s'    => \$conf{optimize},            ## Use mysql to optimize a table
-  'species:s'     => \$conf{species},
-  'copyfrom:s'    => \$conf{copyfrom},            ## Another database from which to copy the genome table
-  'import:s'      => \$conf{import_accession},    ## A single accession to import
-  'input_file:s'  => \$conf{input_file},          ## A file of accessions to import and queue
-  'input_fasta:s' => \$conf{input_fasta},         ## A file of fasta data to import and queue
-  'fasta_style:s' => \$conf{fasta_style},         ## The style of input fasta (sgd, ncbi, etc)
-  ## By default this should be 0/1, but for some yeast genomes it may be 1000
-  'fillqueue'  => \$conf{fillqueue},              ## A boolean to see if the queue should be filled.
-  'resetqueue' => \$conf{resetqueue},             ## A boolean to reset the queue
-  'startpos:s' => \$conf{startpos},               ## A specific start position to fold a single sequence at,
-  ## also usable by inputfasta or inputfile
-  'startmotif:s'           => \$conf{startmotif},             ## A specific start motif to start folding at
-  'length:i'               => \$conf{seqlength},      ## i == integer
-  'landscape_length:i'     => \$conf{landscape_seqlength},
-  'nupack:i'               => \$conf{do_nupack},              ## If no type definition is given, it is boolean
-  'pknots:i'               => \$conf{do_pknots},              ## The question is, will these be set to 0 if not applied?
-  'boot:i'                 => \$conf{do_boot},
-  'utr:i'                  => \$conf{do_utr},
-  'workdir:s'              => \$conf{workdir},
-  'nupack_nopairs:i'       => \$conf{nupack_nopairs_hack},
-  'arch:i'                 => \$conf{arch_specific_exe},
-  'iterations:i'           => \$conf{boot_iterations},
-  'db|d:s'                 => \$conf{db},
-  'host:s'                 => \$conf{host},
-  'user:s'                 => \$conf{user},
-  'pass:s'                 => \$conf{pass},
-  'slip_site_1:s'          => \$conf{slip_site_1},
-  'slip_site_2:s'          => \$conf{slip_site_2},
-  'slip_site_3:s'          => \$conf{slip_site_3},
-  'slip_site_spacer_min:i' => \$conf{slip_site_spacer_min},
-  'slip_site_spacer_max:i' => \$conf{slip_site_spacer_max},
-  'stem1_min:i'            => \$conf{stem1_min},
-  'stem1_max:i'            => \$conf{stem1_max},
-  'stem1_bulge:i'          => \$conf{stem1_bulge},
-  'stem1_spacer_min:i'     => \$conf{stem1_spacer_min},
-  'stem1_spacer_max:i'     => \$conf{stem1_spacer_max},
-  'stem2_min:i'            => \$conf{stem2_min},
-  'stem2_max:i'            => \$conf{stem2_max},
-  'stem2_bulge:i'          => \$conf{stem2_bulge},
-  'stem2_loop_min:i'       => \$conf{stem2_loop_min},
-  'stem2_loop_max:i'       => \$conf{stem2_loop_max},
-  'stem2_spacer_min:i'     => \$conf{stem2_spacer_min},
-  'stem2_spacer_max:i'     => \$conf{stem2_spacer_max},
-  'checks:i'               => \$conf{checks},
-  'make_jobs'              => \$conf{make_jobs},
-);
-foreach my $opt ( keys %conf ) {
-  if ( defined( $conf{$opt} ) ) {
-    $config->{$opt} = $conf{$opt};
-  }
-}
+ GetOptions(
+   'nodaemon:i'    => \$conf{nodaemon},     ## If this gets set, then the prf_daemon will exit before it gets to the queue
+   'help|version'  => \$conf{help},         ## Print some help information
+   'accession|i:s' => \$conf{accession},    ## An accession to specifically fold.  If it is not already in the db
+   ## Import it and then fold it.
+   'blast:s'       => \$conf{blast},
+   'makeblast'     => \$conf{makeblast},           ## Create a local blast database from the genome
+   'optimize:s'    => \$conf{optimize},            ## Use mysql to optimize a table
+   'species:s'     => \$conf{species},
+   'copyfrom:s'    => \$conf{copyfrom},            ## Another database from which to copy the genome table
+   'import:s'      => \$conf{import_accession},    ## A single accession to import
+   'input_file:s'  => \$conf{input_file},          ## A file of accessions to import and queue
+   'import_fasta:s' => \$conf{input_fasta},
+   'input_fasta:s' => \$conf{input_fasta},         ## A file of fasta data to import and queue
+   'style:s' => \$conf{fasta_style},
+   'fasta_style:s' => \$conf{fasta_style},         ## The style of input fasta (sgd, ncbi, etc)
+   ## By default this should be 0/1, but for some yeast genomes it may be 1000
+   'fillqueue'  => \$conf{fillqueue},              ## A boolean to see if the queue should be filled.
+   'resetqueue' => \$conf{resetqueue},             ## A boolean to reset the queue
+   'stats' => \$conf{stats},                       ## Generate stats
+   'startpos:s' => \$conf{startpos},               ## A specific start position to fold a single sequence at,
+   'endpos:s' => \$conf{endpos},
+   ## also usable by inputfasta or inputfile
+   'startmotif:s'           => \$conf{startmotif},             ## A specific start motif to start folding at
+   'length:i'               => \$conf{seqlength},      ## i == integer
+   'landscape_length:i'     => \$conf{landscape_seqlength},
+   'nupack:i'               => \$conf{do_nupack},              ## If no type definition is given, it is boolean
+   'pknots:i'               => \$conf{do_pknots},              ## The question is, will these be set to 0 if not applied?
+   'boot:i'                 => \$conf{do_boot},
+   'utr:i'                  => \$conf{do_utr},
+   'workdir:s'              => \$conf{workdir},
+   'nupack_nopairs:i'       => \$conf{nupack_nopairs_hack},
+   'arch:i'                 => \$conf{arch_specific_exe},
+   'iterations:i'           => \$conf{boot_iterations},
+   'db|d:s'                 => \$conf{db},
+   'host:s'                 => \$conf{host},
+   'user:s'                 => \$conf{user},
+   'pass:s'                 => \$conf{pass},
+   'slip_site_1:s'          => \$conf{slip_site_1},
+   'slip_site_2:s'          => \$conf{slip_site_2},
+   'slip_site_3:s'          => \$conf{slip_site_3},
+   'slip_site_spacer_min:i' => \$conf{slip_site_spacer_min},
+   'slip_site_spacer_max:i' => \$conf{slip_site_spacer_max},
+   'stem1_min:i'            => \$conf{stem1_min},
+   'stem1_max:i'            => \$conf{stem1_max},
+   'stem1_bulge:i'          => \$conf{stem1_bulge},
+   'stem1_spacer_min:i'     => \$conf{stem1_spacer_min},
+   'stem1_spacer_max:i'     => \$conf{stem1_spacer_max},
+   'stem2_min:i'            => \$conf{stem2_min},
+   'stem2_max:i'            => \$conf{stem2_max},
+   'stem2_bulge:i'          => \$conf{stem2_bulge},
+   'stem2_loop_min:i'       => \$conf{stem2_loop_min},
+   'stem2_loop_max:i'       => \$conf{stem2_loop_max},
+   'stem2_spacer_min:i'     => \$conf{stem2_spacer_min},
+   'stem2_spacer_max:i'     => \$conf{stem2_spacer_max},
+   'checks:i'               => \$conf{checks},
+   'make_jobs'              => \$conf{make_jobs},
+ );
+ foreach my $opt ( keys %conf ) {
+   if ( defined( $conf{$opt} ) ) {
+	 $config->{$opt} = $conf{$opt};
+   }
+ }
 
 our $state = {
   time_to_die          => undef,
@@ -122,6 +126,11 @@ if ( defined( $config->{help} ) ) {
 if ( defined( $config->{makeblast} ) ) {
   Make_Blast();
   exit(0);
+}
+
+if (defined($config->{stats})) {
+    Generate_Stats();
+    exit(0);
 }
 
 if (defined($config->{optimize})) {
@@ -192,6 +201,7 @@ if ( defined( $config->{import_accession} )) {
 }  ## Endif used the import_accession arg
 
 if ( defined( $config->{input_fasta} ) ) {
+    print "GOT HERE\n";
   my $queue_ids;
   if ( defined( $config->{startpos} ) ) {
     $queue_ids = $db->Import_Fasta( $config->{input_fasta}, $config->{fasta_style}, $config->{startpos} );
@@ -202,8 +212,6 @@ if ( defined( $config->{input_fasta} ) ) {
   foreach my $queue_id ( @{$queue_ids} ) {
     $state->{genome_id} = $db->Get_GenomeId_From_QueueId($queue_id);
     $state->{queue_id}  = $queue_id;
-    print "Performing gather for genome_id $state->{genome_id}";
-    Gather($state);
   }
   exit(0);
 }
@@ -222,13 +230,13 @@ until ( defined( $state->{time_to_die} ) ) {
   if ( defined( $config->{seqlength} ) ) {
     $state->{seqlength} = $config->{seqlength};
   } else {
-    $state->{seqlength} = 100;
+    $state->{seqlength} = [100,];
   }
   my $ids = $db->Grab_Queue();
   $state->{queue_table} = $ids->{queue_table};
   $state->{queue_id}  = $ids->{queue_id};
   $state->{genome_id} = $ids->{genome_id};
-  
+
   if ( defined( $state->{genome_id} ) ) {
     Gather($state);
   }    ## End if have an entry in the queue
@@ -265,16 +273,19 @@ sub Gather {
   my $ref   = $db->Id_to_AccessionSpecies( $state->{genome_id} );
   $state->{accession} = $ref->{accession};
   $state->{species}   = $ref->{species};
-  my $message = "qid:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
-  print "\nWorking with: $message";
+  print "TESTME: @{$config->{seqlength}}";
+  foreach my $len (@{$config->{seqlength}}) {
+	  my $message = "qid:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession} len:$len\n";
+	  print "\nWorking with: $message";
 
-  my %pre_landscape_state = %{$state};
-  my $landscape_state     = \%pre_landscape_state;
-  if ($config->{do_landscape}) {
-    Landscape_Gatherer( $landscape_state, $message );
+	  my %pre_landscape_state = %{$state};
+	  my $landscape_state     = \%pre_landscape_state;
+	  if ($config->{do_landscape}) {
+		  Landscape_Gatherer($landscape_state, $message);
+	  }
+
+	  PRF_Gatherer($state, $startpos, $len);
   }
-
-  PRF_Gatherer($state, $startpos);
 }
 ## End Gather
 
@@ -282,6 +293,7 @@ sub Gather {
 sub PRF_Gatherer {
   my $state = shift;
   my $startpos = shift;
+  my $len = shift;
   $state->{genome_information} = $db->Get_ORF( $state->{accession} );
   my $sequence             = $state->{genome_information}->{sequence};
   my $orf_start            = $state->{genome_information}->{orf_start};
@@ -290,8 +302,8 @@ sub PRF_Gatherer {
   if (defined($startpos)) {
 #      $startpos = $startpos - $orf_start;
       my $inf = PRFdb::MakeFasta($state->{genome_information}->{sequence},
-				 $startpos, 
-				 $startpos + $config->{seqlength}
+				 $startpos,
+				 $startpos + $len,
 				 );
       $rnamotif_information->{$startpos}{filename} = $inf->{filename};
       $rnamotif_information->{$startpos}{sequence} = $inf->{string};
@@ -312,11 +324,10 @@ sub PRF_Gatherer {
   }
 
  STARTSITE: foreach my $slipsite_start ( keys %{$rnamotif_information} ) {
-   
      if ($config->{do_utr} == 0) {
 	 my $end_of_orf = $db->MySelect({
 	     statement => "SELECT orf_stop FROM genome WHERE accession = ?",
-	     vars => [$state->{accession}], 
+	     vars => [$state->{accession}],
 	     type =>'row', });
 	 if ($end_of_orf->[0] < $slipsite_start) {
 	     PRFdb::RemoveFile($rnamotif_information->{$slipsite_start}{filename});
@@ -335,7 +346,7 @@ sub PRF_Gatherer {
       print "You may expect this script to die momentarily.\n";
     }
 
-     my $check_seq = Check_Sequence_Length();
+     my $check_seq = Check_Sequence_Length($len);
      if ( $check_seq eq 'shorter than wanted' ) {
       print "The sequence is: $check_seq and will be skipped.\n";
       PRFdb::RemoveFile($state->{fasta_file});
@@ -365,7 +376,6 @@ sub PRF_Gatherer {
     if ( $config->{do_pknots} ) {    ### Do we run a pknots fold?
       $pknots_mfe_id = Check_Folds('pknots', $fold_search, $slipsite_start );
     }
-    
     if ($config->{do_hotknots}) {
 	$hotknots_mfe_id = Check_Folds('hotknots', $fold_search, $slipsite_start);
     }
@@ -668,23 +678,24 @@ sub Clean_Up {
 
 ## Start Check_Sequence_Length
 sub Check_Sequence_Length {
+  my $len = shift;
   my $filename               = $state->{fasta_file};
   my $sequence               = $state->{sequence};
   my @seqarray               = split( //, $sequence );
   my $sequence_length        = $#seqarray + 1;
-  my $wanted_sequence_length = $config->{seqlength};
+  my $wanted_sequence_length = $len;
   open( IN, "<$filename" ) or die("Check_Sequence_Length: Couldn't open $filename $!");
   ## OPEN IN in Check_Sequence_Length
   my $output = '';
   my @out    = ();
   while ( my $line = <IN> ) {
-    chomp $line;
-    if ( $line =~ /^\>/ ) {
-      $output .= $line;
-    } else {
-      my @tmp = split( //, $line );
-      push( @out, @tmp );
-    }
+	chomp $line;
+	if ( $line =~ /^\>/ ) {
+	  $output .= $line;
+	} else {
+	  my @tmp = split( //, $line );
+	  push( @out, @tmp );
+	}
   }
   close(IN);
   ## CLOSE IN in Check_Sequence Length
@@ -776,6 +787,17 @@ sub Make_Jobs {
 	    $template->process( $input_file, $vars, $output_file ) or die $template->error();
 	}
     }
+}
+
+sub Generate_Stats {
+    my $fun = $db->MyExecute("DELETE FROM stats");
+    my $data = {
+	species => $config->{index_species},
+	seqlength => $config->{seqlength},
+	max_mfe => [$config->{max_mfe}],
+	algorithm => ['pknots','nupack','hotknots'],
+    };
+    $db->Put_Stats($data);
 }
 
 sub Optimize {

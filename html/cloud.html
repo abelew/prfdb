@@ -1,4 +1,3 @@
-
 <center>
 <p>This is a cloud for <i>[% nicespecies %]</i>
 [% IF pknots_only %]
@@ -6,10 +5,20 @@
 [% ELSE %]
  for all PRF signals.
 [% END %]
+[% startoverlayform %]
+<input type="hidden" name="cloud_url" value="[% cloud_url %]">
+<input type="hidden" name="species" value="[% species %]">
+<input type="hidden" name="seqlength" value="[% seqlength %]">
+[% overlayquery %]
+[% overlaysubmit %]
+</form>
 <br>
+<!---
 <a HREF="[% map_url %]">
   <img src="[% cloud_url %]" ismap>
 </a>
+--->
+<img src="[% cloud_url %]" usemap="#map">
 </center>
 
 <br>
@@ -46,9 +55,9 @@ green, 'GGG' are blue, and 'CCC' are black.
 </p>
 <center>
  [% IF pknots_only %]
- <img src="[% basedir %]/images/cloud/[% species %]-pknot-bar.png">
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-pknot-bar.png">
  [% ELSE %]
- <img src="[% basedir %]/images/cloud/[% species %]-bar.png">
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-bar.png">
  [% END %]
 </center>
 
@@ -58,9 +67,9 @@ MFE and zscore.
 </p>
 <center>
  [% IF pknots_only %]
- <img src="[% basedir %]/images/cloud/[% species %]-pknot-bar-sig.png">
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-pknot-bar-sig.png">
  [% ELSE %]
- <img src="[% basedir %]/images/cloud/[% species %]-bar-sig.png">
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-bar-sig.png">
  [% END %]
 </center>
 
@@ -69,8 +78,8 @@ And percentage.
 </p>
 <center>
  [% IF pknots_only %]
- <img src="[% basedir %]/images/cloud/[% species %]-pknot-bar-percentsig.png">
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-pknot-bar-percentsig.png">
  [% ELSE %]
- <img src="[% basedir %]/images/cloud/[% species %]-bar-percentsig.png">
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-bar-percentsig.png">
  [% END %]
 </center>

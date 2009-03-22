@@ -634,6 +634,39 @@ sub Condense {
   return $str;
 }
 
+sub Knotp {
+    my $me = shift;
+    my $knotstring = shift;
+    my @knot = split(//, $knotstring);
+    my $knotref = \@knot;
+    my $string = '';
+    foreach my $c (@{$knotref}) { $string .= $c; }
+    foreach my $char ('a' .. 'z') {
+        $string =~ s/$char+/$char/g;
+    }
+    $string =~ s/\.//g;
+    my @tmp = split(//, $string);
+    my $orig_length;
+  LOOP: while (scalar(@tmp) > 0) {
+      $orig_length = scalar(@tmp);
+      for my $pos (0 .. $#tmp) {
+          next  if (!defined($tmp[$pos + 1]));
+          if ($tmp[$pos] eq $tmp[$pos + 1]) {
+	      splice(@tmp, $pos, 2);
+          }
+      }
+      my $fun = scalar(@tmp);
+      if ($orig_length == scalar(@tmp)) {  ## If this is true there is a knot.
+          my $return_string = '';
+          foreach my $c (0 .. $#tmp) {
+	      $return_string .= "$tmp[$c]";
+          }
+          return($return_string);
+      }
+  }
+    return(0);
+}
+
 sub Parsed_to_Barcode {
   my $knotref = shift;
   my $string  = '';

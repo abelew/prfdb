@@ -1,8 +1,10 @@
 <html>
 
 <head>
-  <title>Programmed Ribosomal Frameshifting Database</title>
+  <title>Predicted Ribosomal Frameshift Signal Database</title>
   <meta http-equiv="Content-Type" content="text/html">
+  <META NAME="ROBOTS" CONTENT="NOFOLLOW">
+  <META NAME="ROBOTS" CONTENT="NOINDEX">
   <link rel="stylesheet" href="[% basedir %]/html/style.css" type="text/css">
 </head>
 
@@ -16,46 +18,51 @@
     </td>
   </tr>
 </table>
-<table width="100%" border="0" cellspacing="0" cellpadding="0">
+<table style="table-layout: fixed" width="100%" border="0" cellspacing="0" cellpadding="0">
+  <colgroup>
+    <col width="15%"><col width="14%"><col width="14%"><col width="14%"><col width="14%"><col width="15%">
+<!----
+<col width="13%"><col width="12%"><col width="13%"><col width="12%"><col width="13%"><col width="12%"><col width="13%">
+---->
   <tr>
  
-   <td width="12%" align="center" valign="top" [% IF category == '' %] bgcolor="#366e6d">
-      <b><a href="[% base %]"><font color="white">Home</font></a></b>[% ELSE %]
+   <td align="center" valign="top" [% IF category == '' %] bgcolor="#366e6d">
+      <b><a href="[% base %]"><font color="white">Home</font></a></b>[% ELSE %]>
       <b><a href="[% base %]">Home</a></b>[% END %]
     </td>
 
-    <td width="13%" align="center" valign="top" [% IF category =='searc' %] bgcolor="#366e6d">
-      <b><a href="[% searchform %]"><font color="white">Search</font></a></b>[% ELSE %]
+    <td align="center" valign="top" [% IF category =='searc' %] bgcolor="#366e6d">
+      <b><a href="[% searchform %]"><font color="white">Search</font></a></b>[% ELSE %]>
       <b><a href="[% searchform %]">Search</a></b>[% END %]
     </td>
 
-    <td width="12%" align="center" valign="top" [% IF category == 'cloud' %] bgcolor="#366e6d">
-      <b><a href="[% cloudform %]"><font color="white">Distribution</font></a></b>[% ELSE %]
+    <td align="center" valign="top" [% IF category == 'cloud' %] bgcolor="#366e6d">
+      <b><a href="[% cloudform %]"><font color="white">Distribution</font></a></b>[% ELSE %]>
       <b><a href="[% cloudform %]">Distribution</a></b>[% END %]
     </td>
 
-     <td width="13%" align="center" valign="top" [% IF category == 'filte' %] bgcolor="#366e6d">
-      <b><a href="[% filterform %]"><font color="white">Filter</font></a></b>[% ELSE %]
+     <td align="center" valign="top" [% IF category == 'filte' %] bgcolor="#366e6d">
+      <b><a href="[% filterform %]"><font color="white">Filter</font></a></b>[% ELSE %]>
       <b><a href="[% filterform %]">Filter</a></b>[% END %]
     </td>
-
-     <td width="12%" align="center" valign="top" [% IF category == 'snpst' %] bgcolor="#366e6d">
-      <b><a href="[% snpform %]"><font color="white">SNP</font></a></b>[% ELSE %]
+<!----
+     <td align="center" valign="top" [% IF category == 'snpst' %] bgcolor="#366e6d">
+      <b><a href="[% snpform %]"><font color="white">SNP</font></a></b>[% ELSE %]>
       <b><a href="[% snpform %]">SNP</a></b>[% END %]
     </td>
-
-     <td width="13%" align="center" valign="top" [% IF category == 'downl' %] bgcolor="#366e6d">
-      <b><a href="[% downloadform %]"><font color="white">Download</font></a></b>[% ELSE %]
+---->
+     <td align="center" valign="top" [% IF category == 'downl' %] bgcolor="#366e6d">
+      <b><a href="[% downloadform %]"><font color="white">Download</font></a></b>[% ELSE %]>
       <b><a href="[% downloadform %]">Download</a></b>[% END %]
     </td>
 
-     <td width="12%" align="center" valign="top" [% IF category == 'impor' %] bgcolor="#366e6d">
-      <b><a href="[% importform %]"><font color="white">Import</font></a></b>[% ELSE %]
+     <td align="center" valign="top" [% IF category == 'impor' %] bgcolor="#366e6d">
+      <b><a href="[% importform %]"><font color="white">Import</font></a></b>[% ELSE %]>
       <b><a href="[% importform %]">Import</a></b>[% END %]
     </td>
 
-     <td width="13%" align="center" valign="top" [% IF category == 'help' %] bgcolor="#366e6d">
-      <b><a href="[% helpform %]"><font color="white">Help</font></a></b>[% ELSE %]
+     <td align="center" valign="top" [% IF category == 'help' %] bgcolor="#366e6d">
+      <b><a href="[% helpform %]"><font color="white">Help</font></a></b>[% ELSE %]>
       <b><a href="[% helpform %]">Help</a></b>[% END %]
     </td>
 
@@ -74,6 +81,3 @@
 </tr>
 </table>
 
-<table align="center" width="100%" border="0" cellspacing="2" cellpadding="2">
-<tr align="left" valign="top">
- <td width="15%">

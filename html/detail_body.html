@@ -1,8 +1,12 @@
 <style> .fixedfont { font-size : 14px } </style>
-    <table width="95%" border="0" align="center" cellpadding="2" cellspacing="1">
+
+    <table style="table-layout: fixed" width="100%" align="center" border="0" cellpadding="2" cellspacing="1" align="center">
+    <colgroup>
+     <col width="20%"><col width="80%">
+   </colgroup>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_genename"><strong>Gene Name: </strong></a></div>
 	</td>
 	<td>
@@ -14,12 +18,14 @@
         [% END %]
 	</td>
       </tr>
-
     </table>
-    <table width="95%" border="0" align="center" cellpadding="2" cellspacing="1">
 
+     <table style="table-layout: fixed" width="100%" border="0" cellpadding="2" cellspacing="1" align="center">
+     <colgroup>
+       <col width="20%"><col width="35%">
+     </colgroup>
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_species"><strong>Species: </strong></a></div>
 	</td>
 	<td>
@@ -27,13 +33,13 @@
 	  [% species %]
 	</i>
 	</td>
-	<td width="40%" rowspan="12" valign="top">
+	<td rowspan="12" valign="top">
 	  <div align="left"><a href="[% base %]/help_detail#help_graph"><img src="[% chartURL %]" border="2"></a></div>
 	</td>
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_accession"><strong>Accession: </strong></a></div>
 	</td>
 	<td>
@@ -42,7 +48,7 @@
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_position"><strong>Position: </strong></a></div>
 	</td>
 	<td>
@@ -51,7 +57,7 @@
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_algorithm"><strong>Algorithm: </strong></a></div>
 	</td>
 	<td>
@@ -60,7 +66,7 @@
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_barcode"><strong>Barcode: </strong></a></div>
 	</td>
 	<td>
@@ -69,7 +75,7 @@
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_seqlength"><strong>Sequence Length: </strong></a></div>
 	</td>
 	<td>
@@ -78,7 +84,7 @@
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_slipsite"><strong>Slippery Site: </strong></a></div>
 	</td>
 	<td>
@@ -87,7 +93,7 @@
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_gc"><strong>GC Content: </strong></a></div>
 	</td>
 	<td>
@@ -96,7 +102,7 @@
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_bp"><strong>Base Pairs: </strong></a></div>
 	</td>
 	<td>
@@ -106,7 +112,7 @@
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_mfe"><strong>MFE: </strong></a></div>
 	</td>
 	<td>
@@ -115,7 +121,7 @@
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_z"><strong>Z Score: </strong></a></div>
 	</td>
 	<td>
@@ -124,7 +130,7 @@
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_rand_mfe"><strong>Randomized Mean MFE: </strong></a></div>
 	</td>
 	<td>
@@ -133,7 +139,7 @@
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
-	<td width="25%">
+	<td>
 	  <div align="right"><a href="[% base %]/help_detail#help_ppcc"><strong>PPCC: </strong></a></div>
 	</td>
 	<td>
@@ -141,64 +147,66 @@
 	</td>
         <td></td>
       </tr>
-
 </table>
 
-    <table align="center" width="95%" border="0" cellpadding="2" cellspacing="0" bgcolor="#E9EBF7">
+    <table align="center" style="table-layout: fixed" width="100%" border="0" cellpadding="2" cellspacing="0" bgcolor="#E9EBF7">
+    <colgroup>
+     <col width="100%">
+    </colgroup>
+      <tr>
+	<td text-align="right"><span style="whitespace: nowrap">
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[% minus_stop %]</font></b>
+	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;<b>-1&nbsp;Frame&nbsp;stop&nbsp;codons</b>
+          </font></div>
+        </span>
+        </td>
+      </tr>
 
       <tr>
-        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-	<td>
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[% minus_stop %]</font></b>
-	  <font face="Courier New, Courier, mono" size="-3">
-	  &nbsp;&nbsp;&nbsp;&nbsp;<b>-1 Frame stop codons</b>
+	<td text-align="right"><span style="whitespace: nowrap">
+	  <div class="fixedfont"><font face="Courier New, Courier, mono">[% numbers %]</font>
+	  <font face="Courier New, Courier, mono" size="-3"><a href="[% base %]/search_local_blast?accession=[% accession %]&start=[% slipstart %]">&nbsp;Blast&nbsp;subsequence</a>
           </font></div>
+         </span>
         </td>
       </tr>
 
       <tr>
-        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-	<td>
-	  <div class="fixedfont"><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[% numbers %]</font>
+	<td text-align="right"><span style="whitespace: nowrap">
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono"><u>[% slipsite %]</u>[% pk_input %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    <a href="[% base %]/local_blast?accession=[% accession %]&start=[% slipstart %]">&nbsp;&nbsp;Blast subsequence</a>
-          </font></div>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="[% base %]/download_subseq?mfeid=[% mfe_id %]">Download&nbsp;subsequence</a>
+	  </font></div>
+         </span>
         </td>
       </tr>
+
       <tr>
-        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-	<td>
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;<u>[% slipsite %]</u>[% pk_input %]</font></b>
+	<td text-align="right"><span style="whitespace: nowrap">
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[% brackets %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="[% base %]/download_subseq?mfeid=[% mfe_id %]">Download subsequence</a>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="[% base %]/download_parens?mfeid=[% mfe_id %]">Download&nbsp;brackets</a>
 	  </font></div>
-        </td>
-      </tr>
-      <tr>
-        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-	<td>
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[% brackets %]</font></b>
-	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="[% base %]/download_parens?mfeid=[% mfe_id %]">Download brackets</a>
-	  </font></div>
+         </span>
 	</td>
       </tr>
+
       <tr>
-        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-        <td>
-    	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[% parsed %]</font></b>
+        <td text-align="right"><span style="whitespace: nowrap">
+    	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[% parsed %]</font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="[% base %]/download_parsed?mfeid=[% mfe_id %]">Download parsed</a>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="[% base %]/download_parsed?mfeid=[% mfe_id %]">Download&nbsp;parsed</a>
 	  </font></div>
+         </span>
 	</td>
       </tr>
+
       <tr>
-        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-        <td>
+        <td text-align="right"><span style="whitespace: nowrap">
 	  <embed id="feynman" src="[% feynman_url %]" align="bottom" width="[% feynman_width %]" height="[% feynman_height %]" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
-	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;<a href="[% base %]/download_bpseq?mfeid=[% mfe_id %]">Download bpseq</a>
+	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;&nbsp;<a href="[% base %]/download_bpseq?mfeid=[% mfe_id %]">Download&nbsp;bpseq</a>
 	  </font>
+        </span>
         </td>
       </tr>
     </table>

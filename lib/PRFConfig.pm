@@ -1,5 +1,5 @@
 package PRFConfig;
-## Time-stamp: <Sat Jun 23 01:51:29 2007 Ashton Trey Belew (abelew@wesleyan.edu)>
+## Time-stamp: <Wed Apr 16 10:33:20 2008 Ashton Trey Belew (abelew@wesleyan.edu)>
 use strict;
 use AppConfig qw/:argcount :expand/;
 require Exporter;
@@ -10,20 +10,19 @@ our @EXPORT = qw(PRF_Out PRF_Error config);    # Symbols to be exported by defau
 our $VERSION = 1.00;                           # Version number
 
 my $appconfig = AppConfig->new(
-  {
-    CASE     => 1,
-    CREATE   => 1,
-    PEDANTIC => 0,
-    ERROR    => \&Go_Away,
-    GLOBAL   => {
-      EXPAND     => EXPAND_ALL,
-      EXPAND_ENV => 1,
-      EXPAND_UID => 1,
-      DEFAULT    => "<unset>",
-      ARGCOUNT   => 1,
-    },
-  },
-);
+   {
+	CASE     => 1,
+	CREATE   => 1,
+	PEDANTIC => 0,
+	ERROR    => \&Go_Away,
+	GLOBAL   => {
+				 EXPAND     => EXPAND_ALL,
+				 EXPAND_ENV => 1,
+				 EXPAND_UID => 1,
+				 DEFAULT    => "<unset>",
+				 ARGCOUNT   => 1,
+				},
+   },);
 ####
 ## Set up some reasonable defaults here
 ####
@@ -33,14 +32,14 @@ $PRFConfig::config->{add_to_path}          = "/usr/local/bin:/usr/bin";
 $PRFConfig::config->{has_modperl}          = 0;
 $PRFConfig::config->{index_species}        = ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus', 'danio_rerio','bos_taurus', 'xenopus_tropicalis', 'xenopus_laevis', 'rattus_norvegicus' ];
 $PRFConfig::config->{species_limit}        = undef;
+$PRFConfig::config->{snp_species_limit} = 'homo_sapiens';
 $PRFConfig::config->{workdir}              = 'work';
 $PRFConfig::config->{blastdir}             = 'blast';
 $PRFConfig::config->{queue_table}          = 'queue';
 $PRFConfig::config->{check_webqueue}       = 1;
 $PRFConfig::config->{genome_table}         = 'genome';
-$PRFConfig::config->{seqlength}            = 100;
+$PRFConfig::config->{seqlength}            = [100,75,50];
 $PRFConfig::config->{landscape_seqlength}  = 105;
-$PRFConfig::config->{seqlength}            = 100;
 $PRFConfig::config->{do_nupack}            = 1;
 $PRFConfig::config->{do_pknots}            = 1;
 $PRFConfig::config->{do_hotknots}          = 1;
@@ -115,6 +114,7 @@ $PRFConfig::config->{sql_index}     = $PRFConfig::config->{sql_id};
 $PRFConfig::config->{logfile}       = 'prfdb.log';
 $PRFConfig::config->{errorfile}     = 'prfdb.errors';
 $PRFConfig::config->{dirvar}        = undef;
+$PRFConfig::config->{max_mfe} = 10.0;
 
 $PRFConfig::config->{stem_colors} = "black blue red green purple orange brown darkslategray";  ## This gets dropped into an array
 ## The zeroth element is a non-stem, thus black
@@ -133,13 +133,16 @@ for my $config_option ( keys %data ) {
 }
 
 if (ref($PRFConfig::config->{boot_mfe_algorithms}) eq '') {
-    $PRFConfig::config->{boot_mfe_algorithms} = eval( $PRFConfig::config->{boot_mfe_algorithms} );
+  $PRFConfig::config->{boot_mfe_algorithms} = eval( $PRFConfig::config->{boot_mfe_algorithms} );
 }
 if (ref($PRFConfig::config->{boot_randomizers}) eq '') {
-    $PRFConfig::config->{boot_randomizers}    = eval( $PRFConfig::config->{boot_randomizers} );
+  $PRFConfig::config->{boot_randomizers}    = eval( $PRFConfig::config->{boot_randomizers} );
 }
 if (ref($PRFConfig::config->{index_species}) eq '') {
-    $PRFConfig::config->{index_species} = eval($PRFConfig::config->{index_species});
+  $PRFConfig::config->{index_species} = eval($PRFConfig::config->{index_species});
+}
+if (ref($PRFConfig::config->{seqlength}) eq '') {
+  $PRFConfig::config->{seqlength} = eval($PRFConfig::config->{seqlength});
 }
 
 $PRFConfig::config->{dsn} = qq(DBI:$PRFConfig::config->{database_type}:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host});
