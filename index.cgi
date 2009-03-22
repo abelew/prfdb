@@ -1,16 +1,16 @@
-#!/usr/bin/perl -w  -I/usr/share/httpd/prfdb/usr/lib/perl5/site_perl/
+#!/usr/bin/perl -w -I/usr/local/prfdb/prfdb_beta/lib
 use strict;
 use CGI qw/:standard :html3/;
 use CGI::Carp qw(fatalsToBrowser carpout);
 use Template;
-use lib "lib";
+use lib "/usr/local/prfdb/prfdb_beta/lib/";
 use PRFConfig;
 use PRFdb;
 use PRF_Blast;
 use PRFGraph;
 use MoreRandom;
 use Bootlace;
-$ENV{HTTP_HOST} = 'funkytown' if (!defined($ENV{HTTP_HOST}));
+$ENV{HTTP_HOST} = 'Youneedtodefinedahostname' if (!defined($ENV{HTTP_HOST}));
 $ENV{SCRIPT_NAME} = 'index.cgi' if (!defined($ENV{SCRIPT_NAME}));
 umask(0000);
 our $config = $PRFConfig::config;
@@ -34,7 +34,9 @@ $category = substr($category,0,5);
 
 my @species_values = @{$config->{index_species}};
 push(@species_values, 'all');
-push(@species_values, 'virus');
+my @single_seqlength = @{$config->{seqlength}};
+my $single_seqlen = shift(@single_seqlength);
+
 my %species_labels;
 foreach my $value (@species_values) {
   my $long_name = $value;
@@ -44,22 +46,89 @@ foreach my $value (@species_values) {
 }
 
 our $vars = {
-  base         => $base,
-  basedir      => $basedir,
-  startsearchform => $cgi->startform( -action => "$base/search_perform" ),
-  search_species_limit => $cgi->popup_menu(-name =>'search_species_limit', -values => \@species_values, -labels => \%species_labels, -default => 'all'),
-  searchquery => $cgi->textfield(-name => 'query', -size => 20),
-  searchform   => "$base/searchform",
-  importform   => "$base/import",
-  filterform   => "$base/filter_start",
-  snpform      => "$base/snpstart",
-  downloadform => "$base/download",
-  cloudform => "$base/cloudform",
-  helpform => "$base/help",
-  seqlength => $config->{seqlength},
-  searchsubmit => $cgi->submit,
-  category => $category,
-};
+			 base         => $base,
+			 basedir      => $basedir,
+			 startsearchform => $cgi->startform( -action => "$base/search_perform" ),
+			 search_species_limit => $cgi->popup_menu(-name =>'search_species_limit', -values => \@species_values, -labels => \%species_labels, -default => 'all'),
+			 searchquery => $cgi->textfield(-name => 'query', -size => 20),
+			 searchform   => "$base/searchform",
+			 importform   => "$base/import",
+			 filterform   => "$base/filter_start",
+			 snpform      => "$base/snpstart",
+			 downloadform => "$base/download",
+			 cloudform => "$base/cloudform",
+			 helpform => "$base/help",
+			 seqlength => $single_seqlen,
+			 searchsubmit => $cgi->submit(-name => 'search submit', -value => 'Search'),
+			 category => $category,
+			 summary => {
+			     'bos_taurus' => {
+				 name => 'Bos taurus',
+				 sequences => 49266,
+				 genes => 3305,
+				 total => 9187,},
+			     'danio_rerio' => {
+				 name => 'Danio rerio',
+				 sequences => 25836,
+				 genes => 1929,
+				 total => 6197,},
+			     'homo_sapiens' => {
+				 name => 'Homo sapiens',
+				 sequences => 102404,
+				 genes => 6732,
+				 total => 17893,},
+			     'mus_musculus' => {
+				 name => 'Mus musculus',
+				 sequences => 86837,
+				 genes => 5933,
+				 total => 15620,},
+			     'rattus_norvegicus' => {
+				 name => 'Rattus norvegicus',
+				 sequences => 26979,
+				 genes => 1959,
+				 total => 5341,},
+			     'saccharomyces_cerevisiae' => {
+				 name => 'Saccharomyces cerevisiae',
+				 sequences => 150045,
+				 genes => 4128,
+				 total => 6352,},
+			     'xenopus_laevis' => {
+				 name => 'Xenopus laevis',
+				 sequences => 79485,
+				 genes => 4808,
+				 total => 9325,},
+			     'xenopus_tropicalis' => {
+				 name => 'Xenopus tropicalis',
+				 sequences => 44299,
+				 genes => 2663,
+				 total => 5126,},
+			     'saccharomyces_kudriavzevii' => {
+				name => 'Saccharomyces kudriavzevii',
+				sequences => 48447,
+				genes => 2212,
+				total => 3778,},
+			     'saccharomyces_castellii' => {
+				 name => 'Saccharomyces castellii',
+				 sequences => 73836,
+				 genes => 2964,
+				 total => 4681, },
+			     'saccharomyces_bayanus' => {
+				 name => 'Saccharomyces bayanus',
+				 sequences => 71433,
+				 genes =>  2951,
+				 total => 4970, },
+## SELECT COUNT(id) FROM mfe WHERE species = 'homo_sapiens'
+## SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = 'homo_sapiens'
+## SELECT COUNT(id) FROM genome WHERE species = 'homo_sapiens'
+			     'saccharomyces_paradoxus' => {
+				 name => 'Saccharomyces paradoxus',
+				 sequences => 9700,
+				 genes => 436,
+				 total => 8955, },
+			 },
+			 
+		     };
+
 our $download_header = qq(Content-type: application/x-octet-stream
 Content-Disposition:attachment;filename=);
 
@@ -95,6 +164,13 @@ sub MAIN {
 	Download_All($cgi->param('species'), 'mfe');
 	exit(0);
     }
+    elsif (defined($cgi->param('output_format')) and $cgi->param('output_format') eq 'tab delimited') {
+	my $species = $cgi->param('hidden_species');
+	my $filename = qq($species.tab);
+	print $download_header;
+	print "$filename\n\n";
+	Perform_Third_Filter();
+    }
     elsif ($path eq '/download_all_boot') {
 	Download_All($cgi->param('species'), 'boot');
 	exit(0);
@@ -104,62 +180,106 @@ sub MAIN {
     $template->process( 'header.html', $vars ) or
 	Print_Template_Error($template), die;
 
-    if ( $path eq '/start' or $path eq '' ) {
+    if ($path eq '/start' or $path eq '') {
 	Print_Index();
-    } elsif ($path eq '/help') {
+    }
+    elsif ($path eq '/help') {
 	$template->process('help.html', $vars) or
 	    Print_Template_Error($template), die;
-    } elsif ($path =~ /^\/help_(\w+$)/) {
+    }
+    elsif ($path =~ /^\/help_(\w+$)/) {
 	my $helpfile = qq(help_${1}.html);
-	$template->process($helpfile, $vars) or
-	    Print_Template_Error($template), die;
-    } elsif ($path eq '/cloud_mfe_z') {
+	   $template->process($helpfile, $vars) or
+	   Print_Template_Error($template), die;
+    }
+    elsif ($path eq '/cloud_mfe_z') {
 	Print_MFE_Z();
-    } elsif ( $path eq '/download' ) {
+    } 
+    elsif ($path eq '/download') {
 	Print_Download();
-    } elsif ($path eq '/choose_download') {
+    }
+    elsif ($path eq '/choose_download') {
 	Print_Choose_Download();
-    } elsif ( $path eq '/import' ) {
+    } 
+    elsif ($path eq '/import') {
 	Print_Import_Form();
-    } elsif ( $path eq '/perform_import' ) {
+    } 
+    elsif ($path eq '/pictures') {
+	Generate_Pictures();
+    }
+    elsif ($path eq '/stats') {
+	my $data = {
+	    species => \@species_values,
+	    seqlength => [50,75,100],
+	    max_mfe => ['10.0'],
+	    algorithm => ['nupack','pknots','hotknots']};
+	$db->Put_Stats($data);
+	print "Generated stats.<br>\n";
+	Print_Index();
+    }
+    elsif ($path eq '/perform_import') {
 	Perform_Import();
 	Print_Import_Form();
-    } elsif ( $path eq '/landscape' ) {
+    }
+    elsif ($path eq '/landscape') {
 	Check_Landscape();
-    } elsif ($path eq '/cloudform') {
+    }
+    elsif ($path eq '/cloudform') {
 	Print_Cloudform();
-    } elsif ( $path eq '/cloud' ) {
+    } 
+    elsif ($path eq '/cloud') {
 	Cloud();
-    } elsif ( $path eq '/searchform' ) {
-	Print_Search_Form();
-    } elsif ($path eq '/blast_search') {
+#    } elsif ($path eq '/blast_search') {
+    }
+    elsif (defined($cgi->param('blastsearch'))) {
 	my $input_sequence = $cgi->param('blastsearch');
 	Print_Blast('local',$input_sequence);
-    } elsif ( $path eq '/search_perform') {
-	Perform_Search();
-    } elsif ( $path eq '/filter_start' ) {
+    } 
+    elsif ($path eq '/searchform') {
+	Print_Search_Form();
+    }
+    elsif ($path eq '/search_perform') {
+	Perform_Search();	
+    }
+    elsif ($path eq '/overlaysearch_perform') {
+	Perform_OverlaySearch();
+    }
+    elsif ($path eq '/filter_start') {
 	Start_Filter();
-    } elsif ($path eq '/filter_second') {
+    }
+    elsif ($path eq '/filter_second') {
 	Perform_Second_Filter();
-    } elsif ( $path eq '/filter_third') {
+    }
+    elsif ($path eq '/filter_third') {
 	Perform_Third_Filter();
-    } elsif ( $path eq '/browse' ) {
+    } 
+    elsif ($path eq '/browse') {
 	Print_Single_Accession();
-    } elsif ( $path eq '/list_slipsites' ) {
+    } 
+    elsif ($path eq '/list_slipsites') {
 	Print_Sliplist();
-    } elsif ( $path eq '/detail' ) {
+    }
+    elsif ($path eq '/detail') {
 	Print_Detail_Slipsite();
-    } elsif ( $path eq '/local_blast' ) {
+    }
+    elsif ($path eq '/search_local_blast') {
 	print "Performing Local BLAST search now, this may take a moment.<br>\n";
 	Print_Blast('local');
-    } elsif ( $path eq '/remote_blast' ) {
+    } 
+    elsif ($path eq '/search_remote_blast') {
 	print "Performing Remote BLAST search now, this may take a moment.<br>\n";
 	Print_Blast('remote');
-    } elsif ( $path eq '/snpstart' ) {
+    } 
+    elsif ($path eq '/snpstart') {
 	Start_SNP_Filter();
-    } elsif ( $path eq '/snpfilter' ) {
+    }
+    elsif ($path eq '/snpfilter') {
 	#Perform_SNP_Filter();
     }
+    elsif ($path eq '/showstats') {
+	Print_Stats();
+    }
+
     print $cgi->endform;
     $template->process( 'footer.html', $vars ) or
 	Print_Template_Error($template), die;
@@ -168,21 +288,21 @@ sub MAIN {
 
 sub Print_Index {
     my %species_info = ();
-    foreach my $spec (@{$config->{index_species}}) {
-	$species_info{$spec}{count} = $db->MySelect({
-	    statement => "SELECT count(id) FROM mfe WHERE species LIKE '%$spec%'",
-	    type => 'single'});
-	my $nicename = $spec;
-	$nicename =~ s/_/ /g;
-	$nicename = ucfirst($nicename);
-	$species_info{$spec}{nicename} = $nicename;
-	$species_info{$spec}{genes} = $db->MySelect({
-	    statement => "SELECT count(id) FROM genome WHERE species LIKE '%$spec%'",
-	    type => 'single'});
-	$species_info{$spec}{done_genes} = $db->MySelect({
-	    statement => "SELECT count(distinct(genome_id)) FROM mfe WHERE species LIKE '%$spec%'",
-	    type => 'single'});
-    }
+#    foreach my $spec (@{$config->{index_species}}) {
+#	$species_info{$spec}{count} = $db->MySelect({
+#	    statement => "SELECT count(id) FROM mfe WHERE species LIKE '%$spec%'",
+#	    type => 'single'});
+#	my $nicename = $spec;
+#	$nicename =~ s/_/ /g;
+#	$nicename = ucfirst($nicename);
+#	$species_info{$spec}{nicename} = $nicename;
+#	$species_info{$spec}{genes} = $db->MySelect({
+#	    statement => "SELECT count(id) FROM genome WHERE species LIKE '%$spec%'",
+#	    type => 'single'});
+#	$species_info{$spec}{done_genes} = $db->MySelect({
+#	    statement => "SELECT count(distinct(genome_id)) FROM mfe WHERE species LIKE '%$spec%'",
+#	    type => 'single'});
+#    }
     my $lastupdate_statement = qq(SELECT species, lastupdate, accession FROM mfe );
     if (defined($config->{species_limit})) {
 	$lastupdate_statement .= qq(WHERE species = '$config->{species_limit}' );
@@ -192,7 +312,7 @@ sub Print_Index {
 	statement => $lastupdate_statement,
 	type => 'row'});
 
-    $vars->{species_info} = \%species_info;
+#    $vars->{species_info} = \%species_info;
     $vars->{last_species} = $lastupdate->[0];
     $vars->{last_species} = ucfirst($vars->{last_species});
     $vars->{last_species} =~ s/_/ /g;
@@ -231,13 +351,16 @@ sub Print_Download {
 }
 
 sub Print_Choose_Download {
+  $vars->{the_species} = $cgi->param('species');
   $vars->{chosen_species} = $cgi->param('species');
+  $vars->{chosen_species} =~ s/_/ /g;
+  $vars->{chosen_species} = ucfirst($vars->{chosen_species});
   $template->process('chosen_download.html', $vars) or
-	Print_Template_Error($template), die;
+	  Print_Template_Error($template), die;
 }
 
 sub Print_Search_Form {
-  $vars->{blast_startform} = $cgi->startform( -action => "$base/blast_search" );
+  $vars->{blast_startform} = $cgi->startform(-action => "$base/search_blast");
   $vars->{blast_submit} = $cgi->submit( -name => 'blastsearch', -value => 'Perform Blast Search');
   $template->process( 'searchform.html', $vars ) or
 	Print_Template_Error($template), die;
@@ -253,6 +376,7 @@ sub Print_Import_Form {
 sub Print_Cloudform {
   my %labels;
   $vars->{newstartform} = $cgi->startform( -action => "$base/cloud" );
+  $vars->{seqlength} = $cgi->popup_menu(-name => 'seqlength', -values => $config->{seqlength},-default=> $vars->{seqlength});
   $vars->{slipsites} = $cgi->popup_menu(-name => 'slipsites',
 										-default => 'all',
 										-values => ['all',
@@ -373,16 +497,129 @@ sub Print_MFE_Z {
   }
 }
 
+sub Print_Stats {
+    my @spec = @{$config->{index_species}};
+ #   my @spec = ('bos_taurus');
+#    my @algos = ('pknots','nupack','hotknots');
+    my @algos = ('pknots','nupack');
+#    my @lengths = @{$config->{seqlength}};
+    my @lengths = ('100');
+
+    $vars->{species} = \@spec;
+    $vars->{algorithms} = \@algos;
+    $vars->{lengths} = \@lengths;
+    
+    my @spec_fun;
+    foreach my $species (@spec) {
+	next if ($species eq 'virus');
+	my @len_fun;
+	foreach my $len (@lengths) {
+	    my @algo_fun;
+	    foreach my $alg (@algos) {
+
+
+		my $start_stats = $db->MySelect({
+		    statement => "SELECT * from stats where species = '$species' and algorithm = '$alg' and seqlength = '$len'",
+		    type => 'list_of_hashes'});
+
+		my $total_hepts = $start_stats->[0]->{num_sequences};
+		my $total_mean = $start_stats->[0]->{avg_mfe};
+		my $total_stdev = $start_stats->[0]->{stddev_mfe};
+
+		my $knot_hepts = $start_stats->[0]->{num_sequences_knotted};
+		my $knot_mean = $start_stats->[0]->{avg_mfe_knotted};
+		my $knot_stdev = $start_stats->[0]->{stddev_mfe_knotted};
+  
+		my $mean_z = $start_stats->[0]->{avg_zscore};
+		my $stddev_z = $start_stats->[0]->{stddev_zscore};
+
+		my $sig_mfe = $total_mean - $total_stdev;
+		my $sig_mfe_knot = $knot_mean - $knot_stdev;
+		my $sig_z = $mean_z - $stddev_z;
+
+		my $sigsig_mfe = $total_mean - ($total_stdev * 2);
+		my $sigsig_mfe_knot = $knot_mean - ($knot_stdev * 2);
+		my $sigsig_z = $mean_z - ($stddev_z * 2);
+
+		my $all_stmt = qq/SELECT count(mfe.id) FROM mfe,boot WHERE mfe.seqlength = '$len' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sig_mfe' AND mfe.id = boot.mfe_id AND boot.zscore < '$sig_z'/;;
+		my $pseudo_stmt = qq/SELECT count(mfe.id) FROM mfe,boot WHERE mfe.seqlength = '$len' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sig_mfe' AND knotp = '1' AND mfe.id = boot.mfe_id AND boot.zscore < '$sig_z'/;
+		my $all_stmt_2 = qq/SELECT count(mfe.id) FROM mfe,boot WHERE mfe.seqlength = '$len' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sigsig_mfe' AND mfe.id = boot.mfe_id AND boot.zscore < '$sigsig_z'/;
+		my $pseudo_stmt_2 =  qq/SELECT count(mfe.id) FROM mfe,boot WHERE mfe.seqlength = '100' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sigsig_mfe' AND knotp = '1' AND mfe.id = boot.mfe_id AND boot.zscore < '$sigsig_z'/;
+
+		my $count_sig_all = $db->MySelect({
+		    statement => $all_stmt,
+		    type => 'single',
+		});
+		my $count_pseudo_all = $db->MySelect({
+		    statement => $pseudo_stmt,
+		    type => 'single',
+		});
+		my $count_sig_all_2 = $db->MySelect({
+		    statement => $all_stmt_2,
+		    type => 'single',
+		});
+		my $count_pseudo_all_2 = $db->MySelect({
+		    statement => $pseudo_stmt_2,
+		    type => 'single',
+		});
+
+		my $inner_stats = {
+		    species => $species,
+		    length => $len,
+		    algorithm => $alg,
+		    total_hepts => $total_hepts,
+		    total_mean => $total_mean,
+		    knot_hepts => $knot_hepts,
+		    knot_mean => $knot_mean,
+		    mean_z => $mean_z,
+		    count_sig_all => $count_sig_all,
+		    count_pseudo_all => $count_pseudo_all,
+		    count_sig_all_2 => $count_sig_all_2,
+		    count_sig_pseudo_all_2 => $count_pseudo_all_2,
+		};
+
+		push(@algo_fun, $inner_stats);
+
+#		$vars->{stats}->{$species}->{$alg}->{$len}->{total_hepts} = $total_hepts;
+#		$vars->{stats}->{$species}->{$alg}->{$len}->{total_mean} = $total_mean;
+#		$vars->{stats}->{$species}->{$alg}->{$len}->{knot_hepts} = $knot_hepts;
+#		$vars->{stats}->{$species}->{$alg}->{$len}->{knot_mean} = $knot_mean;
+#		$vars->{stats}->{$species}->{$alg}->{$len}->{mean_z} = $mean_z;
+#		$vars->{stats}->{$species}->{$alg}->{$len}->{count_sig_all} = $count_sig_all;
+#		$vars->{stats}->{$species}->{$alg}->{$len}->{count_pseudo_all} = $count_pseudo_all;
+#		$vars->{stats}->{$species}->{$alg}->{$len}->{count_sig_all_2} = $count_sig_all_2;
+#		$vars->{stats}->{$species}->{$alg}->{$len}->{count_pseudo_all_2} = $count_pseudo_all_2;
+	    }
+	    push(@len_fun, \@algo_fun);
+	}
+	push(@spec_fun, \@len_fun);;
+    }
+    $vars->{stats} = \@spec_fun;
+    $template->process('stats.html',$vars) or
+	Print_Template_Error($template), die;
+}
+
 sub Print_Detail_Slipsite {
   my $id = $cgi->param('id');
   my $accession = $cgi->param('accession');
   my $slipstart = $cgi->param('slipstart');
   $vars->{accession} = $accession;
   $vars->{slipstart} = $slipstart;
-  my $detail_stmt = qq(SELECT * FROM mfe WHERE accession = ? AND start = ? ORDER BY seqlength DESC,algorithm DESC);
-  my $info = $db->MySelect({
-      statement => $detail_stmt,
-      vars => [ $accession, $slipstart ] });
+  my ($detail_stmt, $info);
+  Remove_Duplicates($accession);
+  if (!defined($slipstart)) {
+      $detail_stmt = qq(SELECT * FROM mfe WHERE accession = ? ORDER BY start, seqlength DESC,algorithm DESC);
+      $info = $db->MySelect({
+	  statement => $detail_stmt,
+	  vars => [$accession,]});
+  }
+  else {
+      $detail_stmt = qq(SELECT * FROM mfe WHERE accession = ? AND start = ? ORDER BY seqlength DESC,algorithm DESC);
+      $info = $db->MySelect({
+	  statement => $detail_stmt,
+	  vars => [$accession, $slipstart]});
+  }
+
   ## id,genome_id,accession,species,algorithm,start,slipsite,seqlength,sequence,output,parsed,parens,mfe,pairs,knotp,barcode,lastupdate
   ## 0  1         2         3       4         5     6        7         8        9      10     11     12  13    14    15      16
 
@@ -392,181 +629,186 @@ sub Print_Detail_Slipsite {
   my $genome_stmt = qq(SELECT genename FROM genome where id = ?);
   my $genome_info = $db->MySelect({
       statement =>$genome_stmt,
-      vars => [ $vars->{genome_id} ],
-				  });
+      vars => [$vars->{genome_id}],});
   $vars->{genename} = $genome_info->[0]->[0];
-  foreach my $structure ( @{$info} ) {
-    my $id = $structure->[0];
-    my $mfe = $structure->[12];
-    $vars->{mfe_id} = $structure->[0];
-#    my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = ?);
-    my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = '$id');
-    my $boot = $db->MySelect({
-	statement => $boot_stmt,
-#	vars => [$id],
-	type => 'row'});
-    my ( $ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $boot_db );
+  foreach my $structure (@{$info}) {
+      my $id = $structure->[0];
+      my $mfe = $structure->[12];
+      $vars->{mfe_id} = $structure->[0];
+      my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = '$id');
+      my $boot = $db->MySelect({
+	  statement => $boot_stmt,
+	  type => 'row'});
+      my ($ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, 
+	  $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $boot_db);
 
-    if (!defined($boot) and $config->{do_boot} == 2) {
-	## Add it to the webqueue
-	$db->Set_Queue($vars->{genome_id}, 'webqueue');
-    }
-    elsif (!defined($boot) and $config->{do_boot} == 1) {
-	$vars->{accession} = $structure->[2];
-	$template->process( 'generate_boot.html', $vars) or
-	    Print_Template_Error($template), die;
+      if (!defined($boot) and $config->{do_boot} == 2) {
+	  ## Add it to the webqueue
+	  $db->Set_Queue($vars->{genome_id}, 'webqueue');
+      }
+      elsif (!defined($boot) and $config->{do_boot} == 1) {
+	  $vars->{accession} = $structure->[2];
+	  $template->process( 'generate_boot.html', $vars) or
+	      Print_Template_Error($template), die;
 
-	my $data = ">tmp
+	  my $data = ">tmp
 $structure->[8]
 ";
-	my $inputfile = $db->Sequence_to_Fasta($data);
-	my $boot = new Bootlace(
-        genome_id           => $structure->[1],
-        nupack_mfe_id       => $structure->[0],
-        pknots_mfe_id       => $structure->[0],
-        inputfile           => $inputfile,
-        species             => $structure->[3],
-        accession           => $structure->[2],
-        start               => $structure->[5],
-        seqlength           => $structure->[7],
-        iterations          => $config->{boot_iterations},
-        boot_mfe_algorithms => $config->{boot_mfe_algorithms},
-        randomizers         => $config->{boot_randomizers},
-      );
-	my $bootlaces = $boot->Go();
-	$db->Put_Boot($bootlaces);
-	chdir($config->{base});
-    }
-
-    my $acc_slip         = qq/$accession-$slipstart/;
-    my $feynman_pic = new PRFGraph({mfe_id => $id, accession => $accession});
-    my $pre_feynman_url = $feynman_pic->Picture_Filename({type=> 'feynman', url => 'url',});
-    my $feynman_url = $basedir . '/' . $pre_feynman_url;
-    my $feynman_output_filename = $feynman_pic->Picture_Filename( {type => 'feynman', });
-    my $feynman_dimensions = {};
-    if (!-r $feynman_output_filename) {
-	$feynman_dimensions = $feynman_pic->Make_Feynman();
-    }
-    else {
-	$feynman_dimensions = $feynman_pic->Get_Feynman_ImageSize($feynman_output_filename);
-    }
-
-#    my $cfeynman_pic = new PRFGraph({mfe_id => $id, accession => $accession});
-#    my $pre_cfeynman_url = $cfeynman_pic->Picture_Filename({type=> 'cfeynman', url => 'url',});
-#    my $cfeynman_url = $basedir . '/' . $pre_cfeynman_url;
-#    my $cfeynman_output_filename = $cfeynman_pic->Picture_Filename( {type => 'cfeynman', });
-#    my $cfeynman_dimensions = {};
-#    if (!-r $cfeynman_output_filename) {
-#	$cfeynman_dimensions = $cfeynman_pic->Make_CFeynman();
-#    }
-
-    if ( defined($boot) ) {
-      my $mfe_values       = $boot->[0];
-      my @mfe_values_array = split( /\s+/, $mfe_values );
-      $chart = new PRFGraph(
-        {
-	    real_mfe => $mfe,
-	    list_data => \@mfe_values_array,
-	    accession  => $acc_slip,
-	    mfe_id => $id,
-        }
-      );
-      my $ppcc_values = $chart->Get_PPCC();
-      $filename = $chart->Picture_Filename( { type => 'distribution', } );
-      my $pre_chartURL = $chart->Picture_Filename( { type => 'distribution', url => 'url', } );
-      $chartURL = $basedir . '/' . $pre_chartURL;
-
-      if ( !-r $filename ) {
-        $chart = $chart->Make_Distribution();
+	  my $inputfile = $db->Sequence_to_Fasta($data);
+	  my $boot = new Bootlace(
+				  genome_id => $structure->[1],
+				  nupack_mfe_id => $structure->[0],
+				  pknots_mfe_id => $structure->[0],
+				  inputfile => $inputfile,
+				  species => $structure->[3],
+				  accession => $structure->[2],
+				  start => $structure->[5],
+				  seqlength => $structure->[7],
+				  iterations => $config->{boot_iterations},
+				  boot_mfe_algorithms => $config->{boot_mfe_algorithms},
+				  randomizers => $config->{boot_randomizers},
+				  );
+	  my $bootlaces = $boot->Go();
+	  $db->Put_Boot($bootlaces);
+	  chdir($config->{base});
       }
 
-      $mfe_mean = $boot->[1];
-      $mfe_sd   = $boot->[2];
-      $mfe_se   = $boot->[3];
-      $boot_db  = $boot->[4];
-      if ($mfe_sd == 0) { 
-        $zscore = 0;
+      if (!defined($accession)) {
+	  print "Accession is not defined";
+	  exit(0);
+      }
+      if (!defined($slipstart)) {
+	  print "The slipstart is not defined";
+	  $slipstart = '';
+      }
+      my $acc_slip = qq/$accession-$slipstart/;
+      my $feynman_pic = new PRFGraph({mfe_id => $id, accession => $accession});
+      my $pre_feynman_url = $feynman_pic->Picture_Filename({type=> 'feynman', url => 'url',});
+      my $feynman_url = $basedir . '/' . $pre_feynman_url;
+      my $feynman_output_filename = $feynman_pic->Picture_Filename( {type => 'feynman', });
+      my $feynman_dimensions = {};
+      if (!-r $feynman_output_filename) {
+	  $feynman_dimensions = $feynman_pic->Make_Feynman();
       }
       else {
-        $zscore   = sprintf( "%.2f", ( $mfe - $mfe_mean ) / $mfe_sd );
+	  $feynman_dimensions = $feynman_pic->Get_Feynman_ImageSize($feynman_output_filename);
       }
-      $randMean = sprintf( "%.1f", $mfe_mean );
-      $randSE   = sprintf( "%.1f", $mfe_se );
-      $ppcc     = sprintf( "%.4f", $ppcc_values );
-    }
-    else {  ##Boot is not defined!
-      $chart    = "undef";
-      $chartURL = qq($basedir/html/no_data.gif);
-      $mfe_mean = "undef";
-      $mfe_sd   = "undef";
-      $mfe_se   = "undef";
-      $zscore   = "UNDEF";
-      $randMean = "UNDEF";
-      $randSE   = "UNDEF";
-      $ppcc     = "UNDEF";
-    }
-    $vars->{algorithm}  = $structure->[4];
-    $vars->{slipstart}  = $structure->[5];
-    $vars->{slipsite}   = $structure->[6];
-    $vars->{seqlength}  = $structure->[7];
-    $vars->{pk_input}   = $structure->[8];
-    $vars->{pk_input}   =~ tr/atgcu/ATGCU/;
-    $vars->{pk_output}  = $structure->[9];
-    $vars->{parsed}     = $structure->[10];
-    $vars->{parsed}     =~ s/\s+//g;
-    $vars->{brackets}   = $structure->[11];
-    $vars->{mfe}        = $mfe;
-    $vars->{pairs}      = $structure->[13];
-    $vars->{knotp}      = $structure->[14];
-    $vars->{barcode}    = $structure->[15];
-    # $vars->{lastupdate} = $structure->[16];
+      
+      if (defined($boot)) {
+	  my $mfe_values = $boot->[0];
+	  my @mfe_values_array = split(/\s+/, $mfe_values);
+	  $chart = new PRFGraph({
+	      real_mfe => $mfe,
+	      list_data => \@mfe_values_array,
+	      accession  => $acc_slip,
+	      mfe_id => $id,
+	  }
+      );
+	  my $ppcc_values = $chart->Get_PPCC();
+	  $filename = $chart->Picture_Filename({type => 'distribution',});
+	  my $pre_chartURL = $chart->Picture_Filename({type => 'distribution', url => 'url',});
+	  $chartURL = $basedir . '/' . $pre_chartURL;
 
-    my @in = split(//, $vars->{pk_input});
-    my @par = split(//, $vars->{parsed});
-    $vars->{gc_content} = Get_GC(\@in);
-    $vars->{gc_stems} = Get_GC(\@in, \@par);
+	  if (!-r $filename) {
+	      $chart = $chart->Make_Distribution();
+	  }
 
-    my $delta = $vars->{seqlength} - length($vars->{parsed});
-    $vars->{parsed} .= '.' x $delta;
-    $vars->{brackets} .= '.' x $delta;
+	  $mfe_mean = $boot->[1];
+	  $mfe_sd = $boot->[2];
+	  $mfe_se = $boot->[3];
+	  $boot_db = $boot->[4];
+	  if ($mfe_sd == 0) {
+	      $zscore = 0;
+	  }
+	  else {
+	      $mfe = 0 if (!defined($mfe));
+	      $mfe_mean = 0 if (!defined($mfe_mean));
+	      $mfe_sd = 1 if (!defined($mfe_sd));
+	      $zscore = sprintf("%.2f", ($mfe - $mfe_mean) / $mfe_sd);
+	  }
+	  $randMean = sprintf("%.1f", $mfe_mean);
+	  $randSE = sprintf("%.1f", $mfe_se);
+	  $ppcc = sprintf("%.4f", $ppcc_values);
+      }
+      else {  ##Boot is not defined!
+	  $chart = "undef";
+	  $chartURL = qq($basedir/html/no_data.gif);
+	  $mfe_mean = "undef";
+	  $mfe_sd = "undef";
+	  $mfe_se = "undef";
+	  $zscore = "UNDEF";
+	  $randMean = "UNDEF";
+	  $randSE = "UNDEF";
+	  $ppcc = "UNDEF";
+      }
+      $vars->{algorithm} = $structure->[4];
+      $vars->{slipstart} = $structure->[5];
+      $vars->{slipsite} = $structure->[6];
+      $vars->{seqlength} = $structure->[7];
+      $vars->{pk_input} = $structure->[8];
+      $vars->{pk_input} =~ tr/atgcu/ATGCU/;
+      $vars->{pk_output} = $structure->[9];
+      $vars->{parsed} = $structure->[10];
+      $vars->{parsed} =~ s/\s+//g;
+      $vars->{brackets} = $structure->[11];
+      $vars->{mfe} = $mfe;
+      $vars->{pairs} = $structure->[13];
+      $vars->{knotp} = $structure->[14];
+      $vars->{barcode} = $structure->[15];
 
-    $vars->{chart}    = $chart;
-    $vars->{chartURL} = $chartURL;
-    $vars->{feynman}  = $feynman_pic;
-    $vars->{feynman_url} = $feynman_url;
+      my @in = split(//, $vars->{pk_input});
+      my @par = split(//, $vars->{parsed});
+      $vars->{gc_content} = Get_GC(\@in);
+      $vars->{gc_stems} = Get_GC(\@in, \@par);
 
-    $vars->{mfe_mean} = $mfe_mean;
-    $vars->{mfe_sd}   = $mfe_sd;
-    $vars->{mfe_se}   = $mfe_se;
-    $vars->{zscore}   = $zscore;
-    $vars->{randmean} = $randMean;
-    $vars->{randse}   = $randSE;
-    $vars->{ppcc}     = $ppcc;
-    $vars->{boot_db}  = $boot_db;
+      my $delta = $vars->{seqlength} - length($vars->{parsed});
+      $vars->{parsed} .= '.' x $delta;
+      $vars->{brackets} .= '.' x $delta;
 
-    $vars->{minus_stop} = Color_Stems(Make_Minus($vars->{pk_input}), $vars->{parsed});
-    $vars->{numbers} = Make_Nums($vars->{pk_input});
-    $vars->{pk_input} = Color_Stems($vars->{pk_input}, $vars->{parsed});
-    $vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
-    $vars->{parsed} = Color_Stems($vars->{parsed}, $vars->{parsed});
-    $vars->{species} =~ s/_/ /g;
-    $vars->{species} = ucfirst($vars->{species});
+      $vars->{chart} = $chart;
+      $vars->{chartURL} = $chartURL;
+      $vars->{feynman} = $feynman_pic;
+      $vars->{feynman_url} = $feynman_url;
 
-    $vars->{feynman_height} = $feynman_dimensions->{height};
-    $vars->{feynman_width} = $feynman_dimensions->{width};
+      $vars->{mfe_mean} = $mfe_mean;
+      $vars->{mfe_sd} = $mfe_sd;
+      $vars->{mfe_se} = $mfe_se;
+      $vars->{zscore} = $zscore;
+      $vars->{randmean} = $randMean;
+      $vars->{randse} = $randSE;
+      $vars->{ppcc} = $ppcc;
+      $vars->{boot_db} = $boot_db;
 
-    if ($vars->{accession} =~ /^SGDID/) {
-	$vars->{short_accession} = $vars->{accession};
-	$vars->{short_accession} =~ s/^SGDID\://g;
-    }
-    elsif ($vars->{accession} =~ /^BC/) {
-	$vars->{short_accession} = undef;
-	$vars->{genbank_accession} = $vars->{accession};
-    }
+      $vars->{minus_stop} = Color_Stems(Make_Minus($vars->{pk_input}), $vars->{parsed});
+      $vars->{numbers} = Make_Nums($vars->{pk_input});
+      $vars->{pk_input} = Color_Stems($vars->{pk_input}, $vars->{parsed});
+      $vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
+      $vars->{parsed} = Color_Stems($vars->{parsed}, $vars->{parsed});
+      $vars->{species} =~ s/_/ /g;
+      $vars->{species} = ucfirst($vars->{species});
 
-    $template->process( "detail_body.html", $vars ) or
-	Print_Template_Error($template), die;
+      $vars->{feynman_height} = $feynman_dimensions->{height};
+      $vars->{feynman_width} = $feynman_dimensions->{width};
+
+      if ($vars->{accession} =~ /^SGDID/) {
+	  $vars->{short_accession} = $vars->{accession};
+	  $vars->{short_accession} =~ s/^SGDID\://g;
+      }
+      elsif ($vars->{accession} =~ /^BC/) {
+	  $vars->{short_accession} = undef;
+	  $vars->{genbank_accession} = $vars->{accession};
+      }
+
+      $template->process("detail_body.html", $vars) or
+	  Print_Template_Error($template), die;
   }    ## End foreach structure in the database
+  my $num_algos = 0;
+  $num_algos++ if ($config->{do_pknots} == 1);
+  $num_algos++ if ($config->{do_nupack} == 1);
+  $num_algos++ if ($config->{do_hotknots} == 1);
+  my $num_expected_mfes = scalar(@{$config->{seqlength}}) * $num_algos;
+  my $num_have = $db->MySelect({statement => qq/SELECT count(id) FROM mfe WHERE accession = '$vars->{accession}' AND start = '$vars->{slipstart}'/, type => 'single'});
+  $db->Add_Webqueue($vars->{genome_id}) if ($num_have < $num_expected_mfes);
 }
 
 sub Get_GC {
@@ -579,6 +821,7 @@ sub Get_GC {
 	foreach my $char (@{$arr}) {
 	    $num_strong++ if ($char eq 'c' or $char eq 'g' or $char eq 'G' or $char eq 'C');
 	}
+        $len = 1 if (!defined($len) or ($len == 0));
 	$gc = $num_strong * 100.0 / $len;
     }
     else {
@@ -610,6 +853,7 @@ sub Color_Stems {
 	}
 	else {
 	    my $color_code = $pa[$t] % @colors;
+	    next if (!defined($br[$t]));
 	    my $append = qq(<font color="$colors[$color_code]">$br[$t]</font>);
 	    $bracket_string .= $append;
 	}
@@ -642,53 +886,83 @@ sub Make_Minus {
 	    $codon .= $char;
 	}
     } ## End foreach character of the sequence
-    while (length($minus_string) < $config->{seqlength}) {
+    while (length($minus_string) < $vars->{seqlength}) {
 	$minus_string .= '.';
     }
     return($minus_string);
 }
 
 sub Make_Nums {
-    my $sequence = shift;
-    my $num_string = '      0';
-    my @seq = split(//, $sequence);
-    my $c = 0;
-    my $count = 10;
-    foreach my $char (@seq) {
+  my $sequence = shift;
+  my @nums = ('&nbsp;', '&nbsp;', '&nbsp;', '&nbsp;', '&nbsp;', '&nbsp;', 0);
+  my $num_string = '';
+  my @seq = split(//, $sequence);
+  my $c = 0;
+  my $count = 10;
+  foreach my $char (@seq) {
 	$c++;
 	if (($c % 10) == 0) {
-	    $num_string .= "$count";
-	    $count = $count + 10;
+#	  $num_string .= "$count";
+	  push(@nums, $count);
+	  $count = $count + 10;
 	}
 	elsif ($c == 1) {
-	    $num_string .= "&nbsp;";
+	  push(@nums, '&nbsp;');
+#	  $num_string .= "&nbsp;";
 	}
 	elsif ((($c - 1) % 10) == 0) {
-	    next;
+	  next;
 	}
 	else {
-	    $num_string .= "&nbsp;";
+	  push(@nums, '&nbsp;');
+#	  $num_string .= "&nbsp;";
 	}
-    }
-    return($num_string);
+  }
+  my $len = 0;
+  foreach my $n (@nums) {
+	if ($n eq '&nbsp;') {
+	  $len++;
+	} elsif ($n > 9) {
+	  $len = $len + 2;
+	} elsif ($n > 99) {
+	  $len = $len + 3;
+	} elsif ($n == 0) {
+	  $len++;
+	}
+
+  }
+  my $spacer;
+  $spacer = scalar(@seq) - $len;
+#  $spacer = $len %10;
+  $spacer = 0 if ($spacer == 10);
+
+#  print "Len: $len Num spacer: $spacer<br>\n";
+  foreach my $c (1 .. $spacer) {
+	push(@nums, '.');
+  }
+
+  foreach my $c (@nums) {
+	$num_string .= $c;
+  }
+  return($num_string);
 }
 
 sub Print_Single_Accession {
   my $datum = shift;
   my $fun = ref($datum);
   my $accession;
-  if ( !defined($datum) ) {
-      $accession          = $cgi->param('accession');
-      $datum              = Get_Accession_Info($accession);
+  if (!defined($datum) ) {
+      $accession = $cgi->param('accession');
+      $datum = Get_Accession_Info($accession);
       $datum->{accession} = $accession;
   }
   else {
       $accession = $datum->{accession};
   }
-  $vars->{id}              = $datum->{id};
-  $vars->{counter}         = $datum->{counter};
-  $vars->{accession}       = $accession;
-  $vars->{omim_id}         = $datum->{omim_id};
+  $vars->{id} = $datum->{id};
+  $vars->{counter} = $datum->{counter};
+  $vars->{accession} = $accession;
+  $vars->{omim_id} = $datum->{omim_id};
   if ($vars->{accession} =~ /^SGDID/) {
       $vars->{short_accession} = $vars->{accession};
       $vars->{short_accession} =~ s/^SGDID\://g;
@@ -697,13 +971,13 @@ sub Print_Single_Accession {
       $vars->{short_accession} = undef;
       $vars->{genbank_accession} = $vars->{accession};
   }
-  $vars->{species}         = $datum->{species};
+  $vars->{species} = $datum->{species};
   $vars->{species} =~ s/_/ /g;
   $vars->{species} = ucfirst($vars->{species});
-  $vars->{genename}        = $datum->{genename};
-  $vars->{comments}        = $datum->{comment};
-  $vars->{orf_start}       = $datum->{orf_start};
-  $vars->{orf_stop}        = $datum->{orf_stop};
+  $vars->{genename} = $datum->{genename};
+  $vars->{comments} = $datum->{comment};
+  $vars->{orf_start} = $datum->{orf_start};
+  $vars->{orf_stop} = $datum->{orf_stop};
   $vars->{slipsite_count}  = $datum->{slipsite_count};
   $vars->{structure_count} = $datum->{structure_count};
   $vars->{pretty_mrna_seq} = Create_Pretty_mRNA($accession);
@@ -718,6 +992,10 @@ sub Print_Single_Accession {
   my $slipsite_information = $db->MySelect({
       statement => $slipsite_information_stmt,
       vars => [$accession, $accession], });
+
+  my $landscape_num = $db->MySelect("SELECT count(id) FROM landscape WHERE accession = '$accession'");
+  $vars->{landscape_num} = $landscape_num->[0][0];
+
   $template->process( 'genome.html',          $vars ) or
       Print_Template_Error($template), die;
   $template->process( 'sliplist_header.html', $vars ) or
@@ -725,23 +1003,25 @@ sub Print_Single_Accession {
 
   my $num_stops_printed = 0;
   my $num_starts_printed = 0;
+  $vars->{slipcount} = 0;
   while ( my $slip_info = shift( @{$slipsite_information} ) ) {
-    $vars->{slipstart}   = $slip_info->[0];
-    $vars->{slipseq}     = $slip_info->[1];
-    $vars->{pknotscount} = $slip_info->[2];
-    $vars->{sig_count} += $vars->{pknotscount};
-    if ($vars->{orf_start} < $vars->{slipstart} and $num_starts_printed == 0) {
-	$num_starts_printed++;
-	$template->process( 'sliplist_start_codon.html', $vars ) or
-	    Print_Template_Error($template), die;
-    }
-    if ($vars->{orf_stop} <= $vars->{slipstart} and $num_stops_printed == 0) {
-	$num_stops_printed++;
-	$template->process( 'sliplist_stop_codon.html', $vars ) or
-	    Print_Template_Error($template), die;
-    }
-    $template->process( 'sliplist.html', $vars ) or
-	Print_Template_Error($template), die;
+	  $vars->{slipcount}++;
+	  $vars->{slipstart}   = $slip_info->[0];
+	  $vars->{slipseq}     = $slip_info->[1];
+	  $vars->{pknotscount} = $slip_info->[2];
+	  $vars->{sig_count} += $vars->{pknotscount};
+	  if ($vars->{orf_start} < $vars->{slipstart} and $num_starts_printed == 0) {
+		  $num_starts_printed++;
+		  $template->process( 'sliplist_start_codon.html', $vars ) or
+			  Print_Template_Error($template), die;
+	  }
+	  if ($vars->{orf_stop} <= $vars->{slipstart} and $num_stops_printed == 0) {
+		  $num_stops_printed++;
+		  $template->process( 'sliplist_stop_codon.html', $vars ) or
+			  Print_Template_Error($template), die;
+	  }
+	  $template->process( 'sliplist.html', $vars ) or
+		  Print_Template_Error($template), die;
   }
   $template->process( 'sliplist_start_codon.html', $vars ) if ($num_starts_printed == 0);
   $template->process( 'sliplist_stop_codon.html', $vars ) if ($num_stops_printed == 0);
@@ -790,7 +1070,7 @@ sub Perform_Search {
   }
   elsif ($cgi->param('search_species_limit') ne 'all') {
 	my $sp = $cgi->param('search_species_limit');
-	$query_statement .= qq/species LIKE '%$sp%' AND /;
+	$query_statement .= qq/species regexp '$sp' AND /;
   }
 
   if (defined($mode) and $mode eq 'snp') {
@@ -802,10 +1082,10 @@ sub Perform_Search {
 		$query_statement .= '';
 	    }
 	}
-	# STUFF STUFF STUFF STUFF STUFF STUFF....
+
 	$query_statement .= '';
     } else {
-	$query_statement .= qq/(genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')/;
+	$query_statement .= qq/(species regexp '$query' OR genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')/;
     }
     my $entries = $db->MySelect({ statement => $query_statement,
 				  type => 'hash',
@@ -829,6 +1109,40 @@ sub Perform_Search {
     else {    ## More than 1 return from the search...
 	Print_Multiple_Accessions($entries);
     }
+}
+
+sub Perform_OverlaySearch {
+    my $query = $cgi->param('overlayquery');
+    $query =~ s/\s+//g;
+    my $seqlength = $cgi->param('seqlength');
+    my $cloud_url = $cgi->param('cloud_url');
+    my $species = $cgi->param('species');
+    $vars->{new_accession} = $db->MySelect({statement => qq/SELECT accession FROM genome WHERE accession regexp '$query' or genename regexp '$query' or locus regexp '$query' or comment regexp '$query'/, type => 'single'});
+    my $query_statement = qq/SELECT mfe.mfe, boot.zscore, mfe.start, mfe.algorithm FROM mfe,boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = 100 AND mfe.species = '$species' AND mfe.id = boot.mfe_id AND mfe.accession = '$vars->{new_accession}'/;
+    my $overlay_points = $db->MySelect({statement => $query_statement,});
+    $vars->{cloud_url} = $cloud_url;
+    $vars->{inputstring} = $query;
+    $vars->{overlay_output} = PRFdb::MakeTempfile({directory => 'images/tmp', SUFFIX => '.png', template => 'cloud_XXXXX',});
+    $vars->{overlay_map} = "$vars->{overlay_output}" . '.map';
+    $vars->{overlay_url} = $basedir . '/' . $vars->{overlay_output};
+    my $args = {
+	seqlength => 100,
+	url => $base,
+	species => 'saccharomyces_cerevisiae',
+	points => $overlay_points,
+	filename => $vars->{overlay_output},
+	map => $vars->{overlay_map},
+	accession => $vars->{new_accession},
+	inputstring => $vars->{inputstring},
+    };
+    
+    my $cloud = new PRFGraph();
+    my $overlay_data = $cloud->Make_Overlay($args);
+    $template->process('cloud_overlay.html', $vars) or
+	Print_Template_Error($template), die;
+    open(OUT, "<$vars->{overlay_map}");
+    while (my $l = <OUT>) { print $l };
+    close(OUT);
 }
 
 sub Perform_Import {
@@ -879,11 +1193,14 @@ sub Perform_Second_Filter {
   my $stats_stmt = qq(SELECT * FROM stats WHERE species = ? AND algorithm = ? AND seqlength = ?);
   my $stats = $db->MySelect({
       statement => $stats_stmt,
-      vars => [$species, $algorithm, $config->{seqlength}],
+      vars => [$species, $algorithm, $vars->{seqlength}],
       type => 'hash' });
 
   foreach my $k (sort keys %{$stats}) {
-      $vars->{$k} = $stats->{$k};
+	$vars->{$k} = $stats->{$k};
+	if ($vars->{$k} =~ /.*\.\d+$/) {
+	  $vars->{$k} = sprintf("%.2f", $vars->{$k});
+	}
   }
   ## This fills out:
 #algorithm: pknots
@@ -906,9 +1223,18 @@ sub Perform_Second_Filter {
 #stddev_pairs: 5.02694
 #stddev_pairs_knotted: 4.14184
 #stddev_pairs_noknot: 5.06703
-  $vars->{choose_limit} = $cgi->textfield(-name => 'choose_limit', -value => 200);
-  $vars->{choose_mfe} = $cgi->textfield(-name => 'choose_mfe', -value => ($vars->{avg_mfe} - $vars->{stddev_mfe}));
-  $vars->{choose_pairs} = $cgi->textfield(-name => 'choose_pairs', -value => ($vars->{avg_pairs} + $vars->{stddev_pairs}));
+  $vars->{choose_limit} = $cgi->textfield(-name => 'choose_limit',
+										  -value => 100,
+										  -size=> 5,
+										  -maxlength=> 3,);
+  $vars->{choose_mfe} = $cgi->textfield(-name => 'choose_mfe',
+										-value => sprintf("%.2f", ($vars->{avg_mfe} - $vars->{stddev_mfe})),
+										-size => 6,
+										-maxlength => 6);
+  $vars->{choose_pairs} = $cgi->textfield(-name => 'choose_pairs',
+										  -value => sprintf("%.2f", ($vars->{avg_pairs} + $vars->{stddev_pairs})),
+										  -size => 6,
+										  -maxlength => 6);
   $vars->{choose_format} = $cgi->popup_menu(-name => 'output_format', -values => ['tab delimited', 'text',],);
 
   $vars->{filters} = $cgi->checkbox_group(
@@ -920,6 +1246,9 @@ sub Perform_Second_Filter {
 #    -columns  => 3
       );
   $vars->{species} = $species;
+  $vars->{nicespecies} = $species;
+  $vars->{nicespecies} =~ s/_/ /g;
+  $vars->{nicespecies} = ucfirst($vars->{nicespecies});
   $vars->{algorithm} = $algorithm;
 
   $vars->{hidden_species} = $cgi->hidden(-name => 'hidden_species', -value => $species);
@@ -934,10 +1263,9 @@ sub Perform_Third_Filter {
   my $species = $cgi->param('hidden_species');
   my $algorithm = $cgi->param('hidden_algorithm');
   my $max_mfe = $cgi->param('choose_mfe');
-  my $seqlength = $config->{seqlength};
+  my $seqlength = $vars->{seqlength};
   my $limit = $cgi->param('choose_limit');
   my $format = $cgi->param('output_format');
-
   $vars->{output_format} = $format;
   $vars->{choose_limit} = $limit;
   $vars->{species} = $species;
@@ -1002,7 +1330,7 @@ sub Perform_Third_Filter {
 #  } ## end if the format is 'text'
   }	
   else {  ## Then the format is tab delimited
-		print $download_header;
+#		print $download_header;
 		print "Species\tAccession\tAlgorithm\tSequence Length\tStart\tSlipsite\tMFE\tBase Pairs\tPseudoknotted\tSequence\tPknots output\tParsed output\tParenthesis output\tBarcode\n";
 		foreach my $datum (@{$info}) {
 		  print "$datum->[3]\t$datum->[2]\t$datum->[4]\t$datum->[7]\t$datum->[5]\t$datum->[6]\t$datum->[12]\t$datum->[13]\t$datum->[14]\t$datum->[8]\t$datum->[9]\t$datum->[11]\t$datum->[15]\n";
@@ -1189,6 +1517,7 @@ sub Create_Pretty_mRNA {
 
 sub Get_Accession_Info {
   my $accession       = shift;
+  $accession = lc($accession) unless ($accession =~ /^SGDID/);
   my $query_statement = qq(SELECT id, species, genename, comment, orf_start, orf_stop, lastupdate, mrna_seq, omim_id FROM genome WHERE accession = ?);
   my $entry = $db->MySelect({
       statement => $query_statement,
@@ -1214,9 +1543,9 @@ sub Get_Accession_Info {
 }
 
 sub Print_Blast {
-  my $is_local      = shift;
+  my $is_local = shift;
   my $input_sequence = shift;
-  my $blast      = new PRF_Blast;
+  my $blast = new PRF_Blast;
   my $accession;
   my $start;
   my $sequence;
@@ -1224,7 +1553,7 @@ sub Print_Blast {
       $sequence = $input_sequence;
   }
   else {
-      $accession  = $cgi->param('accession');
+      $accession = $cgi->param('accession');
       $start = $cgi->param('start');
       if (defined($start)) {
 	  $sequence = $db->MySelect({
@@ -1233,85 +1562,89 @@ sub Print_Blast {
 	      type => 'single',});
       }
       else {
-	  $sequence   = $db->MySelect({
+	  $sequence = $db->MySelect({
 	      statement => "SELECT mrna_seq FROM genome WHERE accession = ? LIMIT 1",
 	      vars => [$accession],
-	      type => 'single', });
+	      type => 'single',});
       }
   }
 
   $sequence =~ tr/Uu/Tt/;
   $sequence =~ s/\s//g;
 
-  my $local_info = $blast->Search( $sequence, $is_local );
+  my $local_info = $blast->Search($sequence, $is_local);
 
-  my ( %hit_names, %accessions, %lengths, %descriptions, %scores, %significances, %bitses );
-  my ( %hsps_evalue, %hsps_expect, %hsps_gaps, %hsps_querystring, %hsps_homostring, %hsps_hitstring, %hsps_numid, %hsps_numcon, %hsps_length, %hsps_score );
+  my (%hit_names, %accessions, %lengths, %descriptions, %scores, %significances, %bitses);
+  my (%hsps_evalue, %hsps_expect, %hsps_gaps, %hsps_querystring, %hsps_homostring, %hsps_hitstring, %hsps_numid, %hsps_numcon, %hsps_length, %hsps_score);
   if (!defined($local_info->{hits})) {
       print "There were no hits in the blast database.<br>\n";
       return(0);
   }
-  my @hits = @{ $local_info->{hits} };
-  foreach my $c ( 0 .. $#hits ) {
-    $hit_names{$c}     = $local_info->{hits}->[$c]->{hit_name};
-    $accessions{$c}    = $local_info->{hits}->[$c]->{accession};
-    $lengths{$c}       = $local_info->{hits}->[$c]->{length};
-    $descriptions{$c}  = $local_info->{hits}->[$c]->{description};
-    $scores{$c}        = $local_info->{hits}->[$c]->{score};
-    $hit_names{$c}     = $local_info->{hits}->[$c]->{hit_name};
+  my @hits = @{ $local_info->{hits}};
+  foreach my $c (0 .. $#hits) {
+    $hit_names{$c} = $local_info->{hits}->[$c]->{hit_name};
+    $accessions{$c} = $local_info->{hits}->[$c]->{accession};
+    $lengths{$c} = $local_info->{hits}->[$c]->{length};
+    $descriptions{$c} = $local_info->{hits}->[$c]->{description};
+    $scores{$c} = $local_info->{hits}->[$c]->{score};
+    $hit_names{$c} = $local_info->{hits}->[$c]->{hit_name};
     $significances{$c} = $local_info->{hits}->[$c]->{significance};
-    $bitses{$c}        = $local_info->{hits}->[$c]->{bits};
-    my @hsps = @{ $local_info->{hits}->[$c]->{hsps} };
+    $bitses{$c} = $local_info->{hits}->[$c]->{bits};
 
-    foreach my $d ( 0 .. $#hsps ) {
-      $hsps_evalue{$c}{$d}      = $local_info->{hits}->[$c]->{hsps}->[$d]->{evalue};
-      $hsps_expect{$c}{$d}      = $local_info->{hits}->[$c]->{hsps}->[$d]->{expect};
-      $hsps_gaps{$c}{$d}        = $local_info->{hits}->[$c]->{hsps}->[$d]->{gaps};
+    my @hsps = ();
+    if (defined(@{$local_info->{hits}->[$c]->{hsps}})) {
+      @hsps = @{$local_info->{hits}->[$c]->{hsps}};
+    }
+ 
+    foreach my $d (0 .. $#hsps) {
+      $hsps_evalue{$c}{$d} = $local_info->{hits}->[$c]->{hsps}->[$d]->{evalue};
+      $hsps_expect{$c}{$d} = $local_info->{hits}->[$c]->{hsps}->[$d]->{expect};
+      $hsps_gaps{$c}{$d} = $local_info->{hits}->[$c]->{hsps}->[$d]->{gaps};
       $hsps_querystring{$c}{$d} = $local_info->{hits}->[$c]->{hsps}->[$d]->{query_string};
-      $hsps_homostring{$c}{$d}  = $local_info->{hits}->[$c]->{hsps}->[$d]->{homology_string};
-      $hsps_hitstring{$c}{$d}   = $local_info->{hits}->[$c]->{hsps}->[$d]->{hit_string};
-      $hsps_numid{$c}{$d}       = $local_info->{hits}->[$c]->{hsps}->[$d]->{num_identical};
-      $hsps_numcon{$c}{$d}      = $local_info->{hits}->[$c]->{hsps}->[$d]->{num_conserved};
-      $hsps_length{$c}{$d}      = $local_info->{hits}->[$c]->{hsps}->[$d]->{length};
-      $hsps_score{$c}{$d}       = $local_info->{hits}->[$c]->{hsps}->[$d]->{score};
+      $hsps_homostring{$c}{$d} = $local_info->{hits}->[$c]->{hsps}->[$d]->{homology_string};
+      $hsps_hitstring{$c}{$d} = $local_info->{hits}->[$c]->{hsps}->[$d]->{hit_string};
+      $hsps_numid{$c}{$d} = $local_info->{hits}->[$c]->{hsps}->[$d]->{num_identical};
+      $hsps_numcon{$c}{$d} = $local_info->{hits}->[$c]->{hsps}->[$d]->{num_conserved};
+      $hsps_length{$c}{$d} = $local_info->{hits}->[$c]->{hsps}->[$d]->{length};
+      $hsps_score{$c}{$d} = $local_info->{hits}->[$c]->{hsps}->[$d]->{score};
     }
   }
 
   $vars->{query_length} = $local_info->{query_length};
-  $vars->{num_hits}         = $local_info->{num_hits};
-  $vars->{hit_names}        = \%hit_names;
-  $vars->{accessions}       = \%accessions;
-  $vars->{lengths}          = \%lengths;
-  $vars->{descriptions}     = \%descriptions;
-  $vars->{scores}           = \%scores;
-  $vars->{hit_names}        = \%hit_names;
-  $vars->{significances}    = \%significances;
-  $vars->{bitses}           = \%bitses;
-  $vars->{hsps_evalue}      = \%hsps_evalue;
-  $vars->{hsps_expect}      = \%hsps_expect;
-  $vars->{hsps_gaps}        = \%hsps_gaps;
+  $vars->{num_hits} = $local_info->{num_hits};
+  $vars->{hit_names} = \%hit_names;
+  $vars->{accessions} = \%accessions;
+  $vars->{lengths} = \%lengths;
+  $vars->{descriptions} = \%descriptions;
+  $vars->{scores} = \%scores;
+  $vars->{hit_names} = \%hit_names;
+  $vars->{significances} = \%significances;
+  $vars->{bitses} = \%bitses;
+  $vars->{hsps_evalue} = \%hsps_evalue;
+  $vars->{hsps_expect} = \%hsps_expect;
+  $vars->{hsps_gaps} = \%hsps_gaps;
   $vars->{hsps_querystring} = \%hsps_querystring;
-  $vars->{hsps_homostring}  = \%hsps_homostring;
-  $vars->{hsps_hitstring}   = \%hsps_hitstring;
-  $vars->{hsps_numid}       = \%hsps_numid;
-  $vars->{hsps_numcon}      = \%hsps_numcon;
-  $vars->{hsps_length}      = \%hsps_length;
-  $vars->{hsps_score}       = \%hsps_score;
+  $vars->{hsps_homostring} = \%hsps_homostring;
+  $vars->{hsps_hitstring} = \%hsps_hitstring;
+  $vars->{hsps_numid} = \%hsps_numid;
+  $vars->{hsps_numcon} = \%hsps_numcon;
+  $vars->{hsps_length} = \%hsps_length;
+  $vars->{hsps_score} = \%hsps_score;
 
-  $template->process( 'blast.html', $vars ) or
+  $template->process('blast.html', $vars) or
       Print_Template_Error($template), die;
 }
 
 sub Check_Landscape {
   my $accession = $cgi->param('accession');
-  my $pic       = new PRFGraph( {accession => $accession });
+  my $pic = new PRFGraph({accession => $accession});
 
-  my $filename = $pic->Picture_Filename( { type => 'landscape', });
-  if ( !-r $filename ) {
+  my $filename = $pic->Picture_Filename({type => 'landscape',});
+  if (!-r $filename) {
     $pic->Make_Landscape();
   }
-  my $url = $pic->Picture_Filename( { type => 'landscape', url => 'url' } );
-  $vars->{picture}   = $url;
+  my $url = $pic->Picture_Filename({type => 'landscape', url => 'url'});
+  $vars->{picture} = $url;
   $vars->{accession} = $accession;
   my $stmt = qq(SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession');
   my $tmp  = $db->MySelect({
@@ -1319,16 +1652,20 @@ sub Check_Landscape {
       type => 'row'});
   $vars->{start} = $tmp->[0];
   $vars->{stop} = $tmp->[1];
-  $template->process( 'landscape.html', $vars ) or
+  $template->process('landscape.html', $vars) or
       Print_Template_Error($template), die;
 }
 
 sub Cloud {
     my $species = $cgi->param('species');
+    $species = 'saccharomyces_cerevisiae' if (!defined($species));
     my @filters = $cgi->param('cloud_filters');
     my $slipsites = $cgi->param('slipsites');
+    $slipsites = 'all' if (!defined($slipsites));
+    my $seqlength = $cgi->param('seqlength');
+    $seqlength = 100 if (!defined($seqlength));
+    if (!defined($seqlength)) { $seqlength = ['100'] };		
     my $cloud = new PRFGraph();
-
     my $pknots_only = undef;
 
     my $suffix = undef;
@@ -1347,16 +1684,17 @@ sub Cloud {
     else {
 	$suffix .= "-${slipsites}";
     }
+    $suffix .= "-${seqlength}";
     my $cloud_output_filename = $cloud->Picture_Filename({type => 'cloud', species => $species, suffix => $suffix,});
+    
     my $cloud_url = $cloud->Picture_Filename({type => 'cloud', species => $species, url => 'url', suffix => $suffix,});
     $cloud_url = $basedir . '/' . $cloud_url;
-
+    
     if (!-f $cloud_output_filename) {
 	my ($points_stmt, $averages_stmt, $points, $averages);
 	if ($species eq 'all') {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
-#	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
-	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $seqlength AND mfe.id = boot.mfe_id AND );
+	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $seqlength AND mfe.id = boot.mfe_id AND );
 	    foreach my $filter (@filters) {
 		if ($filter eq 'pseudoknots only') {
 		    $points_stmt .= "mfe.knotp = '1' AND ";
@@ -1366,16 +1704,16 @@ sub Cloud {
 		    $points_stmt .= "";
 		}
 	    }
-
+	    
 	    $points_stmt =~ s/AND $//g;
 	    $averages_stmt =~ s/AND $//g;
 	    $points = $db->MySelect({statement => $points_stmt,});
 	    $averages = $db->MySelect({statement =>$averages_stmt, type => 'row',});
 	}
 	else {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
-	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $config->{seqlength} AND mfe.id = boot.mfe_id AND );
-	
+	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, boot, genome WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = boot.mfe_id AND );
+	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM MFE, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $vars->{seqlength} AND mfe.id = boot.mfe_id AND );
+	    
 	    foreach my $filter (@filters) {
 		if ($filter eq 'pseudoknots only') {
 		    $points_stmt .= "mfe.knotp = '1' AND ";
@@ -1386,8 +1724,8 @@ sub Cloud {
 		    $averages_stmt .= "";
 		}
 	    }
-
-	    $points_stmt =~ s/AND $//g;
+	    
+	    $points_stmt .= " mfe.genome_id = genome.id";
 	    $averages_stmt =~ s/AND $//g;
 	    $points = $db->MySelect({statement => $points_stmt, vars => [$species]});
 	    $averages = $db->MySelect({
@@ -1399,6 +1737,7 @@ sub Cloud {
 	my $args;
 	if (defined($pknots_only)) {
 	    $args = {
+		seqlength => $seqlength,
 		species => $species,
 		points => $points,
 		averages => $averages,
@@ -1406,10 +1745,11 @@ sub Cloud {
 		url => $base,
 		pknot => 1,
 		slipsites => $slipsites
-	    };
+		};
 	}
 	else {
 	    $args = {
+		seqlength => $seqlength,
 		species => $species,
 		points => $points,
 		averages => $averages,
@@ -1418,7 +1758,7 @@ sub Cloud {
 		slipsites => $slipsites,
 	    };
 	}
-	$cloud_data = $cloud->Make_Cloud($args); 
+	$cloud_data = $cloud->Make_Cloud($args);
     }
     $vars->{species} = $species;
     $vars->{nicespecies} = $species;
@@ -1427,13 +1767,22 @@ sub Cloud {
     $vars->{cloud_file} = $cloud_output_filename;
     $vars->{cloud_url} = $cloud_url;
     $vars->{pknots_only} = $pknots_only;
+    $vars->{seqlength} = $seqlength;
+
+    $vars->{startoverlayform} = $cgi->startform(-action => "$base/overlaysearch_perform");
+    $vars->{overlayquery} = $cgi->textfield(-name => 'overlayquery', -size => 20);
+    $vars->{overlaysubmit} = $cgi->submit(-name => 'search overlay', -value => 'Overlay');
+
     if ($slipsites ne 'all') {
 	$vars->{slipsites} = $slipsites;
     }
     $vars->{map_url} = "$vars->{cloud_url}" . '.map'; 
     $vars->{map_file} = "$vars->{cloud_file}" . '.map';
-    $template->process( 'cloud.html', $vars ) or
+    $template->process('cloud.html', $vars) or
 	Print_Template_Error($template), die;
+    open (OUT, "<$vars->{map_file}");
+    while (my $l = <OUT>) { print $l };
+    close (OUT);
 }
 
 sub Download_All {
@@ -1548,8 +1897,8 @@ sub Print_Template_Error {
 
 sub Start_SNP_Filter {
     my $species;
-    if (defined($config->{species_limit})) {
-	$species = [$config->{species_limit}];
+    if (defined($config->{snp_species_limit})) {
+	$species = [$config->{snp_species_limit}];
     } else {
 	$species = $db->MySelect({ statement => "SELECT distinct(species) from genome", 
 				   type => 'flat' });
@@ -1557,7 +1906,6 @@ sub Start_SNP_Filter {
     #  unshift (@{$species}, 'All');
     $vars->{startform} = $cgi->start_multipart_form( -action => "$base/snpfilter",
 					  -name   => 'snpform', );
-
     my %labels = ();
     foreach my $value (@{$species}) {
 	my $long_name = $value;
@@ -1570,7 +1918,7 @@ sub Start_SNP_Filter {
 					 -labels => \%labels,
 					 -default => 'homo_sapiens', );
 
-    $vars->{frameshift} = $cgi->popup_menu( -id      => 'frameshift',
+	$vars->{frameshift} = $cgi->popup_menu( -id      => 'frameshift',
 					    -name    => 'frameshift',
 					    -values  => [ 's', 'd', 'sdf', 'n', 'null' ],
 					    -labels  => { 's' => 'slippery site',
@@ -1599,8 +1947,79 @@ sub Start_SNP_Filter {
 					    -default => '',
 					    -size    => 25, );
     $vars->{filter_submit} = $cgi->submit( -name => 'snpfilter', -value => 'Filter PRFdb for SNPs');
-    
     $template->process( 'snpform.html', $vars ) or
 	Print_Template_Error($template), die;
 }
 
+sub Generate_Pictures {
+	my $slipsites = ['all', 'AAAUUUA', 'UUUAAAU', 'AAAAAAA', 'UUUAAAA', 'UUUUUUA', 'AAAUUUU', 'UUUUUUU', 'UUUAAAC', 'AAAAAAU', 'AAAUUUC', 'AAAAAAC', 'GGGUUUA', 'UUUUUUC', 'GGGAAAA', 'CCCUUUA', 'CCCAAAC', 'CCCAAAA', 'GGGAAAU', 'GGGUUUU', 'GGGAAAC', 'CCCUUUC', 'CCCUUUU', 'GGGAAAG', 'GGGUUUC',];
+	my @pknot = ('yes','no');
+	foreach my $seqlen (@{$config->{seqlength}}) {
+		foreach my $pk (@pknot) {
+		 	foreach my $spec (@species_values) {
+			 	foreach my $slip (@{$slipsites}) {
+					
+					print "Generating picture for $spec slipsite: $slip knotted: $pk seqlength: $seqlen<br>\n";
+					$cgi->param(-name => 'seqlength', -value => $seqlen);
+					$cgi->param(-name => 'species', -value => $spec);
+					$cgi->param(-name => 'slipsites', -value => $slip);
+					if ($pk eq 'yes') {
+						$cgi->param(-name => 'cloud_filters', -value => ['pseudoknots only']);
+					}
+					else {
+					 	$cgi->param(-name => 'cloud_filters', -value => []);
+					}
+					Cloud();
+				} ## Foreach slipsite
+			} ## foreach species
+		}  ## if pknotted
+	} ## seqlengths
+}
+
+sub Remove_Duplicates {
+    my $accession = shift;
+    my $info = $db->MySelect("SELECT id,start,seqlength,algorithm FROM mfe WHERE accession = '$accession'");
+    my @duplicate_ids;
+    my $dups = {};
+    foreach my $datum (@{$info}) {
+	my $id = $datum->[0];
+	my $start = $datum->[1];
+	my $seqlength = $datum->[2];
+	my $alg = $datum->[3];
+
+	if (!defined($dups->{$start})) {  ## Start
+	    $dups->{$start} = {};
+	}
+
+	if (!defined($dups->{$start}->{$seqlength})) {
+	    $dups->{$start}->{$seqlength} = {};
+	    $dups->{$start}->{$seqlength}->{pknots} = [];
+	    $dups->{$start}->{$seqlength}->{nupack} = [];
+	    $dups->{$start}->{$seqlength}->{hotknots} = [];
+	}
+	my @array = @{$dups->{$start}->{$seqlength}->{$alg}};
+	push(@array, $id);
+	$dups->{$start}->{$seqlength}->{$alg} = \@array;
+
+    }
+
+    foreach my $st (sort keys %{$dups}) {
+	foreach my $len (sort keys %{$dups->{$st}}) {
+	    my @nupack = @{$dups->{$st}->{$len}->{nupack}};
+	    my @pknots = @{$dups->{$st}->{$len}->{pknots}};
+	    my @hotknots = @{$dups->{$st}->{$len}->{hotknots}};
+	    shift @nupack;
+	    shift @pknots;
+	    shift @hotknots;
+	    foreach my $id (@nupack) {
+		$db->MyExecute("DELETE FROM mfe WHERE id = '$id'");
+	    }
+	    foreach my $id (@pknots) {
+		$db->MyExecute("DELETE FROM mfe WHERE id = '$id'");
+	    }
+	    foreach my $id (@hotknots) {
+		$db->MyExecute("DELETE FROM mfe WHERE id = '$id'");
+	    }
+	}
+    }
+}
