@@ -46,88 +46,87 @@ foreach my $value (@species_values) {
 }
 
 our $vars = {
-			 base         => $base,
-			 basedir      => $basedir,
-			 startsearchform => $cgi->startform( -action => "$base/search_perform" ),
-			 search_species_limit => $cgi->popup_menu(-name =>'search_species_limit', -values => \@species_values, -labels => \%species_labels, -default => 'all'),
-			 searchquery => $cgi->textfield(-name => 'query', -size => 20),
-			 searchform   => "$base/searchform",
-			 importform   => "$base/import",
-			 filterform   => "$base/filter_start",
-			 snpform      => "$base/snpstart",
-			 downloadform => "$base/download",
-			 cloudform => "$base/cloudform",
-			 helpform => "$base/help",
-			 seqlength => $single_seqlen,
-			 searchsubmit => $cgi->submit(-name => 'search submit', -value => 'Search'),
-			 category => $category,
-			 summary => {
-			     'bos_taurus' => {
-				 name => 'Bos taurus',
-				 sequences => 49266,
-				 genes => 3305,
-				 total => 9187,},
-			     'danio_rerio' => {
-				 name => 'Danio rerio',
-				 sequences => 25836,
-				 genes => 1929,
-				 total => 6197,},
-			     'homo_sapiens' => {
-				 name => 'Homo sapiens',
-				 sequences => 102404,
-				 genes => 6732,
-				 total => 17893,},
-			     'mus_musculus' => {
-				 name => 'Mus musculus',
-				 sequences => 86837,
-				 genes => 5933,
-				 total => 15620,},
-			     'rattus_norvegicus' => {
-				 name => 'Rattus norvegicus',
-				 sequences => 26979,
-				 genes => 1959,
-				 total => 5341,},
-			     'saccharomyces_cerevisiae' => {
-				 name => 'Saccharomyces cerevisiae',
-				 sequences => 150045,
-				 genes => 4128,
-				 total => 6352,},
-			     'xenopus_laevis' => {
-				 name => 'Xenopus laevis',
-				 sequences => 79485,
-				 genes => 4808,
-				 total => 9325,},
-			     'xenopus_tropicalis' => {
-				 name => 'Xenopus tropicalis',
-				 sequences => 44299,
-				 genes => 2663,
-				 total => 5126,},
-			     'saccharomyces_kudriavzevii' => {
-				name => 'Saccharomyces kudriavzevii',
-				sequences => 48447,
-				genes => 2212,
-				total => 3778,},
-			     'saccharomyces_castellii' => {
-				 name => 'Saccharomyces castellii',
-				 sequences => 73836,
-				 genes => 2964,
-				 total => 4681, },
-			     'saccharomyces_bayanus' => {
-				 name => 'Saccharomyces bayanus',
-				 sequences => 71433,
-				 genes =>  2951,
-				 total => 4970, },
+    base => $base,
+    basedir => $basedir,
+    startsearchform => $cgi->startform( -action => "$base/search_perform" ),
+    search_species_limit => $cgi->popup_menu(-name =>'search_species_limit', -values => \@species_values, -labels => \%species_labels, -default => 'all'),
+    searchquery => $cgi->textfield(-name => 'query', -size => 20),
+    searchform => "$base/searchform",
+    importform => "$base/import",
+    filterform => "$base/filter_start",
+    snpform => "$base/snpstart",
+    downloadform => "$base/download",
+    cloudform => "$base/cloudform",
+    helpform => "$base/help",
+    seqlength => $single_seqlen,
+    searchsubmit => $cgi->submit(-name => 'search submit', -value => 'Search'),
+    category => $category,
+    summary => {
+	'bos_taurus' => {
+	    name => 'Bos taurus',
+	    sequences => 49266,
+	    genes => 3305,
+	    total => 9187,},
+	'danio_rerio' => {
+	    name => 'Danio rerio',
+	    sequences => 25836,
+	    genes => 1929,
+	    total => 6197,},
+	'homo_sapiens' => {
+	    name => 'Homo sapiens',
+	    sequences => 102404,
+	    genes => 6732,
+	    total => 17893,},
+	'mus_musculus' => {
+	    name => 'Mus musculus',
+	    sequences => 86837,
+	    genes => 5933,
+	    total => 15620,},
+	'rattus_norvegicus' => {
+	    name => 'Rattus norvegicus',
+	    sequences => 26979,
+	    genes => 1959,
+	    total => 5341,},
+	'saccharomyces_cerevisiae' => {
+	    name => 'Saccharomyces cerevisiae',
+	    sequences => 150045,
+	    genes => 4128,
+	    total => 6352,},
+	'xenopus_laevis' => {
+	    name => 'Xenopus laevis',
+	    sequences => 79485,
+	    genes => 4808,
+	    total => 9325,},
+	'xenopus_tropicalis' => {
+	    name => 'Xenopus tropicalis',
+	    sequences => 44299,
+	    genes => 2663,
+	    total => 5126,},
+	'saccharomyces_kudriavzevii' => {
+	    name => 'Saccharomyces kudriavzevii',
+	    sequences => 48447,
+	    genes => 2212,
+	    total => 3778,},
+	'saccharomyces_castellii' => {
+	    name => 'Saccharomyces castellii',
+	    sequences => 73836,
+	    genes => 2964,
+	    total => 4681, },
+	'saccharomyces_bayanus' => {
+	    name => 'Saccharomyces bayanus',
+	    sequences => 71433,
+	    genes =>  2951,
+	    total => 4970, },
 ## SELECT COUNT(id) FROM mfe WHERE species = 'homo_sapiens'
 ## SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = 'homo_sapiens'
 ## SELECT COUNT(id) FROM genome WHERE species = 'homo_sapiens'
-			     'saccharomyces_paradoxus' => {
-				 name => 'Saccharomyces paradoxus',
-				 sequences => 9700,
-				 genes => 436,
-				 total => 8955, },
-			 },
-			 
-		     };
+	'saccharomyces_paradoxus' => {
+	    name => 'Saccharomyces paradoxus',
+	    sequences => 9700,
+	    genes => 436,
+	    total => 8955, },
+    },    
+};
 
 our $download_header = qq(Content-type: application/x-octet-stream
 Content-Disposition:attachment;filename=);
