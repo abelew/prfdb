@@ -1,0 +1,38 @@
+<table stype="table-layout: fixed" width="100%" aligh="center" border="1" cellpadding="2" cellspacing="2" align="center">
+  <tr>
+  <td>species</td>
+  <td>alg</td>
+  <td>len</td>
+  <td>total hepts</td>
+  <td>total mean</td>
+  <td>knot kepts</td>
+  <td>knot mean</td>
+  <td>mean z</td>
+  <td>count sig all</td>
+  <td>count pseudo all</td>
+  <td>count sig all 2</td>
+  <td>count sig pseudo 2</td>
+  </tr>
+
+[% FOREACH outer = stats %]
+  [% FOREACH mid = outer %]
+     [% FOREACH inner = mid %]
+   <td>[% inner.species %]</td>
+   <td>[% inner.algorithm %]</td>
+   <td>[% inner.length %]</td>
+   <td>[% inner.total_hepts %]</td>
+   <td>[% inner.total_mean %]</td>
+   <td>[% inner.knot_hepts %]</td>
+   <td>[% inner.knot_mean %]</td>
+   <td>[% inner.mean_z %]</td>
+   <td>[% inner.count_sig_all %]</td>
+   <td>[% inner.count_pseudo_all %]</td>
+   <td>[% inner.count_sig_all_2 %]</td>
+   <td>[% inner.count_sig_pseudo_all_2 %]</td>
+</tr>
+        [% END %]
+      [% END %]
+   [% END %]
+
+
+</table>

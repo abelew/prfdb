@@ -1,0 +1,43 @@
+****************************************************************
+NUPACK 1.2
+Copyright 2003, 2004 by Robert M. Dirks & Niles A. Pierce
+California Institute of Technology
+Pasadena, CA 91125 USA
+
+Last Modified: 03/18/2004
+****************************************************************
+
+
+Fold.out Version 1.2: Complexity O(N^5) (pseudoknots enabled)
+Reading Input File...
+Sequence Read.
+Energy Parameters Loaded
+SeqLength = 88
+Sequence and a Minimum Energy Structure:
+GACGGUCACCUAAAGGGUGGUAAAUGUAAAAUAAACUUGGGUGGUGGCAAGAAGAACUCUCCCAGGAAUCAUCUUUACCAAAUCUCAA
+5 48
+6 47
+7 46
+8 45
+9 44
+10 43
+15 86
+16 85
+17 84
+18 80
+19 79
+20 78
+21 77
+22 76
+23 75
+24 74
+26 73
+36 66
+37 65
+38 64
+39 63
+40 62
+41 61
+....((((((....{{{{{{{{{{.{.........{{{{{{.))))))............}}}}}}......}}}}}}}}...}}}..
+mfe = -22.16 kcal/mol
+pseudoknotted!

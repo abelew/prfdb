@@ -1,0 +1,90 @@
+<center>
+<p>This is a cloud for <i>[% nicespecies %]</i> with an overlay for [% accession %]
+[% IF pknots_only %]
+ for only those PRF signals with pseudoknots.
+[% ELSE %]
+ for all PRF signals.
+[% END %]
+<br>
+<div style="position: absolute; z-index:100">
+<img src="[% cloud_url %]" usemap="#map">
+</div>
+<div style="position: absolute; z-index:5000">
+<!----
+<img src="[% cloud_url %]" usemap="#overlaymap">
+"http://cbmgintra.umd.edu/prfdb_beta/images/tmp/tmp.png" usemap="#overlaymap">
+---->
+<img src="[% overlay_url %]" usemap="#overlaymap">
+
+</div>
+</center>
+<div>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br>
+
+<br>
+The x axis displays the range of putative <a href="[% base %]/help_detail#help_mfe">
+minimum free energy</a> values computed for all <i>[% nicespecies %]</i>
+ sequences of length [% seqlength %].<br>
+The y axis displays the range of <a href="[% base %]/help_detail#help_z">
+z scores</a> for these same sequences.<br>
+Each dot thus represents a single (mfe, z score) in relation to all
+the others for <i>[% nicespecies %]</i>.  
+ The black lines delineate the mean mfe
+and z score for this population.
+[% IF slipsites %]
+The black dots represent all sequence windows with a [% slipsites %]
+ slippery site.
+[% ELSE %]
+This graph shows all points regardless of slipsite.
+[% END %]
+
+  Grey dots represent sequence
+windows which have less putative secondary structure than the mean
+<b>and</b> are less structured than their randomized counterparts, as
+such these are unlikely to be of interest.  Green dots have a minimum
+free energy less than the mean, but are less structured than their
+randomized counterparts while the opposite is true of blue dots.  Red
+dots are more significant than the mean in both respects.  Grey lines
+delineate standard deviations less than mean.  Darker dots represent
+coordinates wihch share more than 1 sequence window.
+</p>
+<p>
+Below is a bar graph showing how many putative PRF signals are made up
+of each slippery site.  PRF signals which start with 'AAA' are red, 'UUU' are
+green, 'GGG' are blue, and 'CCC' are black.
+</p>
+<center>
+ [% IF pknots_only %]
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-pknot-bar.png">
+ [% ELSE %]
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-bar.png">
+ [% END %]
+</center>
+
+<p>
+Below is a bar graph showing how many of these have values less than the mean
+MFE and zscore.
+</p>
+<center>
+ [% IF pknots_only %]
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-pknot-bar-sig.png">
+ [% ELSE %]
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-bar-sig.png">
+ [% END %]
+</center>
+
+<p>
+And percentage.
+</p>
+<center>
+ [% IF pknots_only %]
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-pknot-bar-percentsig.png">
+ [% ELSE %]
+ <img src="[% basedir %]/images/cloud/[% species %]/cloud-bar-percentsig.png">
+ [% END %]
+</center>
+</div>
