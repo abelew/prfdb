@@ -1,4 +1,5 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl -w -I/usr/share/httpd/prfdb/usr/lib/perl5/site_perl/
+
 use strict;
 use lib '../lib';
 use PRFdb;
@@ -9,14 +10,7 @@ our $config = $PRFConfig::config;
 our $db = new PRFdb;
 our $graph = new PRFGraph;
 
-unless ($db->Tablep('cloud_images')) {
-    $db->Create_CloudImages();
-}
-unless ($db->Tablep('bar_images')) {
-    $db->Create_BarImages();
-}
-
-my @species = ('saccharomyces_cerevisiae', 'mus_musculus', 'homo_sapiens',);
+my @species = ('saccharomyces_cerevisiae', 'mus_musculus', 'homo_sapiens','rattus_norvegicus','bos_taurus','xenopus_laevis','xenopus_tropicalis','danio_rerio',);
 my @seqlength = (100);
 my @knotted = (0,1);
 my @slipsite = ('all', 'AAAAAAA', 'AAAAAAU', 'AAAAAAC', 'AAAUUUA', 'AAAUUUU', 'AAAUUUC', 'UUUAAAA', 'UUUAAAU', 'UUUAAAC', 'UUUUUUA', 'UUUUUUU', 'UUUUUUC', 'CCCAAAA', 'CCCAAAU', 'CCCAAAC', 'CCCUUUA', 'CCCUUUU', 'CCCUUUC', 'GGGAAAA', 'GGGAAAU', 'GGGAAAC', 'GGGAAAG', 'GGGUUUA', 'GGGUUUU', 'GGGUUUC');

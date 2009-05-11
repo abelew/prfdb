@@ -42,7 +42,7 @@ sub Nupack {
   my $command;
   die("$config->{workdir}/dataS_G.dna is missing.") unless ( -r "$config->{workdir}/dataS_G.dna" );
   die("$config->{workdir}/dataS_G.rna is missing.") unless ( -r "$config->{workdir}/dataS_G.rna" );
-  
+
   if ( defined($pseudo) and $pseudo eq 'nopseudo' ) {
       die("$nupack_boot is missing.") unless ( -r $nupack_boot );
       $command = qq($nupack_boot $inputfile 2>$errorfile);
@@ -66,10 +66,8 @@ command: $command\n";
       } elsif ( $count == 17 ) {    ## Line 17 returns the input sequence
 	  $return->{sequence} = $line;
       } elsif ( $count == 18 ) {    ## Line 18 returns paren output
-	  
 	  #	  $return->{output} = $line;
 	  $return->{parens} = $line;
-	  
 	  #	  $return->{parens} = $line;
       } elsif ( $count == 19 ) {    ## Get the MFE here
 	  my $tmp = $line;
@@ -85,7 +83,6 @@ command: $command\n";
       }
   }    ## End of the line reading the nupack output.
   close(NU);
-  
   ## CLOSE NU in Nupack
   my $nupack_return = $?;
   unless ( $nupack_return eq '0' or $nupack_return eq '256' ) {
@@ -97,7 +94,7 @@ command: $command\n";
   PRFdb::AddFile($out_pair);
   open( PAIRS, "<$out_pair" ) or PRF_Error( "Could not open the nupack pairs file: $!", $accession );
   ## OPEN PAIRS in Nupack
-  my $pairs         = 0;
+  my $pairs = 0;
   my @nupack_output = ();
   while ( my $line = <PAIRS> ) {
       chomp $line;
@@ -163,7 +160,7 @@ sub Nupack_NOPAIRS {
     my $command;
     die("$config->{workdir}/dataS_G.dna is missing.") unless ( -r "$config->{workdir}/dataS_G.dna" );
     die("$config->{workdir}/dataS_G.rna is missing.") unless ( -r "$config->{workdir}/dataS_G.rna" );
-    
+
     if ( defined($pseudo) and $pseudo eq 'nopseudo' ) {
 	die("$nupack_boot is missing.") unless ( -r $nupack_boot );
 	$command = qq($nupack_boot $inputfile 2>$errorfile);
@@ -277,7 +274,7 @@ sub Pknots {
     chdir( $config->{workdir} );
     my $command;
     die("pknots is missing.") unless ( -r "$config->{pknots}" );
-    
+
     if ( defined($pseudo) and $pseudo eq 'nopseudo' ) {
 	$command = qq($config->{pknots} $inputfile 2>$errorfile);
     } else {
@@ -586,7 +583,6 @@ sub Hotknots {
 	$ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
-    
     my $bpseqfile = "${seqname}0.bpseq";
     PRFdb::AddOpen($bpseqfile);
     open(BPSEQ, "<$bpseqfile");
@@ -621,9 +617,9 @@ sub Hotknots {
 	$ret->{mfe} = $mfe;
     }
     close(GETMFE);
-    
+
     PRFdb::RemoveFile([$ctfile, $bpseqfile, $errorfile]);
-    
+
     my $parser = new PkParse( debug => 0);
     my @struct_array = split(/\s+/, $ret->{output});
     my $out = $parser->Unzip(\@struct_array);

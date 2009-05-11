@@ -299,9 +299,9 @@ sub MyBrackets {
 	    push(@threeprime, $parens[$parens[$c]]);
 	    $stuff{$barcode->[$c]}{"threeprime"} = \@threeprime;
 	}
-	print "TESTME: Element: $c points to: $parens[$c]\n";
+#	print "TESTME: Element: $c points to: $parens[$c]\n";
     }  ## End of each element in parens
-    print "Early TEST: @parens\n";
+#    print "Early TEST: @parens\n";
     
     my %stem_info = ();
     my $last_stem = 0;
@@ -634,6 +634,39 @@ sub Condense {
   return $str;
 }
 
+sub Knotp {
+    my $me = shift;
+    my $knotstring = shift;
+    my @knot = split(//, $knotstring);
+    my $knotref = \@knot;
+    my $string = '';
+    foreach my $c (@{$knotref}) { $string .= $c; }
+    foreach my $char ('a' .. 'z') {
+        $string =~ s/$char+/$char/g;
+    }
+    $string =~ s/\.//g;
+    my @tmp = split(//, $string);
+    my $orig_length;
+  LOOP: while (scalar(@tmp) > 0) {
+      $orig_length = scalar(@tmp);
+      for my $pos (0 .. $#tmp) {
+          next  if (!defined($tmp[$pos + 1]));
+          if ($tmp[$pos] eq $tmp[$pos + 1]) {
+	      splice(@tmp, $pos, 2);
+          }
+      }
+      my $fun = scalar(@tmp);
+      if ($orig_length == scalar(@tmp)) {  ## If this is true there is a knot.
+          my $return_string = '';
+          foreach my $c (0 .. $#tmp) {
+	      $return_string .= "$tmp[$c]";
+          }
+          return($return_string);
+      }
+  }
+    return(0);
+}
+
 sub Parsed_to_Barcode {
   my $knotref = shift;
   my $string  = '';
@@ -652,16 +685,16 @@ LOOP: for my $c ( 0 .. $#almost ) {
     foreach my $test (@almost) {
       $count++ if ( $test eq $char );
       if ( $count > 1 ) {
-        print "Adding $char one time because it exists $count times\n";
+#        print "Adding $char one time because it exists $count times\n";
         $finished = $finished . $char;
         $count    = 0;
         next LOOP;
       }
     }
-    print "ADDING $char twice because it exists $count times\n";
+#    print "ADDING $char twice because it exists $count times\n";
     $finished = $finished . $char . $char;
   }
-  print "The reduced string is: $string\n";
+#  print "The reduced string is: $string\n";
   return ($finished);
 }
 
@@ -670,10 +703,10 @@ sub Parsed_to_Barcode2 {
   my $string  = '';
   foreach my $char ( @{$knotref} ) { $string = $string . $char if ( defined($char) ); }
   $string =~ tr/0-9//s;
-  print "TEST: $string\n";
+#  print "TEST: $string\n";
   my @almost = split( //, $string );
   my $finished = '';
-  print "How many times does @almost have $almost[0]?\n";
+#  print "How many times does @almost have $almost[0]?\n";
 
   if ( Single_p( $almost[0], \@almost ) ) {
     $finished = $almost[0] . $almost[0];
@@ -686,18 +719,18 @@ LOOP: for my $c ( 0 .. $#almost ) {
     foreach my $test (@almost) {
       $count++ if ( $test eq $char );
       if ( $count > 1 ) {
-        print "Adding $char one time because it exists $count times\n";
+#        print "Adding $char one time because it exists $count times\n";
         $finished = $finished . $char;
         $count    = 0;
         next LOOP;
       } elsif ( $count == 1 ) {
-        print "ADDING $char twice because it exists $count times\n";
+#        print "ADDING $char twice because it exists $count times\n";
         $finished = $finished . $char . $char;
         $count    = 0;
         next LOOP;
       }
     }
-    print "The reduced string is: $string\n";
+#    print "The reduced string is: $string\n";
     return ($finished);
   }
 }

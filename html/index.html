@@ -3,9 +3,9 @@
 <tr align="left" valign="top">
   <td width="20%">
     <p>
-[% FOREACH species = species_info.keys %]
- <i>[% species_info.$species.count %] <a href="[% base %]/cloud?species=[% species %]">[% species_info.$species.nicename %]</a></i> sequence windows<br>
- comprising [% species_info.$species.done_genes %] of [% species_info.$species.genes %] genes.<br><br>
+[% FOREACH species = summary.keys.sort %]
+ <i>[% summary.$species.sequences %] <a href="[% base %]/cloud?species=[% species %]&seqlength=100&slipsites=all">[% summary.$species.name %]</a></i> sequence windows<br>
+ comprising [% summary.$species.genes %] of [% summary.$species.total %] genes.<br><br>
 
 [% END %]
     </p>

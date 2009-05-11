@@ -1,4 +1,5 @@
-#! /usr/bin/perl -w
+#!/usr/bin/perl -w -I/usr/share/httpd/prfdb/usr/lib/perl5/site_perl/
+
 use strict;
 use DBI;
 use lib '../lib';
@@ -24,3 +25,6 @@ foreach my $boot (@{$all_boot}) {
     print "$update_stmt\n";
     $db->MyExecute($update_stmt);
 }
+
+my $cleaning = qq(DELETE FROM mfe WHERE mfe > '10');
+$db->MyExecute($cleaning);

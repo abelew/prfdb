@@ -73,6 +73,9 @@ sub Search {
 
           #          if (defined($result)) {
           my $filename = $result->query_name() . "\.out";
+#          use Cwd;
+#          my $g = getcwd;
+#          print "TESTME: $g $filename<br>\n";
           $factory->save_output($filename);
           $factory->remove_rid($rid);
 
