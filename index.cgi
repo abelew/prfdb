@@ -28,20 +28,20 @@ our $basedir = $base;
 $ENV{BLASTDB} = $config->{blastdir};
 $basedir =~ s/\/index.cgi.*//g;
 our $vars = {
-  base         => $base,
-  basedir      => $basedir,
+  base => $base,
+  basedir => $basedir,
   startsearchform => $cgi->startform( -action => "$base/perform_search" ),
   searchquery => $cgi->textfield(-name => 'query', -size => 20),
-  searchform   => "$base/searchform",
+  searchform => "$base/searchform",
   endsearchform => $cgi->endform(),
-  importform   => "$base/import",
-  filterform   => "$base/start_filter",
-  snpform      => "$base/snpstart",
+  importform => "$base/import",
+  filterform => "$base/start_filter",
+  snpform => "$base/snpstart",
   downloadform => "$base/download",
   cloudform => "$base/cloudform",
   helpform => "$base/help",
   seqlength => $config->{seqlength},
-  submit       => $cgi->submit,
+  submit => $cgi->submit,
 };
 our $download_header = qq(Content-type: application/x-octet-stream
 Content-Disposition:attachment;filename=);
