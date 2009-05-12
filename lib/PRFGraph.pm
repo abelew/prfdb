@@ -6,11 +6,12 @@ use PRFConfig qw / PRF_Error PRF_Out /;
 use PRFdb;
 use GD::Graph::mixed;
 use GD::SVG;
-use Statistics::Basic::Mean;
-use Statistics::Basic::Variance;
-use Statistics::Basic::StdDev;
+use Statistics::Basic qw(:all);
+#use Statistics::Basic::Mean;
+#use Statistics::Basic::Variance;
+#use Statistics::Basic::StdDev;
 use Statistics::Distributions;
-use Statistics::Basic::Correlation;
+#use Statistics::Basic::Correlation;
 
 my $config = $PRFConfig::config;
 
@@ -572,6 +573,9 @@ sub Make_Distribution {
   #not yet implemented
   my $real_mfe = $me->{real_mfe};
   my @values = @{$me->{list_data}};
+#  foreach my $v (@values) {
+#      print "|$v|";
+#  }
   my $acc_slip = $me->{acc_slip}; 
   my @sorted = sort {$a <=> $b} @values;
 
@@ -617,9 +621,15 @@ sub Make_Distribution {
 
   ###
   # Stats part
-  my $xbar = sprintf("%.2f",Statistics::Basic::Mean->new(\@values)->query);
-  my $xvar = sprintf("%.2f",Statistics::Basic::Variance->new(\@values)->query);
-  my $xstddev = sprintf("%.2f",Statistics::Basic::StdDev->new(\@values)->query);
+  my $xbar = mean(\@values);
+  my $xvar = variance(\@values);
+  my $xstddev = stddev(\@values);
+  $xbar = sprintf("%.2f",$xbar->query);
+  $xvar = sprintf("%.2f",$xvar->query);
+  $xstddev = sprintf("%.2f",$xstddev->query);
+  #my $xbar = sprintf("%.2f",Statistics::Basic::Mean->new(\@values)->query);
+  #my $xvar = sprintf("%.2f",Statistics::Basic::Variance->new(\@values)->query);
+  #my $xstddev = sprintf("%.2f",Statistics::Basic::StdDev->new(\@values)->query);
 
 
   # initially calculated as a CDF.

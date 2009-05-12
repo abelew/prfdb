@@ -683,7 +683,7 @@ $structure->[8]
 	  exit(0);
       }
       if (!defined($slipstart)) {
-	  print "The slipstart is not defined";
+#	  print "The slipstart is not defined";
 	  $slipstart = '';
       }
       my $acc_slip = qq/$accession-$slipstart/;
