@@ -234,7 +234,6 @@ sub MAIN {
     } 
     elsif ($path eq '/cloud') {
 	Cloud();
-#    } elsif ($path eq '/blast_search') {
     }
     elsif (defined($cgi->param('blastsearch'))) {
 	my $input_sequence = $cgi->param('blastsearch');
@@ -271,7 +270,7 @@ sub MAIN {
 	print "Performing Local BLAST search now, this may take a moment.<br>\n";
 	Print_Blast('local');
     } 
-    elsif ($path eq '/search_remote_blast') {
+    elsif ($path eq '/remote_blast') {
 	print "Performing Remote BLAST search now, this may take a moment.<br>\n";
 	Print_Blast('remote');
     } 
@@ -1578,6 +1577,7 @@ sub Print_Blast {
 
     $sequence =~ tr/Uu/Tt/;
     $sequence =~ s/\s//g;
+    print "TELL ME: $sequence<br>\n";
     
     my $local_info = $blast->Search($sequence, $is_local);
     
