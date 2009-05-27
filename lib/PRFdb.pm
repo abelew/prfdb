@@ -29,7 +29,7 @@ sub new {
     $me->Create_Queue() unless ($me->Tablep($config->{queue_table}));
     $me->Create_Boot() unless ($me->Tablep('boot'));
     $me->Create_MFE() unless ($me->Tablep('mfe'));
-    $me->Create_Landscape() unless ($me->Tablep('landscape'));
+#    $me->Create_Landscape() unless ($me->Tablep('landscape'));
     $me->Create_Errors() unless ($me->Tablep('errors'));
     $me->Create_NoSlipsite() unless ($me->Tablep('noslipsite'));
   }
@@ -1460,6 +1460,7 @@ sub Put_MFE_Landscape {
   my $me = shift;
   my $algo = shift;
   my $data = shift;
+  my $species = $data->{species};
   ## What fields do we want to fill in this MFE table?
   my @pknots = ('genome_id', 'species', 'accession', 'start', 'seqlength', 'sequence', 'output', 'parsed', 'parens', 'mfe', 'pairs', 'knotp', 'barcode');
   my $errorstring = Check_Insertion(\@pknots, $data);
@@ -1468,7 +1469,8 @@ sub Put_MFE_Landscape {
     Sec_Error($errorstring, $data->{species}, $data->{accession});
   }
   $data->{sequence} =~ tr/actgu/ACTGU/;
-  my $statement = qq(INSERT INTO landscape (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
+  my $table = "landscape-$species";
+  my $statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
 
   my ($cp,$cf,$cl) = caller();
   $me->MyExecute({statement => $statement,
@@ -1907,8 +1909,10 @@ PRIMARY KEY(id))\;
 }
 
 sub Create_Landscape {
-  my $me        = shift;
-  my $statement = qq\CREATE TABLE landscape (
+  my $me = shift;
+  my $species = shift;
+  my $table = "landscape-$species";
+  my $statement = qq\CREATE TABLE $table IF NOT EXISTS (
 id $config->{sql_id},
 genome_id int,
 species $config->{sql_species},
