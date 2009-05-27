@@ -1019,21 +1019,30 @@ sub Print_Single_Accession {
       $vars->{sig_count} += $vars->{pknotscount};
       if ($vars->{orf_start} < $vars->{slipstart} and $num_starts_printed == 0) {
 	  $num_starts_printed++;
-	  $template->process( 'sliplist_start_codon.html', $vars ) or
+	  $template->process('sliplist_start_codon.html', $vars) or
 	      Print_Template_Error($template), die;
       }
       if ($vars->{orf_stop} <= $vars->{slipstart} and $num_stops_printed == 0) {
 	  $num_stops_printed++;
-	  $template->process( 'sliplist_stop_codon.html', $vars ) or
+	  $template->process('sliplist_stop_codon.html', $vars) or
 	      Print_Template_Error($template), die;
       }
-      $template->process( 'sliplist.html', $vars ) or
+      $template->process('sliplist.html', $vars) or
 	  Print_Template_Error($template), die;
   }
-  $template->process( 'sliplist_start_codon.html', $vars ) if ($num_starts_printed == 0);
-  $template->process( 'sliplist_stop_codon.html', $vars ) if ($num_stops_printed == 0);
-  $template->process( 'sliplist_footer.html', $vars ) or
+  $template->process('sliplist_start_codon.html', $vars) if ($num_starts_printed == 0);
+  $template->process('sliplist_stop_codon.html', $vars) if ($num_stops_printed == 0);
+  $template->process('sliplist_footer.html', $vars) or
       Print_Template_Error($template), die;
+  ## Before the RNA sequence, put in the picture of the ORF
+  my $pic = new PRFGraph({accession => $accession});
+  my $filename = $pic->Picture_Filename({type => 'landscape',});
+  if (!-r $filename) {
+      $pic->Make_Landscape();
+  }
+  my $url = $pic->Picture_Filename({type => 'landscape', url => 'url'});
+  $vars->{picture} = $url;
+  
   $template->process( 'mrna_sequence.html',   $vars ) or
       Print_Template_Error($template), die;
 }
