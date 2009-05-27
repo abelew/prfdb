@@ -1,4 +1,4 @@
-package PRF_Blast;
+package PRFBlast;
 use strict;
 use Bio::Seq;
 use Bio::SeqIO;

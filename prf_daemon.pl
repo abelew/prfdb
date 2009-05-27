@@ -12,7 +12,7 @@ use RNAFolders;
 use Bootlace;
 use Overlap;
 use MoreRandom;
-use PRF_Blast;
+use PRFBlast;
 
 $SIG{INT} = 'CLEANUP';
 $SIG{BUS} = 'CLEANUP';
@@ -140,7 +140,7 @@ if (defined($config->{optimize})) {
 }
 
 if ( defined( $config->{blast} ) ) {
-    my $blast = new PRF_Blast;
+    my $blast = new PRFBlast;
     $blast->Search( $config->{blast}, 'local' );
     print "\n\n\n\n\n\n\n";
     $blast->Search( $config->{blast}, 'remote' );
@@ -768,7 +768,7 @@ sub Check_Sequence_Length {
 sub Make_Blast {
     my $outputfile = 'blast_prfdb.fasta';
     $db->Genome_to_Fasta($outputfile);
-    my $blast = new PRF_Blast;
+    my $blast = new PRFBlast;
     print "Formatting Database\n";
     $blast->Format_Db($outputfile);
 }

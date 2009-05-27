@@ -7,7 +7,7 @@ chdir("/usr/local/prfdb/prfdb_beta");
 use lib "/usr/local/prfdb/prfdb_beta/lib";
 use PRFConfig;
 use PRFdb;
-use PRF_Blast;
+use PRFBlast;
 use PRFGraph;
 use MoreRandom;
 use Bootlace;
@@ -1551,7 +1551,7 @@ sub Get_Accession_Info {
 sub Print_Blast {
     my $is_local = shift;
     my $input_sequence = shift;
-    my $blast = new PRF_Blast;
+    my $blast = new PRFBlast;
     my $accession;
     my $start;
     my $sequence;

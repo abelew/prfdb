@@ -251,7 +251,7 @@ sub Make_Cloud {
 		      $slips_significant{$slipsite}{color} = 'black';
 		  }
 		  else {
-		      warn("This sucks. $slipsite doesn't match");
+		      #warn("This sucks. $slipsite doesn't match");
 		      next;
 		  }
 	      }
@@ -275,7 +275,7 @@ sub Make_Cloud {
 		  $slipsites_numbers{$slipsite}{color} = 'black';
 	      }
 	      else {
-		  warn("This sucks. $slipsite doesn't match the expected");
+		  #warn("This sucks. $slipsite doesn't match the expected");
 		  next;
 	      }
 	  }
