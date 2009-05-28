@@ -13,7 +13,7 @@ use MoreRandom;
 use Bootlace;
 $ENV{HTTP_HOST} = 'Youneedtodefinedahostname' if (!defined($ENV{HTTP_HOST}));
 $ENV{SCRIPT_NAME} = 'index.cgi' if (!defined($ENV{SCRIPT_NAME}));
-umask(0000);
+umask(0022);
 our $config = $PRFConfig::config;
 ## All configuration information exists here
 chdir( $config->{base} );
