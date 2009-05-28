@@ -781,9 +781,11 @@ sub Make_Blast {
 
 sub Make_Landscape_Tables {
     my $tables = $db->MySelect("SELECT distinct(species) from genome");
-    my @spec = @{$tables->[0]};
+    my @spec = @{$tables};
     foreach my $s (@spec) {
-	$db->Make_Landscape_Table($s);
+	my $sp = $s->[0];
+	$sp =~ s/\-/_/g;
+	$db->Create_Landscape($sp);
     }
     exit(0);
 }

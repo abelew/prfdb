@@ -1913,8 +1913,8 @@ PRIMARY KEY(id))\;
 sub Create_Landscape {
   my $me = shift;
   my $species = shift;
-  my $table = "landscape-$species";
-  my $statement = qq\CREATE TABLE $table IF NOT EXISTS (
+  my $table = "landscape_$species";
+  my $statement = qq\CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,
 species $config->{sql_species},
