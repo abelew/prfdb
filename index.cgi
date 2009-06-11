@@ -999,8 +999,8 @@ sub Print_Single_Accession {
   my $slipsite_information = $db->MySelect({
       statement => $slipsite_information_stmt,
       vars => [$accession, $accession], });
-
-  my $landscape_num = $db->MySelect("SELECT count(id) FROM landscape WHERE accession = '$accession'");
+  my $table = "landscape_$datum->{species}";
+  my $landscape_num = $db->MySelect("SELECT count(id) FROM $table WHERE accession = '$accession'");
   $vars->{landscape_num} = $landscape_num->[0][0];
 
   $template->process( 'genome.html',          $vars ) or

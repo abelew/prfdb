@@ -595,13 +595,13 @@ sub Make_Distribution {
   #not yet implemented
   my $real_mfe = $me->{real_mfe};
   my @values = @{$me->{list_data}};
-#  foreach my $v (@values) {
-#      print "|$v|";
-#  }
+  for my $c (0 .. $#values) {
+      if (!defined($values[$c])) {
+	  $values[$c] = 0;
+      }
+  }
   my $acc_slip = $me->{acc_slip}; 
   my @sorted = sort {$a <=> $b} @values;
-
-#  my $min = sprintf("%+d",$sorted[0]) - 1;
   my $min = sprintf("%+d",$sorted[0]);
   ## An attempt to make sure that the green bar containing the MFE of the
   ## nupack/pknots folded sequence window actually falls on the bar.
@@ -649,10 +649,6 @@ sub Make_Distribution {
   $xbar = sprintf("%.2f",$xbar->query);
   $xvar = sprintf("%.2f",$xvar->query);
   $xstddev = sprintf("%.2f",$xstddev->query);
-  #my $xbar = sprintf("%.2f",Statistics::Basic::Mean->new(\@values)->query);
-  #my $xvar = sprintf("%.2f",Statistics::Basic::Variance->new(\@values)->query);
-  #my $xstddev = sprintf("%.2f",Statistics::Basic::StdDev->new(\@values)->query);
-
 
   # initially calculated as a CDF.
   my @dist_y = ();
@@ -1024,13 +1020,13 @@ sub Make_Struct {
 
 sub Get_PPCC {
   my $me = shift;
-
-  #probably should put some error checking here.. but... wtf!
   my @values = @{$me->{list_data}};
+  for my $c (0 .. $#values) {
+      if (!defined($values[$c])) {
+	  $values[$c] = 0;
+      }
+  }
   my @sorted = sort {$a <=> $b} @values;
-
-  ###
-  # Stats part
   my $n = scalar(@values);
   my $xbar = sprintf("%.2f", Statistics::Basic::Mean->new(\@values)->query);
   my $xvar = sprintf("%.2f", Statistics::Basic::Variance->new(\@values)->query);
@@ -1054,8 +1050,7 @@ sub Get_PPCC {
   }
 
   my $corr = new Statistics::Basic::Correlation(\@PofY, \@PofX);
-
-  return $corr->query;
+  return ($corr->query);
 }
 
 sub Picture_Filename {
