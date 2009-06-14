@@ -795,7 +795,7 @@ sub Get_Queue {
     unless ($me->Tablep($table)) {
 	$me->Create_Queue($table);
 	$me->Reset_Queue($table, 'complete');
-	$return = {sequence  => "$sequence",
+	my $return = {sequence  => "$sequence",
 		   orf_start => $start,
 		   orf_stop  => $stop,};
 	return ($return);
