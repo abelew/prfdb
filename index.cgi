@@ -13,6 +13,7 @@ use PRFGraph;
 use Bootlace;
 $ENV{HTTP_HOST} = 'Youneedtodefinedahostname' if (!defined($ENV{HTTP_HOST}));
 $ENV{SCRIPT_NAME} = 'index.cgi' if (!defined($ENV{SCRIPT_NAME}));
+$ENV{PATH}='/usr/bin:/usr/local/bin';
 umask(0022);
 our $config = $PRFConfig::config;
 ## All configuration information exists here
@@ -1582,8 +1583,6 @@ sub Print_Blast {
 
     $sequence =~ tr/Uu/Tt/;
     $sequence =~ s/\s//g;
-    print "TELL ME: $sequence<br>\n";
-    
     my $local_info = $blast->Search($sequence, $is_local);
     
     my (%hit_names, %accessions, %lengths, %descriptions, %scores, %significances, %bitses);

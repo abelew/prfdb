@@ -1037,7 +1037,6 @@ sub Get_PPCC {
 	my $new_value = $i / ($n + 1);
 	push(@PofY, $new_value);
     }
-    
     my $corr = new Statistics::Basic::Correlation(\@PofY, \@PofX);
     return ($corr->query);
 }
