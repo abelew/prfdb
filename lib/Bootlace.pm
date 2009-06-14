@@ -2,7 +2,7 @@ package Bootlace;
 use strict;
 use RNAFolders;
 use PRFdb;
-use Randomize;
+use SeqMisc;
 use Math::Stat;
 use PRFConfig qw / PRF_Error PRF_Out /;
 
