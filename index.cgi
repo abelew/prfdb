@@ -140,7 +140,7 @@ sub MAIN {
 	Download_Sequence($cgi->param('accession'));
 	exit(0);
     }
-    elsif ($path eq '/download_svg') {
+    elsif ($path eq '/download_png') {
 	Download_PNG($cgi->param('accession'), $cgi->param('mfeid'));
 	exit(0);
     }
