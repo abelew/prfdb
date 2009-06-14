@@ -9,7 +9,7 @@ use PRFConfig;
 use PRFdb;
 use PRFBlast;
 use PRFGraph;
-use MoreRandom;
+#use SeqMisc;
 use Bootlace;
 $ENV{HTTP_HOST} = 'Youneedtodefinedahostname' if (!defined($ENV{HTTP_HOST}));
 $ENV{SCRIPT_NAME} = 'index.cgi' if (!defined($ENV{SCRIPT_NAME}));
