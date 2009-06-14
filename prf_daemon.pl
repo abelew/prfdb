@@ -2,7 +2,6 @@
 use strict;
 use DBI;
 use Getopt::Long;
-
 use lib "$ENV{HOME}/usr/lib/perl5";
 use lib 'lib';
 use PRFConfig;
@@ -13,19 +12,17 @@ use Bootlace;
 use Overlap;
 use MoreRandom;
 use PRFBlast;
-
 $SIG{INT} = 'CLEANUP';
 $SIG{BUS} = 'CLEANUP';
 $SIG{SEGV} = 'CLEANUP';
 $SIG{PIPE} = 'CLEANUP';
 $SIG{ABRT} = 'CLEANUP';
 $SIG{QUIT} = 'CLEANUP';
-
 our $config = $PRFConfig::config;
+setpriority(0,0,$config->{niceness});
 our $db = new PRFdb;
 our %conf = ();
-GetOptions(
-	   ## If this gets set, then the prf_daemon will exit before it gets to the queue
+GetOptions(## If this gets set, then the prf_daemon will exit before it gets to the queue
 	   'nodaemon:i' => \$conf{nodaemon},  
 	   ## Print some help information
 	   'help|version' => \$conf{help},      
@@ -98,35 +95,32 @@ GetOptions(
 	   'stem2_spacer_max:i' => \$conf{stem2_spacer_max},
 	   'checks:i' => \$conf{checks},
 	   'make_jobs' => \$conf{make_jobs},
-	   'make_landscape' => \$conf{make_landscape},
-	   );
+	   'make_landscape' => \$conf{make_landscape},);
 foreach my $opt (keys %conf) {
     if (defined($conf{$opt})) {
 	$config->{$opt} = $conf{$opt};
     }
 }
 
-our $state = {
-    time_to_die => undef,
-    queue_table => undef,
-    queue_id => undef,
-    pknots_mfe_id => undef,
-    nupack_mfe_id => undef,
-    vienna_mfe_id => undef,
-    hotknots_mfe_id => undef,
-    genome_id => undef,
-    accession => undef,
-    species => undef,
-    seqlength => undef,
-    sequence => undef,
-    fasta_file => undef,
-    genome_information => undef,
-    rnamotif_information => undef,
-    nupack_information => undef,
-    pknots_information => undef,
-    boot_information => undef,
-    done_count => 0,
-};
+our $state = {time_to_die => undef,
+	      queue_table => undef,
+	      queue_id => undef,
+	      pknots_mfe_id => undef,
+	      nupack_mfe_id => undef,
+	      vienna_mfe_id => undef,
+	      hotknots_mfe_id => undef,
+	      genome_id => undef,
+	      accession => undef,
+	      species => undef,
+	      seqlength => undef,
+	      sequence => undef,
+	      fasta_file => undef,
+	      genome_information => undef,
+	      rnamotif_information => undef,
+	      nupack_information => undef,
+	      pknots_information => undef,
+	      boot_information => undef,
+	      done_count => 0,};
 
 ### START DOING WORK NOW
 chdir($config->{base});
@@ -141,27 +135,22 @@ if ($config->{checks}) {
 if (defined($config->{help})) {
     Print_Help();
 }
-
 if (defined($config->{makeblast})) {
     Make_Blast();
     exit(0);
 }
-
 if (defined($config->{make_landscape})) {
     Make_Landscape_Tables();
     exit(0);
 }
-
 if (defined($config->{stats})) {
     Generate_Stats();
     exit(0);
 }
-
 if (defined($config->{optimize})) {
     Optimize($config->{optimize});
     exit(0);
 }
-
 if (defined($config->{blast})) {
     my $blast = new PRFBlast;
     $blast->Search($config->{blast}, 'local');
@@ -169,19 +158,15 @@ if (defined($config->{blast})) {
     $blast->Search($config->{blast}, 'remote');
     exit(0);
 }
-
 if (defined($config->{fillqueue})) {
     $db->FillQueue();
 }
-
 if (defined($config->{resetqueue})) {
     $db->Reset_Queue();
 }
-
 if (defined($config->{copyfrom})) {
     $db->Copy_Genome($config->{copyfrom});
 }
-
 if (defined($config->{input_file})) {
     if (defined($config->{startpos})) {
 	Read_Accessions($config->{input_file}, $config->{startpos});
@@ -190,11 +175,9 @@ if (defined($config->{input_file})) {
 	Read_Accessions($config->{input_file});
     }
 }
-
 if (defined($config->{make_jobs})) {
     Make_Jobs();  ## USED FOR PBS SYSTEMS
 }
-
 if (defined($config->{accession})) {
     $state->{queue_id} = 0;
     ## Dumb hack lives on
@@ -208,7 +191,6 @@ if (defined($config->{accession})) {
     }
     exit(0);
 }
-
 if (defined($config->{import_accession})) {
     my $accession = $config->{import_accession};
     print "Importing Accession: $accession\n";
@@ -228,7 +210,6 @@ if (defined($config->{import_accession})) {
     }
     ## Once the prf_daemon finishes this accession it will start reading the queue...
 }  ## Endif used the import_accession arg
-
 if (defined($config->{input_fasta})) {
     my $queue_ids;
     if (defined( $config->{startpos})) {
@@ -250,11 +231,9 @@ if (defined($config->{nodaemon})) {
     print "No daemon is set, existing before reading queue.\n";
     exit(0);
 }
-
 if ($config->{checks}) {
     Print_Config();
 }
-
 until (defined($state->{time_to_die})) {
     ### You can set a configuration variable 'master' so that it will not die
     if ($state->{done_count} > 60 and !defined($config->{master})) {$state->{time_to_die} = 1}
@@ -457,8 +436,7 @@ sub PRF_Gatherer {
 				  seqlength => $state->{seqlength},
 				  iterations => $config->{boot_iterations},
 				  boot_mfe_algorithms => $config->{boot_mfe_algorithms},
-				  randomizers => $config->{boot_randomizers},
-				  );
+				  randomizers => $config->{boot_randomizers},);
 	  my $boot_folds = $db->Get_Num_Bootfolds($state->{genome_id}, $slipsite_start, $state->{seqlength});
 	  my $number_boot_algos = 0;
 	  $number_boot_algos += scalar keys %{$config->{boot_mfe_algorithms}};
@@ -516,26 +494,15 @@ sub Landscape_Gatherer {
 	$individual_sequence = $individual_sequence . "\n";
 	$state->{fasta_file} = $db->Sequence_to_Fasta($individual_sequence);
 	if (!defined($state->{accession})) {die("The accession is no longer defined. This cannot be allowed.")};
-	my $fold_search = new RNAFolders(file => $state->{fasta_file},
-					 genome_id => $state->{genome_id},
-					 species => $state->{species},
-					 accession => $state->{accession},
+	my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id},
+					 species => $state->{species}, accession => $state->{accession},
 					 start => $start_point,);
-	my $nupack_foldedp = $db->Get_Num_RNAfolds('nupack',
-						   $state->{genome_id},
-						   $start_point,
-						   $config->{landscape_seqlength},
-						   'landscape');
-	my $pknots_foldedp = $db->Get_Num_RNAfolds('pknots',
-						   $state->{genome_id},
-						   $start_point,
-						   $config->{landscape_seqlength},
-						   'landscape');
-	my $vienna_foldedp = $db->Get_Num_RNAfolds('vienna',
-						   $state->{genome_id},
-						   $start_point,
-						   $config->{landscape_seqlength},
-						   'landscape');
+	my $nupack_foldedp = $db->Get_Num_RNAfolds('nupack', $state->{genome_id}, $start_point,
+						   $config->{landscape_seqlength}, 'landscape');
+	my $pknots_foldedp = $db->Get_Num_RNAfolds('pknots', $state->{genome_id}, $start_point,
+						   $config->{landscape_seqlength}, 'landscape');
+	my $vienna_foldedp = $db->Get_Num_RNAfolds('vienna', $state->{genome_id}, $start_point,
+						   $config->{landscape_seqlength}, 'landscape');
 
 	my ($nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id, $vienna_info, $vienna_mfe_id);
 	if ($nupack_foldedp == 0) {
@@ -690,10 +657,8 @@ sub Check_Boot_Connectivity {
 		if (!defined($state->{accession})) {
 		    die("The accession is no longer defined. This cannot be allowed.")
 		    };
-		my $fold_search = new RNAFolders(file => $state->{fasta_file},
-						 genome_id => $state->{genome_id},
-						 species => $state->{species},
-						 accession => $state->{accession},
+		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id},
+						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
 		$new_mfe_id = Check_Nupack($fold_search, $slipsite_start);
 	    }
@@ -702,18 +667,16 @@ sub Check_Boot_Connectivity {
 		if (!defined($state->{accession})) {
 		    die("The accession is no longer defined. This cannot be allowed.")
 		    };
-		my $fold_search = new RNAFolders(file => $state->{fasta_file},
-						 genome_id => $state->{genome_id},
-						 species => $state->{species},
-						 accession => $state->{accession},
+		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id},
+						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
 		$new_mfe_id = Check_Pknots($fold_search, $slipsite_start);
 	    } ### End if there is no mfe_id and pknots was the algorithm
 	    my $update_mfe_id_statement = qq(UPDATE boot SET mfe_id = ? WHERE id = ?);
 	    my ($cp,$cf, $cl) = caller(0);
-	    $db->MyExecute({ statement => $update_mfe_id_statement,
-			     vars =>[$new_mfe_id, $boot_id],
-			     caller =>"$cp $cf $cl",});
+	    $db->MyExecute({statement => $update_mfe_id_statement,
+			    vars =>[$new_mfe_id, $boot_id],
+			    caller =>"$cp $cf $cl",});
 	    $num_fixed++;
 	}    ### End if there is no mfe_id
     }    ### End foreach boot in the list
@@ -766,8 +729,8 @@ sub Check_Folds {
 
 ## Start Clean_Up
 sub Clean_Up {
-    $db->Done_Queue( $state->{queue_table}, $state->{genome_id} );
-    foreach my $k ( keys %{$state} ) { $state->{$k} = undef unless ( $k eq 'done_count' or $k ); }
+    $db->Done_Queue($state->{queue_table}, $state->{genome_id});
+    foreach my $k (keys %{$state}) { $state->{$k} = undef unless ($k eq 'done_count' or $k); }
 }
 ## End Clean_Up
 
@@ -820,10 +783,10 @@ sub Check_Sequence_Length {
     elsif ($sequence =~ /^A+CCCUCG+$/) {
 	return('polya');
     }
-    elsif ( $sequence =~ /AAAAAAAA$/ and $sequence_length < $wanted_sequence_length ) {
+    elsif ($sequence =~ /AAAAAAAA$/ and $sequence_length < $wanted_sequence_length) {
 	return ('polya');
     }
-    elsif ( $sequence_length > $wanted_sequence_length ) {
+    elsif ($sequence_length > $wanted_sequence_length) {
 #    open( OUT, ">$filename" ) or die("Could not open $filename $!");
 #    ## OPEN OUT in Check_Sequence_Length
 #    print OUT "$output\n";
@@ -835,10 +798,10 @@ sub Check_Sequence_Length {
 #    ## CLOSE OUT in Check_Sequence_Length
 	return ('longer than wanted');
     }
-    elsif ( $sequence_length == $wanted_sequence_length ) {
+    elsif ($sequence_length == $wanted_sequence_length) {
 	return ('equal');
     }
-    elsif ( $sequence_length < $wanted_sequence_length ) {
+    elsif ($sequence_length < $wanted_sequence_length) {
 	return ('shorter than wanted');
     }
     else {
