@@ -13,7 +13,7 @@ use MoreRandom;
 use Bootlace;
 $ENV{HTTP_HOST} = 'Youneedtodefinedahostname' if (!defined($ENV{HTTP_HOST}));
 $ENV{SCRIPT_NAME} = 'index.cgi' if (!defined($ENV{SCRIPT_NAME}));
-umask(0000);
+umask(0022);
 our $config = $PRFConfig::config;
 ## All configuration information exists here
 chdir( $config->{base} );
@@ -999,8 +999,8 @@ sub Print_Single_Accession {
   my $slipsite_information = $db->MySelect({
       statement => $slipsite_information_stmt,
       vars => [$accession, $accession], });
-
-  my $landscape_num = $db->MySelect("SELECT count(id) FROM landscape WHERE accession = '$accession'");
+  my $table = "landscape_$datum->{species}";
+  my $landscape_num = $db->MySelect("SELECT count(id) FROM $table WHERE accession = '$accession'");
   $vars->{landscape_num} = $landscape_num->[0][0];
 
   $template->process( 'genome.html',          $vars ) or
@@ -1038,20 +1038,20 @@ sub Print_Single_Accession {
   my $pic = new PRFGraph({accession => $accession});
   my $filename = $pic->Picture_Filename({type => 'landscape',});
   if (!-r $filename) {
-      $pic->Make_Landscape();
+      $pic->Make_Landscape($datum->{species});
   }
   my $url = $pic->Picture_Filename({type => 'landscape', url => 'url'});
   $vars->{picture} = $url;
   
-  $template->process( 'mrna_sequence.html',   $vars ) or
+  $template->process('mrna_sequence.html', $vars) or
       Print_Template_Error($template), die;
 }
 
 sub Print_Multiple_Accessions {
   my $data = shift;    ## From Perform_Search by default
-  $template->process( 'multimatch_header.html', $vars ) or
+  $template->process('multimatch_header.html', $vars) or
       Print_Template_Error($template), die;
-  foreach my $id ( sort { $data->{$b}->{slipsite_count} <=> $data->{$a}->{slipsite_count} } keys %{$data} ) {      
+  foreach my $id (sort { $data->{$b}->{slipsite_count} <=> $data->{$a}->{slipsite_count} } keys %{$data}) {
       $vars->{id} = $data->{$id}->{id};
       $vars->{counter} = $data->{$id}->{counter};
       $vars->{accession} = $data->{$id}->{accession};
@@ -1070,10 +1070,10 @@ sub Print_Multiple_Accessions {
 	  $vars->{short_accession} = undef;
 	  $vars->{genbank_accession} = $vars->{accession};
       }
-      $template->process( 'multimatch_body.html', $vars ) or
+      $template->process('multimatch_body.html', $vars) or
 	  Print_Template_Error($template), die;
   }                    ## Foreach every entry in @entries
-  $template->process( 'multimatch_footer.html', $vars ) or
+  $template->process('multimatch_footer.html', $vars) or
       Print_Template_Error($template), die;
 }    ## Else there is more than one match for the given search string.
 

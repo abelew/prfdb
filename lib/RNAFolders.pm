@@ -257,6 +257,51 @@ Return: $nupack_return\n");
     return ($return);
 }
 
+sub Vienna {
+    my $me = shift;
+    my $inputfile = $me->{file};
+    my $accession = $me->{accession};
+    my $start = $me->{start};
+    my $slipsite = Get_Slipsite_From_Input($inputfile);
+    my $seq = Get_Sequence_From_Input($inputfile);
+    $seq = '' if (!defined($seq));
+    if (!-r $inputfile) {
+        print "Cannot find $inputfile\n";
+        exit(0);
+    }
+    my $errorfile = qq(${inputfile}_vienna.err);
+    PRFdb::AddOpen($errorfile);
+    my $return = {
+        start => $start,
+        slipsite => $slipsite,
+        genome_id => $me->{genome_id},
+        species => $me->{species},
+        accession => $me->{accession},
+        sequence => $seq,
+        seqlength => length($seq),
+        mfe => undef,
+    };
+    chdir($config->{workdir});
+    my $command = qq($config->{rnafold} -noLP -noconv -noPS < $inputfile);
+    open(VI, "$command |") or PRF_Error("RNAFolders::Vienna, Could not run RNAfold: $command $!", $accession);
+    my $counter = 0;
+    while (my $line = <VI>) {
+        $counter++;
+        next if ($counter == 1);
+        chomp $line;
+        $return->{sequence} = $line if ($counter == 2);
+        if ($counter == 3) {
+            my ($struct, $num) = split(/\s+\(\s*/, $line);
+            $num =~ s/\)//g;
+            $return->{parens} = $struct;
+            $return->{mfe} = $num;
+        }
+    }
+    PRFdb::RemoveFile($errorfile);
+    $return->{sequence} = Sequence_T_U($return->{sequence});
+    return($return);
+}
+
 sub Pknots {
     my $me        = shift;
     my $pseudo    = shift;
@@ -644,6 +689,102 @@ sub Hotknots {
     }
     else {
 	$ret->{knotp} = 1;
+    }
+    chdir($config->{base});
+    return($ret);
+}
+
+sub Hotknots_Boot {
+    my $inputfile = shift;
+    my $accession = shift;
+    my $start = shift;
+
+    my $errorfile = qq(${inputfile}_hotknots.err);
+    PRFdb::AddOpen($errorfile);
+    my $slipsite = Get_Slipsite_From_Input($inputfile);
+    my $seq = Get_Sequence_From_Input($inputfile);
+    $seq = '' if (!defined($seq));
+    my $ret = {
+        start => $start,
+        slipsite => $slipsite,
+	knotp => 0,
+        accession => $accession,
+        sequence => $seq,
+        seqlength => length($seq),
+    };
+    chdir($config->{workdir});
+    my $seqname = $inputfile;
+    $seqname =~ s/\.fasta//g;
+    my $tempfile = $inputfile;
+    $tempfile =~ s/\.fasta/\.seq/g;
+    open(IN, ">$tempfile");
+    print IN $seq;
+    close(IN);
+    my $command = qq($config->{workdir}/$config->{hotknots} -I $seqname -noPS -b 2>$errorfile);
+    open(HK, "$command |");
+    while(my $line = <HK>) {
+        $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
+    }
+    close(HK);
+    my $bpseqfile = "${seqname}0.bpseq";
+    PRFdb::AddOpen($tempfile);
+    PRFdb::AddOpen($bpseqfile);
+    open(BPSEQ, "<$bpseqfile");
+    $ret->{output} = '';
+    $ret->{pairs} = 0;
+    while (my $bps = <BPSEQ>) {
+        my ($basenum, $base, $basepair) = split(/\s+/, $bps);
+        if ($basepair =~ /\d+/) {
+            if ($basepair == 0) {
+                $ret->{output} .= '. ';
+            }
+            elsif ($basepair > 0) {
+                my $basepair_num = $basepair - 1;
+                $ret->{output} .= "$basepair_num ";
+                $ret->{pairs}++;
+            }
+            else {
+                print STDERR "The number of basepairs is negative?  $basepair\n";
+                #die("Something is fubared");                                                                         
+                last;
+            }
+        }
+        else {
+            print STDERR "The base pair is not a number: $basepair\n";
+            #die("Something is fubared");                                                                             
+            last;
+        }
+    }
+    $ret->{pairs} = $ret->{pairs} / 2;
+    close(BPSEQ);
+    my $ctfile = qq(${seqname}.ct);
+    PRFdb::AddOpen($ctfile);
+    open(GETMFE, "grep ENERGY $ctfile | head -1 |");
+    while (my $getmfeline = <GETMFE>) {
+        my ($null, $num, $ENERGY, $eq, $mfe, $crap) = split(/\s+/, $getmfeline);
+        $ret->{mfe} = $mfe;
+    }
+    close(GETMFE);
+
+    PRFdb::RemoveFile([$ctfile, $bpseqfile, $errorfile, $tempfile]);
+    my $parser = new PkParse( debug => 0);
+    my @struct_array = split(/\s+/, $ret->{output});
+    my $out = $parser->Unzip(\@struct_array);
+    my $new_struct = PkParse::ReBarcoder($out);
+    my $barcode = PkParse::Condense($new_struct);
+    my $parsed = '';
+    foreach my $char (@{$out}) {
+	$parsed .= $char . ' ';
+    }
+    $parsed = PkParse::ReOrder_Stems($parsed);
+    $ret->{parsed} = $parsed;
+    $ret->{barcode} = $barcode;
+    $ret->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
+    if ($parser->{pseudoknot} == 0) {
+        $ret->{knotp} = 0;
+    }
+    else {
+        $ret->{knotp} = 1;
     }
     chdir($config->{base});
     return($ret);

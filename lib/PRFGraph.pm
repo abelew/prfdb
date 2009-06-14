@@ -475,35 +475,51 @@ sub Make_SlipBars {
 
 sub Make_Landscape {
     my $me = shift;
+    my $species = shift;
     my $accession = $me->{accession};
     my $filename = $me->Picture_Filename({type => 'landscape',});
+    my $table = "landscape_$species";
     system("touch $filename");
     my $db = new PRFdb;
-    my $data = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM landscape WHERE accession='$accession' ORDER BY start, algorithm");
+    my $data = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM $table WHERE accession='$accession' ORDER BY start, algorithm");
     my $slipsites = $db->MySelect("SELECT distinct(start) FROM mfe WHERE accession='$accession' ORDER BY start");
     my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession'");
 
     my $info = {};
     my @points = ();
+    my ($mean_nupack, $mean_pknots, $mean_vienna) = 0;
+    my $position_counter = 0;
     foreach my $datum (@{$data}) {
+	$position_counter++;
 	my $place = $datum->[0];
 	push(@points, $place);
+	
 	if ($datum->[1] eq 'pknots') {
 	    $info->{$place}->{pknots} = $datum->[3];
+	    $mean_pknots = $mean_pknots + $datum->[3];
 	}
 	elsif ($datum->[1] eq 'nupack') {
 	    $info->{$place}->{nupack} = $datum->[3];
+	    $mean_nupack = $mean_nupack + $datum->[3];
 	}
 	elsif ($datum->[1] eq 'vienna') {
 	    $info->{$place}->{vienna} = $datum->[3];
+	    $mean_vienna = $mean_vienna + $datum->[3];
 	}
     }    ## End foreach spot
+    $position_counter = $position_counter / 3;
+    $mean_pknots = $mean_pknots / $position_counter;
+    $mean_nupack = $mean_nupack / $position_counter;
+    $mean_vienna = $mean_vienna / $position_counter;
 
-    my (@axis_x, @nupack_y, @pknots_y, @vienna_y);
+    my (@axis_x, @nupack_y, @pknots_y, @vienna_y, @m_nupack, @m_pknots, @m_vienna);
     my $end_spot = $points[$#points] + 105;
     my $current  = 0;
     while ($current <= $end_spot) {
 	push(@axis_x, $current);
+	push(@m_nupack, $mean_nupack);
+	push(@m_pknots, $mean_pknots);
+	push(@m_vienna, $mean_vienna);
 	if (defined($info->{$current})) {
 	    push(@nupack_y, $info->{$current}->{nupack});
 	    push(@pknots_y, $info->{$current}->{pknots});
@@ -516,7 +532,7 @@ sub Make_Landscape {
 	}
 	$current++;
     }
-    my @mfe_data = (\@axis_x, \@nupack_y, \@pknots_y, \@vienna_y);
+    my @mfe_data = (\@axis_x, \@nupack_y, \@pknots_y, \@vienna_y, \@m_nupack, \@m_pknots, \@m_vienna);
     my $width = $end_spot;
     my $graph = new GD::Graph::mixed($width,400);
     $graph->set(
@@ -528,13 +544,13 @@ sub Make_Landscape {
 	x_labels_vertical => 1,
 	x_label_skip => 100,
 	line_width => 2,
-	dclrs => [qw(blue red green)],
+	dclrs => [qw(blue red green blue red green)],
 	default_type => 'lines',
-	types => [qw(lines lines lines)],
+	types => [qw(lines lines lines lines lines lines)],
 	) or die $graph->error;
     $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_x_label_font("$config->{base}/fonts/$config->o{graph_font}", $config->{graph_font_size});
+    $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $gd = $graph->plot(\@mfe_data) or die($graph->error);
@@ -563,7 +579,13 @@ sub Make_Landscape {
     binmode IMG;
     print IMG $gd->png;
     close IMG;
-    return ($filename);
+    my $ret = {
+	filename => $filename,
+	mean_pknots => $mean_pknots,
+	mean_nupack => $mean_nupack,
+	mean_vienna => $mean_vienna,
+    };
+    return ($ret);
 }
 
 sub Make_Distribution {
@@ -573,13 +595,13 @@ sub Make_Distribution {
   #not yet implemented
   my $real_mfe = $me->{real_mfe};
   my @values = @{$me->{list_data}};
-#  foreach my $v (@values) {
-#      print "|$v|";
-#  }
+  for my $c (0 .. $#values) {
+      if (!defined($values[$c])) {
+	  $values[$c] = 0;
+      }
+  }
   my $acc_slip = $me->{acc_slip}; 
   my @sorted = sort {$a <=> $b} @values;
-
-#  my $min = sprintf("%+d",$sorted[0]) - 1;
   my $min = sprintf("%+d",$sorted[0]);
   ## An attempt to make sure that the green bar containing the MFE of the
   ## nupack/pknots folded sequence window actually falls on the bar.
@@ -627,10 +649,6 @@ sub Make_Distribution {
   $xbar = sprintf("%.2f",$xbar->query);
   $xvar = sprintf("%.2f",$xvar->query);
   $xstddev = sprintf("%.2f",$xstddev->query);
-  #my $xbar = sprintf("%.2f",Statistics::Basic::Mean->new(\@values)->query);
-  #my $xvar = sprintf("%.2f",Statistics::Basic::Variance->new(\@values)->query);
-  #my $xstddev = sprintf("%.2f",Statistics::Basic::StdDev->new(\@values)->query);
-
 
   # initially calculated as a CDF.
   my @dist_y = ();
@@ -1002,13 +1020,13 @@ sub Make_Struct {
 
 sub Get_PPCC {
   my $me = shift;
-
-  #probably should put some error checking here.. but... wtf!
   my @values = @{$me->{list_data}};
+  for my $c (0 .. $#values) {
+      if (!defined($values[$c])) {
+	  $values[$c] = 0;
+      }
+  }
   my @sorted = sort {$a <=> $b} @values;
-
-  ###
-  # Stats part
   my $n = scalar(@values);
   my $xbar = sprintf("%.2f", Statistics::Basic::Mean->new(\@values)->query);
   my $xvar = sprintf("%.2f", Statistics::Basic::Variance->new(\@values)->query);
@@ -1032,8 +1050,7 @@ sub Get_PPCC {
   }
 
   my $corr = new Statistics::Basic::Correlation(\@PofY, \@PofX);
-
-  return $corr->query;
+  return ($corr->query);
 }
 
 sub Picture_Filename {

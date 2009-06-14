@@ -1,5 +1,4 @@
 package PRFConfig;
-## Time-stamp: <Wed Apr 16 10:33:20 2008 Ashton Trey Belew (abelew@wesleyan.edu)>
 use strict;
 use AppConfig qw/:argcount :expand/;
 require Exporter;
@@ -97,6 +96,7 @@ $PRFConfig::config->{rnamotif_descriptor} = 'descr/rnamotif_template.out';
 $PRFConfig::config->{rmprune} = 'rmprune';
 $PRFConfig::config->{pknots} = 'pknots';
 $PRFConfig::config->{hotknots} = 'HotKnot';
+$PRFConfig::config->{rnafold} = 'RNAfold';
 $PRFConfig::config->{nupack} = 'Fold.out';
 $PRFConfig::config->{zcat} = 'zcat';
 $PRFConfig::config->{nupack_boot} = 'Fold.out.boot';
@@ -119,7 +119,7 @@ $PRFConfig::config->{distribution_graph_x_size} = 400;
 $PRFConfig::config->{distribution_graph_y_size} = 300;
 $PRFConfig::config->{landscape_graph_x_size} = 800;
 $PRFConfig::config->{landscape_graph_y_size} = 600;
-$PRFConfig::config->{graph_font_size} = 8;
+$PRFConfig::config->{graph_font_size} = 9;
 
 my $open = $appconfig->file('/usr/local/prfdb/prfdb_beta/prfdb.conf');
 my %data = $appconfig->varlist("^.*");
