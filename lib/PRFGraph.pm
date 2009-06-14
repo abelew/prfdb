@@ -7,12 +7,7 @@ use PRFdb;
 use GD::Graph::mixed;
 use GD::SVG;
 use Statistics::Basic qw(:all);
-#use Statistics::Basic::Mean;
-#use Statistics::Basic::Variance;
-#use Statistics::Basic::StdDev;
 use Statistics::Distributions;
-#use Statistics::Basic::Correlation;
-
 my $config = $PRFConfig::config;
 
 sub new {
@@ -610,9 +605,9 @@ sub Make_Distribution {
   }
   my $max = sprintf("%+d", $sorted[scalar(@sorted) - 1]);
   my $total_range = sprintf("%d", ($max - $min));
-  my $num_bins = sprintf( "%d",2 * (scalar(@sorted) ** (2 / 5))); # bins = floor{ 2 * N^(2/5) }
+  my $num_bins = sprintf("%d",2 * (scalar(@sorted) ** (2 / 5))); # bins = floor{ 2 * N^(2/5) }
   $num_bins++ if ($num_bins == 0);
-  my $bin_range = sprintf( "%.1f", $total_range / $num_bins);
+  my $bin_range = sprintf("%.1f", $total_range / $num_bins);
   my @yax = (0);
   my @yax_sums = (0);
   my @xax = ( sprintf("%.1f", $min) );
@@ -676,23 +671,21 @@ sub Make_Distribution {
   }
 
   # Chart part
-  my @data = (\@xax, \@yax, \@dist_y, [0], [0], );
+  my @data = (\@xax, \@yax, \@dist_y, [0], [0],);
 
   my $graph = GD::Graph::mixed->new($graph_x_size, $graph_y_size);
-  $graph->set_legend( "Rand. MFEs", "Normal Dist.", "Actual MFE", "Mean MFE");
-  $graph->set(
-			  bgclr => 'white',
-			  types             => [ qw(bars lines lines lines) ],
-			  x_label           => 'kcal/mol',
-			  y_label           => 'p(x)',
-			  y_label_skip      => 2,
-			  y_number_format   => "%.2f",
-			  x_labels_vertical => 1,
-			  x_label_skip      => 1,
-			  line_width => 3,
-			  dclrs => [qw(blue red green black)],
-			  borderclrs => [ qw(black ) ]
-			 ) or die $graph->error;
+  $graph->set_legend("Rand. MFEs", "Normal Dist.", "Actual MFE", "Mean MFE");
+  $graph->set(bgclr => 'white',
+	      types => [qw(bars lines lines lines)],
+	      x_label => 'kcal/mol',
+	      y_label => 'p(x)',
+	      y_label_skip => 2,
+	      y_number_format => "%.2f",
+	      x_labels_vertical => 1,
+	      x_label_skip => 1,
+	      line_width => 3,
+	      dclrs => [qw(blue red green black)],
+	      borderclrs => [qw(black)]) or die $graph->error;
 
   $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
   $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -1028,10 +1021,12 @@ sub Get_PPCC {
   }
   my @sorted = sort {$a <=> $b} @values;
   my $n = scalar(@values);
-  my $xbar = sprintf("%.2f", Statistics::Basic::Mean->new(\@values)->query);
-  my $xvar = sprintf("%.2f", Statistics::Basic::Variance->new(\@values)->query);
-  my $xstddev = sprintf("%.2f", Statistics::Basic::StdDev->new(\@values)->query);
-
+  my $xbar = mean(\@values);
+  my $xvar = variance(\@values);
+  my $xstddev = stddev(\@values);
+  $xbar = sprintf("%.2f",$xbar->query);
+  $xvar = sprintf("%.2f",$xvar->query);
+  $xstddev = sprintf("%.2f",$xstddev->query);
   # get P(X) for each values
   my @PofX = ();
   foreach my $x (@sorted) {
