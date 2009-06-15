@@ -473,7 +473,7 @@ sub RemoveFile {
     if ($file eq 'all') {
 	foreach my $f (@{open_files}) {
 	    unlink($f);
-	    print STDERR "Deleting: $f\n";
+	    print STDERR "Deleting: $f\n" if (defined($config->{debug}));
 	    $num_deleted++;
 	}
 	$PRFConfig::config->{open_files} = \@new_open_files;
@@ -637,7 +637,14 @@ sub Add_Webqueue {
 sub Set_Queue {
     my $me = shift;
     my $id = shift;
-    my $table = $config->{queue_table};
+  my $override_table = shift;
+  my $table = 'queue';
+  if (defined( $config->{queue_table})) {
+    $table = $config->{queue_table};
+  }
+  if (defined($override_table)) {
+      $table = $override_table;
+  }
     my $num_existing_stmt = qq(SELECT count(id) FROM $table WHERE genome_id = '$id');
     my $num_existing = $me->MySelect({
 	statement => $num_existing_stmt,
@@ -855,7 +862,7 @@ sub Import_Fasta {
     my $style = shift;
     my $startpos = shift;
     my @return_array;
-    print "Starting Import_Fasta\n";
+    print "Starting Import_Fasta  with with style = $style\n";
     open(IN, "<$file") or die "Could not open the input file. $!";
     my %datum = (accession => undef, genename => undef, version => undef, comment => undef, mrna_seq => undef);
     my $linenum = 0;
@@ -864,15 +871,31 @@ sub Import_Fasta {
 	$linenum++;
 	chomp $line;
 	if ($line =~ /^\>/) {
-	    ## Do the actual insertion here, regardless of style
-	    if ($linenum > 1) {
-		$datum{orf_start} = 1;
-		$datum{orf_stop}  = length($datum{mrna_seq});
-		my $genome_id = $me->Insert_Genome_Entry(\%datum);
-		my $queue_id = $me->Set_Queue($genome_id, \%datum);
-		print "Added $queue_id\n";
-		push(@return_array, $queue_id);
-	    }
+            ## Do the actual insertion here, regardless of style
+            if ($linenum > 1) {
+                if (defined($config->{startpos})) {
+                    $datum{orf_start} = $config->{startpos};
+                }
+                else {
+                    $datum{orf_start} = 1;
+                }
+                if (defined($config->{endpos})) {
+                    if ($config->{endpos} > 0) {
+                        $datum{orf_stop} = $config->{end_pos};
+                    }
+                    else {  ## A negative offset
+                        $datum{orf_stop} = length($datum{mrna_seq}) - $config->{endpos};
+                    }
+                }
+                else {
+                    $datum{orf_stop} = length($datum{mrna_seq});
+                }
+                my $genome_id = $me->Insert_Genome_Entry(\%datum);
+                my $queue_id = $me->Set_Queue($genome_id, \%datum);
+                my $queue_num = "$queue_id";
+                print "Added $queue_num\n";
+                push(@return_array, $queue_num);
+            }
 	    if (defined($style)) {
 		if ($style eq 'sgd') {
 		    %datum = (accession => undef,
@@ -883,6 +906,7 @@ sub Import_Fasta {
 		    my ($fake_accession, $comment)  = split(/\,/, $line);
 		    my ($accession, $genename) = split(/ /,  $fake_accession);
 		    $accession =~ s/^\>//g;
+                    $accession =~ s/ORFN//g;
 		    $datum{accession} = $accession;
 		    $datum{genename} = $genename;
 		    $datum{comment} = $comment;
@@ -890,6 +914,7 @@ sub Import_Fasta {
 		    $datum{protein_seq} = '';
 		    $datum{direction} = 'forward';
 		    $datum{defline} = $line;
+                    $datum{species} = $config->{species};
 		}    ## End if the style is sgd
 		elsif ($style eq 'celegans') {
                     %datum = (accession => undef,
@@ -902,7 +927,29 @@ sub Import_Fasta {
                     $datum{genename} = $genename;
                     $datum{accession} = $accession;
                     $datum{species} = $config->{species};
-		}
+           if (!defined($datum{genename})) {
+                        $datum{genename} = $datum{accession};
+                    }
+                    if (!defined($datum{version})) {
+                        $datum{version} = 1;
+                    }
+                }    ## End if the style is sgd
+
+i               elsif ($style eq 'celegans') {
+                    %datum = (
+                        accession => undef,
+                        genename => undef,
+                        version => undef,
+                        comment => undef,
+                        mrna_seq => undef
+                        );
+                    my ($accession, $genename) = split(/\|/, $line);
+                    $accession =~ s/\>//g;
+                    $datum{genename} = $genename;
+                    $datum{accession} = $accession;
+                    $datum{species} = $config->{species};
+                }
+
 
 		elsif ($style eq 'mgc') {
 		    %datum = (accession => undef,
@@ -947,13 +994,15 @@ sub Import_Fasta {
 	}    ## Not an accession line
     }    ## End looking at every line.
     close(IN);
+    if (!defined($datum{species})) {
+        $datum{species} = $config->{species};
+    }
     $datum{orf_start} = 0;
     $datum{orf_stop}  = length($datum{mrna_seq});
     my $genome_id = $me->Insert_Genome_Entry(\%datum);
     my $queue_id = $me->Set_Queue($genome_id, \%datum);
-    print "Added $queue_id\n";
+    print "Added $queue_id\n" if(defined($config->{debug}));
     push(@return_array, $queue_id);
-    print "Last test: @return_array\n";
     return (\@return_array);
 }
 

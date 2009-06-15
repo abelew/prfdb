@@ -24,7 +24,7 @@ my $appconfig = AppConfig->new({
 ####
 ## Set up some reasonable defaults here
 ####
-$PRFConfig::config->{debug} = 0;
+$PRFConfig::config->{debug} = undef;
 $PRFConfig::config->{open_files} = [];
 $PRFConfig::config->{checks} = 1;
 $PRFConfig::config->{add_to_path} = "/usr/local/bin:/usr/bin";
@@ -122,6 +122,9 @@ $PRFConfig::config->{distribution_graph_y_size} = 300;
 $PRFConfig::config->{landscape_graph_x_size} = 800;
 $PRFConfig::config->{landscape_graph_y_size} = 600;
 $PRFConfig::config->{graph_font_size} = 9;
+$PRFConfig::config->{ENV_LIBRARY_PATH} = $ENV{LD_LIBRARY_PATH};
+
+
 
 my $open = $appconfig->file('/usr/local/prfdb/prfdb_beta/prfdb.conf');
 my %data = $appconfig->varlist("^.*");
