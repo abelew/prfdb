@@ -1439,15 +1439,11 @@ sub Put_MFE_Landscape {
     }
 
     $data->{sequence} =~ tr/actgu/ACTGU/;
-#    my $statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
-    my $insert_statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES("$data->{genome_id}", "$data->{species}", "$algo", "$data->{accession}", "$data->{start}", "$data->{seqlength}", "$data->{sequence}", "$data->{output}", "$data->{parsed}", "$data->{parens}", "$data->{mfe}", "$data->{pairs}", "$data->{knotp}", "$data->{barcode}"));
+    my $statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $insert_statement,
-		    caller => "$cp,$cf,$cl",});
-#    $me->MyExecute({statement => $statement,
-#		    vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],
-#		    caller =>"$cp,$cf,$cl",});
-    
+    $me->MyExecute({statement => $statement,
+		    vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],
+		    caller =>"$cp,$cf,$cl",});
     my $get_inserted_id = qq(SELECT LAST_INSERT_ID());
     my $id = $me->MySelect({statement => $get_inserted_id, type => 'single'});
     return ($id);

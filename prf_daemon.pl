@@ -26,7 +26,8 @@ our $db = new PRFdb;
 our %conf = ();
 GetOptions(
 	   ## If this gets set, then the prf_daemon will exit before it gets to the queue
-	   'nodaemon:i' => \$conf{nodaemon},  
+	   'nodaemon:i' => \$conf{nodaemon},
+	   'debug:i' => \$conf{debug},
 	   ## Print some help information
 	   'help|version' => \$conf{help},      
 	   ## An accession to specifically fold.  If it is not already in the db  
@@ -135,33 +136,27 @@ if ($config->{checks}) {
     Check_Tables();
     Check_Blast();
 }
-
 ## Some Arguments should be checked before others...
 ## These first arguments are not exclusive and so are separate ifs
 if (defined($config->{help})) {
     Print_Help();
 }
-
 if (defined($config->{makeblast})) {
     Make_Blast();
     exit(0);
 }
-
 if (defined($config->{make_landscape})) {
     Make_Landscape_Tables();
     exit(0);
 }
-
 if (defined($config->{stats})) {
     Generate_Stats();
     exit(0);
 }
-
 if (defined($config->{optimize})) {
     Optimize($config->{optimize});
     exit(0);
 }
-
 if (defined($config->{blast})) {
     my $blast = new PRFBlast;
     $blast->Search($config->{blast}, 'local');
@@ -169,19 +164,15 @@ if (defined($config->{blast})) {
     $blast->Search($config->{blast}, 'remote');
     exit(0);
 }
-
 if (defined($config->{fillqueue})) {
     $db->FillQueue();
 }
-
 if (defined($config->{resetqueue})) {
     $db->Reset_Queue();
 }
-
 if (defined($config->{copyfrom})) {
     $db->Copy_Genome($config->{copyfrom});
 }
-
 if (defined($config->{input_file})) {
     if (defined($config->{startpos})) {
 	Read_Accessions($config->{input_file}, $config->{startpos});
@@ -190,11 +181,9 @@ if (defined($config->{input_file})) {
 	Read_Accessions($config->{input_file});
     }
 }
-
 if (defined($config->{make_jobs})) {
     Make_Jobs();  ## USED FOR PBS SYSTEMS
 }
-
 if (defined($config->{accession})) {
     $state->{queue_id} = 0;
     ## Dumb hack lives on
@@ -208,7 +197,6 @@ if (defined($config->{accession})) {
     }
     exit(0);
 }
-
 if (defined($config->{import_accession})) {
     my $accession = $config->{import_accession};
     print "Importing Accession: $accession\n";
@@ -228,7 +216,6 @@ if (defined($config->{import_accession})) {
     }
     ## Once the prf_daemon finishes this accession it will start reading the queue...
 }  ## Endif used the import_accession arg
-
 if (defined($config->{input_fasta})) {
     my $queue_ids;
     if (defined( $config->{startpos})) {
@@ -250,10 +237,11 @@ if (defined($config->{nodaemon})) {
     print "No daemon is set, existing before reading queue.\n";
     exit(0);
 }
-
 if ($config->{checks}) {
     Print_Config();
 }
+
+
 
 until (defined($state->{time_to_die})) {
     ### You can set a configuration variable 'master' so that it will not die
@@ -501,7 +489,6 @@ sub PRF_Gatherer {
 
 ## Start Landscape_Gatherer
 sub Landscape_Gatherer {
-    print "Starting Landscape_Gather\n";
     my $state = shift;
     my $message = shift;
     my $sequence = $db->Get_Sequence($state->{accession});
@@ -509,7 +496,6 @@ sub Landscape_Gatherer {
     my $sequence_length = scalar(@seq_array);
     my $start_point = 0;
     while ($start_point + $config->{landscape_seqlength} <= $sequence_length) {
-	print "Landscape_Gatherer: $start_point\n";
 	my $individual_sequence = ">$message";
 	my $end_point = $start_point + $config->{landscape_seqlength};
 	foreach my $character ($start_point .. $end_point) {
@@ -539,7 +525,6 @@ sub Landscape_Gatherer {
 						   $start_point,
 						   $config->{landscape_seqlength},
 						   $landscape_table);
-	print "TESTME, num vienna: $vienna_foldedp\n";
 	my ($nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id, $vienna_info, $vienna_mfe_id);
 	if ($nupack_foldedp == 0) {
 	    if ($config->{nupack_nopairs_hack}) {

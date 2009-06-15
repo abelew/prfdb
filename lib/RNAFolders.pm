@@ -7,140 +7,140 @@ use PRFConfig qw / PRF_Error /;
 my $config = $PRFConfig::config;
 
 sub new {
-  my ($class, %arg) = @_;
-  my $me = bless {
-    file => $arg{file},
-    genome_id => $arg{genome_id},
-    species => $arg{species},
-    accession => $arg{accession},
-    start => $arg{start},
-    slippery => $arg{slippery},
-  }, $class;
-  return ($me);
+    my ($class, %arg) = @_;
+    my $me = bless {
+	file => $arg{file},
+	genome_id => $arg{genome_id},
+	species => $arg{species},
+	accession => $arg{accession},
+	start => $arg{start},
+	slippery => $arg{slippery},
+    }, $class;
+    return ($me);
 }
 
 sub Nupack {
-  my $me = shift;
-  my $pseudo = shift;
-  my $inputfile = $me->{file};
-  my $accession = $me->{accession};
-  my $start = $me->{start};
-  my $errorfile = qq(${inputfile}_nupack.err);
-  PRFdb::Add_Open($errorfile);
-  my $slipsite = Get_Slipsite_From_Input($inputfile);
-  my $nupack = qq($config->{workdir}/$config->{nupack});
-  my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
-  my $return = {
-      start => $start,
-      slipsite => $slipsite,
-      knotp => 0,
-      genome_id => $me->{genome_id},
-      species => $me->{species},
-      accession => $me->{accession},
-  };
-  chdir($config->{workdir});
-  my $command;
-  die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
-  die("$config->{workdir}/dataS_G.rna is missing.") unless (-r "$config->{workdir}/dataS_G.rna");
-
-  if (defined($pseudo) and $pseudo eq 'nopseudo') {
-      die("$nupack_boot is missing.") unless (-r $nupack_boot);
-      $command = qq($nupack_boot $inputfile 2>$errorfile);
-  } else {
-      die("$nupack is missing.") unless (-r $nupack);
-      $command = qq($nupack $inputfile 2>$errorfile);
-  }
-  print "NUPACK: infile: $inputfile accession: $accession start: $start
-command: $command\n";
-  my $nupack_pid = open(NU, "$command |") or PRF_Error("RNAFolders::Nupack, Could not run nupack: $command $!", $accession);
-  ## OPEN NU in Nupack
-  my $count = 0;
-  while (my $line = <NU>) {
-      $count++;
-      ## The first 15 lines of nupack output are worthless.
-      next unless ($count > 14);
-      chomp $line;
-      if ($count == 15) {
-	  my ($crap, $len) = split(/\ \=\ /, $line);
-	  $return->{seqlength} = $len;
+    my $me = shift;
+    my $pseudo = shift;
+    my $inputfile = $me->{file};
+    my $accession = $me->{accession};
+    my $start = $me->{start};
+    my $errorfile = qq(${inputfile}_nupack.err);
+    PRFdb::Add_Open($errorfile);
+    my $slipsite = Get_Slipsite_From_Input($inputfile);
+    my $nupack = qq($config->{workdir}/$config->{nupack});
+    my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
+    my $return = {
+	start => $start,
+	slipsite => $slipsite,
+	knotp => 0,
+	genome_id => $me->{genome_id},
+	species => $me->{species},
+	accession => $me->{accession},
+    };
+    chdir($config->{workdir});
+    my $command;
+    die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
+    die("$config->{workdir}/dataS_G.rna is missing.") unless (-r "$config->{workdir}/dataS_G.rna");
+    
+    if (defined($pseudo) and $pseudo eq 'nopseudo') {
+	die("$nupack_boot is missing.") unless (-r $nupack_boot);
+	$command = qq($nupack_boot $inputfile 2>$errorfile);
+    } else {
+	die("$nupack is missing.") unless (-r $nupack);
+	$command = qq($nupack $inputfile 2>$errorfile);
+    }
+    print "NUPACK: infile: $inputfile accession: $accession start: $start
+command: $command\n" if (defined($config->{debug}));
+    my $nupack_pid = open(NU, "$command |") or PRF_Error("RNAFolders::Nupack, Could not run nupack: $command $!", $accession);
+    ## OPEN NU in Nupack
+    my $count = 0;
+    while (my $line = <NU>) {
+	$count++;
+	## The first 15 lines of nupack output are worthless.
+	next unless ($count > 14);
+	chomp $line;
+	if ($count == 15) {
+	    my ($crap, $len) = split(/\ \=\ /, $line);
+	    $return->{seqlength} = $len;
+	}
+	elsif ($count == 17) {    ## Line 17 returns the input sequence
+	    $return->{sequence} = $line;
+	}
+	elsif ($count == 18) {    ## Line 18 returns paren output
+	    #	  $return->{output} = $line;
+	    $return->{parens} = $line;
+	    #	  $return->{parens} = $line;
+	}
+	elsif ($count == 19) {    ## Get the MFE here
+	    my $tmp = $line;
+	    $tmp =~ s/^mfe\ \=\ //g;
+	    $tmp =~ s/\ kcal\/mol//g;
+	    $return->{mfe} = $tmp;
+	}
+	elsif ($count == 20) {    ## Is it a pseudoknot?
+	    if ($line eq 'pseudoknotted!') {
+		$return->{knotp} = 1;
+	    } 
+	    else {
+		$return->{knotp} = 0;
+	    }
+	}
+    }    ## End of the line reading the nupack output.
+    close(NU);
+    ## CLOSE NU in Nupack
+    my $nupack_return = $?;
+    unless ($nupack_return eq '0' or $nupack_return eq '256') {
+	PRFConfig::PRF_Error("Nupack Error running $nupack: $command $!", $accession);
+	  die("Nupack Error running $nupack: $command $!");
       }
-      elsif ($count == 17) {    ## Line 17 returns the input sequence
-	  $return->{sequence} = $line;
-      }
-      elsif ($count == 18) {    ## Line 18 returns paren output
-	  #	  $return->{output} = $line;
-	  $return->{parens} = $line;
-	  #	  $return->{parens} = $line;
-      }
-      elsif ($count == 19) {    ## Get the MFE here
-	  my $tmp = $line;
-	  $tmp =~ s/^mfe\ \=\ //g;
-	  $tmp =~ s/\ kcal\/mol//g;
-	  $return->{mfe} = $tmp;
-      }
-      elsif ($count == 20) {    ## Is it a pseudoknot?
-	  if ($line eq 'pseudoknotted!') {
-	      $return->{knotp} = 1;
-	  } 
-	  else {
-	      $return->{knotp} = 0;
-	  }
-      }
-  }    ## End of the line reading the nupack output.
-  close(NU);
-  ## CLOSE NU in Nupack
-  my $nupack_return = $?;
-  unless ($nupack_return eq '0' or $nupack_return eq '256') {
-      PRFConfig::PRF_Error("Nupack Error running $nupack: $command $!", $accession);
-      die("Nupack Error running $nupack: $command $!");
-  }
-  PRFdb::RemoveFile($errorfile);
-  my $out_pair = qq($config->{workdir}/out.pair);
-  PRFdb::AddFile($out_pair);
-  open(PAIRS, "<$out_pair") or PRF_Error("Could not open the nupack pairs file: $!", $accession);
-  ## OPEN PAIRS in Nupack
-  my $pairs = 0;
-  my @nupack_output = ();
-  while (my $line = <PAIRS>) {
-      chomp $line;
-      $pairs++;
-      my ($fiveprime, $threeprime) = split(/\s+/, $line);
-      my $five = $fiveprime - 1;
-      my $three = $threeprime - 1;
-      $nupack_output[$three] = $five;
-      $nupack_output[$five] = $three;
-  }
-  for my $c (0 .. $#nupack_output) {
-      $nupack_output[$c] = '.' unless (defined $nupack_output[$c]);
-  }
-  close(PAIRS);
-  ## CLOSE PAIRS in Nupack
-  RemoveFile($out_pair);
-  my $nupack_output_string = '';
-  foreach my $char (@nupack_output) { $nupack_output_string .= "$char "; }
-  $return->{output} = $nupack_output_string;
-  $return->{pairs} = $pairs;
-  my $parser;
-  if (defined($config->{max_spaces})) {
-      my $max_spaces = $config->{max_spaces};
-      $parser = new PkParse(debug => 0, max_spaces => $max_spaces);
-  } 
-  else {
-      $parser = new PkParse(debug => 0);
-  }
-  my $out = $parser->Unzip(\@nupack_output);
-  my $new_struc = PkParse::ReBarcoder($out);
-  my $barcode = PkParse::Condense($new_struc);
-  my $parsed = '';
-  foreach my $char (@{$out}) {
-      $parsed .= $char . ' ';
-  }
-  $parsed = PkParse::ReOrder_Stems($parsed);
-  $return->{parsed} = $parsed;
-  $return->{barcode} = $barcode;
-  chdir($config->{base});
-  $return->{sequence} = Sequence_T_U($return->{sequence});
-  return ($return);
+    PRFdb::RemoveFile($errorfile);
+    my $out_pair = qq($config->{workdir}/out.pair);
+    PRFdb::AddFile($out_pair);
+    open(PAIRS, "<$out_pair") or PRF_Error("Could not open the nupack pairs file: $!", $accession);
+    ## OPEN PAIRS in Nupack
+    my $pairs = 0;
+    my @nupack_output = ();
+    while (my $line = <PAIRS>) {
+	chomp $line;
+	$pairs++;
+	my ($fiveprime, $threeprime) = split(/\s+/, $line);
+	my $five = $fiveprime - 1;
+	my $three = $threeprime - 1;
+	$nupack_output[$three] = $five;
+	$nupack_output[$five] = $three;
+    }
+    for my $c (0 .. $#nupack_output) {
+	$nupack_output[$c] = '.' unless (defined $nupack_output[$c]);
+    }
+    close(PAIRS);
+    ## CLOSE PAIRS in Nupack
+    RemoveFile($out_pair);
+    my $nupack_output_string = '';
+    foreach my $char (@nupack_output) { $nupack_output_string .= "$char "; }
+    $return->{output} = $nupack_output_string;
+    $return->{pairs} = $pairs;
+    my $parser;
+    if (defined($config->{max_spaces})) {
+	my $max_spaces = $config->{max_spaces};
+	$parser = new PkParse(debug => 0, max_spaces => $max_spaces);
+    } 
+    else {
+	$parser = new PkParse(debug => 0);
+    }
+    my $out = $parser->Unzip(\@nupack_output);
+    my $new_struc = PkParse::ReBarcoder($out);
+    my $barcode = PkParse::Condense($new_struc);
+    my $parsed = '';
+    foreach my $char (@{$out}) {
+	$parsed .= $char . ' ';
+    }
+    $parsed = PkParse::ReOrder_Stems($parsed);
+    $return->{parsed} = $parsed;
+    $return->{barcode} = $barcode;
+    chdir($config->{base});
+    $return->{sequence} = Sequence_T_U($return->{sequence});
+    return ($return);
 }
 
 sub Nupack_NOPAIRS {
@@ -155,65 +155,72 @@ sub Nupack_NOPAIRS {
     PRFdb::AddOpen($errorfile);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $return   = {
-	start     => $start,
-	slipsite  => $slipsite,
-	knotp     => 0,
+	start => $start,
+	slipsite => $slipsite,
+	knotp => 0,
 	genome_id => $me->{genome_id},
-	species   => $me->{species},
+	species => $me->{species},
 	accession => $me->{accession},
     };
-    chdir( $config->{workdir} );
+    chdir($config->{workdir});
     my $command;
-    die("$config->{workdir}/dataS_G.dna is missing.") unless ( -r "$config->{workdir}/dataS_G.dna" );
+    die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
     die("$config->{workdir}/dataS_G.rna is missing.") unless ( -r "$config->{workdir}/dataS_G.rna" );
 
-    if ( defined($pseudo) and $pseudo eq 'nopseudo' ) {
+    if (defined($pseudo) and $pseudo eq 'nopseudo') {
 	die("$nupack_boot is missing.") unless ( -r $nupack_boot );
 	$command = qq($nupack_boot $inputfile 2>$errorfile);
-    } else {
-	warn("The nupack executable does not have 'nopairs' in its name") unless ( $config->{nupack} =~ /nopairs/ );
-	die("$nupack is missing.") unless ( -r $nupack );
+    } 
+    else {
+	warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{nupack} =~ /nopairs/);
+	die("$nupack is missing.") unless (-r $nupack);
 	$command = qq($nupack $inputfile 2>$errorfile);
     }
     print "NUPACK_NOPAIRS: infile: $inputfile accession: $accession start: $start
-command: $command\n";
-    my $nupack_pid = open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_NOPAIRS, Could not run nupack: $command $!", $accession );
+command: $command\n" if (defined($config->{debug}));
+    my $nupack_pid = open(NU, "$command |") or PRF_Error("RNAFolders::Nupack_NOPAIRS, Could not run nupack: $command $!", $accession);
     ## OPEN NU in Nupack_NOPAIRS
-    my $count         = 0;
+    my $count = 0;
     my @nupack_output = ();
-    my $pairs         = 0;
-    while ( my $line = <NU> ) {
-	if ( $line =~ /Error opening loop data file: dataS_G.rna/ ) {
+    my $pairs = 0;
+    while (my $line = <NU>) {
+	if ($line =~ /Error opening loop data file: dataS_G.rna/) {
 	    PRF_Error("RNAFolders::Nupack_NOPAIRS, Missing dataS_G.rna!");
 	}
 	$count++;
 	## The first 15 lines of nupack output are worthless.
-	next unless ( $count > 14 );
+	next unless ($count > 14);
 	chomp $line;
-	if ( $count == 15 ) {
-	    my ( $crap, $len ) = split( /\ \=\ /, $line );
+	if ($count == 15) {
+	    my ($crap, $len) = split(/\ \=\ /, $line);
 	    $return->{seqlength} = $len;
-	} elsif ( $count == 17 ) {    ## Line 17 returns the input sequence
+	}
+	elsif ($count == 17) {    ## Line 17 returns the input sequence
 	    $return->{sequence} = $line;
-	} elsif ( $line =~ /^\d+\s\d+$/ ) {
-	    my ( $fiveprime, $threeprime ) = split( /\s+/, $line );
-	    my $five  = $fiveprime - 1;
+	}
+	elsif ($line =~ /^\d+\s\d+$/) {
+	    my ($fiveprime, $threeprime) = split(/\s+/, $line);
+	    my $five = $fiveprime - 1;
 	    my $three = $threeprime - 1;
 	    $nupack_output[$three] = $five;
-	    $nupack_output[$five]  = $three;
+	    $nupack_output[$five] = $three;
 	    $pairs++;
 	    $count--;
-	} elsif ( $count == 18 ) {    ## Line 18 returns paren output
+	}
+	elsif ($count == 18) {    ## Line 18 returns paren output
 	    $return->{parens} = $line;
-	} elsif ( $count == 19 ) {    ## Get the MFE here
+	}
+	elsif ($count == 19) {    ## Get the MFE here
 	    my $tmp = $line;
 	    $tmp =~ s/^mfe\ \=\ //g;
 	    $tmp =~ s/\ kcal\/mol//g;
 	    $return->{mfe} = $tmp;
-	} elsif ( $count == 20 ) {    ## Is it a pseudoknot?
-	    if ( $line eq 'pseudoknotted!' ) {
+	}
+	elsif ($count == 20) {    ## Is it a pseudoknot?
+	    if ($line eq 'pseudoknotted!') {
 		$return->{knotp} = 1;
-	    } else {
+	    }
+	    else {
 		$return->{knotp} = 0;
 	    }
 	}
@@ -221,39 +228,40 @@ command: $command\n";
     close(NU);
     ## CLOSE NU in Nupack_NOPAIRS
     my $nupack_return = $?;
-    unless ( $nupack_return eq '0' or $nupack_return eq '256' ) {
-	PRFConfig::PRF_Error( "Nupack Error running $command: $!", $accession );
-	die("Nupack Error running $command\n
+    unless ($nupack_return eq '0' or $nupack_return eq '256') {
+	PRFConfig::PRF_Error("Nupack Error running $command: $!", $accession);
+	  die("Nupack Error running $command\n
 Error:  $command $!
 Return: $nupack_return\n");
     }
     PRFdb::RemoveFile($errorfile);
-    for my $c ( 0 .. $#nupack_output ) {
-	$nupack_output[$c] = '.' unless ( defined $nupack_output[$c] );
+    for my $c (0 .. $#nupack_output) {
+	$nupack_output[$c] = '.' unless (defined $nupack_output[$c]);
     }
     my $nupack_output_string = '';
     foreach my $char (@nupack_output) { $nupack_output_string .= "$char "; }
     $return->{output} = $nupack_output_string;
     $return->{pairs}  = $pairs;
     my $parser;
-    if ( defined( $config->{max_spaces} ) ) {
+    if (defined($config->{max_spaces})) {
 	my $max_spaces = $config->{max_spaces};
-	$parser = new PkParse( debug => 0, max_spaces => $max_spaces );
-    } else {
-	$parser = new PkParse( debug => 0 );
+	$parser = new PkParse(debug => $config->{debug}, max_spaces => $max_spaces);
     }
-    my $out       = $parser->Unzip( \@nupack_output );
+    else {
+	$parser = new PkParse(debug => $config->{debug});
+    }
+    my $out = $parser->Unzip(\@nupack_output);
     my $new_struc = PkParse::ReBarcoder($out);
-    my $barcode   = PkParse::Condense($new_struc);
-    my $parsed    = '';
-    foreach my $char ( @{$out} ) {
+    my $barcode = PkParse::Condense($new_struc);
+    my $parsed = '';
+    foreach my $char (@{$out}) {
 	$parsed .= $char . ' ';
     }
-    $parsed            = PkParse::ReOrder_Stems($parsed);
-    $return->{parsed}  = $parsed;
+    $parsed = PkParse::ReOrder_Stems($parsed);
+    $return->{parsed} = $parsed;
     $return->{barcode} = $barcode;
-    chdir( $config->{base} );
-    $return->{sequence} = Sequence_T_U( $return->{sequence} );
+    chdir($config->{base});
+    $return->{sequence} = Sequence_T_U($return->{sequence});
     return ($return);
 }
 
@@ -283,6 +291,8 @@ sub Vienna {
     };
     chdir($config->{workdir});
     my $command = qq($config->{rnafold} -noLP -noconv -noPS < $inputfile);
+    print "Vienna: infile: $inputfile accession: $accession start: $start
+command: $command\n" if (defined($config->{debug}));
     open(VI, "$command |") or PRF_Error("RNAFolders::Vienna, Could not run RNAfold: $command $!", $accession);
     my $counter = 0;
     while (my $line = <VI>) {
@@ -303,113 +313,122 @@ sub Vienna {
 }
 
 sub Pknots {
-    my $me        = shift;
-    my $pseudo    = shift;
+    my $me = shift;
+    my $pseudo = shift;
     my $inputfile = $me->{file};
     my $accession = $me->{accession};
-    my $start     = $me->{start};
+    my $start = $me->{start};
     my $errorfile = qq(${inputfile}_pknots.err);
     PRFdb::AddOpen($errorfile);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
-    my $seq      = Get_Sequence_From_Input($inputfile);
-    my $return   = {
-	start     => $start,
-	slipsite  => $slipsite,
-	knotp     => 0,
+    my $seq = Get_Sequence_From_Input($inputfile);
+    my $return = {
+	start => $start,
+	slipsite => $slipsite,
+	knotp => 0,
 	genome_id => $me->{genome_id},
-	species   => $me->{species},
+	species => $me->{species},
 	accession => $me->{accession},
-	sequence  => $seq,
+	sequence => $seq,
 	seqlength => length($seq),
     };
-    chdir( $config->{workdir} );
+    chdir($config->{workdir});
     my $command;
-    die("pknots is missing.") unless ( -r "$config->{pknots}" );
+    die("pknots is missing.") unless (-r "$config->{pknots}");
 
-    if ( defined($pseudo) and $pseudo eq 'nopseudo' ) {
+    if (defined($pseudo) and $pseudo eq 'nopseudo') {
 	$command = qq($config->{pknots} $inputfile 2>$errorfile);
-    } else {
+    }
+    else {
 	$command = qq($config->{pknots} -k $inputfile 2>$errorfile);
     }
     print "PKNOTS: infile: $inputfile accession: $accession start: $start
-command: $command\n";
-    open( PK, "$command |" ) or PRF_Error( "RNAFolders::Pknots, Could not run pknots: $command $!", $accession );
+command: $command\n" if (defined($config->{debug}));
+    open(PK, "$command |") or PRF_Error("RNAFolders::Pknots, Could not run pknots: $command $!", $accession);
     ## OPEN PK in Pknots
     my $counter = 0;
-    my ( $line_to_read, $crap ) = undef;
-    my $string        = '';
+    my ($line_to_read, $crap) = undef;
+    my $string = '';
     my $uninteresting = undef;
     my $parser;
-    while ( my $line = <PK> ) {
+    while (my $line = <PK>) {
 	$counter++;
 	chomp $line;
 	### The NAM field prints out the name of the sequence
 	### Which is set to the slippery site in RNAMotif
-	if ( $line =~ /^NAM/ ) {
-	    ( $crap, $return->{slipsite} ) = split( /NAM\s+/, $line );
+	if ($line =~ /^NAM/) {
+	    ($crap, $return->{slipsite}) = split(/NAM\s+/, $line);
 	    $return->{slipsite} =~ tr/actgTu/ACUGUU/;
-	} elsif ( $line =~ /^\s+\d+\s+[A-Z]+/ ) {
+	}
+	elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
 	    $line_to_read = $counter + 2;
-	} elsif ( defined($line_to_read) and $line_to_read == $counter ) {
+	}
+	elsif (defined($line_to_read) and $line_to_read == $counter) {
 	    $line =~ s/^\s+//g;
 	    $line =~ s/$/ /g;
 	    $string .= $line;
-	} elsif ( $line =~ /\/mol\)\:\s+/ ) {
-	    ( $crap, $return->{mfe} ) = split( /\/mol\)\:\s+/, $line );
-	} elsif ( $line =~ /found\:\s+/ ) {
-	    ( $crap, $return->{pairs} ) = split( /found\:\s+/, $line );
+	}
+	elsif ($line =~ /\/mol\)\:\s+/) {
+	    ($crap, $return->{mfe}) = split(/\/mol\)\:\s+/, $line);
+	}
+	elsif ($line =~ /found\:\s+/) {
+	    ($crap, $return->{pairs}) = split(/found\:\s+/, $line);
 	}
     }    ## For every line of pknots
     close(PK);
     ## CLOSE PK in Pknots
     my $pknots_return = $?;
-    unless ( $pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134' ) {
-	PRFConfig::PRF_Error( "Pknots Error running $command: $!", $accession );
+    unless ($pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134') {
+	PRFConfig::PRF_Error("Pknots Error running $command: $!", $accession);
 #    die("Pknots Error! $!");
     }
     PRFdb::RemoveFile($errorfile);
     $string =~ s/\s+/ /g;
     $return->{output} = $string;
-    if ( defined( $config->{max_spaces} ) ) {
-	my $max_spaces = $config->{max_spaces};    $parser = new PkParse( debug => 0, max_spaces => $max_spaces );
-    } else {
-	$parser = new PkParse( debug => 0 );
+    if (defined($config->{max_spaces})) {
+	my $max_spaces = $config->{max_spaces};
+	$parser = new PkParse(debug => $config->{debug}, max_spaces => $max_spaces);
     }
-    my @struct_array = split( /\s+/, $string );
-    my $out          = $parser->Unzip( \@struct_array );
-    my $new_struc    = PkParse::ReBarcoder($out);
-    my $barcode      = PkParse::Condense($new_struc);
-    my $parsed       = '';
-    foreach my $char ( @{$out} ) {
+    else {
+	$parser = new PkParse(debug => $config->{debug});
+    }
+    my @struct_array = split(/\s+/, $string);
+    my $out = $parser->Unzip(\@struct_array);
+    my $new_struc = PkParse::ReBarcoder($out);
+    my $barcode = PkParse::Condense($new_struc);
+    my $parsed = '';
+    foreach my $char (@{$out}) {
 	$parsed .= $char . ' ';
     }
-    $parsed            = PkParse::ReOrder_Stems($parsed);
-    $return->{parsed}  = $parsed;
+    $parsed = PkParse::ReOrder_Stems($parsed);
+    $return->{parsed} = $parsed;
     $return->{barcode} = $barcode;
-    $return->{parens}  = PkParse::MAKEBRACKETS( \@struct_array );
-    if ( $parser->{pseudoknot} == 0 ) {
+    $return->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
+    if ($parser->{pseudoknot} == 0) {
 	$return->{knotp} = 0;
-    } else {
+    }
+    else {
 	$return->{knotp} = 1;
     }
-    if ( $return->{parens} =~ /\{/ ) {
+    if ($return->{parens} =~ /\{/) {
 	$return->{knotp} = 1;
     }
-    chdir( $config->{base} );
+    chdir($config->{base});
     $return->{sequence} = Sequence_T_U( $return->{sequence} );
     return ($return);
 }
 
 sub Get_Sequence_From_Input {
     my $inputfile = shift;
-    open( SEQ, "<$inputfile" );
+    open(SEQ, "<$inputfile");
     ## OPEN SEQ in Get_Sequence_From_Input
     my $seq;
-    while ( my $line = <SEQ> ) {
+    while (my $line = <SEQ>) {
 	chomp $line;
-	if ( $line =~ /^\>/ ) {
+	if ($line =~ /^\>/) {
 	    next;
-	} else {
+	}
+	else {
 	    $seq .= $line;
 	}
     }
@@ -420,16 +439,17 @@ sub Get_Sequence_From_Input {
 
 sub Get_Slipsite_From_Input {
     my $inputfile = shift;
-    open( SLIP, "<$inputfile" );
+    open(SLIP, "<$inputfile");
     ## OPEN SLIP in Get_Slipsite_From_Input
-    my ( $slipsite, $crap );
-    while ( my $line = <SLIP> ) {
+    my ($slipsite, $crap);
+    while (my $line = <SLIP>) {
 	chomp $line;
-	if ( $line =~ /^\>/ ) {
-	    ( $slipsite, $crap ) = split( / /, $line );
+	if ($line =~ /^\>/) {
+	    ($slipsite, $crap) = split(/ /, $line);
 	    $slipsite =~ tr/actgTu/ACUGUU/;
 	    $slipsite =~ s/\>//g;
-	} else {
+	}
+	else {
 	    next;
 	}
     }
@@ -443,37 +463,41 @@ sub Pknots_Boot {
     ## In an OO fashion.
     my $inputfile = shift;
     my $accession = shift;
-    my $start     = shift;
+    my $start = shift;
     my $errorfile = qq(${inputfile}_pknots.err);
     PRFdb::AddOpen($errorfile);
     ##  This expected for a bootlace include:
     ##  MFE, PAIRS
     my $return = {
 	accession => $accession,
-	start     => $start,
+	start => $start,
     };
-    chdir( $config->{workdir} );
+    chdir($config->{workdir});
     my $command = qq($config->{pknots} $inputfile 2>$errorfile);
-    open( PK, "$command |" ) or PRF_Error( "RNAFolders::Pknots_Boot, Failed to run pknots: $command $!", $accession );
+    open(PK, "$command |") or PRF_Error("RNAFolders::Pknots_Boot, Failed to run pknots: $command $!", $accession);
     ## OPEN PK in Pknots_Boot
     my $counter = 0;
-    my ( $line_to_read, $crap ) = undef;
-    my $string        = '';
+    my ($line_to_read, $crap) = undef;
+    my $string = '';
     my $uninteresting = undef;
-    while ( my $line = <PK> ) {
-	next if ( defined($uninteresting) );
+    while (my $line = <PK>) {
+	next if (defined($uninteresting));
 	$counter++;
 	chomp $line;
-	if ( $line =~ /^NAM/ ) {
-	    my ( $crap, $name ) = split( /NAM\s+/, $line );
-	} elsif ( $line =~ m/\/mol\)\:\s+/ ) {
-	    ( $crap, $return->{mfe} ) = split( /\/mol\)\:\s+/, $line );
-	} elsif ( $line =~ /found\:\s+/ ) {
-	    ( $crap, $return->{pairs} ) = split( /found\:\s+/, $line );
+	if ($line =~ /^NAM/) {
+	    my ($crap, $name ) = split( /NAM\s+/, $line);
+	}
+	elsif ($line =~ m/\/mol\)\:\s+/) {
+	    ($crap, $return->{mfe}) = split(/\/mol\)\:\s+/, $line);
+	}
+	elsif ($line =~ /found\:\s+/) {
+	    ($crap, $return->{pairs}) = split(/found\:\s+/, $line);
 	    $uninteresting = 1;
-	} elsif ( $line =~ /^\s+\d+\s+[A-Z]+/ ) {
+	}
+	elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
 	    $line_to_read = $counter + 2;
-	} elsif ( defined($line_to_read) and $line_to_read == $counter ) {
+	}
+	elsif (defined($line_to_read) and $line_to_read == $counter) {
 	    $line =~ s/^\s+//g;
 	    $line =~ s/$/ /g;
 	    $string .= $line;
@@ -482,8 +506,8 @@ sub Pknots_Boot {
     close(PK);
     ## CLOSE PK in Pknots_Boot
     my $pknots_return = $?;
-    unless ( $pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134' ) {
-	PRFConfig::PRF_Error( "Pknots Error: $command $!", $accession );
+    unless ($pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134') {
+	PRFConfig::PRF_Error("Pknots Error: $command $!", $accession);
 #    die("Pknots Error! $command $!");
     }
     PRFdb::RemoveFile($errorfile);
@@ -495,49 +519,50 @@ sub Nupack_Boot {
     ## In an OO fashion.
     my $inputfile = shift;
     my $accession = shift;
-    my $start     = shift;
+    my $start = shift;
     my $nupack = qq($config->{workdir}/$config->{nupack});
     my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
     my $errorfile = qq(${inputfile}_nupack.err);
     PRFdb::AddOpen($errorfile);
-    my $return    = {
+    my $return = {
 	accession => $accession,
-	start     => $start,
+	start => $start,
     };
-    chdir( $config->{workdir} );
-    die("$config->{workdir}/dataS_G.dna is missing.")            unless ( -r "$config->{workdir}/dataS_G.dna" );
-    die("$config->{workdir}/dataS_G.rna is missing.")            unless ( -r "$config->{workdir}/dataS_G.rna" );
+    chdir($config->{workdir});
+    die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
+    die("$config->{workdir}/dataS_G.rna is missing.") unless (-r "$config->{workdir}/dataS_G.rna");
     my $command = qq($nupack_boot $inputfile 2>$errorfile);
-    open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_Boot, Failed to run nupack: $command $!", $accession );
+    open(NU, "$command |") or PRF_Error("RNAFolders::Nupack_Boot, Failed to run nupack: $command $!", $accession);
     ## OPEN NU in Nupack_Boot
     my $count = 0;
-    while ( my $line = <NU> ) {
+    while (my $line = <NU>) {
 	chomp $line;
 	$count++;
-	if ( $count == 19 ) {
+	if ($count == 19) {
 	    my $tmp = $line;
 	    $tmp =~ s/^mfe\ \=\ //g;
 	    $tmp =~ s/\ kcal\/mol//g;
 	    $return->{mfe} = $tmp;
-	} else {
+	}
+	else {
 	    next;
 	}
     }    ## End of the output from nupack_boot
     close(NU);
     ## CLOSE NU in Nupack_Boot
     my $nupack_return = $?;
-    unless ( $nupack_return eq '0' or $nupack_return eq '256' ) {
-	PRFConfig::PRF_Error( "Nupack Error running $command: $!", $accession );
+    unless ($nupack_return eq '0' or $nupack_return eq '256') {
+	PRFConfig::PRF_Error("Nupack Error running $command: $!", $accession);
 	die("Nupack Error running $command $!");
     }
     PRFdb::RemoveFile($errorfile);
     my $out_pair = qq($config->{workdir}/out.pair);
     PRFdb::AddOpen($out_pair);
-    open( PAIRS, "<$out_pair" ) or PRF_Error( "Could not open the nupack pairs file: $!", $accession );
+    open(PAIRS, "<$out_pair") or PRF_Error("Could not open the nupack pairs file: $!", $accession);
     ## OPEN PAIRS in Nupack_Boot
-    my $pairs         = 0;
+    my $pairs = 0;
     my @nupack_output = ();
-    while ( my $line = <PAIRS> ) {
+    while (my $line = <PAIRS>) {
 	chomp $line;
 	$pairs++;
     }    ## End of the pairs file
@@ -553,46 +578,48 @@ sub Nupack_Boot_NOPAIRS {
     ## In an OO fashion.
     my $inputfile = shift;
     my $accession = shift;
-    my $start     = shift;
+    my $start = shift;
     my $nupack = qq($config->{workdir}/$config->{nupack});
     my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
     my $errorfile = qq(${inputfile}_nupack.err);
     PRFdb::AddOpen($errorfile);
-    my $return    = {
+    my $return = {
 	accession => $accession,
-	start     => $start,
+	start => $start,
     };
     chdir( $config->{workdir} );
-    die("$config->{workdir}/dataS_G.dna is missing.")            unless ( -r "$config->{workdir}/dataS_G.dna" );
-    die("$config->{workdir}/dataS_G.rna is missing.")            unless ( -r "$config->{workdir}/dataS_G.rna" );
-    die("$nupack_boot is missing.") unless ( -r $nupack_boot );
-    warn("The nupack executable does not have 'nopairs' in its name") unless ( $config->{nupack} =~ /nopairs/ );
+    die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
+    die("$config->{workdir}/dataS_G.rna is missing.") unless (-r "$config->{workdir}/dataS_G.rna");
+    die("$nupack_boot is missing.") unless (-r $nupack_boot);
+    warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{nupack} =~ /nopairs/);
     my $command = qq($nupack_boot $inputfile 2>$errorfile);
     my @nupack_output;
-    open( NU, "$command |" ) or PRF_Error( "RNAFolders::Nupack_Boot_NOPAIRS, Failed to run nupack:  $command $!", $accession );
+    open(NU, "$command |") or PRF_Error("RNAFolders::Nupack_Boot_NOPAIRS, Failed to run nupack:  $command $!", $accession);
     ## OPEN NU in Nupack_Boot_NOPAIRS
     my $counter = 0;
-    my $pairs   = 0;
-    while ( my $line = <NU> ) {
+    my $pairs = 0;
+    while (my $line = <NU>) {
 	chomp $line;
 	$counter++;
-	if ( $line =~ /^\d+\s\d+$/ ) {
+	if ($line =~ /^\d+\s\d+$/) {
 	    $pairs++;
 	    $counter--;
-	} elsif ( $counter == 19 ) {
+	}
+	elsif ($counter == 19) {
 	    my $tmp = $line;
 	    $tmp =~ s/^mfe\ \=\ //g;
 	    $tmp =~ s/\ kcal\/mol//g;
 	    $return->{mfe} = $tmp;
-	} else {
+	}
+	else {
 	    next;
 	}
     }    ## End of the output from nupack_boot
     close(NU);
     ## CLOSE NU in Nupack_Boot_NOPAIRS
     my $nupack_return = $?;
-    unless ( $nupack_return eq '0' or $nupack_return eq '256' ) {
-	PRFConfig::PRF_Error( "Nupack Error running $command: $!", $accession );
+    unless ($nupack_return eq '0' or $nupack_return eq '256') {
+	PRFConfig::PRF_Error("Nupack Error running $command: $!", $accession);
 	die("Nupack Error running $command: $!");
     }
     PRFdb::RemoveFile($errorfile);
@@ -628,6 +655,8 @@ sub Hotknots {
     print IN $seq;
     close(IN);
     my $command = qq($config->{workdir}/$config->{hotknots} -I $seqname -noPS -b);
+    print "HotKnots: infile: $inputfile accession: $accession start: $start
+command: $command\n" if (defined($config->{debug}));
     open(HK, "$command |");
     while(my $line = <HK>) {
 	print $line;
@@ -671,7 +700,7 @@ sub Hotknots {
 
     PRFdb::RemoveFile([$ctfile, $bpseqfile, $errorfile]);
 
-    my $parser = new PkParse( debug => 0);
+    my $parser = new PkParse(debug => $config->{debug});
     my @struct_array = split(/\s+/, $ret->{output});
     my $out = $parser->Unzip(\@struct_array);
     my $new_struct = PkParse::ReBarcoder($out);
@@ -721,6 +750,8 @@ sub Hotknots_Boot {
     print IN $seq;
     close(IN);
     my $command = qq($config->{workdir}/$config->{hotknots} -I $seqname -noPS -b 2>$errorfile);
+    print "Hotknots boot: infile: $inputfile accession: $accession start: $start
+command: $command\n" if (defined($config->{debug}));
     open(HK, "$command |");
     while(my $line = <HK>) {
         $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
@@ -745,13 +776,13 @@ sub Hotknots_Boot {
             }
             else {
                 print STDERR "The number of basepairs is negative?  $basepair\n";
-                #die("Something is fubared");                                                                         
+                #die("Something is fubared");
                 last;
             }
         }
         else {
             print STDERR "The base pair is not a number: $basepair\n";
-            #die("Something is fubared");                                                                             
+            #die("Something is fubared");
             last;
         }
     }
@@ -767,7 +798,7 @@ sub Hotknots_Boot {
     close(GETMFE);
 
     PRFdb::RemoveFile([$ctfile, $bpseqfile, $errorfile, $tempfile]);
-    my $parser = new PkParse( debug => 0);
+    my $parser = new PkParse(debug => $config->{debug});
     my @struct_array = split(/\s+/, $ret->{output});
     my $out = $parser->Unzip(\@struct_array);
     my $new_struct = PkParse::ReBarcoder($out);

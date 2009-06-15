@@ -500,7 +500,7 @@ sub Make_Landscape {
     $mean_pknots = $mean_pknots / $position_counter;
     $mean_nupack = $mean_nupack / $position_counter;
     $mean_vienna = $mean_vienna / $position_counter;
-    
+    print "TESTME: $mean_pknots $mean_nupack $mean_vienna\n";
     my (@axis_x, @nupack_y, @pknots_y, @vienna_y, @m_nupack, @m_pknots, @m_vienna);
     my $end_spot = $points[$#points] + 105;
     my $current  = 0;
