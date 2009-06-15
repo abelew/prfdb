@@ -346,6 +346,7 @@ sub Gather {
 
 ## Start PRF_Gatherer
 sub PRF_Gatherer {
+    print "Starting PRF_Gatherher\n";
     my $state = shift;
     my $startpos = shift;
     $state->{genome_information} = $db->Get_ORF($state->{accession});
@@ -500,6 +501,7 @@ sub PRF_Gatherer {
 
 ## Start Landscape_Gatherer
 sub Landscape_Gatherer {
+    print "Starting Landscape_Gather\n";
     my $state = shift;
     my $message = shift;
     my $sequence = $db->Get_Sequence($state->{accession});
@@ -521,22 +523,23 @@ sub Landscape_Gatherer {
 					 species => $state->{species},
 					 accession => $state->{accession},
 					 start => $start_point,);
+	my $landscape_table = qq/landscape_$state->{species}/;
 	my $nupack_foldedp = $db->Get_Num_RNAfolds('nupack',
 						   $state->{genome_id},
 						   $start_point,
 						   $config->{landscape_seqlength},
-						   'landscape');
+						   $landscape_table);
 	my $pknots_foldedp = $db->Get_Num_RNAfolds('pknots',
 						   $state->{genome_id},
 						   $start_point,
 						   $config->{landscape_seqlength},
-						   'landscape');
+						   $landscape_table);
 	my $vienna_foldedp = $db->Get_Num_RNAfolds('vienna',
 						   $state->{genome_id},
 						   $start_point,
 						   $config->{landscape_seqlength},
-						   'landscape');
-
+						   $landscape_table);
+	print "TESTME, num vienna: $vienna_foldedp\n";
 	my ($nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id, $vienna_info, $vienna_mfe_id);
 	if ($nupack_foldedp == 0) {
 	    if ($config->{nupack_nopairs_hack}) {
@@ -545,17 +548,17 @@ sub Landscape_Gatherer {
 	    else {
 		$nupack_info = $fold_search->Nupack('nopseudo');
 	    }
-	    $nupack_mfe_id = $db->Put_Nupack($nupack_info, 'landscape');
+	    $nupack_mfe_id = $db->Put_Nupack($nupack_info, $landscape_table);
 	    $state->{nupack_mfe_id} = $nupack_mfe_id;
 	}
 	if ($pknots_foldedp == 0) {
 	    $pknots_info = $fold_search->Pknots('nopseudo');
-	    $pknots_mfe_id = $db->Put_Pknots($pknots_info, 'landscape');
+	    $pknots_mfe_id = $db->Put_Pknots($pknots_info, $landscape_table);
 	    $state->{pknots_mfe_id} = $pknots_mfe_id;
 	}
 	if ($vienna_foldedp == 0) {
 	    $vienna_info = $fold_search->Vienna();
-	    $vienna_mfe_id = $db->Put_Vienna($vienna_info, 'landscape');
+	    $vienna_mfe_id = $db->Put_Vienna($vienna_info, $landscape_table);
 	    $state->{vienna_mfe_id} = $vienna_mfe_id;
 	}
 	## The functional portion of the while loop is over, just set the state now

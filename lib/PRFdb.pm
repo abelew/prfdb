@@ -71,7 +71,7 @@ sub MySelect {
   else {
       $rv = $sth->execute();
   }
-
+  
   if (!defined($rv)) {
       print STDERR "Execute failed for: $statement
 from: $input->{caller}
@@ -1154,7 +1154,6 @@ sub Get_Sequence_From_Fasta {
     return ($return);
 }
 
-
 sub Get_MFE_ID {
     my $me = shift;
     my $genome_id = shift;
@@ -1167,7 +1166,6 @@ sub Get_MFE_ID {
 			     type => 'single'});
     return ($mfe);
 }
-
 
 sub Get_Num_RNAfolds {
     my $me = shift;
@@ -1187,7 +1185,6 @@ sub Get_Num_RNAfolds {
     }
     return ($count);
 }
-
 
 sub Get_Num_Bootfolds {
     my $me = shift;
@@ -1237,22 +1234,17 @@ sub Get_ORF {
     ## If I remove the substring, Then it should return from the start
     ## codon to the end of the mRNA which is good                                  
     ## For searching over viral sequence!
-    my $sequence = substr( $mrna_seq, $start );
     ### DONT SCAN THE ENTIRE MRNA, ONLY THE ORF
     if ($sequence) {
-	my $return = {
-	    sequence  => "$sequence",
-	    orf_start => $start,
-	    orf_stop  => $stop,
-	};
+	my $return = {sequence  => "$sequence",
+		      orf_start => $start,
+		      orf_stop  => $stop,};
 	return ($return);
     }
     else {
 	return (undef);
     }
 }
-
-
 
 sub Get_Slippery_From_RNAMotif {
     my $me = shift;
@@ -1339,8 +1331,8 @@ sub Put_Nupack {
     my $data = shift;
     my $table = shift;
     my $mfe_id = shift;
-    if (defined($table) and $table eq 'landscape') {
-	$mfe_id = $me->Put_MFE_Landscape('nupack', $data);
+    if (defined($table) and $table =~ /^landscape/) {
+	$mfe_id = $me->Put_MFE_Landscape('nupack', $data, $table);
     } 
     elsif (defined($table)) {
 	$mfe_id = $me->Put_MFE('nupack', $data, $table);
@@ -1356,8 +1348,8 @@ sub Put_Hotknots {
     my $data = shift;
     my $table = shift;
     my $mfe_id = shift;
-    if (defined($table) and $table eq 'landscape') {
-	$mfe_id = $me->Put_MFE_Landscape('hotknots', $data);
+    if (defined($table) and $table =~ /^landscape/) {
+	$mfe_id = $me->Put_MFE_Landscape('hotknots', $data, $table);
     }
     elsif (defined($table)) {
 	$mfe_id = $me->Put_MFE('hotknots', $data, $table);
@@ -1373,8 +1365,8 @@ sub Put_Vienna {
     my $data = shift;
     my $table = shift;
     my $mfe_id = shift;
-    if (defined($table) and $table eq 'landscape') {
-	$mfe_id = $me->Put_MFE_Landscape('vienna', $data);
+    if (defined($table) and $table =~ /^landscape/) {
+	$mfe_id = $me->Put_MFE_Landscape('vienna', $data, $table);
     }
     elsif (defined($table)) {
 	$mfe_id = $me->Put_MFE('vienna', $data, $table);
@@ -1390,8 +1382,8 @@ sub Put_Pknots {
     my $data = shift;
     my $table = shift;
     my $mfe_id;
-    if (defined($table) and $table eq 'landscape') {
-	$mfe_id = $me->Put_MFE_Landscape('pknots', $data);
+    if (defined($table) and $table =~ /^landscape/) {
+	$mfe_id = $me->Put_MFE_Landscape('pknots', $data, $table);
     }
     elsif (defined($table)) {
 	$mfe_id = $me->Put_MFE('pknots', $data, $table);
@@ -1431,7 +1423,7 @@ sub Put_MFE_Landscape {
     my $me = shift;
     my $algo = shift;
     my $data = shift;
-    my $species = $data->{species};
+    my $table = shift;
     ## What fields do we want to fill in this MFE table?
     my @filled;
     if ($algo eq 'vienna') {
@@ -1440,23 +1432,24 @@ sub Put_MFE_Landscape {
     else {
 	@filled = ('genome_id', 'species', 'accession', 'start', 'seqlength', 'sequence', 'output', 'parsed', 'parens', 'mfe', 'pairs', 'knotp', 'barcode');
     }
-    my $errorstring = Check_Insertion( \@filled, $data);
+    my $errorstring = Check_Insertion(\@filled, $data);
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_MFE_Landscape: $errorstring";
 	PRF_Error($errorstring, $data->{accession});
     }
 
     $data->{sequence} =~ tr/actgu/ACTGU/;
-    my $table = "landscape-$species";
-    my $statement = qq(INSERT INTO $table (id, genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
-    
+#    my $statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
+    my $insert_statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES("$data->{genome_id}", "$data->{species}", "$algo", "$data->{accession}", "$data->{start}", "$data->{seqlength}", "$data->{sequence}", "$data->{output}", "$data->{parsed}", "$data->{parens}", "$data->{mfe}", "$data->{pairs}", "$data->{knotp}", "$data->{barcode}"));
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $statement,
-		    vars => ['',$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],
-		    caller =>"$cp, $cf, $cl",});
+    $me->MyExecute({statement => $insert_statement,
+		    caller => "$cp,$cf,$cl",});
+#    $me->MyExecute({statement => $statement,
+#		    vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],
+#		    caller =>"$cp,$cf,$cl",});
     
     my $get_inserted_id = qq(SELECT LAST_INSERT_ID());
-    my $id = $me->MySelect(statement => $get_inserted_id, type => 'single');
+    my $id = $me->MySelect({statement => $get_inserted_id, type => 'single'});
     return ($id);
 }    ## End put_mfe_landscape
 
