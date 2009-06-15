@@ -795,15 +795,464 @@ sub Get_Queue {
     unless ($me->Tablep($table)) {
 	$me->Create_Queue($table);
 	$me->Reset_Queue($table, 'complete');
-	my $return = {sequence  => "$sequence",
-		   orf_start => $start,
-		   orf_stop  => $stop,};
+    }
+    ## This id is the same id which uniquely identifies a sequence in the genome database
+    my $single_id = qq(SELECT id, genome_id FROM $table WHERE checked_out = '0' LIMIT 1);
+    my $ids = $me->MySelect({statement => $single_id, type => 'row'});
+    my $id = $ids->[0];
+    my $genome_id = $ids->[1];
+    if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
+	## This should mean there are no more entries to fold in the queue
+	## Lets check this for truth -- first see if any are not done
+	my $done_id = qq(SELECT id, genome_id FROM $table WHERE done = '0' LIMIT 1);
+	my $ids = $me->MySelect({statement => $done_id, type =>'row'});
+	$id = $ids->[0];
+	$genome_id = $ids->[1];
+	if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
+	    return (undef);
+	}
+    }
+    my $update = qq(UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?);
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute({statement => $update, vars=> [$id], caller =>"$cp, $cf, $cl"});
+    my $return = {
+	queue_table => $table,
+	queue_id  => $id,
+	genome_id => $genome_id,
+    };
+    return ($return);
+}
+
+sub Copy_Queue {
+    my $me = shift;
+    my $old_table = shift;
+    my $new_table = shift;
+    my $statement = "INSERT INTO $new_table SELECT * FROM $old_table";
+    my ($cp,$cf,$cl) = caller();
+    $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl"});
+}
+
+sub Done_Queue {
+    my $me = shift;
+    my $table = shift;
+    my $id = shift;
+    if (!defined($table)) {
+	if (defined($config->{queue_table})) {
+	    $table = $config->{queue_table};
+	}
+	else {
+	    $table = 'queue';
+	}
+    }
+    my $update = qq/UPDATE $table SET done='1', done_time=current_timestamp() WHERE genome_id=?/;
+    my ($cp,$cf,$cl) = caller();
+    $me->MyExecute({statement => $update, vars => [$id], caller =>"$cp, $cf, $cl"});
+}
+
+sub Import_Fasta {
+    my $me = shift;
+    my $file = shift;
+    my $style = shift;
+    my $startpos = shift;
+    my @return_array;
+    print "Starting Import_Fasta\n";
+    open(IN, "<$file") or die "Could not open the input file. $!";
+    my %datum = (accession => undef, genename => undef, version => undef, comment => undef, mrna_seq => undef);
+    my $linenum = 0;
+    
+    while (my $line = <IN>) {
+	$linenum++;
+	chomp $line;
+	if ($line =~ /^\>/) {
+	    ## Do the actual insertion here, regardless of style
+	    if ($linenum > 1) {
+		$datum{orf_start} = 1;
+		$datum{orf_stop}  = length($datum{mrna_seq});
+		my $genome_id = $me->Insert_Genome_Entry(\%datum);
+		my $queue_id = $me->Set_Queue($genome_id, \%datum);
+		print "Added $queue_id\n";
+		push(@return_array, $queue_id);
+	    }
+	    if (defined($style)) {
+		if ($style eq 'sgd') {
+		    %datum = (accession => undef,
+			      genename => undef,
+			      version => undef,
+			      comment => undef,
+			      mrna_seq => undef,);
+		    my ($fake_accession, $comment)  = split(/\,/, $line);
+		    my ($accession, $genename) = split(/ /,  $fake_accession);
+		    $accession =~ s/^\>//g;
+		    $datum{accession} = $accession;
+		    $datum{genename} = $genename;
+		    $datum{comment} = $comment;
+		    $datum{genename} = $genename;
+		    $datum{protein_seq} = '';
+		    $datum{direction} = 'forward';
+		    $datum{defline} = $line;
+		}    ## End if the style is sgd
+		elsif ($style eq 'celegans') {
+                    %datum = (accession => undef,
+                              genename => undef,
+                              version => undef,
+                              comment => undef,
+                              mrna_seq => undef,);
+                    my ($accession, $genename) = split(/\|/, $line);
+                    $accession =~ s/\>//g;
+                    $datum{genename} = $genename;
+                    $datum{accession} = $accession;
+                    $datum{species} = $config->{species};
+		}
+
+		elsif ($style eq 'mgc') {
+		    %datum = (accession => undef,
+			      genename => undef,
+			      version => undef,
+			      comment => undef,
+			      mrna_seq => undef,);
+		    my ($gi_trash, $gi_id, $gb_trash, $accession_version, $comment) = split(/\|/, $line);
+		    my ($accession, $version);
+		    if ($accession_version =~ m/\./) {
+			($accession, $version) = split(/\./, $accession_version);
+		    }
+		    else {
+			$accession = $accession_version;
+			$version   = '0';
+		    }
+		    $datum{accession} = $accession;
+		    $datum{version} = $version;
+		    $datum{comment} = $comment;
+		    my ($space_trash, $genus, $species) = split(/ /, $comment);
+		    $datum{species} = $genus . '_' . $species;
+		    my ($genename, $clone, $type) = split(/\,/, $comment);
+		    $datum{genename} = $genename;
+		    $datum{protein_seq} = '';
+		    $datum{direction} = 'forward';
+		    $datum{defline} = $line;
+		}
+		else {
+		    print "No style.\n";
+		}
+	    }    ## End if the style is defined.
+	    else {
+		print "Style is not defined.\n";
+	    }
+	}    ## End if you are on a > line
+	else {
+	    $line =~ s/\s//g;
+	    $line =~ s/\d//g;
+	    $datum{mrna_seq} .= $line;
+	    ## The line after every Import_CDS had better clear datum{mrna_seq} or the sequence
+	    ## will grow with every new sequence.
+	}    ## Not an accession line
+    }    ## End looking at every line.
+    close(IN);
+    $datum{orf_start} = 0;
+    $datum{orf_stop}  = length($datum{mrna_seq});
+    my $genome_id = $me->Insert_Genome_Entry(\%datum);
+    my $queue_id = $me->Set_Queue($genome_id, \%datum);
+    print "Added $queue_id\n";
+    push(@return_array, $queue_id);
+    print "Last test: @return_array\n";
+    return (\@return_array);
+}
+
+sub Import_RawSeq {
+    my $me = shift;
+    my $datum = shift;
+    my $startpos = shift;
+    my $accession = $datum->{accession};
+    my $comment = $datum->{comment};
+    my $species = $datum->{species};
+    my $genename = $datum->{genename};
+    my $mrna_seq = $datum->{mrna_seq};
+    my $orf_start = (defined($startpos) ? $startpos : 0);
+    my $orf_stop = length($mrna_seq);
+}
+
+sub Import_CDS {
+    my $me = shift;
+    my $accession = shift;
+    my $startpos = shift;
+    my $return = '';
+    my $uni = new Bio::DB::Universal;
+    my $seq = $uni->get_Seq_by_id($accession);
+    my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
+    my ($protein_sequence, $orf_start, $orf_stop);
+    my $binomial_species = $seq->species->binomial();
+    my ($genus, $species) = split(/ /, $binomial_species);
+    my $full_species = qq(${genus}_${species});
+    $full_species =~ tr/[A-Z]/[a-z]/;
+    $config->{species} = $full_species;
+    my $full_comment = $seq->desc();
+    my $defline = "lcl||gb|$accession|species|$full_comment\n";
+    my ($genename, $desc) = split(/\,/, $full_comment);
+    my $mrna_sequence = $seq->seq();
+    my $counter = 0;
+    my $num_cds = scalar(@cds);
+
+    foreach my $feature (@cds) {
+	my $tmp_mrna_sequence = $mrna_sequence;
+	$counter++;
+	my $primary_tag = $feature->primary_tag();
+	$protein_sequence = $feature->seq->translate->seq();
+	$orf_start = $feature->start();
+	$orf_stop = $feature->end();
+	#    print "START: $orf_start STOP: $orf_stop $feature->{_location}{_strand}\n";
+	### $feature->{_location}{_strand} == -1 or 1 depending on the strand.
+	my $direction;
+	if (!defined($feature->{_location}{_strand})) {
+	    $direction = 'forward';
+	}
+	elsif ($feature->{_location}{_strand} == 1) {
+	    $direction = 'forward';
+	}
+	elsif ($feature->{_location}{_strand} == -1) {
+	    $direction = 'reverse';
+	    my $tmp_start = $orf_start;
+	    $orf_start = $orf_stop - 1;
+	    $orf_stop = $tmp_start - 2;
+	    my $fake_orf_stop = 0;
+	    undef $tmp_start;
+	    my @tmp_sequence = split(//, $tmp_mrna_sequence);
+	    my $tmp_length = scalar(@tmp_sequence);
+	    my $sub_sequence = '';
+
+	    while ($orf_start > $fake_orf_stop) {
+		$sub_sequence .= $tmp_sequence[$orf_start];
+		$orf_start--;
+	    }
+	    $sub_sequence =~ tr/ATGCatgcuU/TACGtacgaA/;
+	    $tmp_mrna_sequence = $sub_sequence;
+	} else {
+	    print PRF_Error("WTF: Direction is not forward or reverse");
+	    $direction = 'forward';
+	}
+    ### Don't change me, this is provided by genbank
+    ### FINAL TEST IF $startpos is DEFINED THEN OVERRIDE WHATEVER YOU FOUND
+	if (defined($startpos)) {
+	    $orf_start = $startpos;
+	}
+	my $mrna_seqlength = length($tmp_mrna_sequence);
+	my %datum = (### FIXME
+		     accession => $accession,
+		     mrna_seq => $tmp_mrna_sequence,
+		     protein_seq => $protein_sequence,
+		     orf_start => $orf_start,
+		     orf_stop => $orf_stop,
+		     direction => $direction,
+		     species => $full_species,
+		     genename => $genename,
+		     version => $seq->{_seq_version},
+		     comment => $full_comment,
+		     defline => $defline,);
+	my $genome_id = $me->Insert_Genome_Entry(\%datum);
+	if (defined($genome_id)) {
+	    $return .= "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
+#      $me->Set_Queue( $genome_id, \%datum );
+	    $me->Set_Queue($genome_id);
+	}
+	else {
+	    $return .= "Did not insert anything into the genome table.\n";
+	    my $gid = $me->MySelect({
+          statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",
+	  type => 'single'});
+	    print "Doing set_Queue with genome_id $gid\n";
+	    $me->Set_Queue($gid);
+	}
+	print $return;
+    }
+    return ($return);
+}
+
+sub mRNA_subsequence {
+    my $me = shift;
+    my $sequence = shift;
+    my $start = shift;
+    my $stop = shift;
+    $start--;
+    $stop--;
+    my @t = split(//, $sequence);
+    my $orf_sequence;
+
+    foreach my $c ($start .. $stop) {
+	$orf_sequence .= $t[$c];
+    }
+    return ($orf_sequence);
+}
+
+sub Get_OMIM {
+    my $me = shift;
+    my $id = shift;
+    my $statement = qq(SELECT omim_id FROM genome WHERE id = ?);
+    my $omim = $me->MySelect({ statement => $statement, vars => [$id], type => 'single' });
+    if (!defined($omim) or $omim eq 'none') {
+	return (undef);
+    }
+    elsif ($omim =~ /\d+/) {
+	return ($omim);
+    }
+    else {
+	my $uni = new Bio::DB::Universal;
+	my $seq = $uni->get_Seq_by_id($id);
+	my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
+	my $omim_id = '';
+	foreach my $feature (@cds) {
+	    my $db_xref_list = $feature->{_gsf_tag_hash}->{db_xref};
+	    foreach my $db (@{$db_xref_list}) {
+		if ($db =~ /^MIM\:/) {
+		    $db =~ s/^MIM\://g;
+		    $omim_id .= "$db ";
+		}    ## Is it in omim?
+	    }    ## Possible databases
+	}    ## CDS features
+	$statement = qq(UPDATE genome SET omim_id = ? WHERE id = ?);
+	my ($cp,$cf,$cl) = caller();
+	$me->MyExecute({statement => $statement, vars => [ $omim_id, $id ], caller =>"$cp, $cf, $cl",});
+	return ($omim_id);
+    }
+}
+
+sub Get_Sequence {
+    my $me = shift;
+    my $accession = shift;
+    my $statement = qq(SELECT mrna_seq FROM genome WHERE accession = ?);
+    my $sequence  = $me->MySelect({
+	statement => $statement,
+	vars => [$accession],
+	type => 'single'});
+    if ($sequence) {
+	return ($sequence);
+    }
+    else {
+	return (undef);
+    }
+}
+
+sub Get_Sequence_from_id {
+    my $me = shift;
+    my $id = shift;
+    my $statement = qq(SELECT mrna_seq FROM genome WHERE id = ?);
+    my $sequence = $me->MySelect({statement => $statement, vars => [$id], type => 'single'});
+    if ($sequence) {
+	return ($sequence);
+    }
+    else {
+	return (undef);
+    }
+}
+
+sub Get_Sequence_From_Fasta {
+    my $filename = shift;
+    my $return = '';
+    open(IN, "<$filename") or print "Could not open $filename in Get_Sequence_From_Fasta $!\n";
+    while (my $line = <IN>) {
+	next if ($line =~ /^\>/);
+	$return .= $line;
+    }
+    close(IN);
+    return ($return);
+}
+
+
+sub Get_MFE_ID {
+    my $me = shift;
+    my $genome_id = shift;
+    my $start = shift;
+    my $seqlength = shift;
+    my $algorithm = shift;
+    my $statement = qq(SELECT id FROM mfe WHERE genome_id = ? AND start = ? AND seqlength = ? AND algorithm = ? LIMIT 1);
+    my $mfe = $me->MySelect({statement =>$statement,
+			     vars => [$genome_id, $start, $seqlength, $algorithm],
+			     type => 'single'});
+    return ($mfe);
+}
+
+
+sub Get_Num_RNAfolds {
+    my $me = shift;
+    my $algo = shift;
+    my $genome_id = shift;
+    my $slipsite_start = shift;
+    my $seqlength = shift;
+    my $table = shift;
+    $table = 'mfe' unless (defined($table));
+    my $return = {};
+    my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? AND algorithm = ? AND start = ? AND seqlength = ?/;
+    my $count = $me->MySelect({statement =>$statement,
+			       vars => [$genome_id, $algo, $slipsite_start, $seqlength],
+			       type => 'single'});
+    if (!defined($count) or $count eq '') {
+	$count = 0;
+    }
+    return ($count);
+}
+
+
+sub Get_Num_Bootfolds {
+    my $me = shift;
+    my $genome_id = shift;
+    my $start = shift;
+    my $seqlength = shift;
+    my $method = shift;
+    my $return = {};
+    my $statement = qq/SELECT count(id) FROM boot WHERE genome_id = ? and start = ? and seqlength = ? and mfe_method = ?/;
+    my $count = $me->MySelect({statement => $statement,
+			       vars => [$genome_id, $start, $seqlength, $method],
+			       type =>'single'});
+    return ($count);
+}
+
+sub Get_mRNA {
+    my $me = shift;
+    my $accession = shift;
+    my $statement = qq/SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?/;
+    my $info = $me->MySelect({
+	statement => $statement,
+	vars => [$accession],
+	type => 'hash'});
+    my $mrna_seq  = $info->{mrna_seq};
+    if ($mrna_seq) {
+	return ($mrna_seq);
+    }
+    else {
+	return (undef);
+    }
+}
+
+sub Get_ORF {
+    my $me = shift;
+    my $accession = shift;
+    my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?);
+    my $info = $me->MySelect({
+	statement => $statement,
+	vars => [$accession],
+	type => 'hash'});
+    my $mrna_seq = $info->{mrna_seq};
+    ### A PIECE OF CODE TO HANDLE PULLING SUBSEQUENCES FROM CDS                                                         
+    my $start = $info->{orf_start} - 1;
+    my $stop = $info->{orf_stop} - 1;
+    my $offset = $stop - $start;
+    my $sequence = substr($mrna_seq, $start, $offset);
+    ## If I remove the substring, Then it should return from the start
+    ## codon to the end of the mRNA which is good                                  
+    ## For searching over viral sequence!
+    my $sequence = substr( $mrna_seq, $start );
+    ### DONT SCAN THE ENTIRE MRNA, ONLY THE ORF
+    if ($sequence) {
+	my $return = {
+	    sequence  => "$sequence",
+	    orf_start => $start,
+	    orf_stop  => $stop,
+	};
 	return ($return);
     }
     else {
 	return (undef);
     }
 }
+
+
 
 sub Get_Slippery_From_RNAMotif {
     my $me = shift;

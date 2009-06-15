@@ -1,5 +1,10 @@
 package SeqMisc;
 use strict;
+use PRFConfig;
+use File::Temp qw / tmpnam /;
+## Every function here should take as input an array reference
+## containing the sequence to be shuffled.
+my $config = $PRFConfig::config;
 
 sub new {
     my ($class, %arg) = @_;
@@ -570,5 +575,6 @@ $inseq
   }    ## End a ifile::temp block
   my @out_array = split( //, $out_text );
   return ( \@out_array );
+}
 
 1;

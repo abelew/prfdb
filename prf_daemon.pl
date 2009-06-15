@@ -11,7 +11,7 @@ use RNAMotif_Search;
 use RNAFolders;
 use Bootlace;
 use Overlap;
-use MoreRandom;
+use SeqMisc;
 use PRFBlast;
 
 $SIG{INT} = 'CLEANUP';
