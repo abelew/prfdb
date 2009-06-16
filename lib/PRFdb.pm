@@ -29,7 +29,6 @@ sub new {
     $me->Create_Queue() unless ($me->Tablep($config->{queue_table}));
     $me->Create_Boot() unless ($me->Tablep('boot'));
     $me->Create_MFE() unless ($me->Tablep('mfe'));
-#    $me->Create_Landscape() unless ($me->Tablep('landscape'));
     $me->Create_Errors() unless ($me->Tablep('errors'));
     $me->Create_NoSlipsite() unless ($me->Tablep('noslipsite'));
   }
@@ -935,7 +934,7 @@ sub Import_Fasta {
                     }
                 }    ## End if the style is sgd
 
-i               elsif ($style eq 'celegans') {
+               elsif ($style eq 'celegans') {
                     %datum = (
                         accession => undef,
                         genename => undef,
