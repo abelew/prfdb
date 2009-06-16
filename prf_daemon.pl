@@ -10,7 +10,7 @@ use RNAMotif_Search;
 use RNAFolders;
 use Bootlace;
 use Overlap;
-use MoreRandom;
+use SeqMisc;
 use PRFBlast;
 $SIG{INT} = 'CLEANUP';
 $SIG{BUS} = 'CLEANUP';
@@ -22,8 +22,10 @@ our $config = $PRFConfig::config;
 setpriority(0,0,$config->{niceness});
 our $db = new PRFdb;
 our %conf = ();
+$ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}";
 GetOptions(## If this gets set, then the prf_daemon will exit before it gets to the queue
 	   'nodaemon:i' => \$conf{nodaemon},  
+	   'debug:i' => \$conf{debug},
 	   ## Print some help information
 	   'help|version' => \$conf{help},      
 	   ## An accession to specifically fold.  If it is not already in the db  
@@ -129,7 +131,6 @@ if ($config->{checks}) {
     Check_Tables();
     Check_Blast();
 }
-
 ## Some Arguments should be checked before others...
 ## These first arguments are not exclusive and so are separate ifs
 if (defined($config->{help})) {
@@ -160,9 +161,13 @@ if (defined($config->{blast})) {
 }
 if (defined($config->{fillqueue})) {
     $db->FillQueue();
+    my $num = $db->MySelect("SELECT count(id) from $config->{queue_table}");
+    print "The queue now has $num->[0] entries\n";
+    exit(0);
 }
 if (defined($config->{resetqueue})) {
     $db->Reset_Queue();
+    exit(0);
 }
 if (defined($config->{copyfrom})) {
     $db->Copy_Genome($config->{copyfrom});
@@ -234,6 +239,7 @@ if (defined($config->{nodaemon})) {
 if ($config->{checks}) {
     Print_Config();
 }
+
 until (defined($state->{time_to_die})) {
     ### You can set a configuration variable 'master' so that it will not die
     if ($state->{done_count} > 60 and !defined($config->{master})) {$state->{time_to_die} = 1}
@@ -311,27 +317,41 @@ sub Gather {
     $state->{accession} = $ref->{accession};
     $state->{species} = $ref->{species};
     my $message = "qid:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
-    print "\nWorking with: $message";
+    print "Working with: $message";
     
     my %pre_landscape_state = %{$state};
     my $landscape_state = \%pre_landscape_state;
     if ($config->{do_landscape}) {
 	Landscape_Gatherer($landscape_state, $message);
     }
-    
-    PRF_Gatherer($state, $startpos);
+
+    foreach my $len (@{$config->{seqlength}}) {
+        $state->{seqlength} = $len;
+        PRF_Gatherer($state, $len, $startpos);
+    }
 }
 ## End Gather
 
 ## Start PRF_Gatherer
 sub PRF_Gatherer {
     my $state = shift;
+    my $len = shift;
     my $startpos = shift;
+    ## Check for existence in the noslipsite table
+    my $noslipsite = $db->MySelect({
+	statement =>"SELECT num_slipsite FROM numslipsite WHERE accession = '$state->{accession}'",
+	type => 'row'});
+    return(undef) if (defined($noslipsite->[0]) and $noslipsite->[0] == 0);
     $state->{genome_information} = $db->Get_ORF($state->{accession});
     my $sequence = $state->{genome_information}->{sequence};
     my $orf_start = $state->{genome_information}->{orf_start};
     my $motifs = new RNAMotif_Search();
     my $rnamotif_information;
+    my $sp = 'UNDEF';
+    my $ac = 'UNDEF';
+    $sp = $state->{species} if (defined($state->{species}));
+    $ac = $state->{accession} if (defined($state->{accession}));
+    my $current = "sp:$sp acc:$ac st:$orf_start l:$len";
     if (defined($startpos)) {
 #      $startpos = $startpos - $orf_start;
 	my $inf = PRFdb::MakeFasta($state->{genome_information}->{sequence},
@@ -346,16 +366,16 @@ sub PRF_Gatherer {
 						$state->{genome_information}->{orf_start});
 	$state->{rnamotif_information} = $rnamotif_information;
 	if (!defined($state->{rnamotif_information})) {
-	    $db->Insert_NoSlipsite($state->{accession});
+	    $db->Insert_NumSlipsite($state->{accession}, 0);
 	}
     } ## End else, so all start sites should be collected.
     
     if (!defined($rnamotif_information)) {
 	return(0);
     }
-    
+    my $num_slipsites = 0;
   STARTSITE: foreach my $slipsite_start (keys %{$rnamotif_information}) {
-      
+      $num_slipsites++;
       if ($config->{do_utr} == 0) {
 	  my $end_of_orf = $db->MySelect({
 	      statement => "SELECT orf_stop FROM genome WHERE accession = ?",
@@ -380,17 +400,17 @@ sub PRF_Gatherer {
       
       my $check_seq = Check_Sequence_Length();
       if ($check_seq eq 'shorter than wanted') {
-	  print "The sequence is: $check_seq and will be skipped.\n";
+	  print "The sequence is: $check_seq and will be skipped.\n" if (defined($config->{debug}));
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
       } 
       elsif ($check_seq eq 'null') {
-	  print "The sequence is null and will be skipped.\n";
+	  print "The sequence is null and will be skipped.\n"  if (defined($config->{debug}));
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
       } 
       elsif ($check_seq eq 'polya') {
-	  print "The sequence is polya and will be skipped.\n";
+	  print "The sequence is polya and will be skipped.\n"  if (defined($config->{debug}));
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
       }
@@ -424,6 +444,19 @@ sub PRF_Gatherer {
 	  $db->MyExecute($update_string);
       }
       if ($config->{do_boot}) {
+          my $tmp_nupack_mfe_id = $db->MySelect({
+              statement => qq/SELECT id FROM mfe WHERE accession = '$state->{accession}' AND start = '$slipsite_start'
+ AND seqlength = '$state->{seqlength}' AND algorithm = 'nupack'/,
+              type => 'single'});
+          my $tmp_pknots_mfe_id = $db->MySelect({
+              statement => qq/SELECT id FROM mfe WHERE accession = '$state->{accession}' AND start = '$slipsite_start'
+ AND seqlength = '$state->{seqlength}' AND algorithm = 'pknots'/,
+              type => 'single'});
+          my $tmp_hotknots_mfe_id = $db->MySelect({
+              statement => qq/SELECT id FROM mfe WHERE accession = '$state->{accession}' AND start = '$slipsite_start'
+ AND seqlength = '$state->{seqlength}' AND algorithm = 'hotknots'/,
+              type => 'single'});
+
 	  my $boot = new Bootlace(genome_id => $state->{genome_id},
 				  nupack_mfe_id => (defined($state->{nupack_mfe_id})) ?
 				  $state->{nupack_mfe_id} : $nupack_mfe_id,
@@ -436,29 +469,26 @@ sub PRF_Gatherer {
 				  seqlength => $state->{seqlength},
 				  iterations => $config->{boot_iterations},
 				  boot_mfe_algorithms => $config->{boot_mfe_algorithms},
-				  randomizers => $config->{boot_randomizers},);
-	  my $boot_folds = $db->Get_Num_Bootfolds($state->{genome_id}, $slipsite_start, $state->{seqlength});
-	  my $number_boot_algos = 0;
-	  $number_boot_algos += scalar keys %{$config->{boot_mfe_algorithms}};
-	  ## CHECKME!  I do not think this next line is appropriate
-	  #my $needed_boots = $number_boot_algos * $number_rnamotif_information;
-	  my $needed_boots = $number_boot_algos;
-	  if ($boot_folds == $needed_boots) {
-	      print "Already have $boot_folds pieces of boot information for $state->{genome_id} and start:$slipsite_start\n";
-	      Check_Boot_Connectivity($state, $slipsite_start);
-	  } 
-	  elsif ($boot_folds < $needed_boots) {
-	      print "Check_Boot: I have $boot_folds but need $needed_boots\n";
-	      my $bootlaces = $boot->Go();
-	      my $inserted_ids = $db->Put_Boot($bootlaces);
-	      my @fun = @{$inserted_ids};
-	  } 
-	  else {
-	      print "Already have $boot_folds pieces of boot information for $state->{genome_id} and start:$slipsite_start -- only needed $needed_boots\n";
-	      Check_Boot_Connectivity($state, $slipsite_start);
-	  } ### End if there are no bootlaces
+				  randomizers => $config->{boot_randomizers},
+				  );
+          my @algos = keys(%{$config->{boot_mfe_algorithms}});
+          my $boot_folds;
+          foreach my $method (@algos) {
+              $boot_folds = $db->Get_Num_Bootfolds(
+                  $state->{genome_id},
+                  $slipsite_start,
+                  $state->{seqlength},
+                  $method);
+              print "$current has $boot_folds randomizations for method: $method\n";
+              if (!defined($boot_folds) or $boot_folds == 0) {
+                  my $bootlaces = $boot->Go($method);
+                  my $inserted_ids = $db->Put_Boot($bootlaces);
+                  my @fun = @{$inserted_ids};
+              }
+          }
+          Check_Boot_Connectivity($state, $slipsite_start);
       } ### End if we are to do a boot
-      
+
       if ($config->{do_overlap}) {
 	  my $sequence_information = $db->Get_Sequence_from_id($state->{genome_id});
 	  my $overlap = new Overlap(genome_id => $state->{genome_id},
@@ -471,6 +501,7 @@ sub PRF_Gatherer {
       ## Clean up after yourself!
       PRFdb::RemoveFile($state->{fasta_file});
   }    ### End foreach slipsite_start
+    $db->Insert_Numslipsite($accession, $num_slipsites);
     Clean_Up();
     ## Clean out state
 }
@@ -485,15 +516,17 @@ sub Landscape_Gatherer {
     my $sequence_length = scalar(@seq_array);
     my $start_point = 0;
     while ($start_point + $config->{landscape_seqlength} <= $sequence_length) {
-	print "Landscape_Gatherer: $start_point\n";
 	my $individual_sequence = ">$message";
 	my $end_point = $start_point + $config->{landscape_seqlength};
 	foreach my $character ($start_point .. $end_point) {
-	    $individual_sequence = $individual_sequence . $seq_array[$character];
+	    if (defined($seq_array[$character])) {
+		$individual_sequence = $individual_sequence . $seq_array[$character];
+	    }
 	}
 	$individual_sequence = $individual_sequence . "\n";
 	$state->{fasta_file} = $db->Sequence_to_Fasta($individual_sequence);
 	if (!defined($state->{accession})) {die("The accession is no longer defined. This cannot be allowed.")};
+	my $landscape_table = qq/landscape_$state->{species}/;
 	my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id},
 					 species => $state->{species}, accession => $state->{accession},
 					 start => $start_point,);
@@ -503,7 +536,6 @@ sub Landscape_Gatherer {
 						   $config->{landscape_seqlength}, 'landscape');
 	my $vienna_foldedp = $db->Get_Num_RNAfolds('vienna', $state->{genome_id}, $start_point,
 						   $config->{landscape_seqlength}, 'landscape');
-
 	my ($nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id, $vienna_info, $vienna_mfe_id);
 	if ($nupack_foldedp == 0) {
 	    if ($config->{nupack_nopairs_hack}) {
@@ -512,17 +544,17 @@ sub Landscape_Gatherer {
 	    else {
 		$nupack_info = $fold_search->Nupack('nopseudo');
 	    }
-	    $nupack_mfe_id = $db->Put_Nupack($nupack_info, 'landscape');
+	    $nupack_mfe_id = $db->Put_Nupack($nupack_info, $landscape_table);
 	    $state->{nupack_mfe_id} = $nupack_mfe_id;
 	}
 	if ($pknots_foldedp == 0) {
 	    $pknots_info = $fold_search->Pknots('nopseudo');
-	    $pknots_mfe_id = $db->Put_Pknots($pknots_info, 'landscape');
+	    $pknots_mfe_id = $db->Put_Pknots($pknots_info, $landscape_table);
 	    $state->{pknots_mfe_id} = $pknots_mfe_id;
 	}
 	if ($vienna_foldedp == 0) {
 	    $vienna_info = $fold_search->Vienna();
-	    $vienna_mfe_id = $db->Put_Vienna($vienna_info, 'landscape');
+	    $vienna_mfe_id = $db->Put_Vienna($vienna_info, $landscape_table);
 	    $state->{vienna_mfe_id} = $vienna_mfe_id;
 	}
 	## The functional portion of the while loop is over, just set the state now
@@ -740,7 +772,7 @@ sub Check_Sequence_Length {
     my $sequence = $state->{sequence};
     my @seqarray = split(//, $sequence);
     my $sequence_length = $#seqarray + 1;
-    my $wanted_sequence_length = $config->{seqlength};
+    my $wanted_sequence_length = $state->{seqlength};
     open(IN, "<$filename") or die("Check_Sequence_Length: Couldn't open $filename $!");
     ## OPEN IN in Check_Sequence_Length
     my $output = '';
@@ -891,6 +923,7 @@ sub CLEANUP {
     $db->Disconnect();
     PRFdb::RemoveFile('all');
     print "\n\nCaught Fatal signal.\n\n";
+    exit(0);
 }
 
 END {

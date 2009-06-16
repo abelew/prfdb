@@ -25,6 +25,8 @@ my $appconfig = AppConfig->new({
 ## Set up some reasonable defaults here
 ####
 $PRFConfig::config->{niceness} = 10;
+$PRFConfig::config->{debug} = undef;
+$PRFConfig::config->{base} = '.';
 $PRFConfig::config->{open_files} = [];
 $PRFConfig::config->{checks} = 1;
 $PRFConfig::config->{add_to_path} = "/usr/local/bin:/usr/bin";
@@ -38,12 +40,13 @@ $PRFConfig::config->{queue_table} = 'queue';
 $PRFConfig::config->{check_webqueue} = 1;
 $PRFConfig::config->{genome_table} = 'genome';
 $PRFConfig::config->{seqlength} = [100,75,50];
-$PRFConfig::config->{landscape_seqlength}  = 105;
+$PRFConfig::config->{landscape_seqlength} = 105;
+$PRFConfig::config->{window_space} = 15;
 $PRFConfig::config->{do_nupack} = 1;
 $PRFConfig::config->{do_pknots} = 1;
 $PRFConfig::config->{do_hotknots} = 1;
 $PRFConfig::config->{do_boot} = 1;
-$PRFConfig::config->{do_landscape} = 0;
+$PRFConfig::config->{do_landscape} = 1;
 $PRFConfig::config->{do_utr} = 0;
 $PRFConfig::config->{nupack_nopairs_hack} = 0;
 $PRFConfig::config->{arch_specific_exe} = 0;
@@ -121,34 +124,32 @@ $PRFConfig::config->{distribution_graph_y_size} = 300;
 $PRFConfig::config->{landscape_graph_x_size} = 800;
 $PRFConfig::config->{landscape_graph_y_size} = 600;
 $PRFConfig::config->{graph_font_size} = 9;
+$PRFConfig::config->{ENV_LIBRARY_PATH} = $ENV{LD_LIBRARY_PATH};
 
-my $open = $appconfig->file('/usr/local/prfdb/prfdb_beta/prfdb.conf');
+my $open = $appconfig->file('prfdb.conf');
 my %data = $appconfig->varlist("^.*");
 for my $config_option (keys %data) {
-  $PRFConfig::config->{$config_option} = $data{$config_option};
-  undef $data{$config_option};
+    $PRFConfig::config->{$config_option} = $data{$config_option};
+    undef $data{$config_option};
 }
-
+$PRFConfig::config->{dsn} = qq(DBI:$PRFConfig::config->{database_type}:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host});
 if (ref($PRFConfig::config->{boot_mfe_algorithms}) eq '') {
-  $PRFConfig::config->{boot_mfe_algorithms} = eval($PRFConfig::config->{boot_mfe_algorithms});
+    $PRFConfig::config->{boot_mfe_algorithms} = eval($PRFConfig::config->{boot_mfe_algorithms});
 }
 if (ref($PRFConfig::config->{boot_randomizers}) eq '') {
-  $PRFConfig::config->{boot_randomizers} = eval($PRFConfig::config->{boot_randomizers});
+    $PRFConfig::config->{boot_randomizers} = eval($PRFConfig::config->{boot_randomizers});
 }
 if (ref($PRFConfig::config->{index_species}) eq '') {
-  $PRFConfig::config->{index_species} = eval($PRFConfig::config->{index_species});
+    $PRFConfig::config->{index_species} = eval($PRFConfig::config->{index_species});
 }
 if (ref($PRFConfig::config->{seqlength}) eq '') {
-  $PRFConfig::config->{seqlength} = eval($PRFConfig::config->{seqlength});
+    $PRFConfig::config->{seqlength} = eval($PRFConfig::config->{seqlength});
 }
-
-$PRFConfig::config->{dsn} = qq(DBI:$PRFConfig::config->{database_type}:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host});
 my $err = $PRFConfig::config->{errorfile};
 my $out = $PRFConfig::config->{logfile};
 my $error_counter = 0;
-
-$PRFConfig::config->{workdir} = $PRFConfig::config->{'base'} . '/' . $PRFConfig::config->{workdir};
-$PRFConfig::config->{blastdir} = $PRFConfig::config->{'base'} . '/' . $PRFConfig::config->{blastdir};
+$PRFConfig::config->{workdir} = $PRFConfig::config->{base} . '/' . $PRFConfig::config->{workdir};
+$PRFConfig::config->{blastdir} = $PRFConfig::config->{base} . '/' . $PRFConfig::config->{blastdir};
 foreach my $dir (split(/:/, $PRFConfig::config->{add_to_path})) {
     $ENV{PATH} = $ENV{PATH} . ':' . $dir;
 }

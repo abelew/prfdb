@@ -1,5 +1,10 @@
 package SeqMisc;
 use strict;
+use PRFConfig;
+use File::Temp qw / tmpnam /;
+## Every function here should take as input an array reference
+## containing the sequence to be shuffled.
+my $config = $PRFConfig::config;
 
 sub new {
     my ($class, %arg) = @_;
@@ -191,15 +196,14 @@ sub Random {
 	    #	  print "Please tell me $test and $count and $fun\n";
 	    while ($me->{codons}->{$test} eq '*') {
 		#		print "Stop codon! $fun";
-		$return[$count - 2] = $me->{nt}->int(rand(4))};
-		$return[$count - 1 ] = $me->{nt}->{ int( rand(4) ) };
-		$return[$count]       = $me->{nt}->{ int( rand(4) ) };
-		$test = join( '', $return[ $count - 2 ], $return[ $count - 1 ], $return[$count] );
-		
+		$return[$count - 2] = $me->{nt}->{int(rand(4))};
+		$return[$count - 1] = $me->{nt}->{int(rand(4))};
+		$return[$count] = $me->{nt}->{int(rand(4))};
+		$test = join('', $return[$count - 2], $return[$count - 1], $return[$count]);
 		#		print "Now it is $test\n";
 	    }    ## End while we have a ptc
 	}    ## End codon check.
-	( $codon_count == 2 ) ? $codon_count = 0 : $codon_count++;
+	($codon_count == 2) ? $codon_count = 0 : $codon_count++;
 	$count++;
     }    ## End top level while
     return ( \@return );
@@ -211,7 +215,6 @@ sub SameCodons {
     my @codons = @{ $me->{codonseq} };
     my @return;
     while ( scalar(@codons) > 0 ) {
-	
 	#	my $left = scalar(@codons);
 	#	print "TEST: $left\n";
 	my $pull = int( rand( scalar(@codons) ) );
@@ -572,5 +575,6 @@ $inseq
   }    ## End a ifile::temp block
   my @out_array = split( //, $out_text );
   return ( \@out_array );
+}
 
 1;

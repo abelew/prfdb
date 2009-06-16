@@ -13,6 +13,7 @@ use PRFGraph;
 use Bootlace;
 $ENV{HTTP_HOST} = 'Youneedtodefinedahostname' if (!defined($ENV{HTTP_HOST}));
 $ENV{SCRIPT_NAME} = 'index.cgi' if (!defined($ENV{SCRIPT_NAME}));
+$ENV{PATH}='/usr/bin:/usr/local/bin';
 umask(0022);
 our $config = $PRFConfig::config;
 ## All configuration information exists here
@@ -140,7 +141,7 @@ sub MAIN {
 	Download_Sequence($cgi->param('accession'));
 	exit(0);
     }
-    elsif ($path eq '/download_svg') {
+    elsif ($path eq '/download_png') {
 	Download_PNG($cgi->param('accession'), $cgi->param('mfeid'));
 	exit(0);
     }
@@ -604,215 +605,211 @@ sub Print_Stats {
 }
 
 sub Print_Detail_Slipsite {
-  my $id = $cgi->param('id');
-  my $accession = $cgi->param('accession');
-  my $slipstart = $cgi->param('slipstart');
-  $vars->{accession} = $accession;
-  $vars->{slipstart} = $slipstart;
-  my ($detail_stmt, $info);
-  Remove_Duplicates($accession);
-  if (!defined($slipstart)) {
-      $detail_stmt = qq(SELECT * FROM mfe WHERE accession = ? ORDER BY start, seqlength DESC,algorithm DESC);
-      $info = $db->MySelect({
-	  statement => $detail_stmt,
-	  vars => [$accession,]});
-  }
-  else {
-      $detail_stmt = qq(SELECT * FROM mfe WHERE accession = ? AND start = ? ORDER BY seqlength DESC,algorithm DESC);
-      $info = $db->MySelect({
-	  statement => $detail_stmt,
-	  vars => [$accession, $slipstart]});
-  }
-
-  ## id,genome_id,accession,species,algorithm,start,slipsite,seqlength,sequence,output,parsed,parens,mfe,pairs,knotp,barcode,lastupdate
-  ## 0  1         2         3       4         5     6        7         8        9      10     11     12  13    14    15      16
-
-  $vars->{species} = $info->[0]->[3];
-  $vars->{genome_id} = $info->[0]->[1];
-
-  my $genome_stmt = qq(SELECT genename FROM genome where id = ?);
-  my $genome_info = $db->MySelect({
-      statement =>$genome_stmt,
-      vars => [$vars->{genome_id}],});
-  $vars->{genename} = $genome_info->[0]->[0];
-  foreach my $structure (@{$info}) {
-      my $id = $structure->[0];
-      my $mfe = $structure->[12];
-      $vars->{mfe_id} = $structure->[0];
-      my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = '$id');
-      my $boot = $db->MySelect({
-	  statement => $boot_stmt,
-	  type => 'row'});
-      my ($ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, 
-	  $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $boot_db);
-
-      if (!defined($boot) and $config->{do_boot} == 2) {
-	  ## Add it to the webqueue
-	  $db->Set_Queue($vars->{genome_id}, 'webqueue');
+    my $id = $cgi->param('id');
+    my $accession = $cgi->param('accession');
+    my $slipstart = $cgi->param('slipstart');
+    $vars->{accession} = $accession;
+    $vars->{slipstart} = $slipstart;
+    my ($detail_stmt, $info);
+    Remove_Duplicates($accession);
+    if (!defined($slipstart)) {
+	$detail_stmt = qq(SELECT * FROM mfe WHERE accession = ? ORDER BY start, seqlength DESC,algorithm DESC);
+	$info = $db->MySelect({
+	    statement => $detail_stmt,
+	    vars => [$accession,]});
+    }
+    else {
+	$detail_stmt = qq(SELECT * FROM mfe WHERE accession = ? AND start = ? ORDER BY seqlength DESC,algorithm DESC);
+	$info = $db->MySelect({
+	    statement => $detail_stmt,
+	    vars => [$accession, $slipstart]});
+    }
+    
+    ## id,genome_id,accession,species,algorithm,start,slipsite,seqlength,sequence,output,parsed,parens,mfe,pairs,knotp,barcode,lastupdate
+    ## 0  1         2         3       4         5     6        7         8        9      10     11     12  13    14    15      16
+    
+    $vars->{species} = $info->[0]->[3];
+    $vars->{genome_id} = $info->[0]->[1];
+    
+    my $genome_stmt = qq(SELECT genename FROM genome where id = ?);
+    my $genome_info = $db->MySelect({
+	statement =>$genome_stmt,
+	vars => [$vars->{genome_id}],});
+    $vars->{genename} = $genome_info->[0]->[0];
+    foreach my $structure (@{$info}) {
+	my $id = $structure->[0];
+	my $mfe = $structure->[12];
+	$vars->{mfe_id} = $structure->[0];
+	my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = '$id');
+	my $boot = $db->MySelect({
+	    statement => $boot_stmt,
+	    type => 'row'});
+	my ($ppcc_values, $filename, $chart, $chartURL, $zscore, $randMean, 
+	    $randSE, $ppcc, $mfe_mean, $mfe_sd, $mfe_se, $boot_db);
+	
+	if (!defined($boot) and $config->{do_boot} == 2) {
+	    ## Add it to the webqueue
+	    $db->Set_Queue($vars->{genome_id}, 'webqueue');
       }
-      elsif (!defined($boot) and $config->{do_boot} == 1) {
-	  $vars->{accession} = $structure->[2];
-	  $template->process( 'generate_boot.html', $vars) or
-	      Print_Template_Error($template), die;
-
-	  my $data = ">tmp
+	elsif (!defined($boot) and $config->{do_boot} == 1) {
+	    $vars->{accession} = $structure->[2];
+	    $template->process( 'generate_boot.html', $vars) or
+		Print_Template_Error($template), die;
+	    
+	    my $data = ">tmp
 $structure->[8]
 ";
-	  my $inputfile = $db->Sequence_to_Fasta($data);
-	  my $boot = new Bootlace(
-	      genome_id => $structure->[1],
-	      nupack_mfe_id => $structure->[0],
-	      pknots_mfe_id => $structure->[0],
-	      inputfile => $inputfile,
-	      species => $structure->[3],
-	      accession => $structure->[2],
-	      start => $structure->[5],
-	      seqlength => $structure->[7],
-	      iterations => $config->{boot_iterations},
-	      boot_mfe_algorithms => $config->{boot_mfe_algorithms},
-	      randomizers => $config->{boot_randomizers},
-	      );
-	  my $bootlaces = $boot->Go();
-	  $db->Put_Boot($bootlaces);
-	  chdir($config->{base});
-      }
-
-      if (!defined($accession)) {
-	  print "Accession is not defined";
-	  exit(0);
-      }
-      if (!defined($slipstart)) {
+	    my $inputfile = $db->Sequence_to_Fasta($data);
+	    my $boot = new Bootlace(genome_id => $structure->[1],
+				    nupack_mfe_id => $structure->[0],
+				    pknots_mfe_id => $structure->[0],
+				    inputfile => $inputfile,
+				    species => $structure->[3],
+				    accession => $structure->[2],
+				    start => $structure->[5],
+				    seqlength => $structure->[7],
+				    iterations => $config->{boot_iterations},
+				    boot_mfe_algorithms => $config->{boot_mfe_algorithms},
+				    randomizers => $config->{boot_randomizers},);
+	    my $bootlaces = $boot->Go();
+	    $db->Put_Boot($bootlaces);
+	    chdir($config->{base});
+	}
+	
+	if (!defined($accession)) {
+	    print "Accession is not defined";
+	    exit(0);
+	}
+	if (!defined($slipstart)) {
 #	  print "The slipstart is not defined";
-	  $slipstart = '';
-      }
-      my $acc_slip = qq/$accession-$slipstart/;
-      my $feynman_pic = new PRFGraph({mfe_id => $id, accession => $accession});
-      my $pre_feynman_url = $feynman_pic->Picture_Filename({type=> 'feynman', url => 'url',});
-      my $feynman_url = $basedir . '/' . $pre_feynman_url;
-      my $feynman_output_filename = $feynman_pic->Picture_Filename( {type => 'feynman', });
-      my $feynman_dimensions = {};
-      if (!-r $feynman_output_filename) {
-	  $feynman_dimensions = $feynman_pic->Make_Feynman();
-      }
-      else {
-	  $feynman_dimensions = $feynman_pic->Get_Feynman_ImageSize($feynman_output_filename);
-      }
-      
-      if (defined($boot)) {
-	  my $mfe_values = $boot->[0];
-	  my @mfe_values_array = split(/\s+/, $mfe_values);
-	  $chart = new PRFGraph({
-	      real_mfe => $mfe,
-	      list_data => \@mfe_values_array,
-	      accession  => $acc_slip,
-	      mfe_id => $id,
-	  }
-      );
-	  my $ppcc_values = $chart->Get_PPCC();
-	  $filename = $chart->Picture_Filename({type => 'distribution',});
-	  my $pre_chartURL = $chart->Picture_Filename({type => 'distribution', url => 'url',});
-	  $chartURL = $basedir . '/' . $pre_chartURL;
+	    $slipstart = '';
+	}
+	my $acc_slip = qq/$accession-$slipstart/;
+	my $feynman_pic = new PRFGraph({mfe_id => $id, accession => $accession});
+	my $pre_feynman_url = $feynman_pic->Picture_Filename({type=> 'feynman', url => 'url',});
+	my $feynman_url = $basedir . '/' . $pre_feynman_url;
+	my $feynman_output_filename = $feynman_pic->Picture_Filename( {type => 'feynman', });
+	my $feynman_dimensions = {};
+	if (!-r $feynman_output_filename) {
+	    $feynman_dimensions = $feynman_pic->Make_Feynman();
+	}
+	else {
+	    $feynman_dimensions = $feynman_pic->Get_Feynman_ImageSize($feynman_output_filename);
+	}
+	
+	if (defined($boot)) {
+	    my $mfe_values = $boot->[0];
+	    $mfe_values =~ s/^\s+//g;
+	    my @mfe_values_array = split(/\s+/, $mfe_values);
+	    $chart = new PRFGraph({real_mfe => $mfe,
+				   list_data => \@mfe_values_array,
+				   accession  => $acc_slip,
+				   mfe_id => $id,});
+	    my $ppcc_values = $chart->Get_PPCC();
+	    $filename = $chart->Picture_Filename({type => 'distribution',});
+	    my $pre_chartURL = $chart->Picture_Filename({type => 'distribution', url => 'url',});
+	    $chartURL = $basedir . '/' . $pre_chartURL;
 
-	  if (!-r $filename) {
-	      $chart = $chart->Make_Distribution();
-	  }
+	    if (!-r $filename) {
+		$chart = $chart->Make_Distribution();
+	    }
 
-	  $mfe_mean = $boot->[1];
-	  $mfe_sd = $boot->[2];
-	  $mfe_se = $boot->[3];
-	  $boot_db = $boot->[4];
-	  if ($mfe_sd == 0) {
-	      $zscore = 0;
-	  }
-	  else {
-	      $mfe = 0 if (!defined($mfe));
-	      $mfe_mean = 0 if (!defined($mfe_mean));
-	      $mfe_sd = 1 if (!defined($mfe_sd));
-	      $zscore = sprintf("%.2f", ($mfe - $mfe_mean) / $mfe_sd);
-	  }
-	  $randMean = sprintf("%.1f", $mfe_mean);
-	  $randSE = sprintf("%.1f", $mfe_se);
-	  $ppcc = sprintf("%.4f", $ppcc_values);
-      }
-      else {  ##Boot is not defined!
-	  $chart = "undef";
-	  $chartURL = qq($basedir/html/no_data.gif);
-	  $mfe_mean = "undef";
-	  $mfe_sd = "undef";
-	  $mfe_se = "undef";
-	  $zscore = "UNDEF";
-	  $randMean = "UNDEF";
-	  $randSE = "UNDEF";
-	  $ppcc = "UNDEF";
-      }
-      $vars->{algorithm} = $structure->[4];
-      $vars->{slipstart} = $structure->[5];
-      $vars->{slipsite} = $structure->[6];
-      $vars->{seqlength} = $structure->[7];
-      $vars->{pk_input} = $structure->[8];
-      $vars->{pk_input} =~ tr/atgcu/ATGCU/;
-      $vars->{pk_output} = $structure->[9];
-      $vars->{parsed} = $structure->[10];
-      $vars->{parsed} =~ s/\s+//g;
-      $vars->{brackets} = $structure->[11];
-      $vars->{mfe} = $mfe;
-      $vars->{pairs} = $structure->[13];
-      $vars->{knotp} = $structure->[14];
-      $vars->{barcode} = $structure->[15];
-
-      my @in = split(//, $vars->{pk_input});
-      my @par = split(//, $vars->{parsed});
-      $vars->{gc_content} = Get_GC(\@in);
-      $vars->{gc_stems} = Get_GC(\@in, \@par);
-
-      my $delta = $vars->{seqlength} - length($vars->{parsed});
-      $vars->{parsed} .= '.' x $delta;
-      $vars->{brackets} .= '.' x $delta;
-
-      $vars->{chart} = $chart;
-      $vars->{chartURL} = $chartURL;
-      $vars->{feynman} = $feynman_pic;
-      $vars->{feynman_url} = $feynman_url;
-
-      $vars->{mfe_mean} = $mfe_mean;
-      $vars->{mfe_sd} = $mfe_sd;
-      $vars->{mfe_se} = $mfe_se;
-      $vars->{zscore} = $zscore;
-      $vars->{randmean} = $randMean;
-      $vars->{randse} = $randSE;
-      $vars->{ppcc} = $ppcc;
-      $vars->{boot_db} = $boot_db;
-
-      $vars->{minus_stop} = Color_Stems(Make_Minus($vars->{pk_input}), $vars->{parsed});
-      $vars->{numbers} = Make_Nums($vars->{pk_input});
-      $vars->{pk_input} = Color_Stems($vars->{pk_input}, $vars->{parsed});
-      $vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
-      $vars->{parsed} = Color_Stems($vars->{parsed}, $vars->{parsed});
-      $vars->{species} =~ s/_/ /g;
-      $vars->{species} = ucfirst($vars->{species});
-
-      $vars->{feynman_height} = $feynman_dimensions->{height};
-      $vars->{feynman_width} = $feynman_dimensions->{width};
-
-      if ($vars->{accession} =~ /^SGDID/) {
-	  $vars->{short_accession} = $vars->{accession};
-	  $vars->{short_accession} =~ s/^SGDID\://g;
-      }
-      elsif ($vars->{accession} =~ /^BC/) {
-	  $vars->{short_accession} = undef;
-	  $vars->{genbank_accession} = $vars->{accession};
-      }
-
-      $template->process("detail_body.html", $vars) or
-	  Print_Template_Error($template), die;
-  }    ## End foreach structure in the database
-  my $num_algos = 0;
-  $num_algos++ if ($config->{do_pknots} == 1);
-  $num_algos++ if ($config->{do_nupack} == 1);
-  $num_algos++ if ($config->{do_hotknots} == 1);
-  my $num_expected_mfes = scalar(@{$config->{seqlength}}) * $num_algos;
-  my $num_have = $db->MySelect({statement => qq/SELECT count(id) FROM mfe WHERE accession = '$vars->{accession}' AND start = '$vars->{slipstart}'/, type => 'single'});
-  $db->Add_Webqueue($vars->{genome_id}) if ($num_have < $num_expected_mfes);
+	    $mfe_mean = $boot->[1];
+	    $mfe_sd = $boot->[2];
+	    $mfe_se = $boot->[3];
+	    $boot_db = $boot->[4];
+	    if ($mfe_sd == 0) {
+		$zscore = 0;
+	    }
+	    else {
+		$mfe = 0 if (!defined($mfe));
+		$mfe_mean = 0 if (!defined($mfe_mean));
+		$mfe_sd = 1 if (!defined($mfe_sd));
+		$zscore = sprintf("%.2f", ($mfe - $mfe_mean) / $mfe_sd);
+	    }
+	    $randMean = sprintf("%.1f", $mfe_mean);
+	    $randSE = sprintf("%.1f", $mfe_se);
+	    $ppcc = sprintf("%.4f", $ppcc_values);
+	}
+	else {  ##Boot is not defined!
+	    $chart = "undef";
+	    $chartURL = qq($basedir/html/no_data.gif);
+	    $mfe_mean = "undef";
+	    $mfe_sd = "undef";
+	    $mfe_se = "undef";
+	    $zscore = "UNDEF";
+	    $randMean = "UNDEF";
+	    $randSE = "UNDEF";
+	    $ppcc = "UNDEF";
+	}
+	$vars->{algorithm} = $structure->[4];
+	$vars->{slipstart} = $structure->[5];
+	$vars->{slipsite} = $structure->[6];
+	$vars->{seqlength} = $structure->[7];
+	$vars->{pk_input} = $structure->[8];
+	$vars->{pk_input} =~ tr/atgcu/ATGCU/;
+	$vars->{pk_output} = $structure->[9];
+	$vars->{parsed} = $structure->[10];
+	$vars->{parsed} =~ s/\s+//g;
+	$vars->{brackets} = $structure->[11];
+	$vars->{mfe} = $mfe;
+	$vars->{pairs} = $structure->[13];
+	$vars->{knotp} = $structure->[14];
+	$vars->{barcode} = $structure->[15];
+	
+	my @in = split(//, $vars->{pk_input});
+	my @par = split(//, $vars->{parsed});
+	$vars->{gc_content} = Get_GC(\@in);
+	$vars->{gc_stems} = Get_GC(\@in, \@par);
+	
+	my $delta = $vars->{seqlength} - length($vars->{parsed});
+	$vars->{parsed} .= '.' x $delta;
+	$vars->{brackets} .= '.' x $delta;
+	
+	$vars->{chart} = $chart;
+	$vars->{chartURL} = $chartURL;
+	$vars->{feynman} = $feynman_pic;
+	$vars->{feynman_url} = $feynman_url;
+	
+	$vars->{mfe_mean} = $mfe_mean;
+	$vars->{mfe_sd} = $mfe_sd;
+	$vars->{mfe_se} = $mfe_se;
+	$vars->{zscore} = $zscore;
+	$vars->{randmean} = $randMean;
+	$vars->{randse} = $randSE;
+	$vars->{ppcc} = $ppcc;
+	$vars->{boot_db} = $boot_db;
+	
+	$vars->{minus_stop} = Color_Stems(Make_Minus($vars->{pk_input}), $vars->{parsed});
+	$vars->{numbers} = Make_Nums($vars->{pk_input});
+	$vars->{pk_input} = Color_Stems($vars->{pk_input}, $vars->{parsed});
+	$vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
+	$vars->{parsed} = Color_Stems($vars->{parsed}, $vars->{parsed});
+	$vars->{species} =~ s/_/ /g;
+	$vars->{species} = ucfirst($vars->{species});
+	
+	$vars->{feynman_height} = $feynman_dimensions->{height};
+	$vars->{feynman_width} = $feynman_dimensions->{width};
+	
+	if ($vars->{accession} =~ /^SGDID/) {
+	    $vars->{short_accession} = $vars->{accession};
+	    $vars->{short_accession} =~ s/^SGDID\://g;
+	}
+	elsif ($vars->{accession} =~ /^BC/) {
+	    $vars->{short_accession} = undef;
+	    $vars->{genbank_accession} = $vars->{accession};
+	}
+	
+	$template->process("detail_body.html", $vars) or
+	    Print_Template_Error($template), die;
+    }    ## End foreach structure in the database
+    my $num_algos = 0;
+    $num_algos++ if ($config->{do_pknots} == 1);
+    $num_algos++ if ($config->{do_nupack} == 1);
+    $num_algos++ if ($config->{do_hotknots} == 1);
+    my $num_expected_mfes = scalar(@{$config->{seqlength}}) * $num_algos;
+    my $num_have = $db->MySelect({statement => qq/SELECT count(id) FROM mfe WHERE accession = '$vars->{accession}' AND start = '$vars->{slipstart}'/, type => 'single'});
+    $db->Add_Webqueue($vars->{genome_id}) if ($num_have < $num_expected_mfes);
 }
 
 sub Get_GC {
@@ -1586,8 +1583,6 @@ sub Print_Blast {
 
     $sequence =~ tr/Uu/Tt/;
     $sequence =~ s/\s//g;
-    print "TELL ME: $sequence<br>\n";
-    
     my $local_info = $blast->Search($sequence, $is_local);
     
     my (%hit_names, %accessions, %lengths, %descriptions, %scores, %significances, %bitses);
