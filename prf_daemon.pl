@@ -531,11 +531,11 @@ sub Landscape_Gatherer {
 					 species => $state->{species}, accession => $state->{accession},
 					 start => $start_point,);
 	my $nupack_foldedp = $db->Get_Num_RNAfolds('nupack', $state->{genome_id}, $start_point,
-						   $config->{landscape_seqlength}, 'landscape');
+						   $config->{landscape_seqlength}, $landscape_table);
 	my $pknots_foldedp = $db->Get_Num_RNAfolds('pknots', $state->{genome_id}, $start_point,
-						   $config->{landscape_seqlength}, 'landscape');
+						   $config->{landscape_seqlength}, $landscape_table);
 	my $vienna_foldedp = $db->Get_Num_RNAfolds('vienna', $state->{genome_id}, $start_point,
-						   $config->{landscape_seqlength}, 'landscape');
+						   $config->{landscape_seqlength}, $landscape_table);
 	my ($nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id, $vienna_info, $vienna_mfe_id);
 	if ($nupack_foldedp == 0) {
 	    if ($config->{nupack_nopairs_hack}) {
