@@ -24,6 +24,7 @@ my $appconfig = AppConfig->new({
 ####
 ## Set up some reasonable defaults here
 ####
+$PRFConfig::config->{niceness} = 10;
 $PRFConfig::config->{debug} = undef;
 $PRFConfig::config->{base} = '.';
 $PRFConfig::config->{open_files} = [];

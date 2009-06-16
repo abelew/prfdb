@@ -2,7 +2,6 @@
 use strict;
 use DBI;
 use Getopt::Long;
-
 use lib "$ENV{HOME}/usr/lib/perl5";
 use lib 'lib';
 use PRFConfig;
@@ -13,7 +12,6 @@ use Bootlace;
 use Overlap;
 use SeqMisc;
 use PRFBlast;
-
 $SIG{INT} = 'CLEANUP';
 $SIG{BUS} = 'CLEANUP';
 $SIG{SEGV} = 'CLEANUP';
@@ -21,12 +19,12 @@ $SIG{PIPE} = 'CLEANUP';
 $SIG{ABRT} = 'CLEANUP';
 $SIG{QUIT} = 'CLEANUP';
 our $config = $PRFConfig::config;
-$ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}";
+setpriority(0,0,$config->{niceness});
 our $db = new PRFdb;
 our %conf = ();
-GetOptions(
-	   ## If this gets set, then the prf_daemon will exit before it gets to the queue
-	   'nodaemon:i' => \$conf{nodaemon},
+$ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}";
+GetOptions(## If this gets set, then the prf_daemon will exit before it gets to the queue
+	   'nodaemon:i' => \$conf{nodaemon},  
 	   'debug:i' => \$conf{debug},
 	   ## Print some help information
 	   'help|version' => \$conf{help},      
@@ -99,35 +97,32 @@ GetOptions(
 	   'stem2_spacer_max:i' => \$conf{stem2_spacer_max},
 	   'checks:i' => \$conf{checks},
 	   'make_jobs' => \$conf{make_jobs},
-	   'make_landscape' => \$conf{make_landscape},
-	   );
+	   'make_landscape' => \$conf{make_landscape},);
 foreach my $opt (keys %conf) {
     if (defined($conf{$opt})) {
 	$config->{$opt} = $conf{$opt};
     }
 }
 
-our $state = {
-    time_to_die => undef,
-    queue_table => undef,
-    queue_id => undef,
-    pknots_mfe_id => undef,
-    nupack_mfe_id => undef,
-    vienna_mfe_id => undef,
-    hotknots_mfe_id => undef,
-    genome_id => undef,
-    accession => undef,
-    species => undef,
-    seqlength => undef,
-    sequence => undef,
-    fasta_file => undef,
-    genome_information => undef,
-    rnamotif_information => undef,
-    nupack_information => undef,
-    pknots_information => undef,
-    boot_information => undef,
-    done_count => 0,
-};
+our $state = {time_to_die => undef,
+	      queue_table => undef,
+	      queue_id => undef,
+	      pknots_mfe_id => undef,
+	      nupack_mfe_id => undef,
+	      vienna_mfe_id => undef,
+	      hotknots_mfe_id => undef,
+	      genome_id => undef,
+	      accession => undef,
+	      species => undef,
+	      seqlength => undef,
+	      sequence => undef,
+	      fasta_file => undef,
+	      genome_information => undef,
+	      rnamotif_information => undef,
+	      nupack_information => undef,
+	      pknots_information => undef,
+	      boot_information => undef,
+	      done_count => 0,};
 
 ### START DOING WORK NOW
 chdir($config->{base});
@@ -244,8 +239,6 @@ if (defined($config->{nodaemon})) {
 if ($config->{checks}) {
     Print_Config();
 }
-
-
 
 until (defined($state->{time_to_die})) {
     ### You can set a configuration variable 'master' so that it will not die
@@ -532,30 +525,17 @@ sub Landscape_Gatherer {
 	}
 	$individual_sequence = $individual_sequence . "\n";
 	$state->{fasta_file} = $db->Sequence_to_Fasta($individual_sequence);
-	if (!defined($state->{accession})) {
-	    die("The accession is no longer defined. This cannot be allowed.");
-	}
-	my $fold_search = new RNAFolders(file => $state->{fasta_file},
-					 genome_id => $state->{genome_id},
-					 species => $state->{species},
-					 accession => $state->{accession},
-					 start => $start_point,);
+	if (!defined($state->{accession})) {die("The accession is no longer defined. This cannot be allowed.")};
 	my $landscape_table = qq/landscape_$state->{species}/;
-	my $nupack_foldedp = $db->Get_Num_RNAfolds('nupack',
-						   $state->{genome_id},
-						   $start_point,
-						   $config->{landscape_seqlength},
-						   $landscape_table);
-	my $pknots_foldedp = $db->Get_Num_RNAfolds('pknots',
-						   $state->{genome_id},
-						   $start_point,
-						   $config->{landscape_seqlength},
-						   $landscape_table);
-	my $vienna_foldedp = $db->Get_Num_RNAfolds('vienna',
-						   $state->{genome_id},
-						   $start_point,
-						   $config->{landscape_seqlength},
-						   $landscape_table);
+	my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id},
+					 species => $state->{species}, accession => $state->{accession},
+					 start => $start_point,);
+	my $nupack_foldedp = $db->Get_Num_RNAfolds('nupack', $state->{genome_id}, $start_point,
+						   $config->{landscape_seqlength}, 'landscape');
+	my $pknots_foldedp = $db->Get_Num_RNAfolds('pknots', $state->{genome_id}, $start_point,
+						   $config->{landscape_seqlength}, 'landscape');
+	my $vienna_foldedp = $db->Get_Num_RNAfolds('vienna', $state->{genome_id}, $start_point,
+						   $config->{landscape_seqlength}, 'landscape');
 	my ($nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id, $vienna_info, $vienna_mfe_id);
 	if ($nupack_foldedp == 0) {
 	    if ($config->{nupack_nopairs_hack}) {
@@ -709,10 +689,8 @@ sub Check_Boot_Connectivity {
 		if (!defined($state->{accession})) {
 		    die("The accession is no longer defined. This cannot be allowed.")
 		    };
-		my $fold_search = new RNAFolders(file => $state->{fasta_file},
-						 genome_id => $state->{genome_id},
-						 species => $state->{species},
-						 accession => $state->{accession},
+		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id},
+						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
 		$new_mfe_id = Check_Nupack($fold_search, $slipsite_start);
 	    }
@@ -721,18 +699,16 @@ sub Check_Boot_Connectivity {
 		if (!defined($state->{accession})) {
 		    die("The accession is no longer defined. This cannot be allowed.")
 		    };
-		my $fold_search = new RNAFolders(file => $state->{fasta_file},
-						 genome_id => $state->{genome_id},
-						 species => $state->{species},
-						 accession => $state->{accession},
+		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id},
+						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
 		$new_mfe_id = Check_Pknots($fold_search, $slipsite_start);
 	    } ### End if there is no mfe_id and pknots was the algorithm
 	    my $update_mfe_id_statement = qq(UPDATE boot SET mfe_id = ? WHERE id = ?);
 	    my ($cp,$cf, $cl) = caller(0);
-	    $db->MyExecute({ statement => $update_mfe_id_statement,
-			     vars =>[$new_mfe_id, $boot_id],
-			     caller =>"$cp $cf $cl",});
+	    $db->MyExecute({statement => $update_mfe_id_statement,
+			    vars =>[$new_mfe_id, $boot_id],
+			    caller =>"$cp $cf $cl",});
 	    $num_fixed++;
 	}    ### End if there is no mfe_id
     }    ### End foreach boot in the list
@@ -785,8 +761,8 @@ sub Check_Folds {
 
 ## Start Clean_Up
 sub Clean_Up {
-    $db->Done_Queue( $state->{queue_table}, $state->{genome_id} );
-    foreach my $k ( keys %{$state} ) { $state->{$k} = undef unless ( $k eq 'done_count' or $k ); }
+    $db->Done_Queue($state->{queue_table}, $state->{genome_id});
+    foreach my $k (keys %{$state}) { $state->{$k} = undef unless ($k eq 'done_count' or $k); }
 }
 ## End Clean_Up
 
@@ -839,10 +815,10 @@ sub Check_Sequence_Length {
     elsif ($sequence =~ /^A+CCCUCG+$/) {
 	return('polya');
     }
-    elsif ( $sequence =~ /AAAAAAAA$/ and $sequence_length < $wanted_sequence_length ) {
+    elsif ($sequence =~ /AAAAAAAA$/ and $sequence_length < $wanted_sequence_length) {
 	return ('polya');
     }
-    elsif ( $sequence_length > $wanted_sequence_length ) {
+    elsif ($sequence_length > $wanted_sequence_length) {
 #    open( OUT, ">$filename" ) or die("Could not open $filename $!");
 #    ## OPEN OUT in Check_Sequence_Length
 #    print OUT "$output\n";
@@ -854,11 +830,10 @@ sub Check_Sequence_Length {
 #    ## CLOSE OUT in Check_Sequence_Length
 	return ('longer than wanted');
     }
-    elsif ( $sequence_length == $wanted_sequence_length ) {
+    elsif ($sequence_length == $wanted_sequence_length) {
 	return ('equal');
     }
-    elsif ( $sequence_length < $wanted_sequence_length ) {
-	print "wanted is $wanted_sequence_length got $sequence_length\n";
+    elsif ($sequence_length < $wanted_sequence_length) {
 	return ('shorter than wanted');
     }
     else {
