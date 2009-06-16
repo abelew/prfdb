@@ -345,8 +345,10 @@ sub PRF_Gatherer {
     my $len = shift;
     my $startpos = shift;
     ## Check for existence in the noslipsite table
-    my $noslipsite = $db->MySelect("SELECT id FROM noslipsite WHERE accession = '$state->{accession}'");
-    return(undef) if ($#$noslipsite > -1);
+    my $noslipsite = $db->MySelect({
+	statement =>"SELECT num_slipsite FROM numslipsite WHERE accession = '$state->{accession}'",
+	type => 'row'});
+    return(undef) if (defined($noslipsite->[0]) and $noslipsite->[0] == 0);
     $state->{genome_information} = $db->Get_ORF($state->{accession});
     my $sequence = $state->{genome_information}->{sequence};
     my $orf_start = $state->{genome_information}->{orf_start};
@@ -371,16 +373,16 @@ sub PRF_Gatherer {
 						$state->{genome_information}->{orf_start});
 	$state->{rnamotif_information} = $rnamotif_information;
 	if (!defined($state->{rnamotif_information})) {
-	    $db->Insert_NoSlipsite($state->{accession});
+	    $db->Insert_NumSlipsite($state->{accession}, 0);
 	}
     } ## End else, so all start sites should be collected.
     
     if (!defined($rnamotif_information)) {
 	return(0);
     }
-    
+    my $num_slipsites = 0;
   STARTSITE: foreach my $slipsite_start (keys %{$rnamotif_information}) {
-      
+      $num_slipsites++;
       if ($config->{do_utr} == 0) {
 	  my $end_of_orf = $db->MySelect({
 	      statement => "SELECT orf_stop FROM genome WHERE accession = ?",
@@ -506,6 +508,7 @@ sub PRF_Gatherer {
       ## Clean up after yourself!
       PRFdb::RemoveFile($state->{fasta_file});
   }    ### End foreach slipsite_start
+    $db->Insert_Numslipsite($accession, $num_slipsites);
     Clean_Up();
     ## Clean out state
 }
