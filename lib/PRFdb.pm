@@ -164,7 +164,6 @@ sub MyExecute {
     else {
 	$statement = $input->{statement};
     }
-    
     my $dbh = $me->MyConnect($statement);
     my $sth = $dbh->prepare($statement);
     my $rv;
@@ -1344,9 +1343,9 @@ sub Insert_Numslipsite {
     my $me = shift;
     my $accession = shift;
     my $num_slipsite = shift;
-    my $statement = "INSERT INTO noslipsite
+    my $statement = qq/INSERT INTO numslipsite
 (accession, num_slipsite)
-VALUES($accession, $num_slipsite)";
+VALUES('$accession', '$num_slipsite')/;
     my ($cp,$cf,$cl) = caller();
     $me->MyExecute({statement =>$statement, caller => "$cp, $cf, $cl"});
     my $last_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});

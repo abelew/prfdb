@@ -508,7 +508,7 @@ sub PRF_Gatherer {
       ## Clean up after yourself!
       PRFdb::RemoveFile($state->{fasta_file});
   }    ### End foreach slipsite_start
-    $db->Insert_Numslipsite($accession, $num_slipsites);
+    $db->Insert_Numslipsite($state->{accession}, $num_slipsites) if (!defined($noslipsite->[0]));
     Clean_Up();
     ## Clean out state
 }
