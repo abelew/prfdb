@@ -479,7 +479,7 @@ sub PRF_Gatherer {
                   $slipsite_start,
                   $state->{seqlength},
                   $method);
-              print "$current has $boot_folds randomizations for method: $method\n";
+              print "$current has $boot_folds randomizations for method: $method\n" if (defined($config->{debug}));
               if (!defined($boot_folds) or $boot_folds == 0) {
                   my $bootlaces = $boot->Go($method);
                   my $inserted_ids = $db->Put_Boot($bootlaces);
@@ -724,32 +724,32 @@ sub Check_Folds {
     my $mfe_varname = qq(${type}_mfe_id);
     my $folds = $db->Get_Num_RNAfolds($type, $state->{genome_id}, $slipsite_start, $state->{seqlength});
     if ($folds > 0) { ### If there ARE existing folds...
-	print "$state->{genome_id} has $folds > 0 pknots_folds at position $slipsite_start\n";
+	print "$state->{genome_id} has $folds > 0 pknots_folds at position $slipsite_start\n" if (defined($config->{debug}));
 	$state->{$mfe_varname} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start,
 						 $state->{seqlength}, $type);
 	$mfe_id = $state->{$mfe_varname};
 	print "Check_Folds $type - already done: state: $mfe_id\n";
     }
     else { ### If there are NO existing folds...
-	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n";
+	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n" if (defined($config->{debug}));
 	my ($info, $mfe_id);
 	if ($type eq 'pknots') {
 	    $info = $fold_search->Pknots();
 	    $mfe_id = $db->Put_Pknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
-	    print "Performed Put_Pknots and returned $mfe_id\n";
+	    print "Performed Put_Pknots and returned $mfe_id\n" if (defined($config->{debug}));
 	}
 	elsif ($type eq 'nupack') {
 	    $info = $fold_search->Nupack_NOPAIRS();
 	    $mfe_id = $db->Put_Nupack($info);
 	    $state->{$mfe_varname} = $mfe_id;
-	    print "Performed Put_Nupack and returned $mfe_id\n";
+	    print "Performed Put_Nupack and returned $mfe_id\n" if (defined($config->{debug}));
 	}
 	elsif ($type eq 'hotknots') {
 	    $info = $fold_search->Hotknots();
 	    $mfe_id = $db->Put_Hotknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
-	    print "Performed Put_Hotknots and returned $mfe_id\n";
+	    print "Performed Put_Hotknots and returned $mfe_id\n" if (defined($config->{debug}));
 	}
 	else {
 	    die("Non existing type in Check_Folds");

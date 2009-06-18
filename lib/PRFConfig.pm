@@ -51,7 +51,7 @@ $PRFConfig::config->{do_utr} = 0;
 $PRFConfig::config->{nupack_nopairs_hack} = 0;
 $PRFConfig::config->{arch_specific_exe} = 0;
 $PRFConfig::config->{boot_iterations} = 100;
-$PRFConfig::config->{boot_mfe_algorithms} = {pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot,};
+$PRFConfig::config->{boot_mfe_algorithms} = {pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, hotknots => \&RNAFolders::Hotknots_Boot, };
 $PRFConfig::config->{boot_randomizers} = {array => \&SeqMisc::ArrayShuffle,};
 $PRFConfig::config->{database_type} = 'mysql';
 $PRFConfig::config->{db} = 'prfconfigdefault_db';
