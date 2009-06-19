@@ -17,7 +17,7 @@ $ENV{PATH}='/usr/bin:/usr/local/bin';
 umask(0022);
 our $config = $PRFConfig::config;
 ## All configuration information exists here
-chdir( $config->{base} );
+chdir($config->{base});
 ## Change into the home directory of the folder daemon
 our $db = new PRFdb;
 ## Set up a database configuration
@@ -50,7 +50,7 @@ foreach my $value (@species_values) {
 our $vars = {
     base => $base,
     basedir => $basedir,
-    startsearchform => $cgi->startform( -action => "$base/search_perform" ),
+    startsearchform => $cgi->startform(-action => "$base/search_perform"),
     search_species_limit => $cgi->popup_menu(-name =>'search_species_limit', -values => \@species_values, -labels => \%species_labels, -default => 'all'),
     searchquery => $cgi->textfield(-name => 'query', -size => 20),
     searchform => "$base/searchform",
@@ -188,7 +188,7 @@ sub MAIN {
     }
 
     print $cgi->header;
-    $template->process( 'header.html', $vars ) or
+    $template->process('header.html', $vars) or
 	Print_Template_Error($template), die;
 
     if ($path eq '/start' or $path eq '') {
@@ -291,7 +291,7 @@ sub MAIN {
     }
 
     print $cgi->endform;
-    $template->process( 'footer.html', $vars ) or
+    $template->process('footer.html', $vars) or
 	Print_Template_Error($template), die;
     exit(0);
 }
@@ -328,7 +328,7 @@ sub Print_Index {
     $vars->{last_species} =~ s/_/ /g;
     $vars->{lastupdate} = $lastupdate->[1];
     $vars->{last_accession} = $lastupdate->[2];
-    $template->process( 'index.html', $vars ) or
+    $template->process('index.html', $vars) or
 	Print_Template_Error($template), die;
 }
 
@@ -337,8 +337,7 @@ sub Print_Download {
   if (defined($config->{index_species})) {
       $vars->{species} = $cgi->popup_menu(-name => 'species',
 					  -values => \@species_values,
-					  -labels => \%species_labels,
-					  );
+					  -labels => \%species_labels,);
   }
   else {
       my @values = ('saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','danio_rerio','bos_taurus', 'xenopus_laevis', 'xenopus_tropicalis', 'rattus_norvegicus', 'all');
@@ -377,15 +376,15 @@ sub Print_Search_Form {
 }
 
 sub Print_Import_Form {
-    $vars->{startform} = $cgi->startform( -action => "$base/perform_import" );
-    $vars->{import} = $cgi->textfield( -name => 'import_accession', -size => 20 );
-    $template->process( 'import.html', $vars ) or
+    $vars->{startform} = $cgi->startform(-action => "$base/perform_import");
+    $vars->{import} = $cgi->textfield(-name => 'import_accession', -size => 20);
+    $template->process('import.html', $vars) or
 	Print_Template_Error($template), die;
 }
 
 sub Print_Cloudform {
     my %labels;
-    $vars->{newstartform} = $cgi->startform( -action => "$base/cloud" );
+    $vars->{newstartform} = $cgi->startform(-action => "$base/cloud");
     $vars->{seqlength} = $cgi->popup_menu(-name => 'seqlength', -values => $config->{seqlength},-default=> $vars->{seqlength});
     $vars->{slipsites} = $cgi->popup_menu(-name => 'slipsites',
 					  -default => 'all',
@@ -399,8 +398,7 @@ sub Print_Cloudform {
 						      'GGGUUUU', 'GGGAAAC', 'CCCUUUC',
 						      'CCCUUUU', 'GGGAAAG', 'GGGUUUC',]);
     
-    $vars->{cloud_filters} = $cgi->checkbox_group(
-         					  -name => 'cloud_filters',
+    $vars->{cloud_filters} = $cgi->checkbox_group(-name => 'cloud_filters',
 #						  -values => ['pseudoknots only', 'coding sequence only'],);
 						  -values => ['pseudoknots only',],);
     $vars->{species} = $cgi->popup_menu(-name => 'species',
@@ -408,7 +406,7 @@ sub Print_Cloudform {
 					-labels => \%species_labels,
 					);
     $vars->{cloudsubmit} = $cgi->submit();
-    $template->process( 'cloudform.html', $vars ) or
+    $template->process('cloudform.html', $vars) or
 	Print_Template_Error($template), die;
 }
 

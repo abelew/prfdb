@@ -8,7 +8,7 @@ use Fcntl ':flock';    # import LOCK_* constants
 use Bio::DB::Universal;
 
 ### Holy crap global variables!
-my $config = $PRFConfig::config;
+my $config;
 my $dbh;
 ###
 
@@ -27,10 +27,22 @@ sub new {
     if ($config->{checks}) {
 	$me->Create_Genome() unless ($me->Tablep('genome'));
 	$me->Create_Queue() unless ($me->Tablep($config->{queue_table}));
-	$me->Create_Boot() unless ($me->Tablep('boot'));
 	$me->Create_MFE() unless ($me->Tablep('mfe'));
 	$me->Create_Errors() unless ($me->Tablep('errors'));
-	$me->Create_NoSlipsite() unless ($me->Tablep('noslipsite'));
+	$me->Create_NumSlipsite() unless ($me->Tablep('numslipsite'));
+	if (defined($config->{index_species})) {
+	    my @sp = @{$config->{index_species}};
+	    foreach my $s (@sp) {
+		my $boot_table = "boot_$s";
+	        unless ($me->Tablep($boot_table)) {
+		    $me->Create_Boot($boot_table);
+		}
+		my $landscape_table = "landscape_$s";
+		unless ($me->Tablep($landscape_table)) {
+		    $me->Create_Landscape($landscape_table);
+		}
+	    }
+	}
     }
     $me->{errors} = undef;
     return ($me);
@@ -552,14 +564,15 @@ sub Get_Boot {
     my $species = shift;
     my $accession = shift;
     my $start = shift;
+    my $table = "boot_$species";
     PRF_Error("Undefined value in Get_Boot", $species, $accession)
 	unless (defined($species) and defined($accession));
     my $statement;
     if (defined($start)) {
-	$statement = qq(SELECT * FROM boot WHERE accession = ? AND start = ? ORDER BY start);
+	$statement = qq(SELECT * FROM $table WHERE accession = ? AND start = ? ORDER BY start);
     } 
     else {
-	$statement = qq(SELECT * from boot where accession = ? ORDER BY start);
+	$statement = qq(SELECT * from $table where accession = ? ORDER BY start);
     }
     my $info = $me->MySelect({
 	statement =>$statement,
@@ -1236,12 +1249,14 @@ sub Get_Num_RNAfolds {
 
 sub Get_Num_Bootfolds {
     my $me = shift;
+    my $species = shift;
     my $genome_id = shift;
     my $start = shift;
     my $seqlength = shift;
     my $method = shift;
+    my $table = "boot_$species";
     my $return = {};
-    my $statement = qq/SELECT count(id) FROM boot WHERE genome_id = ? and start = ? and seqlength = ? and mfe_method = ?/;
+    my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? and start = ? and seqlength = ? and mfe_method = ?/;
     my $count = $me->MySelect({statement => $statement,
 			       vars => [$genome_id, $start, $seqlength, $method],
 			       type =>'single'});
@@ -1502,6 +1517,7 @@ sub Put_Stats {
     my $me = shift;
     my $data = shift;
     foreach my $species (@{$data->{species}}) {
+	my $table = "boot_$species";
 	foreach my $seqlength (@{$data->{seqlength}}) {
 	    foreach my $max_mfe (@{$data->{max_mfe}}) {
 		foreach my $algorithm (@{$data->{algorithm}}) {
@@ -1528,8 +1544,8 @@ sub Put_Stats {
 (SELECT stddev(mfe) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
 (SELECT avg(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
 (SELECT stddev(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT avg(zscore) FROM boot WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'),
-(SELECT stddev(zscore) FROM boot WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength')
+(SELECT avg(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'),
+(SELECT stddev(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength')
     )/;
 my ($cp,$cf,$cl) = caller();
 $me->MyExecute({statement => $statement,
@@ -1573,7 +1589,8 @@ sub Put_Boot {
 		$errorstring = "Undefined value(s) in Put_Boot: $errorstring";
 		PRF_Error($errorstring, $species, $accession);
 	    }
-	    my $statement = qq(INSERT INTO boot 
+	    my $table = "boot_$species";
+	    my $statement = qq(INSERT INTO $table
 (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
     VALUES
 (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?));
@@ -1624,16 +1641,17 @@ sub Put_Single_Boot {
 	$errorstring = "Undefined value(s) in Put_Boot: $errorstring";
 	PRF_Error($errorstring, $species, $accession);
     }
-    my $statement = qq(INSERT INTO boot 
+    my $table = "boot_$species";
+    my $statement = qq(INSERT INTO $table
 (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
     VALUES
-('$data->{genome_id}' ,'$mfe_id', '$species', '$accession', '$start', '$seqlength', '$iterations', '$rand_method', '$mfe_method', '$mfe_mean', '$mfe_sd', '$mfe_sd', '$pairs_mean', '$pairs_sd', '$pairs_se', '$mfe_values'));
+('$data->{genome_id}','$mfe_id','$species','$accession','$start','$seqlength','$iterations','$rand_method','$mfe_method','$mfe_mean','$mfe_sd','$mfe_sd','$pairs_mean','$pairs_sd','$pairs_se','$mfe_values'));
 
 my $undefined_values = Check_Defined( { genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values } );
 
 if ($undefined_values) {
     $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
-PRF_Error( $errorstring, $species, $accession );
+PRF_Error($errorstring, $species, $accession);
 print "$errorstring, $species, $accession\n";
 }
 my ($cp, $cf, $cl) = caller();
@@ -1651,10 +1669,10 @@ sub Put_Overlap {
     my $statement = qq(INSERT DELAYED INTO overlap
 (genome_id, species, accession, start, plus_length, plus_orf, minus_length, minus_orf) VALUES
 (?,?,?,?,?,?,?,?));
-my ( $cp, $cf, $cl ) = caller();
+my ($cp,$cf,$cl) = caller();
 $me->MyExecute({statement => $statement,
 		vars => [$data->{genome_id}, $data->{species}, $data->{accession}, $data->{start}, $data->{plus_length}, $data->{plus_orf}, $data->{minus_length}, $data->{minus_orf}], 
-		caller =>"$cp, $cf, $cl",});
+		caller =>"$cp,$cf,$cl",});
 my $id = $data->{overlap_id};
 return ($id);
 }    ## End of Put_Overlap
@@ -1672,7 +1690,7 @@ sub Fill_Globals {
 sub Write_SQL {
     my $statement = shift;
     my $genome_id = shift;
-    open( SQL, ">>failed_sql_statements.txt" );
+    open(SQL, ">>failed_sql_statements.txt");
     ## OPEN SQL in Write_SQL
     my $string = "$statement" . ";\n";
     print SQL "$string";
@@ -1925,8 +1943,7 @@ PRIMARY KEY(id))\;
 
 sub Create_Landscape {
     my $me = shift;
-    my $species = shift;
-    my $table = "landscape_$species";
+    my $table = shift;
     my $statement = qq\CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,
@@ -1949,11 +1966,13 @@ INDEX(accession),
 PRIMARY KEY(id))\;
     my ($cp, $cf, $cl) = caller();
     $me->MyExecute({statement =>$statement, caller => "$cp, $cf, $cl",});
+    print "Created $table\n" if (defined($config->{debug}));
 }
 
 sub Create_Boot {
     my $me = shift;
-    my $statement = qq\CREATE TABLE boot (
+    my $table = shift;
+    my $statement = qq\CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,
 mfe_id int,
@@ -1971,7 +1990,7 @@ pairs_mean float,
 pairs_sd float,
 pairs_se float,
 mfe_values text,
-picture_filename text,
+zscore float,
 lastupdate $config->{sql_timestamp},
 INDEX(genome_id),
 INDEX(mfe_id),
@@ -1979,6 +1998,7 @@ INDEX(accession),
 PRIMARY KEY(id))\;
     my ($cp, $cf, $cl) = caller();
     $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl",});
+    print "Created $table\n" if (defined($config->{debug}));
 }
 
 sub Create_Errors {
