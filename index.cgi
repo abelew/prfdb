@@ -373,8 +373,8 @@ sub Print_Choose_Download {
 
 sub Print_Search_Form {
     $vars->{blast_startform} = $cgi->startform(-action => "$base/search_blast");
-    $vars->{blast_submit} = $cgi->submit( -name => 'blastsearch', -value => 'Perform Blast Search');
-    $template->process( 'searchform.html', $vars ) or
+    $vars->{blast_submit} = $cgi->submit(-name => 'blastsearch', -value => 'Perform Blast Search');
+    $template->process('searchform.html', $vars) or
 	Print_Template_Error($template), die;
 }
 
@@ -430,7 +430,8 @@ sub Print_MFE_Z {
     my $z_plus = $z + 0.1;
     my $z_minus = $z - 0.1;
     my ($stmt, $stuff);
-    my $boot_table = "boot_$species";
+    my $boot_table = "boot_$species
+";
 
     if (defined($slipsites) and defined($pknot)) {
 	$stmt = qq/SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, $boot_table WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND($boot_table.zscore,1) = ROUND($z,1) AND mfe.knotp = '1' AND mfe.id = $boot_table.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession/;
@@ -623,7 +624,10 @@ sub Print_Detail_Slipsite {
     ## id,genome_id,accession,species,algorithm,start,slipsite,seqlength,sequence,output,parsed,parens,mfe,pairs,knotp,barcode,lastupdate
     ## 0  1         2         3       4         5     6        7         8        9      10     11     12  13    14    15      16
     
-    $vars->{species} = $info->[0]->[3];
+    $vars->{species} = $info->[0]->[3]; 
+    $vars->{long_species} = $vars->{species};
+    $vars->{long_species} =~ s/_/ /g;
+    $vars->{long_species} = ucfirst($vars->{long_species});
     $vars->{genome_id} = $info->[0]->[1];
     
     my $genome_stmt = qq(SELECT genename FROM genome where id = ?);
@@ -781,8 +785,6 @@ $structure->[8]
 	$vars->{pk_input} = Color_Stems($vars->{pk_input}, $vars->{parsed});
 	$vars->{brackets} = Color_Stems($vars->{brackets}, $vars->{parsed});
 	$vars->{parsed} = Color_Stems($vars->{parsed}, $vars->{parsed});
-	$vars->{species} =~ s/_/ /g;
-	$vars->{species} = ucfirst($vars->{species});
 	
 	$vars->{feynman_height} = $feynman_dimensions->{height};
 	$vars->{feynman_width} = $feynman_dimensions->{width};
@@ -972,8 +974,9 @@ sub Print_Single_Accession {
       $vars->{genbank_accession} = $vars->{accession};
   }
   $vars->{species} = $datum->{species};
-  $vars->{species} =~ s/_/ /g;
-  $vars->{species} = ucfirst($vars->{species});
+  $vars->{long_species} = $datum->{species};
+  $vars->{long_species} =~ s/_/ /g;
+  $vars->{long_species} = ucfirst($vars->{long_species});
   $vars->{genename} = $datum->{genename};
   $vars->{comments} = $datum->{comment};
   $vars->{orf_start} = $datum->{orf_start};
@@ -996,9 +999,9 @@ sub Print_Single_Accession {
   my $landscape_num = $db->MySelect("SELECT count(id) FROM $table WHERE accession = '$accession'");
   $vars->{landscape_num} = $landscape_num->[0][0];
 
-  $template->process( 'genome.html',          $vars ) or
+  $template->process('genome.html', $vars) or
       Print_Template_Error($template), die;
-  $template->process( 'sliplist_header.html', $vars ) or
+  $template->process('sliplist_header.html', $vars) or
       Print_Template_Error($template), die;
 
   my $num_stops_printed = 0;
@@ -1049,8 +1052,9 @@ sub Print_Multiple_Accessions {
       $vars->{counter} = $data->{$id}->{counter};
       $vars->{accession} = $data->{$id}->{accession};
       $vars->{species} = $data->{$id}->{species};
-      $vars->{species} =~ s/_/ /g;
-      $vars->{species} = ucfirst($vars->{species});
+      $vars->{long_species} = $data->{$id}->{species};
+      $vars->{long_species} =~ s/_/ /g;
+      $vars->{long_species} = ucfirst($vars->{species});
       $vars->{genename} = $data->{$id}->{genename};
       $vars->{comments} = $data->{$id}->{comment};
       $vars->{slipsite_count} = $data->{$id}->{slipsite_count};
@@ -1098,26 +1102,29 @@ sub Perform_Search {
     else {
 	$query_statement .= qq/(species regexp '$query' OR genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')/;
     }
-    my $entries = $db->MySelect({ statement => $query_statement,
-				  type => 'hash',
-				  descriptor => 1,});
+    my $entries = $db->MySelect({statement => $query_statement,
+				 type => 'hash',
+				 descriptor => 1,});
     foreach my $c (keys %{$entries}) {
 	my $slip_stmt = qq(SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?);
 	my $slipsite_structure_count = $db->MySelect({
 	    statement => $slip_stmt,
 	    vars => [$entries->{$c}->{accession}],
-	    type => 'row', });
+	    type => 'row',});
 	$entries->{$c}->{slipsite_count} = $slipsite_structure_count->[0];
 	$entries->{$c}->{structure_count} = $slipsite_structure_count->[1];
     }
     my $entries_count = scalar keys %{$entries};
     if ( $entries_count == 0) {
 	$vars->{error} = "No entry was found in the database with genename, accession, locus, nor comment $query<br>\n";
-    } elsif ( $entries_count == 1 ) {
+    }
+    elsif ($entries_count == 1) {
 	my @id = keys %{$entries};
-	Print_Single_Accession( $entries->{$id[0]} );
-    }         ## Elsif there is a single match for this search
-    else {    ## More than 1 return from the search...
+	Print_Single_Accession($entries->{$id[0]});
+    }
+    ## Elsif there is a single match for this search
+    else {
+	## More than 1 return from the search...
 	Print_Multiple_Accessions($entries);
     }
 }
@@ -1256,9 +1263,9 @@ sub Perform_Second_Filter {
 #    -columns  => 3
       );
     $vars->{species} = $species;
-    $vars->{nicespecies} = $species;
-    $vars->{nicespecies} =~ s/_/ /g;
-    $vars->{nicespecies} = ucfirst($vars->{nicespecies});
+    $vars->{long_species} = $species;
+    $vars->{long_species} =~ s/_/ /g;
+    $vars->{long_species} = ucfirst($vars->{long_species});
     $vars->{algorithm} = $algorithm;
 
     $vars->{hidden_species} = $cgi->hidden(-name => 'hidden_species', -value => $species);
@@ -1751,9 +1758,9 @@ sub Cloud {
 	$cloud_data = $cloud->Make_Cloud($args);
     }
     $vars->{species} = $species;
-    $vars->{nicespecies} = $species;
-    $vars->{nicespecies} =~ s/_/ /g;
-    $vars->{nicespecies} = ucfirst($vars->{nicespecies});
+    $vars->{long_species} = $species;
+    $vars->{long_species} =~ s/_/ /g;
+    $vars->{long_species} = ucfirst($vars->{long_species});
     $vars->{cloud_file} = $cloud_output_filename;
     $vars->{cloud_url} = $cloud_url;
     $vars->{pknots_only} = $pknots_only;

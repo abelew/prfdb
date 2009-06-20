@@ -1,5 +1,5 @@
 <center>
-<p>This is a cloud for <i>[% nicespecies %]</i> with an overlay for [% accession %]
+<p>This is a cloud for <i>[% longspecies %]</i> with an overlay for [% accession %]
 [% IF pknots_only %]
  for only those PRF signals with pseudoknots.
 [% ELSE %]
@@ -27,12 +27,12 @@
 
 <br>
 The x axis displays the range of putative <a href="[% base %]/help_detail#help_mfe">
-minimum free energy</a> values computed for all <i>[% nicespecies %]</i>
+minimum free energy</a> values computed for all <i>[% longspecies %]</i>
  sequences of length [% seqlength %].<br>
 The y axis displays the range of <a href="[% base %]/help_detail#help_z">
 z scores</a> for these same sequences.<br>
 Each dot thus represents a single (mfe, z score) in relation to all
-the others for <i>[% nicespecies %]</i>.  
+the others for <i>[% longspecies %]</i>.  
  The black lines delineate the mean mfe
 and z score for this population.
 [% IF slipsites %]
