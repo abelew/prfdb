@@ -483,7 +483,7 @@ sub RemoveFile {
     if ($file eq 'all') {
 	foreach my $f (@{open_files}) {
 	    unlink($f);
-	    print STDERR "Deleting: $f\n" if (defined($config->{debug}));
+	    print STDERR "Deleting: $f\n" if (defined($config->{debug}) and $config->{debug} > 0);
 	    $num_deleted++;
 	}
 	$PRFConfig::config->{open_files} = \@new_open_files;

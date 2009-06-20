@@ -35,7 +35,6 @@ $category =~ s/\///g;
 $category = substr($category,0,5);
 
 our @species_values = @{$config->{index_species}};
-push(@species_values, 'all');
 our @single_seqlength = @{$config->{seqlength}};
 our $single_seqlen = shift(@single_seqlength);
 
@@ -340,7 +339,7 @@ sub Print_Download {
 					  -labels => \%species_labels,);
   }
   else {
-      my @values = ('saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus','danio_rerio','bos_taurus', 'xenopus_laevis', 'xenopus_tropicalis', 'rattus_norvegicus', 'all');
+      my @values = @{$config->{index_species}};
       foreach my $value (@values) {
 	  my $long_name = $value;
 	  $long_name =~ s/_/ /g;
@@ -427,30 +426,19 @@ sub Print_MFE_Z {
     my $z_plus = $z + 0.1;
     my $z_minus = $z - 0.1;
     my ($stmt, $stuff);
+    my $boot_table = "boot_$species";
 
-    if (defined($slipsites) and $species eq 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
+    if (defined($slipsites) and defined($pknot)) {
+	$stmt = qq/SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, $boot_table WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND($boot_table.zscore,1) = ROUND($z,1) AND mfe.knotp = '1' AND mfe.id = $boot_table.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession/;
     }
-    elsif (defined($slipsites) and $species eq 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
+    elsif (defined($slipsites) and !defined($pknot)) {
+	$stmt = qq/SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, $boot_table WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2)  AND ROUND($boot_table.zscore,1) = ROUND($z,1) AND mfe.id = $boot_table.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession/;
     }
-    elsif (defined($slipsites) and $species ne 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.knotp = '1' AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
+    elsif (!defined($slipsites) and defined($pknot)) {
+	$stmt = qq/SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, $boot_table WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND($boot_table.zscore,1) = ROUND($z,1)  AND mfe.knotp = '1' AND mfe.id = $boot_table.mfe_id ORDER BY mfe.start,mfe.accession/;
     }
-    elsif (defined($slipsites) and $species ne 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2)  AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.id = boot.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession);
-    }
-    elsif (!defined($slipsites) and $species eq 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2)  AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
-    }
-    elsif (!defined($slipsites) and $species eq 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1) AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
-    }
-    elsif (!defined($slipsites) and $species ne 'all' and defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1)  AND mfe.knotp = '1' AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
-    }
-    elsif (!defined($slipsites) and $species ne 'all' and !defined($pknot)) {
-	$stmt = qq(SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, boot WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND(boot.zscore,1) = ROUND($z,1)  AND mfe.id = boot.mfe_id ORDER BY mfe.start,mfe.accession);
+    elsif (!defined($slipsites) and !defined($pknot)) {
+	$stmt = qq/SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, $boot_table WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND($boot_table.zscore,1) = ROUND($z,1)  AND mfe.id = $boot_table.mfe_id ORDER BY mfe.start,mfe.accession/;
     }
     else {
 	print "WTF<br>\n";
@@ -548,11 +536,11 @@ sub Print_Stats {
 		my $sigsig_mfe = $total_mean - ($total_stdev * 2);
 		my $sigsig_mfe_knot = $knot_mean - ($knot_stdev * 2);
 		my $sigsig_z = $mean_z - ($stddev_z * 2);
-
-		my $all_stmt = qq/SELECT count(mfe.id) FROM mfe,boot WHERE mfe.seqlength = '$len' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sig_mfe' AND mfe.id = boot.mfe_id AND boot.zscore < '$sig_z'/;;
-		my $pseudo_stmt = qq/SELECT count(mfe.id) FROM mfe,boot WHERE mfe.seqlength = '$len' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sig_mfe' AND knotp = '1' AND mfe.id = boot.mfe_id AND boot.zscore < '$sig_z'/;
-		my $all_stmt_2 = qq/SELECT count(mfe.id) FROM mfe,boot WHERE mfe.seqlength = '$len' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sigsig_mfe' AND mfe.id = boot.mfe_id AND boot.zscore < '$sigsig_z'/;
-		my $pseudo_stmt_2 =  qq/SELECT count(mfe.id) FROM mfe,boot WHERE mfe.seqlength = '100' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sigsig_mfe' AND knotp = '1' AND mfe.id = boot.mfe_id AND boot.zscore < '$sigsig_z'/;
+		my $boot_table = "boot_$species";
+		my $all_stmt = qq/SELECT count(mfe.id) FROM mfe,$boot_table WHERE mfe.seqlength = '$len' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sig_mfe' AND mfe.id = $boot_table.mfe_id AND $boot_table.zscore < '$sig_z'/;;
+		my $pseudo_stmt = qq/SELECT count(mfe.id) FROM mfe,$boot_table WHERE mfe.seqlength = '$len' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sig_mfe' AND knotp = '1' AND mfe.id = $boot_table.mfe_id AND $boot_table.zscore < '$sig_z'/;
+		my $all_stmt_2 = qq/SELECT count(mfe.id) FROM mfe,$boot_table WHERE mfe.seqlength = '$len' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sigsig_mfe' AND mfe.id = $boot_table.mfe_id AND $boot_table.zscore < '$sigsig_z'/;
+		my $pseudo_stmt_2 =  qq/SELECT count(mfe.id) FROM mfe,$boot_table WHERE mfe.seqlength = '100' AND mfe.algorithm = '$alg' AND mfe.mfe < '$sigsig_mfe' AND knotp = '1' AND mfe.id = $boot_table.mfe_id AND $boot_table.zscore < '$sigsig_z'/;
 
 		my $count_sig_all = $db->MySelect({
 		    statement => $all_stmt,
@@ -643,7 +631,8 @@ sub Print_Detail_Slipsite {
 	my $id = $structure->[0];
 	my $mfe = $structure->[12];
 	$vars->{mfe_id} = $structure->[0];
-	my $boot_stmt = qq(SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM boot WHERE mfe_id = '$id');
+	my $boot_table = "boot_$vars->{species}";
+	my $boot_stmt = qq/SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM $boot_table WHERE mfe_id = '$id'/;
 	my $boot = $db->MySelect({
 	    statement => $boot_stmt,
 	    type => 'row'});
@@ -656,7 +645,7 @@ sub Print_Detail_Slipsite {
       }
 	elsif (!defined($boot) and $config->{do_boot} == 1) {
 	    $vars->{accession} = $structure->[2];
-	    $template->process( 'generate_boot.html', $vars) or
+	    $template->process('generate_boot.html', $vars) or
 		Print_Template_Error($template), die;
 	    
 	    my $data = ">tmp
@@ -1135,8 +1124,9 @@ sub Perform_OverlaySearch {
     my $seqlength = $cgi->param('seqlength');
     my $cloud_url = $cgi->param('cloud_url');
     my $species = $cgi->param('species');
+    my $boot_table = "boot_$species";
     $vars->{new_accession} = $db->MySelect({statement => qq/SELECT accession FROM genome WHERE accession regexp '$query' or genename regexp '$query' or locus regexp '$query' or comment regexp '$query'/, type => 'single'});
-    my $query_statement = qq/SELECT mfe.mfe, boot.zscore, mfe.start, mfe.algorithm FROM mfe,boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = 100 AND mfe.species = '$species' AND mfe.id = boot.mfe_id AND mfe.accession = '$vars->{new_accession}'/;
+    my $query_statement = qq/SELECT mfe.mfe, $boot_table.zscore, mfe.start, mfe.algorithm FROM mfe,$boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.seqlength = 100 AND mfe.species = '$species' AND mfe.id = $boot_table.mfe_id AND mfe.accession = '$vars->{new_accession}'/;
     my $overlay_points = $db->MySelect({statement => $query_statement,});
     $vars->{cloud_url} = $cloud_url;
     $vars->{inputstring} = $query;
@@ -1678,9 +1668,10 @@ sub Cloud {
     $slipsites = 'all' if (!defined($slipsites));
     my $seqlength = $cgi->param('seqlength');
     $seqlength = 100 if (!defined($seqlength));
-    if (!defined($seqlength)) { $seqlength = ['100'] };		
+    $seqlength = ['100'] if (!defined($seqlength));
     my $cloud = new PRFGraph();
     my $pknots_only = undef;
+    my $boot_table = "boot_$species";
     
     my $suffix = undef;
     foreach my $filter (@filters) {
@@ -1706,27 +1697,8 @@ sub Cloud {
     
     if (!-f $cloud_output_filename) {
 	my ($points_stmt, $averages_stmt, $points, $averages);
-	if ($species eq 'all') {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $seqlength AND mfe.id = boot.mfe_id AND );
-	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.seqlength = $seqlength AND mfe.id = boot.mfe_id AND );
-	    foreach my $filter (@filters) {
-		if ($filter eq 'pseudoknots only') {
-		    $points_stmt .= "mfe.knotp = '1' AND ";
-		    $averages_stmt .= "mfe.knotp = '1' AND ";
-		}
-		elsif ($filter eq 'coding sequence only') {
-		    $points_stmt .= "";
-		}
-	    }
-	    
-	    $points_stmt =~ s/AND $//g;
-	    $averages_stmt =~ s/AND $//g;
-	    $points = $db->MySelect({statement => $points_stmt,});
-	    $averages = $db->MySelect({statement =>$averages_stmt, type => 'row',});
-	}
-	else {
-	    $points_stmt = qq(SELECT mfe.mfe, boot.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, boot, genome WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = boot.mfe_id AND );
-	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg(boot.zscore), stddev(mfe.mfe), stddev(boot.zscore) FROM mfe, boot WHERE boot.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND boot.zscore > -10 AND boot.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $vars->{seqlength} AND mfe.id = boot.mfe_id AND );
+	$points_stmt = qq/SELECT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND /;
+	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $vars->{seqlength} AND mfe.id = $boot_table.mfe_id AND );
 	    
 	    foreach my $filter (@filters) {
 		if ($filter eq 'pseudoknots only') {
