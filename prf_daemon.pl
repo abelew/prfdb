@@ -1,10 +1,10 @@
 #!/usr/bin/perl -w
 use strict;
 use DBI;
-use Getopt::Long;
 use lib "$ENV{HOME}/usr/lib/perl5";
 use lib 'lib';
 use PRFConfig;
+our $config = $PRFConfig::config;
 use PRFdb;
 use RNAMotif_Search;
 use RNAFolders;
@@ -18,92 +18,9 @@ $SIG{SEGV} = 'CLEANUP';
 $SIG{PIPE} = 'CLEANUP';
 $SIG{ABRT} = 'CLEANUP';
 $SIG{QUIT} = 'CLEANUP';
-our $config = $PRFConfig::config;
 setpriority(0,0,$config->{niceness});
-our $db = new PRFdb;
-our %conf = ();
+our $db = new PRFdb(config => $config);
 $ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}";
-GetOptions(## If this gets set, then the prf_daemon will exit before it gets to the queue
-	   'nodaemon:i' => \$conf{nodaemon},  
-	   'debug:i' => \$conf{debug},
-	   ## Print some help information
-	   'help|version' => \$conf{help},      
-	   ## An accession to specifically fold.  If it is not already in the db  
-	   ## Import it and then fold it.
-	   'accession|i:s' => \$conf{accession},
-	   'blast:s' => \$conf{blast},
-	   'makeblast' => \$conf{makeblast},
-           ## Create a local blast database from the genome
-	   'optimize:s' => \$conf{optimize},
-	   ## Use mysql to optimize a table
-	   'species:s' => \$conf{species},
-	   'copyfrom:s' => \$conf{copyfrom},
-	   ## Another database from which to copy the genome table
-	   'import:s' => \$conf{import_accession},
-	   ## A single accession to import
-	   'input_file:s' => \$conf{input_file},
-	   ## A file of accessions to import and queue
-	   'input_fasta:s' => \$conf{input_fasta},
-	   ## A file of fasta data to import and queue
-	   'fasta_style:s' => \$conf{fasta_style},
-	   ## The style of input fasta (sgd, ncbi, etc)
-	   ## By default this should be 0/1, but for some yeast genomes it may be 1000
-	   'fillqueue' => \$conf{fillqueue},
-	   ## A boolean to see if the queue should be filled.
-	   'resetqueue' => \$conf{resetqueue},
-	   ## A boolean to reset the queue
-	   'stats' => \$conf{stats},
-	   ## Generate stats
-	   'startpos:s' => \$conf{startpos},
-	   ## A specific start position to fold a single sequence at,
-	   ## also usable by inputfasta or inputfile
-	   'startmotif:s' => \$conf{startmotif},
-	   ## A specific start motif to start folding at
-	   'length:i' => \$conf{seqlength},
-	   ## i == integer
-	   'landscape_length:i' => \$conf{landscape_seqlength},
-	   'nupack:i' => \$conf{do_nupack},
-	   ## If no type definition is given, it is boolean
-	   'pknots:i' => \$conf{do_pknots},
-	   ## The question is, will these be set to 0 if not applied?
-	   'hotknots:i' => \$conf{do_hotknots},
-	   ## The question is, will these be set to 0 if not applied?
-	   'boot:i' => \$conf{do_boot},
-	   'utr:i' => \$conf{do_utr},
-	   'workdir:s' => \$conf{workdir},
-	   'nupack_nopairs:i' => \$conf{nupack_nopairs_hack},
-	   'arch:i' => \$conf{arch_specific_exe},
-	   'iterations:i' => \$conf{boot_iterations},
-	   'db|d:s' => \$conf{db},
-	   'host:s' => \$conf{host},
-	   'user:s' => \$conf{user},
-	   'pass:s' => \$conf{pass},
-	   'slip_site_1:s' => \$conf{slip_site_1},
-	   'slip_site_2:s' => \$conf{slip_site_2},
-	   'slip_site_3:s' => \$conf{slip_site_3},
-	   'slip_site_spacer_min:i' => \$conf{slip_site_spacer_min},
-	   'slip_site_spacer_max:i' => \$conf{slip_site_spacer_max},
-	   'stem1_min:i' => \$conf{stem1_min},
-	   'stem1_max:i' => \$conf{stem1_max},
-	   'stem1_bulge:i' => \$conf{stem1_bulge},
-	   'stem1_spacer_min:i' => \$conf{stem1_spacer_min},
-	   'stem1_spacer_max:i' => \$conf{stem1_spacer_max},
-	   'stem2_min:i' => \$conf{stem2_min},
-	   'stem2_max:i' => \$conf{stem2_max},
-	   'stem2_bulge:i' => \$conf{stem2_bulge},
-	   'stem2_loop_min:i' => \$conf{stem2_loop_min},
-	   'stem2_loop_max:i' => \$conf{stem2_loop_max},
-	   'stem2_spacer_min:i' => \$conf{stem2_spacer_min},
-	   'stem2_spacer_max:i' => \$conf{stem2_spacer_max},
-	   'checks:i' => \$conf{checks},
-	   'make_jobs' => \$conf{make_jobs},
-	   'make_landscape' => \$conf{make_landscape},);
-foreach my $opt (keys %conf) {
-    if (defined($conf{$opt})) {
-	$config->{$opt} = $conf{$opt};
-    }
-}
-
 our $state = {time_to_die => undef,
 	      queue_table => undef,
 	      queue_id => undef,
@@ -474,12 +391,9 @@ sub PRF_Gatherer {
           my @algos = keys(%{$config->{boot_mfe_algorithms}});
           my $boot_folds;
           foreach my $method (@algos) {
-              $boot_folds = $db->Get_Num_Bootfolds(
-                  $state->{genome_id},
-                  $slipsite_start,
-                  $state->{seqlength},
-                  $method);
-              print "$current has $boot_folds randomizations for method: $method\n";
+              $boot_folds = $db->Get_Num_Bootfolds($state->{species}, $state->{genome_id}, $slipsite_start,
+						   $state->{seqlength}, $method);
+              print "$current has $boot_folds randomizations for method: $method\n" if (defined($config->{debug}));
               if (!defined($boot_folds) or $boot_folds == 0) {
                   my $bootlaces = $boot->Go($method);
                   my $inserted_ids = $db->Put_Boot($bootlaces);
@@ -655,9 +569,12 @@ $nu_boot and running: $config->{boot_iterations} times\n";
     else {
 	print "I am not using arch specific executables\n"; 
     }
-    print "The default structure length in this run is: $config->{seqlength}\n";
+    if (ref($config->{seqlength}) eq 'ARRAY') {
+	my @fun = @{$config->{seqlength}};
+    print "The default structure length in this run is: @fun\n";
+    }
     print "I am using the database: $config->{db} and user: $config->{user}\n\n\n";
-    sleep(1);
+    sleep(5);
 }
 ## End Print_Config
 
@@ -724,32 +641,32 @@ sub Check_Folds {
     my $mfe_varname = qq(${type}_mfe_id);
     my $folds = $db->Get_Num_RNAfolds($type, $state->{genome_id}, $slipsite_start, $state->{seqlength});
     if ($folds > 0) { ### If there ARE existing folds...
-	print "$state->{genome_id} has $folds > 0 pknots_folds at position $slipsite_start\n";
+	print "$state->{genome_id} has $folds > 0 pknots_folds at position $slipsite_start\n" if (defined($config->{debug}));
 	$state->{$mfe_varname} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start,
 						 $state->{seqlength}, $type);
 	$mfe_id = $state->{$mfe_varname};
 	print "Check_Folds $type - already done: state: $mfe_id\n";
     }
     else { ### If there are NO existing folds...
-	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n";
+	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n" if (defined($config->{debug}));
 	my ($info, $mfe_id);
 	if ($type eq 'pknots') {
 	    $info = $fold_search->Pknots();
 	    $mfe_id = $db->Put_Pknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
-	    print "Performed Put_Pknots and returned $mfe_id\n";
+	    print "Performed Put_Pknots and returned $mfe_id\n" if (defined($config->{debug}));
 	}
 	elsif ($type eq 'nupack') {
 	    $info = $fold_search->Nupack_NOPAIRS();
 	    $mfe_id = $db->Put_Nupack($info);
 	    $state->{$mfe_varname} = $mfe_id;
-	    print "Performed Put_Nupack and returned $mfe_id\n";
+	    print "Performed Put_Nupack and returned $mfe_id\n" if (defined($config->{debug}));
 	}
 	elsif ($type eq 'hotknots') {
 	    $info = $fold_search->Hotknots();
 	    $mfe_id = $db->Put_Hotknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
-	    print "Performed Put_Hotknots and returned $mfe_id\n";
+	    print "Performed Put_Hotknots and returned $mfe_id\n" if (defined($config->{debug}));
 	}
 	else {
 	    die("Non existing type in Check_Folds");
