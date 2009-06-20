@@ -12,7 +12,7 @@ use LWP;
 use IO::String;
 
 my $config = $PRFConfig::config;
-my $db = new PRFdb;
+my $db = new PRFdb(config=>$config);
 my $gb = new Bio::DB::GenBank;
 my $browser = LWP::UserAgent->new();
 

@@ -18,12 +18,11 @@ sub new {
 	$config = $arg{config};
     }
     my $me = bless {
-	dsn  => $config->{dsn},
+	dsn => $config->{dsn},
 	user => $config->{user},
 	num_retries => 60,
 	retry_time => 15,
     }, $class;
-
     if ($config->{checks}) {
 	$me->Create_Genome() unless ($me->Tablep('genome'));
 	$me->Create_Queue() unless ($me->Tablep($config->{queue_table}));

@@ -126,7 +126,18 @@ $PRFConfig::config->{landscape_graph_x_size} = 800;
 $PRFConfig::config->{landscape_graph_y_size} = 600;
 $PRFConfig::config->{graph_font_size} = 9;
 $PRFConfig::config->{ENV_LIBRARY_PATH} = $ENV{LD_LIBRARY_PATH};
-
+my $config_file;
+if (defined($ENV{PRFDBHOME})) {
+    $config_file = "$ENV{PRFDBHOME}/prfdb.conf";
+}
+else {
+    $config_file = 'prfdb.conf';
+}
+if (!-r $config_file) {
+    my $cwd = `pwd`;
+    print STDERR "Can't find prfdb.conf in $cwd\n";
+    die;
+}
 my $open = $appconfig->file('prfdb.conf');
 my %data = $appconfig->varlist("^.*");
 for my $config_option (keys %data) {

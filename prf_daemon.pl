@@ -269,18 +269,21 @@ sub PRF_Gatherer {
     $sp = $state->{species} if (defined($state->{species}));
     $ac = $state->{accession} if (defined($state->{accession}));
     my $current = "sp:$sp acc:$ac st:$orf_start l:$len";
+    print "About to run $current\n" if (defined($config->{debug}));
     if (defined($startpos)) {
 #      $startpos = $startpos - $orf_start;
 	my $inf = PRFdb::MakeFasta($state->{genome_information}->{sequence},
 				   $startpos, 
-				   $startpos + $config->{seqlength});
+#				   $startpos + $config->{seqlength});
+				   $startpos + $len);
 	$rnamotif_information->{$startpos}{filename} = $inf->{filename};
 	$rnamotif_information->{$startpos}{sequence} = $inf->{string};
 	$state->{rnamotif_information} = $rnamotif_information;
     }
     else {
 	$rnamotif_information = $motifs->Search($state->{genome_information}->{sequence},
-						$state->{genome_information}->{orf_start});
+						$state->{genome_information}->{orf_start},
+						$len);
 	$state->{rnamotif_information} = $rnamotif_information;
 	if (!defined($state->{rnamotif_information})) {
 	    $db->Insert_NumSlipsite($state->{accession}, 0);
@@ -559,7 +562,9 @@ sub Print_Config {
 	    print "$k\n";
 	}
 	print "and the following mfe algorithms:\n";
-	foreach my $k (keys %{$mfes}) { print "$k\n"; }
+	foreach my $k (keys %{$mfes}) {
+	    print "$k\n";
+	}
 	print "nupack is using the following program for bootstrap:
 $nu_boot and running: $config->{boot_iterations} times\n";
     } 

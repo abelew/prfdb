@@ -46,7 +46,7 @@ sub Make_Cloud {
     }
     
     my $graph = new GD::Graph::points('800','800');
-    my $db = new PRFdb;
+    my $db = new PRFdb(config => $config);
     my ($mfe_min_value, $mfe_max_value);
     if ($species eq 'all') {
 	$mfe_min_value = $db->MySelect({statement => qq/SELECT min(mfe) FROM mfe/, type => 'single'});
@@ -351,7 +351,7 @@ sub Make_Overlay {
     my $inputstring = $args->{inputstring};
     
     my $graph = new GD::Graph::points('800','800');
-    my $db = new PRFdb;
+    my $db = new PRFdb(config => $config);
     my $mfe_min_value = $db->MySelect({statement => qq/SELECT min(mfe) FROM mfe WHERE species = '$species'/, type => 'single'});
     my $mfe_max_value = $db->MySelect({statement => qq/SELECT max(mfe) FROM mfe WHERE species = '$species'/, type => 'single'});
     $mfe_min_value -= 3.0;
@@ -469,7 +469,7 @@ sub Make_Landscape {
     my $filename = $me->Picture_Filename({type => 'landscape',});
     my $table = "landscape_$species";
     system("touch $filename");
-    my $db = new PRFdb;
+    my $db = new PRFdb(config=>$config);
     my $data = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM $table WHERE accession='$accession' ORDER BY start, algorithm");
     my $slipsites = $db->MySelect("SELECT distinct(start) FROM mfe WHERE accession='$accession' ORDER BY start");
     my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession'");
@@ -720,7 +720,7 @@ sub Make_Feynman {
     }
     else {
 	$id = $me->{mfe_id};
-	my $db  = new PRFdb;
+	my $db  = new PRFdb(config=>$config);
 	my $stmt = qq(SELECT sequence, slipsite, parsed, output FROM mfe WHERE id = ?);
 	my $info = $db->MySelect({statement => $stmt, vars => [$id], type => 'row' });
 	$sequence = $info->[0];
@@ -870,7 +870,7 @@ sub Char_Position {
 sub Make_CFeynman {
     my $me = shift;
     my $id = $me->{mfe_id};
-    my $db = new PRFdb;
+    my $db = new PRFdb(config => $config);
     my $stmt = qq(SELECT sequence, parsed, output FROM mfe WHERE id = ?);
     my $info = $db->MySelect({statement => $stmt, vars => [$id], type => 'row' });
     my $sequence = $info->[0];

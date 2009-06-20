@@ -3,23 +3,27 @@ use strict;
 use CGI qw/:standard :html3/;
 use CGI::Carp qw(fatalsToBrowser carpout);
 use Template;
-chdir("/usr/local/prfdb/prfdb_beta");
-use lib "/usr/local/prfdb/prfdb_beta/lib";
+BEGIN {
+    our $homedir = "/usr/local/prfdb/prfdb_beta";
+    $ENV{PRFDBHOME} = $homedir;
+    chdir($homedir);
+    $ENV{HTTP_HOST} = 'Youneedtodefinedahostname' if (!defined($ENV{HTTP_HOST}));
+    $ENV{SCRIPT_NAME} = 'index.cgi' if (!defined($ENV{SCRIPT_NAME}));
+    $ENV{PATH} ='/usr/bin:/usr/local/bin';
+    umask(0022);
+}
+use lib 'lib';
 use PRFConfig;
+our $config = $PRFConfig::config;
 use PRFdb;
 use PRFBlast;
 use PRFGraph;
 #use SeqMisc;
 use Bootlace;
-$ENV{HTTP_HOST} = 'Youneedtodefinedahostname' if (!defined($ENV{HTTP_HOST}));
-$ENV{SCRIPT_NAME} = 'index.cgi' if (!defined($ENV{SCRIPT_NAME}));
-$ENV{PATH}='/usr/bin:/usr/local/bin';
-umask(0022);
-our $config = $PRFConfig::config;
 ## All configuration information exists here
 chdir($config->{base});
 ## Change into the home directory of the folder daemon
-our $db = new PRFdb;
+our $db = new PRFdb(config => $config);
 ## Set up a database configuration
 our $cgi = new CGI;
 ## Start a new CGI object
