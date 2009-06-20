@@ -1694,31 +1694,31 @@ sub Cloud {
     
     my $cloud_url = $cloud->Picture_Filename({type => 'cloud', species => $species, url => 'url', suffix => $suffix,});
     $cloud_url = $basedir . '/' . $cloud_url;
-    
+
+    my ($points_stmt, $averages_stmt, $points, $averages);    
     if (!-f $cloud_output_filename) {
-	my ($points_stmt, $averages_stmt, $points, $averages);
 	$points_stmt = qq/SELECT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND /;
-	    $averages_stmt = qq(SELECT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $vars->{seqlength} AND mfe.id = $boot_table.mfe_id AND );
+	$averages_stmt = qq(SELECT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $vars->{seqlength} AND mfe.id = $boot_table.mfe_id AND );
 	    
-	    foreach my $filter (@filters) {
-		if ($filter eq 'pseudoknots only') {
-		    $points_stmt .= "mfe.knotp = '1' AND ";
-		    $averages_stmt .= "mfe.knotp = '1' AND ";
-		}
-		elsif ($filter eq 'coding sequence only') {
-		    $points_stmt .= "";
-		    $averages_stmt .= "";
-		}
+	foreach my $filter (@filters) {
+	    if ($filter eq 'pseudoknots only') {
+		$points_stmt .= "mfe.knotp = '1' AND ";
+		$averages_stmt .= "mfe.knotp = '1' AND ";
 	    }
-	    
-	    $points_stmt .= " mfe.genome_id = genome.id";
-	    $averages_stmt =~ s/AND $//g;
-	    $points = $db->MySelect({statement => $points_stmt, vars => [$species]});
-	    $averages = $db->MySelect({
-		statement => $averages_stmt,
-		vars => [$species],
-		type => 'row', });
+	    elsif ($filter eq 'coding sequence only') {
+		$points_stmt .= "";
+		$averages_stmt .= "";
+	    }
 	}
+	
+	$points_stmt .= " mfe.genome_id = genome.id";
+	$averages_stmt =~ s/AND $//g;
+	$points = $db->MySelect({statement => $points_stmt, vars => [$species]});
+	$averages = $db->MySelect({
+	    statement => $averages_stmt,
+	    vars => [$species],
+	    type => 'row', });
+#    }
 	my $cloud_data;
 	my $args;
 	if (defined($pknots_only)) {
@@ -1731,7 +1731,7 @@ sub Cloud {
 		url => $base,
 		pknot => 1,
 		slipsites => $slipsites
-	    };
+		};
 	}
 	else {
 	    $args = {
