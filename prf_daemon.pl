@@ -292,6 +292,7 @@ sub PRF_Gatherer {
     }
     my $num_slipsites = 0;
   STARTSITE: foreach my $slipsite_start (keys %{$rnamotif_information}) {
+      print "PRF_Gatherer: $current $slipsite_start\n" if (defined($config->{debug}));
       $num_slipsites++;
       if ($config->{do_utr} == 0) {
 	  my $end_of_orf = $db->MySelect({
@@ -430,6 +431,7 @@ sub Landscape_Gatherer {
     my $sequence_length = scalar(@seq_array);
     my $start_point = 0;
     while ($start_point + $config->{landscape_seqlength} <= $sequence_length) {
+	print "Landscape Gatherer, position $start_point\n" if (defined($config->{debug}));
 	my $individual_sequence = ">$message";
 	my $end_point = $start_point + $config->{landscape_seqlength};
 	foreach my $character ($start_point .. $end_point) {
@@ -583,7 +585,9 @@ sub Check_Boot_Connectivity {
     my $state = shift;
     my $slipsite_start = shift;
     my $genome_id = $state->{genome_id};
-    my $check_statement = qq(SELECT mfe_id, mfe_method, id, genome_id FROM boot WHERE genome_id = ? and start = ?);
+    my $species = $state->{species};
+    my $boot_table = "boot_$species";
+    my $check_statement = qq/SELECT mfe_id, mfe_method, id, genome_id FROM $boot_table WHERE genome_id = ? and start = ?/;
     my $answer = $db->MySelect({
 	statement => $check_statement,
 	vars =>[$genome_id, $slipsite_start],});
@@ -621,7 +625,7 @@ sub Check_Boot_Connectivity {
 						 start => $slipsite_start,);
 		$new_mfe_id = Check_Pknots($fold_search, $slipsite_start);
 	    } ### End if there is no mfe_id and pknots was the algorithm
-	    my $update_mfe_id_statement = qq(UPDATE boot SET mfe_id = ? WHERE id = ?);
+	    my $update_mfe_id_statement = qq(UPDATE $boot_table SET mfe_id = ? WHERE id = ?);
 	    my ($cp,$cf, $cl) = caller(0);
 	    $db->MyExecute({statement => $update_mfe_id_statement,
 			    vars =>[$new_mfe_id, $boot_id],
