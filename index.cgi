@@ -9,7 +9,10 @@ BEGIN {
     chdir($homedir);
     $ENV{HTTP_HOST} = 'Youneedtodefinedahostname' if (!defined($ENV{HTTP_HOST}));
     $ENV{SCRIPT_NAME} = 'index.cgi' if (!defined($ENV{SCRIPT_NAME}));
-    $ENV{PATH} ='/usr/bin:/usr/local/bin';
+    $ENV{PATH} = qq"/usr/bin:/usr/local/bin:$homedir/work:$homedir/bin";
+    $ENV{BLASTDB} = qq"$homedir/blast";
+    $ENV{EFNDATA} = qq"$homedir/work";
+    $ENV{ENERGY_FILE} = qq"$homedir/work/dataS_G.rna";
     umask(0022);
 }
 use lib 'lib';
@@ -1033,10 +1036,16 @@ sub Print_Single_Accession {
   ## Before the RNA sequence, put in the picture of the ORF
   my $pic = new PRFGraph({accession => $accession});
   my $filename = $pic->Picture_Filename({type => 'landscape',});
+  my ($picture_status, $url);
   if (!-r $filename) {
-      $pic->Make_Landscape($datum->{species});
+      $picture_status = $pic->Make_Landscape($datum->{species});
   }
-  my $url = $pic->Picture_Filename({type => 'landscape', url => 'url'});
+  if (!defined($picture_status)) {
+      $url = undef;
+  }
+  else {
+      $url = $pic->Picture_Filename({type => 'landscape', url => 'url'});
+  }
   $vars->{picture} = $url;
   
   $template->process('mrna_sequence.html', $vars) or

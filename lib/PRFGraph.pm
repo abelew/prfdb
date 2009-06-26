@@ -496,6 +496,7 @@ sub Make_Landscape {
 	    $mean_vienna = $mean_vienna + $datum->[3];
 	}
     }    ## End foreach spot
+    return(undef) if ($position_counter == 0);  ## There is no data.
     $position_counter = $position_counter / 3;
     $mean_pknots = $mean_pknots / $position_counter;
     $mean_nupack = $mean_nupack / $position_counter;

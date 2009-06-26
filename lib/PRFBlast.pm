@@ -28,7 +28,7 @@ sub Search {
     my $location = shift;
     my $return = {};
     my $factory;
-    my $blast_output = new Bio::SearchIO(-format => 'blast');
+    my $blast_output = new Bio::SearchIO(-format => 'blast',);
     my $result;
     $sequence =~ s/\W+//g;
     $sequence =~ s/\s+//g;
@@ -45,14 +45,10 @@ sub Search {
 	    return(undef);
 	}
     }
-    print STDERR $sequence;
-    my $seq = new Bio::Seq(
-			   -display_id => 'query',
-			   -seq => $sequence
-			   );
+    my $seq = new Bio::Seq(-display_id => 'query',
+			   -seq => $sequence,);
     if ($location eq 'local') {
-	my @params = (
-		      program => 'blastn',
+	my @params = (program => 'blastn',
 		      ## -I tells blast to output the GI identifier
 		      ## , which is the id in the genome db
 		      I => 't',
@@ -64,59 +60,50 @@ sub Search {
 	### New versions of Bio::Tools::Run::StandAloneBlast
 	### return Bio::SearchIO::blast objects
 	chdir("$config->{blastdb}");
-	$blast_output = $factory->blastall($seq);     ## A Bio::SearchIO
+	my $executable;
+        $executable = $factory->executable('blastall', "$config->{workdir}/blastall");
+	$blast_output = $factory->blastall($seq); ## A Bio::SearchIO
 	chdir("$config->{base}");
 	$result = $blast_output->next_result;
     }
-    else { ## not local
-	my @params = (
-		      -readmethod => 'SearchIO',
+    elsif ($location eq 'remote') {
+	my @params = (-readmethod => 'SearchIO',
 		      -prog => 'blastn',
 		      -data => 'nr',
 		      );
 	
 	$factory = new Bio::Tools::Run::RemoteBlast(@params);
+	print STDERR "TESTME:$seq $factory\n";
 	my $r = $factory->submit_blast($seq);
+	print STDERR "TESTME, did submit_blast work? $r\n";
+	my $rid_counter = 0;
       LOOP: while (my @rids = $factory->each_rid()) {
 	  foreach my $rid (@rids) {
+	      $rid_counter++;
+	      print STDERR "RID_COUNTER: $rid_counter\n";
 	      $blast_output = $factory->retrieve_blast($rid);
 	      if (!ref($blast_output)) {
 		  if ($blast_output < 0) {
+		      print STDERR "blast_output is less than 0 $blast_output\n";
 		      $factory->remove_rid($rid);
 		  }
-		  print ". ";
+		  print STDERR ". ";
 		  sleep(1);
 	      } 
 	      else {
+		  print STDERR "Got here\n";
 		  $result = $blast_output->next_result();
-		  #          if (defined($result)) {
-		      my $filename = $result->query_name() . "\.out";
-#          use Cwd;
-#          my $g = getcwd;
-#          print "TESTME: $g $filename<br>\n";
-		  $factory->save_output($filename);
-		  $factory->remove_rid($rid);
-
-          #            print "\nQuery Name: ", $result->query_name(), "\n";
-          #            while ( my $hit = $result->next_hit ) {
-          #              print "\thit name is ", $hit->name, "\n";
-          #              while( my $hsp = $hit->next_hsp ) {
-          #                print "\t\tscore is ", $hsp->score, "\n";
-          #              }
+		  if (defined($result)) {
+		      $factory->remove_rid($rid);
+		  }
 	      }    ## End else
-
-        #          }
-        #            last LOOP;
 	  }    ## End each rid
       }    ## End all rids
+    } ## Endif is the location 'remote'
+    else {
+	print STDERR "$location is neither remote nor local, something is wrong\n";
+	return(undef);
     }
-
-  #  print "STILL HAVE RESULT\n";
-  #  #  my $result = new Bio::SearchIO::blast(
-  #  #                                        -format => 'blast',
-  #  #                                       );
-  #  ## $result is of type Bio::Search::Result::BlastResult
-  #  ## But is accessed by Bio::SearchIO  and Bio::SearchIO::blast
     my $count = 0;
   ## Global results here
     $return->{algorithm} = $result->algorithm() if (defined($result->algorithm()));
@@ -168,19 +155,19 @@ sub Search {
 	my $hsp_count = 0;
 	while (my $hsp = $hit->next_hsp()) {
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{algorithm} = $hsp->algorithm() if (defined( $hsp->algorithm()));
-      $return->{hits}->[$count]->{hsps}->[$hsp_count]->{evalue} = $hsp->evalue() if (defined($hsp->evalue()));
+	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{evalue} = $hsp->evalue() if (defined($hsp->evalue()));
 	    #	print "TEST: $return->{hits}->[$count]->{hsps}->[$hsp_count]->{evalue}<br>\n";
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{expect} = $hsp->expect() if ( defined($hsp->expect()));
-      $return->{hits}->[$count]->{hsps}->[$hsp_count]->{frac_identical} = $hsp->frac_identical() if (defined($hsp->frac_identical()));
+	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{frac_identical} = $hsp->frac_identical() if (defined($hsp->frac_identical()));
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{frac_conserved} = $hsp->frac_conserved() if (defined($hsp->frac_conserved()));
-      $return->{hits}->[$count]->{hsps}->[$hsp_count]->{gaps} = $hsp->gaps() if (defined($hsp->gaps()));
+	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{gaps} = $hsp->gaps() if (defined($hsp->gaps()));
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{query_string} = $hsp->query_string() if (defined($hsp->query_string()));	    
-      $return->{hits}->[$count]->{hsps}->[$hsp_count]->{homology_string} = $hsp->homology_string() if (defined($hsp->homology_string()));
+	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{homology_string} = $hsp->homology_string() if (defined($hsp->homology_string()));
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{hit_string} = $hsp->hit_string() if (defined($hsp->hit_string()));
-      $return->{hits}->[$count]->{hsps}->[$hsp_count]->{length_total} = $hsp->length('total') if (defined($hsp->length('total')));
+	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{length_total} = $hsp->length('total') if (defined($hsp->length('total')));
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{length_hit} = $hsp->length('hit') if (defined($hsp->length('hit')));
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{length_query} = $hsp->length('query') if (defined($hsp->length('query')));
-      $return->{hits}->[$count]->{hsps}->[$hsp_count]->{length_total} = $hsp->length('total') if (defined($hsp->length('total')));
+	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{length_total} = $hsp->length('total') if (defined($hsp->length('total')));
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{hsp_length} = $hsp->hsp_length() if (defined($hsp->hsp_length()));
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{num_conserved} = $hsp->num_conserved() if (defined($hsp->num_conserved()));
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{num_identical} = $hsp->num_identical() if (defined($hsp->num_identical()));
@@ -194,7 +181,7 @@ sub Search {
 	    
 	    #        $return->{hits}->[$count]->{hsps}->[$hsp_count]->{range_query} =
 	    #	    $hsp->range('query') if (defined($hsp->range('query')));
-      $return->{hits}->[$count]->{hsps}->[$hsp_count]->{percent_identity} = $hsp->percent_identity() if (defined($hsp->percent_identity()));
+	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{percent_identity} = $hsp->percent_identity() if (defined($hsp->percent_identity()));
 	    $hsp_count++;
 	    
 	    #        $return->{$count}->{hsps}->{$hsp_count}->{start_query} = $hsp->start('query') if (defined($hsp->start('query')));
