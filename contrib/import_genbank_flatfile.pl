@@ -74,8 +74,8 @@ while (my $seq = $in->next_seq()) {
 #	    $direction = 'forward';
 #	}
 
-	$orf_start = $orf_start - 300;
-	$orf_stop = $orf_stop + 300;
+#	$orf_start = $orf_start - 300;
+#	$orf_stop = $orf_stop + 300;
 	my $tmp_mrna_sequence = '';
 	print "REVERSE!" if ($direction eq 'reverse');
 	print "TESTME: START: $orf_start STOP: $orf_stop\n";
