@@ -1017,6 +1017,106 @@ sub Import_Fasta {
     return (\@return_array);
 }
 
+sub Import_Genbank_Flatfile {
+    my $me = shift;
+    my $input_file = shift;
+    my $species = shift;
+    my $padding = shift;
+
+    my $uni = new Bio::DB::Universal();
+    my $in  = Bio::SeqIO->new(-file => $input_file,
+			      -format => 'genbank');
+    while (my $seq = $in->next_seq()) {
+	my $accession = $seq->accession();
+	my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
+	my ($protein_sequence, $orf_start, $orf_stop);
+	my $binomial_species = $seq->species->binomial();
+	my ($genus, $species) = split(/ /, $binomial_species);
+	my $full_species = qq(${genus}_${species});
+	$full_species =~ tr/[A-Z]/[a-z]/;
+	$config->{species} = $full_species;
+	my $full_comment = $seq->desc();
+	my $defline = "lcl||gb|$accession|species|$full_comment\n";
+	my ($genename, $desc) = split(/\,/, $full_comment);
+	my $mrna_sequence = $seq->seq();
+	my @mrna_seq = split(//, $mrna_sequence);
+	my $counter = 0;
+	my $num_cds = scalar(@cds);
+	foreach my $feature (@cds) {
+	    $counter++;
+	    my $primary_tag = $feature->primary_tag();
+	    $protein_sequence = $feature->seq->translate->seq();
+	    $orf_start = $feature->start();
+	    $orf_stop = $feature->end();
+	    #    print "START: $orf_start STOP: $orf_stop $feature->{_location}{_strand}\n";
+	    ### $feature->{_location}{_strand} == -1 or 1 depending on the strand.
+	    my ($direction, $start, $stop);
+	    if (!defined($feature->{_location}{_strand})) {
+		$direction = 'undefined';
+		$start = $orf_start;
+		$stop = $orf_stop;
+	    }
+	    elsif ($feature->{_location}{_strand} == 1) {
+		$direction = 'forward';
+		$start = $orf_start;
+		$stop = $orf_stop;
+	    }
+	    elsif ($feature->{_location}{_strand} == -1) {
+		$direction = 'reverse';
+		$start = $orf_stop;
+		$stop = $orf_start;
+	    }
+	    if (defined($padding)) {
+		$orf_start = $orf_start - $padding;
+		$orf_stop = $orf_stop + $padding;
+	    }
+	    my $tmp_mrna_sequence = '';
+	    foreach my $c (($orf_start - 1) .. ($orf_stop - 1)) {
+		next if (!defined($mrna_seq[$c]));
+		$tmp_mrna_sequence .= $mrna_seq[$c];
+	    }
+	    if ($direction eq 'reverse') {
+		$tmp_mrna_sequence =~ tr/ATGCatgcuU/TACGtacgaA/;
+		$tmp_mrna_sequence = reverse($tmp_mrna_sequence);
+	    }
+	    my $mrna_seqlength = length($tmp_mrna_sequence);
+	    my %datum = (### FIXME
+			 accession => $accession,
+			 mrna_seq => $tmp_mrna_sequence,
+			 protein_seq => $protein_sequence,
+			 orf_start => $orf_start,
+			 orf_stop => $orf_stop,
+			 direction => $direction,
+			 species => $full_species,
+			 genename => $genename,
+			 version => $seq->{_seq_version},
+			 comment => $full_comment,
+			 defline => $defline,);
+	    # my $return;
+	    # my $genome_id = $me->Insert_Genome_Entry(\%datum);
+	    # if (defined($genome_id)) {
+	    # my $return = "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
+	    # $me->Set_Queue($genome_id);
+	    # }
+	    # else {
+	    # $return .= "Did not insert anything into the genome table.\n";
+	    # my $gid = $me->MySelect({
+	    # statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",
+	    # type => 'single'});
+	    # print "Doing set_Queue with genome_id $gid\n";
+	    # $me->Set_Queue($gid);
+	    # }
+	    # print $return;
+	    #}
+	    #return ($return);
+	    foreach my $k (keys %datum) {
+		print "key: $k data: $datum{$k}\n";
+	    }
+	} ## foreach feature in @cds
+	print "Done this CDS\n\n\n";
+    } # NEXT_SEQ
+}
+
 sub Import_RawSeq {
     my $me = shift;
     my $datum = shift;
@@ -1109,7 +1209,6 @@ sub Import_CDS {
 	my $genome_id = $me->Insert_Genome_Entry(\%datum);
 	if (defined($genome_id)) {
 	    $return .= "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
-#      $me->Set_Queue( $genome_id, \%datum );
 	    $me->Set_Queue($genome_id);
 	}
 	else {
