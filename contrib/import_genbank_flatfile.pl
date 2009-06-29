@@ -10,12 +10,14 @@ my $config = $PRFConfig::config;
 my $db = new PRFdb(config=>$config);
 
 my $uni = new Bio::DB::Universal();
+
+
 #my $genbank = new Bio::Index::GenBank(-filename => 'staph.gb');
-my $in  = Bio::SeqIO->new(-file => "staph.gb",
+my $in  = Bio::SeqIO->new(-file => "streptococcus_pyogenes.gb",
 		       -format => 'genbank');
 while (my $seq = $in->next_seq()) {
 #$uni->use_database('genbank',$genbank);
-    my $accession = 'NC_002953';
+    my $accession = 'NC_008024';
 #my $seq = $uni->get_Seq_by_id($accession);
     my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
     
@@ -25,6 +27,8 @@ while (my $seq = $in->next_seq()) {
     my $full_species = qq(${genus}_${species});
     $full_species =~ tr/[A-Z]/[a-z]/;
     $config->{species} = $full_species;
+    $db->Create_Landscape(qq/landscape_$full_species/);
+    $db->Create_Boot(qq/boot_$full_species/);
     my $full_comment = $seq->desc();
     my $defline = "lcl||gb|$accession|species|$full_comment\n";
     my ($genename, $desc) = split(/\,/, $full_comment);
@@ -32,8 +36,22 @@ while (my $seq = $in->next_seq()) {
     my @mrna_seq = split(//, $mrna_sequence);
     my $counter = 0;
     my $num_cds = scalar(@cds);
+
+    my %datum_orig = (
+		      accession => $accession,
+		      species => $full_species,
+		      defline => $defline,
+		      );
+
     foreach my $feature (@cds) {
 	$counter++;
+#	foreach my $k (keys %{$feature}) {
+#	    print "WHAT IS: $k $feature->{$k}\n";
+#	}
+#	my %fun = %{$feature->{_gsf_tag_hash}};
+#	foreach my $l (keys %fun) {
+#	    print "WHAT IS GSF: $l $fun{$l}\n";
+#	}
 	my $primary_tag = $feature->primary_tag();
 	$protein_sequence = $feature->seq->translate->seq();
 	$orf_start = $feature->start();
@@ -73,13 +91,12 @@ while (my $seq = $in->next_seq()) {
 #	    print PRF_Error("WTF: Direction is not forward or reverse");
 #	    $direction = 'forward';
 #	}
-
-	$orf_start = $orf_start - 300;
-	$orf_stop = $orf_stop + 300;
+	my $padding = 300;
 	my $tmp_mrna_sequence = '';
-	print "REVERSE!" if ($direction eq 'reverse');
-	print "TESTME: START: $orf_start STOP: $orf_stop\n";
-	foreach my $c (($orf_start - 1) .. ($orf_stop - 1)) {
+	my $mrna_seqlength = $orf_stop - $orf_start;
+	my $orf_start_pad = $orf_start - $padding;
+	my $orf_stop_pad = $orf_stop + $padding;
+	foreach my $c (($orf_start_pad - 1) .. ($orf_stop_pad - 1)) {
 	    next if (!defined($mrna_seq[$c]));
 	    $tmp_mrna_sequence .= $mrna_seq[$c];
 	}
@@ -87,28 +104,33 @@ while (my $seq = $in->next_seq()) {
 	    $tmp_mrna_sequence =~ tr/ATGCatgcuU/TACGtacgaA/;
 	    $tmp_mrna_sequence = reverse($tmp_mrna_sequence);
 	}
-	print "The sequences for this guy is $tmp_mrna_sequence\n";
-
-
+#	print "The sequences for this guy is $tmp_mrna_sequence\n";
 	### Don't change me, this is provided by genbank
 	### FINAL TEST IF $startpos is DEFINED THEN OVERRIDE WHATEVER YOU FOUND
-	my $mrna_seqlength = length($tmp_mrna_sequence);
-	print "This CDS is $mrna_seqlength long\n";
+	my $genename = '';
+	if (defined($feature->{_gsf_tag_hash}->{gene}->[0])) {
+	    $genename .= $feature->{_gsf_tag_hash}->{gene}->[0];
+	}
+	if (defined($feature->{_gsf_tag_hash}->{product}->[0])) {
+	    $genename .= ", $feature->{_gsf_tag_hash}->{product}->[0]";
+	}
 	my %datum = (### FIXME
-		     accession => $accession,
+		     accession => qq/$accession-$orf_start/,
 		     mrna_seq => $tmp_mrna_sequence,
 		     protein_seq => $protein_sequence,
-		     orf_start => $orf_start,
-		     orf_stop => $orf_stop,
+		     orf_start => 301,
+		     orf_stop => (301 + $mrna_seqlength),
 		     direction => $direction,
 		     species => $full_species,
 		     genename => $genename,
 		     version => $seq->{_seq_version},
-		     comment => $full_comment,
-		     defline => $defline,);
-	foreach my $k (keys %datum) {
-	    print "key: $k data: $datum{$k}\n";
-	}
-    }
+		     comment => $feature->{_gsf_tag_hash}->{note}->[0],
+		     defline => qq/$defline, $feature->{_gsf_tag_hash}->{gene}->[0], $feature->{_gsf_tag_hash}->{product}->[0]/);
+	$db->Insert_Genome_Entry(\%datum);
+#	foreach my $k (keys %datum) {
+#	    print "key: $k data: $datum{$k}\n";
+#	    $datum{$k} = $datum_orig{$k};
+#	}
     print "Done this CDS\n\n\n";
+    } ## End of foreach @cds
 }

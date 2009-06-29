@@ -1765,6 +1765,20 @@ PRIMARY KEY (id))/;
 		    caller => "$cp, $cf, $cl",});
 }
 
+sub Create_Index_Stats {
+    my $me = shift;
+    my $statement = qq/CREATE table index_stats (
+id $config->{sql_id},
+species $config->{sql_species},
+num_genome int,
+num_mfe_entries int,
+num_mfe_knotted int,
+PRIMARY KEY (id))/;
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute({statement =>$statement, 
+		    caller => "$cp, $cf, $cl",});
+}
+
 sub Create_NumSlipsite {
     my $me = shift;
     my $statement = qq/CREATE table numslipsite (

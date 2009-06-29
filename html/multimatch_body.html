@@ -1,10 +1,10 @@
   <tr>
     <td valign="top">
-	<a href="[% base %]/browse?accession=[% accession %]" rel="external" target="_blank"><img src="[% basedir %]/html/external.png" border="0"></a>
+	<a href="[% base %]/browse?accession=[% accession %]&species=[% species %]" rel="external" target="_blank"><img src="[% basedir %]/html/external.png" border="0"></a>
   </td>
     <td valign="top" width="35%">
       <div align="left">
-<a href="[% base %]/browse?accession=[% accession %]" rel="external" target="_blank">[% genename %]</a>
+<a href="[% base %]/browse?accession=[% accession %]&species=[% species %]" rel="external" target="_blank">[% genename %]</a>
   [% IF short_accession %]
   <br>
   <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=[% short_accession %]">SGD Link</a>
@@ -19,7 +19,7 @@
     </td>
     <td valign="top" width="10%">
       <div align="left">
-	  <a href="[% base %]/browse?accession=[% accession %]" rel="external" target="_blank"><strong>[% accession %]</strong></a>
+	  <a href="[% base %]/browse?accession=[% accession %]&species=[% species %]" rel="external" target="_blank"><strong>[% accession %]</strong></a>
       </div>
     </td>
     <td valign="top" width="15%">

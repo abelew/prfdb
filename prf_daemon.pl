@@ -53,6 +53,10 @@ if ($config->{checks}) {
 if (defined($config->{help})) {
     Print_Help();
 }
+if (defined($config->{index_stats})) {
+    Make_Index_Stats();
+    exit(0);
+}
 if (defined($config->{makeblast})) {
     Make_Blast();
     exit(0);
@@ -774,6 +778,28 @@ sub Make_Blast {
     my $blast = new PRFBlast;
     print "Formatting Database\n";
     $blast->Format_Db($outputfile);
+}
+
+sub Make_Index_Stats {
+    my $test = $db->Tablep('index_stats');
+    $db->Create_Index_Stats() unless($test);
+    my $species_list = $db->MySelect("SELECT distinct(species) FROM genome");
+    my ($num_genome, $num_mfe_entries, $num_mfe_knotted);
+    foreach my $species (@{$species_list}) {
+	print "Working on $species->[0]\n";
+	next if ($species->[0] =~ /^virus-/);
+	$num_genome = $db->MySelect({statement=>qq/SELECT COUNT(id) FROM genome WHERE species = '$species->[0]'/, type=>'single'});
+	$num_mfe_entries = $db->MySelect({statement=>qq/SELECT COUNT(id) FROM mfe WHERE species = '$species->[0]'/,type=>'single'});
+	$num_mfe_knotted = $db->MySelect({statement=>qq/SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = '$species->[0]'/,type=>'single'});
+	my ($cp,$cf,$cl) = caller();
+	my $rc = $db->MyExecute({statement => qq/DELETE FROM index_stats WHERE species = '$species->[0]'/, caller => "$cp,$cf,$cl",});
+	$rc = $db->MyExecute({statement => qq/INSERT INTO index_stats VALUES('', '$species->[0]', '$num_genome','$num_mfe_entries','$num_mfe_knotted')/});
+    }
+    my $rc = $db->MyExecute({statement => qq/DELETE FROM index_stats WHERE species = 'virus'/});
+    $num_genome = $db->MySelect({statement=>qq/SELECT COUNT(id) FROM genome WHERE species like 'virus-%'/, type=>'single'});
+    $num_mfe_entries = $db->MySelect({statement=>qq/SELECT COUNT(id) FROM mfe WHERE species like 'virus-%'/,type=>'single'});
+    $num_mfe_knotted = $db->MySelect({statement=>qq/SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species like 'virus-%'/,type=>'single'});
+    $rc = $db->MyExecute({statement => qq/INSERT INTO index_stats VALUES('', 'virus', '$num_genome','$num_mfe_entries','$num_mfe_knotted')/});
 }
 
 sub Make_Landscape_Tables {

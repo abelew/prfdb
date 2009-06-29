@@ -108,7 +108,7 @@ $PRFConfig::config->{nupack_boot} = 'Fold.out.boot';
 $PRFConfig::config->{sql_id} = 'int not null auto_increment';
 $PRFConfig::config->{sql_species} = 'varchar(80)';
 $PRFConfig::config->{sql_accession} = 'varchar(40)';
-$PRFConfig::config->{gi_number} = 'int';
+$PRFConfig::config->{gi_number} = 'varchar(80)';
 $PRFConfig::config->{sql_genename} = 'varchar(120)';
 $PRFConfig::config->{sql_comment} = 'text not null';
 $PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
@@ -155,6 +155,7 @@ GetOptions(## If this gets set, then the prf_daemon will exit before it gets to 
 	   'accession|i:s' => \$conf{accession},
 	   'blast:s' => \$conf{blast},
 	   'makeblast' => \$conf{makeblast},
+	   'index_stats' => \$conf{index_stats},
            ## Create a local blast database from the genome
 	   'optimize:s' => \$conf{optimize},
 	   ## Use mysql to optimize a table

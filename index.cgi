@@ -52,12 +52,13 @@ foreach my $value (@species_values) {
   $long_name = ucfirst($long_name);
   $species_labels{$value} = $long_name;
 }
-
+my @search_species_values = @species_values;
+push(@search_species_values, 'all');
 our $vars = {
     base => $base,
     basedir => $basedir,
     startsearchform => $cgi->startform(-action => "$base/search_perform"),
-    search_species_limit => $cgi->popup_menu(-name =>'search_species_limit', -values => \@species_values, -labels => \%species_labels, -default => 'all'),
+    search_species_limit => $cgi->popup_menu(-name =>'search_species_limit', -values => \@search_species_values, -labels => \%species_labels, -default => 'all'),
     searchquery => $cgi->textfield(-name => 'query', -size => 20),
     searchform => "$base/searchform",
     importform => "$base/import",
@@ -964,6 +965,7 @@ sub Print_Single_Accession {
   else {
       $accession = $datum->{accession};
   }
+  $datum->{species} = $cgi->param('species') if (!defined($datum->{species}));
   $vars->{id} = $datum->{id};
   $vars->{counter} = $datum->{counter};
   $vars->{accession} = $accession;
