@@ -37,6 +37,8 @@ our $basedir = $base;
 $ENV{BLASTDB} = $config->{blastdir};
 $basedir =~ s/\/index.cgi.*//g;
 our $path = $cgi->path_info;
+our $download_header = "Content-type: application/x-unknown
+Content-Disposition:attachment; filename=";
 our $category = $path;
 $category =~ s/\///g;
 $category = substr($category,0,5);
@@ -141,9 +143,6 @@ our $vars = {
 	    total => 8955, },
     },    
 };
-
-our $download_header = qq(Content-type: application/x-octet-stream
-Content-Disposition:attachment;filename=);
 
 MAIN();
 
@@ -1358,7 +1357,7 @@ sub Perform_Third_Filter {
 #  } ## end if the format is 'text'
   }	
     else {  ## Then the format is tab delimited
-#		print $download_header;
+	print $download_header;
 	print "Species\tAccession\tAlgorithm\tSequence Length\tStart\tSlipsite\tMFE\tBase Pairs\tPseudoknotted\tSequence\tPknots output\tParsed output\tParenthesis output\tBarcode\n";
 	foreach my $datum (@{$info}) {
 	    print "$datum->[3]\t$datum->[2]\t$datum->[4]\t$datum->[7]\t$datum->[5]\t$datum->[6]\t$datum->[12]\t$datum->[13]\t$datum->[14]\t$datum->[8]\t$datum->[9]\t$datum->[11]\t$datum->[15]\n";
@@ -1799,8 +1798,7 @@ sub Download_All {
     
     my $filename = qq(${table}_${species}.csv);
     print $download_header;
-    print "$filename\n\n";
-    
+    print "$filename\n\n";    
     my $keys = $db->MySelect("DESCRIBE $table");
     my $key_string = '';
     foreach my $k (@{$keys}) {
@@ -1851,14 +1849,12 @@ sub Download_PNG {
     my $filename = $pic->Picture_Filename({type => 'feynman',});
     $filename =~ s/\.svg//g;
     $filename .= "-$mfeid.svg";
-    my $tmp_download_header = qq(Content-type: image/png\n\n);
-#Content-Disposition:attachment;filename=);
-    print $tmp_download_header;
     my $output_filename = qq($accession-$mfeid.png);
-#    print "$output_filename\n\n";
+    print $download_header;
+    print "$output_filename\n\n";    
     my $fh = new File::Temp();
     my $fname = $fh->filename;
-    my $command = qq(/usr/bin/rsvg-convert -d 1080 -p 1080 $filename);
+    my $command = qq(/usr/bin/rsvg-convert -f ps -d 1200 -p 1200 $filename);
     open (CONVERT, "$command |");
     my $buffer = '';
     use constant BUFFER_SIZE => 1024;

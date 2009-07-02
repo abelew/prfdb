@@ -712,8 +712,9 @@ sub Make_Distribution {
 sub Make_Feynman {
     my $me = shift;
     my $out_filename = shift;
+    my $include_slipsite = shift;
     my ($id, $sequence, $parsed, $pkout, $slipsite);
-    
+    $include_slipsite = 1 if (!defined($slipsite));
     if (defined($me->{sequence})) {
 	$sequence = $me->{sequence};
 	$parsed = $me->{parsed};
@@ -721,7 +722,7 @@ sub Make_Feynman {
     }
     else {
 	$id = $me->{mfe_id};
-	my $db  = new PRFdb(config=>$config);
+	my $db = new PRFdb(config=>$config);
 	my $stmt = qq(SELECT sequence, slipsite, parsed, output FROM mfe WHERE id = ?);
 	my $info = $db->MySelect({statement => $stmt, vars => [$id], type => 'row' });
 	$sequence = $info->[0];
@@ -737,7 +738,11 @@ sub Make_Feynman {
     my $x_pad = 10;
     ## Width takes into account the size of each character, the number of character, the padding between them, and
     ## The size of the padding
-    my $width = ($seqlength * ($character_size - 2)) + ($x_pad * 2) + 56;
+    my $slipsite_padding = 0;
+    if ($include_slipsite == 1) {
+	$slipsite_padding = 56;
+    }
+    my $width = ($seqlength * ($character_size - 2)) + ($x_pad * 2) + $slipsite_padding;
     
     my $pkt = $pkout;
     my @pktmp = split(/\s+/, $pkt);
@@ -813,7 +818,7 @@ sub Make_Feynman {
 	    my $center_characters = ($paired[$c] - $c) / 2;
 	    my $center_position = $center_characters * $distance_per_char;
 	    ## Note the random +56 here (8 pixels for each character of the slipsite and 7 characters)
-	    my $center_x = $center_position + ($c * $distance_per_char) + 56;
+	    my $center_x = $center_position + ($c * $distance_per_char) + $slipsite_padding;
 	    my $center_y = $height;
 	    my $dist_x = $center_characters * $distance_per_char * 2;
 	    my $dist_nt = $paired[$c] - $c;
@@ -849,7 +854,7 @@ sub Make_Feynman {
     system($command);
     
     my $ret = {
-	width => $width + 1 + 56,
+	width => $width + 1 + $slipsite_padding,
 	height => $height + 1,
     };
     return($ret);
