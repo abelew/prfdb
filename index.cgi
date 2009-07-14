@@ -180,6 +180,10 @@ sub MAIN {
 	Download_All($cgi->param('species'), 'mfe');
 	exit(0);
     }
+    elsif ($path eq '/download_all_snp') {
+	Download_All($cgi->param('species'), 'snp');
+	exit(0);
+    }
     elsif (defined($cgi->param('output_format')) and $cgi->param('output_format') eq 'tab delimited') {
 	my $species = $cgi->param('hidden_species');
 	my $filename = qq($species.tab);
@@ -1795,10 +1799,11 @@ sub Cloud {
 sub Download_All {
     my $species = shift;
     my $table = shift;
-    
+    $species = 'homo_sapiens' if (!defined($species));
     my $filename = qq(${table}_${species}.csv);
     print $download_header;
-    print "$filename\n\n";    
+    print "$filename\n\n";
+    print STDERR "TESTME: DESCRIBE $table $species\n";
     my $keys = $db->MySelect("DESCRIBE $table");
     my $key_string = '';
     foreach my $k (@{$keys}) {
@@ -1807,10 +1812,11 @@ sub Download_All {
     $key_string =~ s/, $//g;
     print "$key_string\n";
     
-    
     my $stmt = qq(SELECT * FROM $table);
-    if ($species ne 'all') {
-	$stmt .= " WHERE species = '$species'";
+    unless ($table eq 'snp') {
+	if ($species ne 'all') {
+	    $stmt .= " WHERE species = '$species'";
+	}
     }
     my $big_stuff = $db->MySelect($stmt);
     my $stuff_string = '';
@@ -1820,6 +1826,7 @@ sub Download_All {
 	}
 	$stuff_string =~ s/, $//g;
 	print "$stuff_string\n";
+	$stuff_string = '';
     }
 }
 
