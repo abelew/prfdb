@@ -1,0 +1,42 @@
+<& header,document_title=>"My sample component",category=>$category &>
+<& index_stats,dbh=>$dbh &>
+
+<td width = "70%">
+<center>
+<b>Welcome!</b>
+</center>
+<p>
+   Hello World<BR>
+   This is my <B><% $component_count %></B> Mason component.
+
+
+% if (!($name) && !($email)) {
+   Enter your info:<br><br>
+   <FORM action="index.html" method="GET">
+   Name: <INPUT type="text" size="10" name="name"><br>
+   Email: <INPUT type="text" size="10" name="email"><br>
+   <INPUT type="submit">
+% } else {
+   This is what you entered:<br> 
+   Name: <% $name %><br>
+   Email: <% $email %><br>
+   hitting submit is the same as calling  /index.html,name=>"First Name",email=>"Email Address" 
+% }
+
+<& footer &>
+
+<%init>
+   my $component_count = "first";
+   my $dbh = DBI->connect("DBI:mysql:prfdb_test:localhost", "prfdb", "drevil")
+    or die "ERROR: Couldn't connect to DB $DBI::errstr";
+</%init>
+<%args>
+   $category=>undef
+   $name=>undef
+   $email=>undef
+</%args>
+
+
+<%cleanup>
+# $dbh->disconnect;
+</%cleanup>

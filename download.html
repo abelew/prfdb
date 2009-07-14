@@ -1,0 +1,29 @@
+<& header,document_title=>"My sample component",category=>$category &>
+
+   Hello World<BR>
+   This is my <B><% $component_count %></B> Mason component.
+
+
+% if (!($name) && !($email)) {
+   Enter your info:<br><br>
+   <FORM action="index.html" method="GET">
+   Name: <INPUT type="text" size="10" name="name"><br>
+   Email: <INPUT type="text" size="10" name="email"><br>
+   <INPUT type="submit">
+% } else {
+   This is what you entered:<br> 
+   Name: <% $name %><br>
+   Email: <% $email %><br>
+   hitting submit is the same as calling  /index.html,name=>"First Name",email=>"Email Address" 
+% }
+
+<& footer &>
+
+<%init>
+   my $component_count = "first";
+</%init>
+<%args>
+   $category=>undef
+   $name=>undef
+   $email=>undef
+</%args>
