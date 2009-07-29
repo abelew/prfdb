@@ -1716,10 +1716,8 @@ sub Cloud {
     }
     $suffix .= "-${seqlength}";
     my $cloud_output_filename = $cloud->Picture_Filename({type => 'cloud', species => $species, suffix => $suffix,});
-    
     my $cloud_url = $cloud->Picture_Filename({type => 'cloud', species => $species, url => 'url', suffix => $suffix,});
     $cloud_url = $basedir . '/' . $cloud_url;
-
     my ($points_stmt, $averages_stmt, $points, $averages);    
     if (!-f $cloud_output_filename) {
 	$points_stmt = qq/SELECT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND /;
@@ -1789,6 +1787,28 @@ sub Cloud {
     }
     $vars->{map_url} = "$vars->{cloud_url}" . '.map'; 
     $vars->{map_file} = "$vars->{cloud_file}" . '.map';
+
+    my $extension_percent_filename = $cloud->Picture_Filename({type => 'extension_percent', species => $species,});
+    my $extension_codons_filename = $cloud->Picture_Filename({type=> 'extension_codons', species => $species,});
+    if (!-f $extension_codons_filename) {
+	$cloud->Make_Extension($species, $extension_codons_filename, 'codons');
+    }
+    if (!-f $extension_percent_filename) {
+	$cloud->Make_Extension($species, $extension_percent_filename, 'percent');
+    }
+    my $bargraphs = qq"$config->{base}/images/cloud/$species/cloud-bar-percentsig.png";
+    if (!-f $bargraphs) {
+	my $tmp_args = {
+	    seqlength => $seqlength,
+	    species => $species,
+	    points => $points,
+	    averages => $averages,
+	    filename => qq"$config->{base}/images/cloud/$species/cloud-all-AAAAAAA-100.png",
+	    url => $base,
+	    slipsites => 'AAAAAAA',
+	};
+	my $cloud_data = $cloud->Make_Cloud($tmp_args);
+    }
     $template->process('cloud.html', $vars) or
 	Print_Template_Error($template), die;
     open (OUT, "<$vars->{map_file}");

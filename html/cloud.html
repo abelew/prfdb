@@ -13,11 +13,6 @@
 [% overlaysubmit %]
 </form>
 <br>
-<!---
-<a HREF="[% map_url %]">
-  <img src="[% cloud_url %]" ismap>
-</a>
---->
 <img src="[% cloud_url %]" usemap="#map">
 </center>
 
@@ -82,4 +77,16 @@ And percentage.
  [% ELSE %]
  <img src="[% basedir %]/images/cloud/[% species %]/cloud-bar-percentsig.png">
  [% END %]
+</center>
+
+<p>
+Below is a chart of extended reading frames, x axis percentage ORF, y axis percentage extended.
+</p>
+<center>
+ <img src="[% basedir %]/images/cloud/[% species %]/extension-percent.png">
+</center>
+Below is the same with the number of codons on the y axis.
+</p>
+<center>
+  <img src="[% basedir %]/images/cloud/[% species %]/extension-codons.png">
 </center>

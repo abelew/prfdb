@@ -24,6 +24,139 @@ sub new {
 
 sub deg2rad {PI * $_[0] / 180}
 
+sub Make_Extension {
+    my $me = shift;
+    my $species = shift;
+    my $filename = shift;
+    my $type = shift;
+    $species = 'saccharomyces_cerevisiae' unless (defined($species));
+    my $graph = new GD::Graph::points('800','800');
+    my $db = new PRFdb(config => $config);
+    $graph->set(bgclr => 'white');
+    if ($type eq 'percent') {
+	$graph->set(y_max_value=>150);
+	$graph->set(y_label=>'-1 frame extension in percent');
+    }
+    elsif ($type eq 'codons') {
+	$graph->set(y_max_value=>150);
+	$graph->set(y_label=> '-1 frame extension in codons',);
+    }
+    else {
+	$graph->set(y_max_value=>200);
+	$graph->set(y_label=>'testme');
+    }
+    $graph->set(x_label=>'Percentage ORF');
+    $graph->set(y_min_value=>0);
+    $graph->set(y_ticks=>1);
+    $graph->set(y_tick_number=>10);
+    $graph->set(y_tick_offset=>2);
+    $graph->set(y_label_skip=>2);
+    $graph->set(x_min_value=>0);
+    $graph->set(x_max_value=>100);
+    $graph->set(x_ticks=>1);
+    $graph->set(x_tick_number=>10);
+    $graph->set(x_label_skip=>2);
+    $graph->set(x_tick_offset=>2);
+    $graph->set(markers=> [7,7]);
+    $graph->set(marker_size=> 0);
+    $graph->set(bgclr => 'white');
+    $graph->set(dclrs => [qw(black black)]);
+    $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", 12);
+    $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", 12);
+    $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}",12);
+    $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", 12);
+    $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}",12);
+#    my $fun = [[0,0,0,[0,0,0]];
+    my $fun = [[0,0,0],[0,100,0]];
+    my $gd = $graph->plot($fun) or die ($graph->error);
+    my $black = $gd->colorResolve(0,0,0);
+    my $green = $gd->colorResolve(0,191,0);
+    my $blue = $gd->colorResolve(0,0,191);
+    my $gb = $gd->colorResolve(0,97,97);
+    my $darkslategray = $gd->colorResolve(165,165,165);
+    my $axes_coords = $graph->get_feature_coordinates('axes');
+    # print "@{$axes_coords}\n";
+    my $left_x_coord = $axes_coords->[1];
+    my $top_y_coord = $axes_coords->[2];
+    my $right_x_coord = $axes_coords->[3];
+    my $bottom_y_coord = $axes_coords->[4];
+    my $x_range = $right_x_coord - $left_x_coord;
+    my $y_range = $top_y_coord - $bottom_y_coord;
+    my $stmt = qq/SELECT DISTINCT mfe.id, mfe.accession, mfe.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, mfe.bp_mstop FROM genome,mfe WHERE mfe.species = '$species' AND mfe.genome_id = genome.id/;
+    my $stuff = $db->MySelect({statement => $stmt,});
+    foreach my $datum (@{$stuff}) {
+	my $mfeid = $datum->[0];
+	my $accession = $datum->[1];
+	my $start = $datum->[2];
+	my $orf_start = $datum->[3];
+	my $orf_stop = $datum->[4];
+	my $mrna_sequence = $datum->[5];
+	my $bp_minus_stop = $datum->[6];
+	my $minus_string = '';
+	$mrna_sequence =~ tr/Tt/Uu/;
+	my @seq = split(//, $mrna_sequence);
+	my $stop_count = 0;
+	if (($orf_start % 3) == 0) {
+	    $stop_count = 1;
+	}
+	elsif (($orf_start % 3) == 1) {
+	    $stop_count = 2;
+	}
+	elsif (($orf_start % 3) == 2) {
+	    $stop_count = 0;
+	}
+	else {
+	    die "WTF?";
+	}
+	my $minus_start = $start + 4;
+	my $codon = '';
+#	print "Working on $accession: orf start: $orf_start prf_start: $start at $minus_start\n";	
+      LOOP: for my $c ($minus_start .. $#seq) {
+	  next if ($c == 3);  ## Hack to make it work
+	  if (($c % 3) == $stop_count) {
+	      if ($codon eq 'UAG' or $codon eq 'UAA' or $codon eq 'UGA' or
+		  $codon eq 'uag' or $codon eq 'uaa' or $codon eq 'uga') {
+		  $minus_string .= $codon;
+		  last LOOP;
+	      }
+	      else {
+		  $minus_string .= $codon;
+	      }
+	      $codon = $seq[$c];
+	  }  ## if on a third base of the -1 frame
+	  else {
+	      $codon .= $seq[$c];
+	  }
+      } ## End foreach character of the sequence
+	my $extension_length = length($minus_string);
+	$extension_length = $extension_length - 5;
+	my $minus_codons = ($extension_length / 3) * 5;
+	if (!defined($bp_minus_stop)) {
+	    my $stmt = qq/UPDATE mfe SET bp_mstop = '$extension_length' WHERE id = '$mfeid'/;
+	    $db->MyExecute($stmt);
+	}
+	my $x_percentage = sprintf("%.2f", 100.0 *($start - $orf_start) / ($orf_stop - $orf_start));
+	my $y_percentage = sprintf("%.2f", 100.0 * (($extension_length + $start) - $orf_start) / ($orf_stop - $orf_start));
+	my $color = $gd->colorResolve(0,0,0);
+	my $x_coord = sprintf("%.2f", (($x_range / 100) * $x_percentage + $left_x_coord));
+	my $percent_y_coord = sprintf("%.2f", ((($y_range / 130) * (130 - $y_percentage)) + $bottom_y_coord));
+	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons) + $bottom_y_coord);
+	if ($type eq 'percent') {
+	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);
+	}
+	elsif ($type eq 'codons') {
+	    $gd->filledArc($x_coord, $codons_y_coord, 4,4,0,360,$color,4);
+	}
+	else {
+	    die("Type is non-specified");
+	}
+    }  ## End foreach stuff
+    open(IMG, ">$filename") or die "error opening file to write image: $!";
+    binmode IMG;
+    print IMG $gd->png;
+    close IMG;
+}
+
 sub Make_Cloud {
     my $me = shift;
     my $args = shift;
@@ -1053,11 +1186,18 @@ sub Picture_Filename {
     my $url = $args->{url};
     my $species = $args->{species};
     my $suffix = $args->{suffix};
-    
+
+    if ($type eq 'extension_percent') {
+	return(qq"images/cloud/$species/extension-percent.png");
+    }
+    if ($type eq 'extension_codons') {
+	return(qq"images/cloud/$species/extension-codons.png");
+    }
+
     my $extension; 
     if ($type =~ /feynman/) {
 	$extension = '.svg'; 
-    } 
+    }
     else {
 	$extension = '.png';
     }
@@ -1102,10 +1242,10 @@ sub Picture_Filename {
     }
     else {
 	if (defined($suffix)) {
-	    $filename  = qq($directory/$accession${suffix}$extension);
+	    $filename = qq($directory/$accession${suffix}$extension);
 	}
 	else {
-	    $filename  = qq($directory/$accession$extension);
+	    $filename = qq($directory/$accession$extension);
 	}
     }
     return ($filename);
