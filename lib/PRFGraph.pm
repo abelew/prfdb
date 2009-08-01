@@ -30,6 +30,7 @@ sub Make_Extension {
     my $filename = shift;
     my $type = shift;
     $species = 'saccharomyces_cerevisiae' unless (defined($species));
+    my $radius = 4;
     my $graph = new GD::Graph::points('800','800');
     my $db = new PRFdb(config => $config);
     $graph->set(bgclr => 'white');
@@ -145,7 +146,7 @@ sub Make_Extension {
 	my $x_coord = sprintf("%.2f", (($x_range / 100) * $x_percentage + $left_x_coord));
 	my $percent_y_coord = sprintf("%.2f", ((($y_range / 130) * (130 - $y_percentage)) + $bottom_y_coord));
 	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons) + $bottom_y_coord);
-	my $url = qq/$config->{basedir}/genome?accession=$accession/;
+	my $url = qq"$config->{basedir}/genome?accession=$accession";
 	my $percent_map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession">\n"/;
 	my $codon_map_string = qq/<area shape="circle" coords="${x_coord},${codons_y_coord},$radius" href="${url}" title="$accession">\n"/;
 	print PERCENT_MAP $percent_map_string;
