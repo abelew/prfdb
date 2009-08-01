@@ -84,6 +84,10 @@ sub Make_Extension {
     my $y_range = $top_y_coord - $bottom_y_coord;
     my $stmt = qq/SELECT DISTINCT mfe.id, mfe.accession, mfe.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, mfe.bp_mstop FROM genome,mfe WHERE mfe.species = '$species' AND mfe.genome_id = genome.id/;
     my $stuff = $db->MySelect({statement => $stmt,});
+    open(PERCENT_MAP, ">${filename}-percent.map") or die("Unable to open the map file ${filename}-percent.map");
+    print PERCENT_MAP "<map name=\"percent_extension\" id=\"percent_extension\">\n";
+    open(CODONS_MAP, ">${filename}-codons.map") or die("Unable to open the map file ${filename}-codons.map");
+    print CODONS_MAP "<map name=\"codons_extension\" id=\"codons_extension\">\n";
     foreach my $datum (@{$stuff}) {
 	my $mfeid = $datum->[0];
 	my $accession = $datum->[1];
@@ -141,6 +145,11 @@ sub Make_Extension {
 	my $x_coord = sprintf("%.2f", (($x_range / 100) * $x_percentage + $left_x_coord));
 	my $percent_y_coord = sprintf("%.2f", ((($y_range / 130) * (130 - $y_percentage)) + $bottom_y_coord));
 	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons) + $bottom_y_coord);
+	my $url = qq/$config->{basedir}/genome?accession=$accession/;
+	my $percent_map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession">\n"/;
+	my $codon_map_string = qq/<area shape="circle" coords="${x_coord},${codons_y_coord},$radius" href="${url}" title="$accession">\n"/;
+	print PERCENT_MAP $percent_map_string;
+	print CODONS_MAP $codon_map_string;
 	if ($type eq 'percent') {
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);
 	}
@@ -155,6 +164,10 @@ sub Make_Extension {
     binmode IMG;
     print IMG $gd->png;
     close IMG;
+    print PERCENT_MAP "</map>\n";
+    print CODONS_MAP "</map>\n";
+    close PERCENT_MAP;
+    close CODONS_MAP;
 }
 
 sub Make_Cloud {
