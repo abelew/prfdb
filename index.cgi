@@ -1790,6 +1790,9 @@ sub Cloud {
 
     my $extension_percent_filename = $cloud->Picture_Filename({type => 'extension_percent', species => $species,});
     my $extension_codons_filename = $cloud->Picture_Filename({type=> 'extension_codons', species => $species,});
+    $vars->{percent_map_file} = $extension_percent_filename . '.map';
+    $vars->{codons_map_file} = $extension_codons_filename . '.map';
+
     if (!-f $extension_codons_filename) {
 	$cloud->Make_Extension($species, $extension_codons_filename, 'codons');
     }
@@ -1814,6 +1817,12 @@ sub Cloud {
     open (OUT, "<$vars->{map_file}");
     while (my $l = <OUT>) { print $l };
     close (OUT);
+    open(PERCENT_OUT, "<$vars->{percent_map_file}");
+    while (my $m = <PERCENT_OUT>) {print $m};
+    close (PERCENT_OUT);
+    open(CODONS_OUT, "<$vars->{codons_map_file}");
+    while (my $n = <CODONS_OUT>) {print $n};
+    close (CODONS_OUT);
 }
 
 sub Download_All {
