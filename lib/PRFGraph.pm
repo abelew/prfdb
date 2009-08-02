@@ -21,7 +21,6 @@ sub new {
   }
   return ($me);
 }
-
 sub deg2rad {PI * $_[0] / 180}
 
 sub Make_Extension {
@@ -29,6 +28,7 @@ sub Make_Extension {
     my $species = shift;
     my $filename = shift;
     my $type = shift;
+    my $url_base = shift;
     $species = 'saccharomyces_cerevisiae' unless (defined($species));
     my $radius = 4;
     my $graph = new GD::Graph::points('800','800');
@@ -87,15 +87,17 @@ sub Make_Extension {
     my $stuff = $db->MySelect({statement => $stmt,});
     
     open(MAP, ">${filename}.map") or die("Unable to open the map file ${filename}.map");
+    my $map_string = '';
     if ($type eq 'percent') {
-	print MAP "<map name=\"percent_extension\" id=\"percent_extension\">\n";
+	$map_string = qq/<map name="percent_extension" id="percent_extension">\n/;
     }
     elsif ($type eq 'codons') {
-	print MAP "<map name=\"codons_extension\" id=\"codons_extension\">\n";
+	$map_string = qq/<map name="codons_extension" id="codons_extension">\n/;
     }
     else {
-	print MAP "uhhhh what?\n";
+	$map_string = "uhh what?\n";
     }
+    print MAP $map_string;
     foreach my $datum (@{$stuff}) {
 	my $mfeid = $datum->[0];
 	my $accession = $datum->[1];
@@ -153,8 +155,7 @@ sub Make_Extension {
 	my $x_coord = sprintf("%.2f", (($x_range / 100) * $x_percentage + $left_x_coord));
 	my $percent_y_coord = sprintf("%.2f", ((($y_range / 130) * (130 - $y_percentage)) + $bottom_y_coord));
 	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons) + $bottom_y_coord);
-	my $url = qq"$config->{basedir}/genome?accession=$accession";
-	my $map_string;
+	my $url = qq"$url_base/genome?accession=$accession";
 	if ($type eq 'percent') {
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession">\n/;
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);

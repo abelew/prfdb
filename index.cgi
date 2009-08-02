@@ -1794,10 +1794,10 @@ sub Cloud {
     $vars->{codons_map_file} = $extension_codons_filename . '.map';
 
     if (!-f $extension_codons_filename) {
-	$cloud->Make_Extension($species, $extension_codons_filename, 'codons');
+	$cloud->Make_Extension($species, $extension_codons_filename, 'codons', $basedir);
     }
     if (!-f $extension_percent_filename) {
-	$cloud->Make_Extension($species, $extension_percent_filename, 'percent');
+	$cloud->Make_Extension($species, $extension_percent_filename, 'percent', $basedir);
     }
     my $bargraphs = qq"$config->{base}/images/cloud/$species/cloud-bar-percentsig.png";
     if (!-f $bargraphs) {
@@ -1820,9 +1820,9 @@ sub Cloud {
     open(PERCENT_OUT, "<$vars->{percent_map_file}");
     while (my $m = <PERCENT_OUT>) {print $m};
     close (PERCENT_OUT);
-    open(CODONS_OUT, "<$vars->{codons_map_file}");
-    while (my $n = <CODONS_OUT>) {print $n};
-    close (CODONS_OUT);
+#    open(CODONS_OUT, "<$vars->{codons_map_file}");
+#    while (my $n = <CODONS_OUT>) {print $n};
+#    close (CODONS_OUT);
 }
 
 sub Download_All {
