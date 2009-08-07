@@ -30,9 +30,15 @@ sub Make_Extension {
     my $type = shift;
     my $url_base = shift;
     $species = 'saccharomyces_cerevisiae' unless (defined($species));
+    my $db = new PRFdb(config => $config);
+    my $averages = qq"SELECT avg_mfe, avg_zscore, stddev_mfe, stddev_zscore FROM stats WHERE species = '$species' AND seqlength = '100' AND algorithm = 'nupack'";
+    my $averages_fun = $db->MySelect($averages);
+    my $avg_mfe = $averages_fun->[0]->[0];
+    my $avg_zscore = $averages_fun->[0]->[1];
+    my $mfe_minus_stdev = $avg_mfe - $averages_fun->[0]->[2];
+    my $zscore_minus_stdev = $avg_zscore - $averages_fun->[0]->[3];
     my $radius = 4;
     my $graph = new GD::Graph::points('800','800');
-    my $db = new PRFdb(config => $config);
     $graph->set(bgclr => 'white');
     if ($type eq 'percent') {
 	$graph->set(y_max_value=>150);
@@ -40,7 +46,7 @@ sub Make_Extension {
     }
     elsif ($type eq 'codons') {
 	$graph->set(y_max_value=>150);
-	$graph->set(y_label=> '-1 frame extension in codons',);
+	$graph->set(y_label=> '-1 frame extension in codons');
     }
     else {
 	$graph->set(y_max_value=>200);
@@ -83,7 +89,7 @@ sub Make_Extension {
     my $bottom_y_coord = $axes_coords->[4];
     my $x_range = $right_x_coord - $left_x_coord;
     my $y_range = $top_y_coord - $bottom_y_coord;
-    my $stmt = qq/SELECT DISTINCT mfe.id, mfe.accession, mfe.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, mfe.bp_mstop FROM genome,mfe WHERE mfe.species = '$species' AND mfe.genome_id = genome.id/;
+    my $stmt = qq"SELECT DISTINCT mfe.id, mfe.accession, mfe.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, mfe.bp_mstop, mfe.mfe FROM genome,mfe WHERE mfe.genome_id = genome.id AND mfe.seqlength='100' AND mfe.algorithm = 'nupack' AND mfe.species = '$species'";
     my $stuff = $db->MySelect({statement => $stmt,});
     
     open(MAP, ">${filename}.map") or die("Unable to open the map file ${filename}.map");
@@ -106,6 +112,9 @@ sub Make_Extension {
 	my $orf_stop = $datum->[4];
 	my $mrna_sequence = $datum->[5];
 	my $bp_minus_stop = $datum->[6];
+	my $mfe = $datum->[7];
+	my $zscore_stmt = qq"SELECT zscore from boot_$species where mfe_id = '$mfeid'";
+	my $zscore = $db->MySelect({statement => $zscore_stmt, type => 'single'});
 	my $minus_string = '';
 	$mrna_sequence =~ tr/Tt/Uu/;
 	my @seq = split(//, $mrna_sequence);
@@ -151,11 +160,23 @@ sub Make_Extension {
 	}
 	my $x_percentage = sprintf("%.2f", 100.0 *($start - $orf_start) / ($orf_stop - $orf_start));
 	my $y_percentage = sprintf("%.2f", 100.0 * (($extension_length + $start) - $orf_start) / ($orf_stop - $orf_start));
-	my $color = $gd->colorResolve(0,0,0);
+	my $color;
+	if (($zscore < $avg_zscore) and ($mfe < $avg_mfe)) {
+	    $color = $gd->colorResolve(191,0,0);  ## Red
+	}
+	elsif (($zscore >= $avg_zscore) and ($mfe < $avg_mfe)) {
+	    $color = $gd->colorResolve(0,191,0);  ## Green, I think
+	}
+	elsif (($zscore < $avg_zscore) and ($mfe >= $avg_mfe)) {
+	    $color = $gd->colorResolve(0,0,191);
+	}
+	else {
+	    $color = $gd->colorResolve(165,165,165);
+	}
 	my $x_coord = sprintf("%.2f", (($x_range / 100) * $x_percentage + $left_x_coord));
 	my $percent_y_coord = sprintf("%.2f", ((($y_range / 130) * (130 - $y_percentage)) + $bottom_y_coord));
 	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons) + $bottom_y_coord);
-	my $url = qq"$url_base/genome?accession=$accession";
+	my $url = qq"$url_base/index.cgi/browse?accession=$accession";
 	if ($type eq 'percent') {
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession">\n/;
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);

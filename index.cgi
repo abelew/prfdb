@@ -171,7 +171,7 @@ sub MAIN {
     elsif ($path eq '/download_parsed') {
 	Download_Parsed($cgi->param('mfeid'));
 	exit(0);
-   }
+    }
     elsif ($path eq '/download_all_genome') {
 	Download_All($cgi->param('species'), 'genome');
 	exit(0);
@@ -205,13 +205,11 @@ sub MAIN {
 	Print_Index();
     }
     elsif ($path eq '/help') {
-	$template->process('help.html', $vars) or
-	    Print_Template_Error($template), die;
+	$template->process('help.html', $vars) or Print_Template_Error($template), die;
     }
     elsif ($path =~ /^\/help_(\w+$)/) {
 	my $helpfile = qq(help_${1}.html);
-	   $template->process($helpfile, $vars) or
-	   Print_Template_Error($template), die;
+	$template->process($helpfile, $vars) or Print_Template_Error($template), die;
     }
     elsif ($path eq '/cloud_mfe_z') {
 	Print_MFE_Z();
@@ -227,6 +225,9 @@ sub MAIN {
     } 
     elsif ($path eq '/pictures') {
 	Generate_Pictures();
+    }
+    elsif ($path eq '/graphs') {
+	Generate_Graphs();
     }
     elsif ($path eq '/stats') {
 	my $data = {
@@ -1817,12 +1818,6 @@ sub Cloud {
     open (OUT, "<$vars->{map_file}");
     while (my $l = <OUT>) { print $l };
     close (OUT);
-    open(PERCENT_OUT, "<$vars->{percent_map_file}");
-    while (my $m = <PERCENT_OUT>) {print $m};
-    close (PERCENT_OUT);
-#    open(CODONS_OUT, "<$vars->{codons_map_file}");
-#    while (my $n = <CODONS_OUT>) {print $n};
-#    close (CODONS_OUT);
 }
 
 sub Download_All {
@@ -2038,6 +2033,23 @@ sub Generate_Pictures {
 	    } ## foreach species
 	}  ## if pknotted
     } ## seqlengths
+}
+
+sub Generate_Graphs {
+    my $species = $cgi->param('species');
+    my $homedir = $ENV{PRFDBHOME};
+    $vars->{species} = $species;
+    $template->process('graphs.html', $vars) or
+	Print_Template_Error($template), die;
+    my $percent_map_file = qq"$homedir/images/cloud/$species/extension-percent.png.map";
+    print "$percent_map_file";
+    open(PERCENT_OUT, "<$percent_map_file");
+    while (my $m = <PERCENT_OUT>) {print $m};
+    close (PERCENT_OUT);
+    my $codons_map_file = qq"$homedir/images/cloud/$species/extension-codons.png.map";
+    open(CODONS_OUT, "<$codons_map_file");
+    while (my $n = <CODONS_OUT>) {print $n};
+    close (CODONS_OUT);
 }
 
 sub Remove_Duplicates {
