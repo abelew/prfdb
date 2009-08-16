@@ -178,7 +178,7 @@ sub Make_Extension {
 	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons) + $bottom_y_coord);
 	my $url = qq"$url_base/index.cgi/browse?accession=$accession";
 	if ($type eq 'percent') {
-	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession">\n/;
+	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession, mfe: $avg_mfe z: $avg_zscore">\n/;
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);
 	}
 	elsif ($type eq 'codons') {
