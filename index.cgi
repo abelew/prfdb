@@ -17,7 +17,7 @@ BEGIN {
 }
 use lib 'lib';
 use PRFConfig;
-our $config = $PRFConfig::config;
+our $config = new PRFConfig(config_file=>'/usr/local/prfdb/prfdb_beta/prfdb.conf');
 use PRFdb;
 use PRFBlast;
 use PRFGraph;
@@ -32,7 +32,7 @@ our $cgi = new CGI;
 ## Start a new CGI object
 our $template = new Template($config);
 ## And a new Template
-our $base    = "http://" . $ENV{HTTP_HOST} . $ENV{SCRIPT_NAME};
+our $base = "http://" . $ENV{HTTP_HOST} . $ENV{SCRIPT_NAME};
 our $basedir = $base;
 $ENV{BLASTDB} = $config->{blastdir};
 $basedir =~ s/\/index.cgi.*//g;

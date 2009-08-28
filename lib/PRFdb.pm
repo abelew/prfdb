@@ -19,7 +19,7 @@ sub new {
     }
     my $me = bless {
 	dsn => $config->{dsn},
-	user => $config->{user},
+	user => $config->{database_user},
 	num_retries => 60,
 	retry_time => 15,
     }, $class;
@@ -263,7 +263,7 @@ sub MyGet {
 sub MyConnect {
     my $me = shift;
     my $statement = shift;
-    $dbh = DBI->connect_cached($me->{dsn}, $config->{user}, $config->{pass}, { AutoCommit => 1},);
+    $dbh = DBI->connect_cached($me->{dsn}, $config->{database_user}, $config->{database_pass}, { AutoCommit => 1},);
     my $retry_count = 0;
     if (!defined($dbh) or
 	(defined($DBI::errstr) and

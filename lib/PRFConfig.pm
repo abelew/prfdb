@@ -5,364 +5,456 @@ use Getopt::Long;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(PRF_Out PRF_Error config);    # Symbols to be exported by default
+our $AUTOLOAD;
 
-#our @EXPORT_OK = qw();  # Symbols to be exported on request
-our $VERSION = 1.00;                           # Version number
+=head1 NAME
 
-my $appconfig = AppConfig->new({
-    CASE => 1,
-    CREATE => 1,
-    PEDANTIC => 0,
-    ERROR => \&Go_Away,
-    GLOBAL => {
-	EXPAND => EXPAND_ALL,
-	EXPAND_ENV => 1,
-	EXPAND_UID => 1,
-	DEFAULT => "<unset>",
-	ARGCOUNT => 1,
-    },
-},);
-####
-## Set up some reasonable defaults here
-####
-$PRFConfig::config->{niceness} = 10;
-$PRFConfig::config->{debug} = undef;
-$PRFConfig::config->{base} = '.';
-$PRFConfig::config->{open_files} = [];
-$PRFConfig::config->{checks} = 0;
-$PRFConfig::config->{add_to_path} = "/usr/local/bin:/usr/bin";
-$PRFConfig::config->{has_modperl} = 0;
-$PRFConfig::config->{index_species} = ['saccharomyces_cerevisiae', 'homo_sapiens', 'bos_taurus', 'danio_rerio', 'mus_musculus', 'rattus_norvegicus', 'xenopus_laevis', 'xenopus_tropicalis', 'saccharomyces_kudriavzevii', 'saccharomyces_castellii', 'saccharomyces_kluyveri', 'saccharomyces_bayanus', 'saccharomyces_paradoxus', 'saccharomyces_mikatae', 'caenorhabiditis_elegans', 'virus'];
-$PRFConfig::config->{species_limit} = undef;
-$PRFConfig::config->{snp_species_limit} = 'homo_sapiens';
-$PRFConfig::config->{workdir} = 'work';
-$PRFConfig::config->{blastdir} = 'blast';
-$PRFConfig::config->{queue_table} = 'queue';
-$PRFConfig::config->{check_webqueue} = 1;
-$PRFConfig::config->{genome_table} = 'genome';
-$PRFConfig::config->{seqlength} = [100,75,50];
-$PRFConfig::config->{landscape_seqlength} = 105;
-$PRFConfig::config->{window_space} = 15;
-$PRFConfig::config->{do_nupack} = 1;
-$PRFConfig::config->{do_pknots} = 1;
-$PRFConfig::config->{do_hotknots} = 1;
-$PRFConfig::config->{do_boot} = 1;
-$PRFConfig::config->{do_landscape} = 1;
-$PRFConfig::config->{do_utr} = 0;
-$PRFConfig::config->{nupack_nopairs_hack} = 0;
-$PRFConfig::config->{arch_specific_exe} = 0;
-$PRFConfig::config->{boot_iterations} = 100;
-$PRFConfig::config->{boot_mfe_algorithms} = {pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, hotknots => \&RNAFolders::Hotknots_Boot, };
-$PRFConfig::config->{boot_randomizers} = {array => \&SeqMisc::ArrayShuffle,};
-$PRFConfig::config->{database_type} = 'mysql';
-$PRFConfig::config->{db} = 'prfconfigdefault_db';
-$PRFConfig::config->{host} = 'prfconfigdefault_host';
-$PRFConfig::config->{user} = 'prfconfigdefault_user';
-$PRFConfig::config->{pass} = 'prfconfigdefault_pass';
-$PRFConfig::config->{INCLUDE_PATH} = 'html/';
-$PRFConfig::config->{INTERPOLATE} = 1;
-$PRFConfig::config->{POST_CHOMP} = 1;
-$PRFConfig::config->{EVAL_PERL} = 0;
-$PRFConfig::config->{ABSOLUTE} = 1;
-$PRFConfig::config->{slip_site_1} = '^n\{3\}$';
-$PRFConfig::config->{slip_site_2} = '^w\{3\}$';
-$PRFConfig::config->{slip_site_3} = '^h\{3\}$';
-$PRFConfig::config->{slip_site_spacer_min} = 5;
-$PRFConfig::config->{slip_site_spacer_max} = 9;
-$PRFConfig::config->{stem1_min} = 4;
-$PRFConfig::config->{stem1_max} = 20;
-$PRFConfig::config->{stem1_bulge} = 0.8;
-$PRFConfig::config->{stem1_spacer_min} = 1;
-$PRFConfig::config->{stem1_spacer_max} = 4;
-$PRFConfig::config->{stem2_min} = 4;
-$PRFConfig::config->{stem2_max} = 20;
-$PRFConfig::config->{stem2_bulge} = 0.8;
-$PRFConfig::config->{stem2_loop_min} = 0;
-$PRFConfig::config->{stem2_loop_max} = 3;
-$PRFConfig::config->{stem2_spacer_min} = 0;
-$PRFConfig::config->{stem2_spacer_max} = 100;
-$PRFConfig::config->{using_pbs} = 0;
-$PRFConfig::config->{pbs_template} = 'pbs_template';
-$PRFConfig::config->{pbs_arches} = 'aix4 irix6 linux-ia64';
-$PRFConfig::config->{pbs_shell} = '/bin/sh';
-$PRFConfig::config->{pbs_memory} = '1600';
-$PRFConfig::config->{pbs_cpu} = '1';
-$PRFConfig::config->{pbs_partialname} = 'fold';
-$PRFConfig::config->{num_daemons} = '20';
-$PRFConfig::config->{condor_memory} = '512';
-$PRFConfig::config->{condor_os} = 'OSX';
-$PRFConfig::config->{condor_arch} = 'PPC';
-$PRFConfig::config->{condor_universe} = 'vanilla';
-$PRFConfig::config->{perl} = '/usr/local/bin/perl';
-$PRFConfig::config->{daemon_name} = 'folder_daemon.pl';
-$PRFConfig::config->{rnamotif} = 'rnamotif';
-$PRFConfig::config->{rnamotif_template} = 'rnamotif_template';
-$PRFConfig::config->{rnamotif_descriptor} = 'descr/rnamotif_template.out';
-$PRFConfig::config->{rmprune} = 'rmprune';
-$PRFConfig::config->{pknots} = 'pknots';
-$PRFConfig::config->{hotknots} = 'HotKnot';
-$PRFConfig::config->{rnafold} = 'RNAfold';
-$PRFConfig::config->{nupack} = 'Fold.out';
-$PRFConfig::config->{zcat} = 'zcat';
-$PRFConfig::config->{nupack_boot} = 'Fold.out.boot';
-$PRFConfig::config->{sql_id} = 'int not null auto_increment';
-$PRFConfig::config->{sql_species} = 'varchar(80)';
-$PRFConfig::config->{sql_accession} = 'varchar(40)';
-$PRFConfig::config->{gi_number} = 'varchar(80)';
-$PRFConfig::config->{sql_genename} = 'varchar(120)';
-$PRFConfig::config->{sql_comment} = 'text not null';
-$PRFConfig::config->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
-$PRFConfig::config->{sql_index} = $PRFConfig::config->{sql_id};
-$PRFConfig::config->{logfile} = 'prfdb.log';
-$PRFConfig::config->{errorfile} = 'prfdb.errors';
-$PRFConfig::config->{dirvar} = undef;
-$PRFConfig::config->{max_mfe} = 10.0;
-$PRFConfig::config->{stem_colors} = "black blue red green purple orange brown darkslategray";  ## This gets dropped into an array
-## The zeroth element is a non-stem, thus black
-$PRFConfig::config->{graph_font} = 'arial.ttf';
-$PRFConfig::config->{distribution_graph_x_size} = 400;
-$PRFConfig::config->{distribution_graph_y_size} = 300;
-$PRFConfig::config->{landscape_graph_x_size} = 800;
-$PRFConfig::config->{landscape_graph_y_size} = 600;
-$PRFConfig::config->{graph_font_size} = 9;
-$PRFConfig::config->{ENV_LIBRARY_PATH} = $ENV{LD_LIBRARY_PATH};
-my $config_file;
-if (defined($ENV{PRFDBHOME})) {
-    $config_file = "$ENV{PRFDBHOME}/prfdb.conf";
-}
-else {
-    $config_file = 'prfdb.conf';
-}
-if (!-r $config_file) {
-    my $cwd = `pwd`;
-    print STDERR "Can't find prfdb.conf in $cwd\n";
-    die;
-}
-my $open = $appconfig->file('prfdb.conf');
-my %data = $appconfig->varlist("^.*");
-for my $config_option (keys %data) {
-    $PRFConfig::config->{$config_option} = $data{$config_option};
-    undef $data{$config_option};
-}
-my %conf;
-GetOptions(## If this gets set, then the prf_daemon will exit before it gets to the queue
-	   'nodaemon:i' => \$conf{nodaemon},  
-	   'debug:i' => \$conf{debug},
-	   ## Print some help information
-	   'help|version' => \$conf{help},      
-	   ## An accession to specifically fold.  If it is not already in the db  
-	   ## Import it and then fold it.
-	   'accession|i:s' => \$conf{accession},
-	   'blast:s' => \$conf{blast},
-	   'makeblast' => \$conf{makeblast},
-	   'index_stats' => \$conf{index_stats},
-           ## Create a local blast database from the genome
-	   'optimize:s' => \$conf{optimize},
-	   ## Use mysql to optimize a table
-	   'species:s' => \$conf{species},
-	   'copyfrom:s' => \$conf{copyfrom},
-	   ## Another database from which to copy the genome table
-	   'import:s' => \$conf{import_accession},
-	   ## A single accession to import
-	   'input_file:s' => \$conf{input_file},
-	   ## A file of accessions to import and queue
-	   'input_fasta:s' => \$conf{input_fasta},
-	   ## A file of fasta data to import and queue
-	   'fasta_style:s' => \$conf{fasta_style},
-	   ## The style of input fasta (sgd, ncbi, etc)
-	   ## By default this should be 0/1, but for some yeast genomes it may be 1000
-	   'fillqueue' => \$conf{fillqueue},
-	   ## A boolean to see if the queue should be filled.
-	   'resetqueue' => \$conf{resetqueue},
-	   ## A boolean to reset the queue
-	   'stats' => \$conf{stats},
-	   ## Generate stats
-	   'startpos:s' => \$conf{startpos},
-	   ## A specific start position to fold a single sequence at,
-	   ## also usable by inputfasta or inputfile
-	   'startmotif:s' => \$conf{startmotif},
-	   ## A specific start motif to start folding at
-	   'length:i' => \$conf{seqlength},
-	   ## i == integer
-	   'landscape_length:i' => \$conf{landscape_seqlength},
-	   'nupack:i' => \$conf{do_nupack},
-	   ## If no type definition is given, it is boolean
-	   'pknots:i' => \$conf{do_pknots},
-	   ## The question is, will these be set to 0 if not applied?
-	   'hotknots:i' => \$conf{do_hotknots},
-	   ## The question is, will these be set to 0 if not applied?
-	   'boot:i' => \$conf{do_boot},
-	   'utr:i' => \$conf{do_utr},
-	   'workdir:s' => \$conf{workdir},
-	   'nupack_nopairs:i' => \$conf{nupack_nopairs_hack},
-	   'arch:i' => \$conf{arch_specific_exe},
-	   'iterations:i' => \$conf{boot_iterations},
-	   'db|d:s' => \$conf{db},
-	   'host:s' => \$conf{host},
-	   'user:s' => \$conf{user},
-	   'pass:s' => \$conf{pass},
-	   'slip_site_1:s' => \$conf{slip_site_1},
-	   'slip_site_2:s' => \$conf{slip_site_2},
-	   'slip_site_3:s' => \$conf{slip_site_3},
-	   'slip_site_spacer_min:i' => \$conf{slip_site_spacer_min},
-	   'slip_site_spacer_max:i' => \$conf{slip_site_spacer_max},
-	   'stem1_min:i' => \$conf{stem1_min},
-	   'stem1_max:i' => \$conf{stem1_max},
-	   'stem1_bulge:i' => \$conf{stem1_bulge},
-	   'stem1_spacer_min:i' => \$conf{stem1_spacer_min},
-	   'stem1_spacer_max:i' => \$conf{stem1_spacer_max},
-	   'stem2_min:i' => \$conf{stem2_min},
-	   'stem2_max:i' => \$conf{stem2_max},
-	   'stem2_bulge:i' => \$conf{stem2_bulge},
-	   'stem2_loop_min:i' => \$conf{stem2_loop_min},
-	   'stem2_loop_max:i' => \$conf{stem2_loop_max},
-	   'stem2_spacer_min:i' => \$conf{stem2_spacer_min},
-	   'stem2_spacer_max:i' => \$conf{stem2_spacer_max},
-	   'checks:i' => \$conf{checks},
-	   'make_jobs' => \$conf{make_jobs},
-	   'make_landscape' => \$conf{make_landscape},);
-foreach my $opt (keys %conf) {
-    if (defined($conf{$opt})) {
-	$PRFConfig::config->{$opt} = $conf{$opt};
+    MyConfig - A configuration system for the PRFdb
+   
+=head1 SYNOPSIS
+
+    use MyConfig;
+    my $config = new MyConfig(option => value, another => value2);
+    print "The option is $config->option or $config->{option}";
+    $config->{option} = 'new value';  $config->option("new value");
+    ## When used with a config file 'myconfig.conf'
+    option=new value
+    ## When used on the command line
+    ./script --option "new value"
+    ## Order of preference, highest to lowest:  command line, config file, constructor
+    ## So if you set something in the constructor and have it in your config file, no dice.
+
+=head1 DESCRIPTION
+
+    This aims to make dealing with lots of configuration options easy
+
+=cut
+
+
+sub new {
+    my ($class, %arg) = @_;
+    my $me = bless {}, $class;
+    foreach my $key (keys %arg) {
+	$me->{$key} = $arg{$key} if (defined($arg{$key}));
     }
-}
 
-if (defined($PRFConfig::config->{checks}) and $PRFConfig::config->{checks} == 1) {
-    $PRFConfig::config->{debug} = 0;
-}
-if (defined($PRFConfig::config->{debug})) {
-    $PRFConfig::config->{checks} = 1;
-}
+    $me->{appconfig} = AppConfig->new({
+	CASE => 1,
+	CREATE => 1,
+	PEDANTIC => 0,
+#	ERROR => eval(),
+	GLOBAL => {
+	    EXPAND => EXPAND_ALL,
+	    EXPAND_ENV => 1,
+	    EXPAND_UID => 1,
+	    DEFAULT => "<unset>",
+	    ARGCOUNT => 1,
+	},});
 
-$PRFConfig::config->{dsn} = qq(DBI:$PRFConfig::config->{database_type}:database=$PRFConfig::config->{db};host=$PRFConfig::config->{host});
-if (ref($PRFConfig::config->{boot_mfe_algorithms}) eq '') {
-    $PRFConfig::config->{boot_mfe_algorithms} = eval($PRFConfig::config->{boot_mfe_algorithms});
-}
-if (ref($PRFConfig::config->{boot_randomizers}) eq '') {
-    $PRFConfig::config->{boot_randomizers} = eval($PRFConfig::config->{boot_randomizers});
-}
-if (ref($PRFConfig::config->{index_species}) eq '') {
-    $PRFConfig::config->{index_species} = eval($PRFConfig::config->{index_species});
-}
-if (ref($PRFConfig::config->{seqlength}) eq '') {
-    $PRFConfig::config->{seqlength} = eval($PRFConfig::config->{seqlength});
-}
-my $err = $PRFConfig::config->{errorfile};
-my $out = $PRFConfig::config->{logfile};
-my $error_counter = 0;
-$PRFConfig::config->{workdir} = $PRFConfig::config->{base} . '/' . $PRFConfig::config->{workdir};
-$PRFConfig::config->{blastdir} = $PRFConfig::config->{base} . '/' . $PRFConfig::config->{blastdir};
-foreach my $dir (split(/:/, $PRFConfig::config->{add_to_path})) {
-    $ENV{PATH} = $ENV{PATH} . ':' . $dir;
-}
-$ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{workdir};
-$ENV{BLASTDB} = qq($PRFConfig::config->{base}/blast);
+    $me->{ABSOLUTE} = 1 if (!defined($me->{ABSOLUTE}));
+    $me->{add_to_path} = "/usr/bin:/usr/local/bin" if (!defined($me->{add_to_path}));
+    $me->{arch_specific_exe} = 0 if (!defined($me->{arch_specific_exe}));
+    $me->{base} = '.' if (!defined($me->{base}));
+    $me->{blastdir} = 'blast' if (!defined($me->{blastdir}));
+    $me->{boot_iterations} = 100 if (!defined($me->{boot_iterations}));
+    $me->{boot_mfe_algorithms} = {pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, hotknots => \&RNAFolders::Hotknots_Boot,} if (!defined($me->{boot_mfe_algorithms}));
+    $me->{boot_randomizers} = {array => \&SeqMisc::ArrayShuffle,} if (!defined($me->{boot_randomizers}));
+    $me->{check_webqueue} = 1 if (!defined($me->{check_webqueue}));
+    $me->{checks} = 0 if (!defined($me->{checks}));
+    $me->{config_file} = 'prfdb.conf' if (!defined($me->{config_file}));
+    $me->{daemon_name} = 'prf_daemon.pl' if (!defined($me->{daemon_name}));
+    $me->{database_args} = {AutoCommit => 1} if (!defined($me->{database_args}));
+    $me->{database_host} = 'localhost' if (!defined($me->{database_host}));
+    $me->{database_name} = 'test' if (!defined($me->{database_name}));
+    $me->{database_pass} = 'guest' if (!defined($me->{database_guest}));
+    $me->{database_type} = 'mysql' if (!defined($me->{database_type}));
+    $me->{database_user} = 'guest' if (!defined($me->{database_user}));
+    $me->{debug} = undef if (!defined($me->{debug}));
+    $me->{dirvar} = undef if (!defined($me->{dirvar}));
+    $me->{do_nupack} = 1 if (!defined($me->{do_nupack}));
+    $me->{do_pknots} = 1 if (!defined($me->{do_pknots}));
+    $me->{do_hotknots} = 1 if (!defined($me->{do_hotknots}));
+    $me->{do_boot} = 1 if (!defined($me->{do_boot}));
+    $me->{do_landscape} = 1 if (!defined($me->{do_landscape}));
+    $me->{do_utr} = 0 if (!defined($me->{do_utr}));
+    $me->{ENV_LIBRARY_PATH} = $ENV{LD_LIBRARY_PATH} if (!defined($me->{ENV_LIBRARY_PATH}));
+    $me->{EVAL_PERL} = 0 if (!defined($me->{EVAL_PERL}));
+    $me->{exe_hotknots} = 'HotKnot' if (!defined($me->{exe_hotknots}));
+    $me->{exe_nupack} = 'Fold.out' if (!defined($me->{exe_nupack}));
+    $me->{exe_nupack_boot} = 'Fold.out.boot' if (!defined($me->{exe_nupack_boot}));
+    $me->{exe_pknots} = 'pknots' if (!defined($me->{exe_pknots}));
+    $me->{exe_perl} = '/usr/bin/perl -w' if (!defined($me->{exe_perl}));
+    $me->{exe_rmprune} = 'rmprune' if (!defined($me->{exe_rmprune}));
+    $me->{exe_rnafold} = 'RNAfold' if (!defined($me->{exe_rnafold}));
+    $me->{exe_rnamotif} = 'rnamotif' if (!defined($me->{exe_rnamotif}));
+    $me->{exe_rnamotif_descriptor} = 'descr/rnamotif_template.out' if (!defined($me->{exe_rnamotif_descriptor}));
+    $me->{exe_rnamotif_template} = 'rnamotif_template' if (!defined($me->{exe_rnamotif_template}));
+    $me->{exe_zcat} = 'zcat' if (!defined($me->{exe_zcat}));
+    $me->{genome_table} = 'genome' if (!defined($me->{genome_table}));
+    $me->{graph_distribution_x_size} = 400 if (!defined($me->{graph_distribution_x_size}));
+    $me->{graph_distribution_y_size} = 300 if (!defined($me->{graph_distribution_y_size}));
+    $me->{graph_font} = 'arial.ttf' if (!defined($me->{graph_font}));
+    $me->{graph_font_size} = 9 if (!defined($me->{graph_font_size}));
+    $me->{graph_landscape_x_size} = 800 if (!defined($me->{graph_landscape_x_size}));
+    $me->{graph_landscape_y_size} = 600 if (!defined($me->{graph_landscape_y_size}));
+    $me->{graph_stem_colors} = "black blue red green purple orange brown darkslategray" if (!defined($me->{graph_stem_colors}));
+    $me->{has_modperl} = 0 if (!defined($me->{has_modperl}));
+    $me->{index_species} = ['saccharomyces_cerevisiae', 'homo_sapiens', 'bos_taurus', 'danio_rerio', 'mus_musculus', 'rattus_norvegicus', 'xenopus_laevis', 'xenopus_tropicalis', 'saccharomyces_kudriavzevii', 'saccharomyces_castellii', 'saccharomyces_kluyveri', 'saccharomyces_bayanus', 'saccharomyces_paradoxus', 'saccharomyces_mikatae', 'caenorhabiditis_elegans', 'virus'] if (!defined($me->{index_species}));
+    $me->{INCLUDE_PATH} = 'html/' if (!defined($me->{INCLUDE_PATH}));
+    $me->{INTERPOLATE} = 1 if (!defined($me->{INTERPOLATE}));
+    $me->{landscape_seqlength} = 105 if (!defined($me->{landscape_seqlength}));
+    $me->{log} = 'prfdb.log' if (!defined($me->{log}));
+    $me->{log_error} = 'prfdb.errors' if (!defined($me->{log_error}));
+    $me->{max_mfe} = 10.0 if (!defined($me->{max_mfe}));
+    $me->{niceness} = 10 if (!defined($me->{niceness}));
+    $me->{num_daemons} = '60' if (!defined($me->{num_daemons}));
+    $me->{nupack_nopairs_hack} = 0 if (!defined($me->{nupack_nopairs_hack}));
+    $me->{open_files} = [] if (!defined($me->{open_files}));
+    $me->{output_file} = 'output.txt' if (!defined($me->{output_file}));
+    $me->{pbs_arches} = 'aix4 irix6 linux-ia64' if (!defined($me->{pbs_arches}));
+    $me->{pbs_cpu} = '1' if (!defined($me->{pbs_cpu}));
+    $me->{pbs_memory} = '2000' if (!defined($me->{pbs_memory}));
+    $me->{pbs_partialname} = 'fold' if (!defined($me->{pbs_partialname}));
+    $me->{pbs_shell} = '/bin/sh' if (!defined($me->{pbs_shell}));
+    $me->{pbs_template} = 'pbs_template' if (!defined($me->{pbs_template}));
+    $me->{POST_CHOMP} = 1 if (!defined($me->{POST_CHOMP}));
+    $me->{queue_table} = 'queue' if (!defined($me->{queue_table}));
+    $me->{seqlength} = [100,75,50] if (!defined($me->{seqlength}));
+    $me->{slip_site_1} = '^n\{3\}$' if (!defined($me->{slip_site_1}));
+    $me->{slip_site_2} = '^w\{3\}$' if (!defined($me->{slip_site_2}));
+    $me->{slip_site_3} = '^h\{3\}$' if (!defined($me->{slip_site_3}));
+    $me->{slip_site_spacer_min} = 5 if (!defined($me->{slip_site_spacer_min}));
+    $me->{slip_site_spacer_max} = 9 if (!defined($me->{slip_site_spacer_max}));
+    $me->{snp_species_limit} = 'homo_sapiens' if (!defined($me->{snp_species_limit}));
+    $me->{species_limit} = undef if (!defined($me->{species_limit}));
+    $me->{sql_accession} = 'varchar(40)' if (!defined($me->{sql_accession}));
+    $me->{sql_comment} = 'text not null' if (!defined($me->{sql_comment}));
+    $me->{sql_genename} = 'varchar(120)' if (!defined($me->{sql_genename}));
+    $me->{sql_gi_number} = 'varchar(80)' if (!defined($me->{sql_gi_number}));
+    $me->{sql_id} = 'int not null auto_increment' if (!defined($me->{sql_id}));
+    $me->{sql_index} = $PRFConfig::config->{sql_id} if (!defined($me->{sql_index}));
+    $me->{sql_species} = 'varchar(80)' if (!defined($me->{sql_species}));
+    $me->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP' if (!defined($me->{sql_timestamp}));
+    $me->{stem1_min} = 4 if (!defined($me->{stem1_min}));
+    $me->{stem1_max} = 20 if (!defined($me->{stem1_max}));
+    $me->{stem1_bulge} = 0.8 if (!defined($me->{stem1_bulge}));
+    $me->{stem1_spacer_min} = 0 if (!defined($me->{stem1_spacer_min}));
+    $me->{stem1_spacer_max} = 4 if (!defined($me->{stem1_spacer_max}));
+    $me->{stem2_min} = 4 if (!defined($me->{stem2_min}));
+    $me->{stem2_max} = 20 if (!defined($me->{stem2_max}));
+    $me->{stem2_bulge} = 0.8 if (!defined($me->{stem2_bulge}));
+    $me->{stem2_loop_min} = 0 if (!defined($me->{stem2_loop_min}));
+    $me->{stem2_loop_max} = 3 if (!defined($me->{stem2_loop_max}));
+    $me->{stem2_spacer_min} = 0 if (!defined($me->{stem2_spacer_min}));
+    $me->{stem2_spacer_max} = 100 if (!defined($me->{stem2_spacer_max}));
+    $me->{use_database} = 1 if (!defined($me->{use_database}));
+    $me->{using_pbs} = 0 if (!defined($me->{using_pbs}));
+    $me->{window_space} = 15 if (!defined($me->{window_space}));
+    $me->{workdir} = 'work' if (!defined($me->{workdir}));
 
-if ($PRFConfig::config->{arch_specific_exe} == 1) {
-    ## If we have architecture specific executables, then
-    ## They should live in directories named after their architecture
-    my @modified_exes = ('rnamotif', 'rmprune', 'pknots', 'zcat');
-    open(UNAME, "/usr/bin/env uname -a |");
-    ## OPEN UNAME in PRFConfig
-    my $arch;
-    while (my $line = <UNAME>) {
-	chomp $line;
-	if ($line =~ /\w/) {
-	    $arch = $line;
+    if (defined($ENV{HOME})) {
+	$me->{config_file} = "$ENV{HOME}/$me->{config_file}";
+    }
+
+    my ($open, %data, $config_option);
+    if (-r $me->{config_file}) {
+	$open = $me->{appconfig}->file($me->{config_file});
+	%data = $me->{appconfig}->varlist("^.*");
+	for $config_option (keys %data) {
+	    $me->{$config_option} = $data{$config_option};
+	    undef $data{$config_option};
 	}
     }
-    close(UNAME);
-    ## CLOSE UNAME in PRFConfig
-    chomp $arch;
-    if ($arch =~ /IRIX/) {
-	$ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{workdir} . '/irix';
+#    else {
+#	my $cwd = `pwd`;
+#	print STDERR "Can't find the config file $me->{config_file} in $cwd\n";
+#	die;
+#   }
+
+    my (%conf, %conf_specification, %conf_specification_temp);
+    foreach my $default (keys %{$me}) {
+	$conf_specification{"$default:s"} = \$conf{$default};
     }
-    elsif ($arch =~ /Linux/) {
-	$ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{workdir} . '/linux';
+    %conf_specification_temp = (
+	'nodaemon:i' => \$conf{nodaemon},  
+	'help|version' => \$conf{help},      
+	'accession|i:s' => \$conf{accession},
+	'blast:s' => \$conf{blast},
+	'makeblast' => \$conf{makeblast},
+	'index_stats' => \$conf{index_stats},
+	'optimize:s' => \$conf{optimize},
+	'species:s' => \$conf{species},
+	'copyfrom:s' => \$conf{copyfrom},
+	'import:s' => \$conf{import_accession},
+	'input_file:s' => \$conf{input_file},
+	'input_fasta:s' => \$conf{input_fasta},
+	'fasta_style:s' => \$conf{fasta_style},
+	'fillqueue' => \$conf{fillqueue},
+	'resetqueue' => \$conf{resetqueue},
+	'stats' => \$conf{stats},
+	'startpos:s' => \$conf{startpos},
+	'startmotif:s' => \$conf{startmotif},
+	'length:i' => \$conf{seqlength},
+	'landscape_length:i' => \$conf{landscape_seqlength},
+	'nupack:i' => \$conf{do_nupack},
+	'pknots:i' => \$conf{do_pknots},
+	'hotknots:i' => \$conf{do_hotknots},
+	'boot:i' => \$conf{do_boot},
+	'utr:i' => \$conf{do_utr},
+	'workdir:s' => \$conf{workdir},
+	'nupack_nopairs:i' => \$conf{nupack_nopairs_hack},
+	'arch:i' => \$conf{arch_specific_exe},
+	'iterations:i' => \$conf{boot_iterations},
+	'db|d:s' => \$conf{db},
+	'host:s' => \$conf{host},
+	'user:s' => \$conf{user},
+	'pass:s' => \$conf{pass},
+	'make_jobs' => \$conf{make_jobs},
+	'make_landscape' => \$conf{make_landscape},
+	'input' => \$conf{input},
+	'output' => \$conf{output},
+	);
+    foreach my $name (keys %conf_specification_temp) {
+	$conf_specification{$name} = $conf_specification_temp{$name};
     }
-    elsif ($arch =~ /Darwin/) {
-	$ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{workdir} . '/osx';
-    } 
-    elsif ($arch =~ /AIX/) {
-	$ENV{PATH} = $ENV{PATH} . ':' . $PRFConfig::config->{workdir} . '/aix';
+    undef(%conf_specification_temp);
+    GetOptions(%conf_specification);
+
+    foreach my $opt (keys %conf) {
+	if (defined($conf{$opt})) {
+	    $me->{$opt} = $conf{$opt};
+	}
+    }
+    undef(%conf);
+
+    if (defined($me->{blast_db})) {
+	$ENV{BLASTDB} = qq"$me->{blast_db}/blast";
     }
 
-    foreach my $exe (@modified_exes) {
+    if (defined($me->{use_database})) {
+	use DBI;
+	$me->{database_type} = 'mysql' if (!defined($me->{database_type}));
+	$me->{database_host} = 'localhost' if (!defined($me->{database_host}));
+	$me->{database_name} = 'test' if (!defined($me->{database_name}));
+	$me->{database_user} = 'guest' if (!defined($me->{database_user}));
+	$me->{database_pass} = 'guest' if (!defined($me->{database_pass}));
+	$me->{database_arge} = {AutoCommit => 1} if (!defined($me->{database_args}));
+	$me->{dsn} = qq"DBI:$me->{database_type}:database=$me->{database_name};host=$me->{database_host}";
+	$me->{dbh} = DBI->connect_cached($me->{dsn}, $me->{database_user}, $me->{database_pass}, $me->{database_args},);
+    }
+
+    if (defined($me->{checks}) and $me->{checks} == 1) {
+	$me->{debug} = 0;
+    }
+    if (defined($me->{debug})) {
+	$me->{checks} = 1;
+    }
+    if (ref($me->{boot_mfe_algorithms}) eq '') {
+	$me->{boot_mfe_algorithms} = eval($me->{boot_mfe_algorithms});
+    }
+    if (ref($me->{boot_randomizers}) eq '') {
+	$me->{boot_randomizers} = eval($me->{boot_randomizers});
+    }
+    if (ref($me->{index_species}) eq '') {
+	$me->{index_species} = eval($me->{index_species});
+    }
+    if (ref($me->{seqlength}) eq '') {
+	$me->{seqlength} = eval($me->{seqlength});
+    }
+
+    my $err = $me->{log_error};
+    my $out = $me->{log};
+    my $error_counter = 0;
+    $me->{workdir} = $me->{base} . '/' . $me->{workdir};
+    $me->{blastdir} = $me->{base} . '/' . $me->{blastdir};
+    foreach my $dir (split(/:/, $me->{add_to_path})) {
+	$ENV{PATH} = $ENV{PATH} . ':' . $dir;
+    }
+    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir};
+    $ENV{BLASTDB} = qq"$me->{base}/blast";
+
+
+    if ($me->{arch_specific_exe} == 1) {
+	## If we have architecture specific executables, then
+	## They should live in directories named after their architecture
+	my @modified_exes = ('rnamotif', 'rmprune', 'pknots', 'zcat');
+	open(UNAME, "/usr/bin/env uname -a |");
+	## OPEN UNAME in PRFConfig
+	my $arch;
+	while (my $line = <UNAME>) {
+	    chomp $line;
+	    if ($line =~ /\w/) {
+		$arch = $line;
+	    }
+	}
+	close(UNAME);
+	## CLOSE UNAME in PRFConfig
+	chomp $arch;
 	if ($arch =~ /IRIX/) {
-	    my $exe_path = join('', $PRFConfig::config->{workdir} , '/irix/', $PRFConfig::config->{$exe});
-	    $PRFConfig::config->{$exe} = $exe_path;
-	}
-	elsif ($arch =~ /AIX/) {
-	    my $exe_path = join('', $PRFConfig::config->{workdir} , '/aix/', $PRFConfig::config->{$exe});
-	    $PRFConfig::config->{$exe} = $exe_path;
-	}
-	elsif ($arch =~ /Darwin/) {
-	    my $exe_path = join('', $PRFConfig::config->{workdir} , '/osx/', $PRFConfig::config->{$exe});
-	    $PRFConfig::config->{$exe} = $exe_path;
+	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/irix';
 	}
 	elsif ($arch =~ /Linux/) {
-	    my $exe_path = join('', $PRFConfig::config->{workdir} , '/linux/', $PRFConfig::config->{$exe});
-	    $PRFConfig::config->{$exe} = $exe_path;
+	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/linux';
 	}
-	else {
-	    die("Architecture $arch not available.");
+	elsif ($arch =~ /Darwin/) {
+	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/osx';
+	} 
+	elsif ($arch =~ /AIX/) {
+	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/aix';
 	}
-    }    ## For every modified executable
+	foreach my $exe (@modified_exes) {
+	    if ($arch =~ /IRIX/) {
+		my $exe_path = join('', $me->{workdir} , '/irix/', $me->{$exe});
+		$me->{$exe} = $exe_path;
+	    }
+	    elsif ($arch =~ /AIX/) {
+		my $exe_path = join('', $me->{workdir} , '/aix/', $me->{$exe});
+		$me->{$exe} = $exe_path;
+	    }
+	    elsif ($arch =~ /Darwin/) {
+		my $exe_path = join('', $me->{workdir} , '/osx/', $me->{$exe});
+		$me->{$exe} = $exe_path;
+	    }
+	    elsif ($arch =~ /Linux/) {
+		my $exe_path = join('', $me->{workdir} , '/linux/', $me->{$exe});
+		$me->{$exe} = $exe_path;
+	    }
+	    else {
+		die("Architecture $arch not available.");
+	    }
+	}    ## For every modified executable
+	
+	if ($arch =~ /IRIX/) {
+	    $me->{nupack} .= ".irix";
+	    $me->{nupack_boot} .= ".irix";
+	}
+	elsif ($arch =~ /AIX/) {
+	    $me->{nupack} .= ".aix";
+	    $me->{nupack_boot} .= ".aix";
+	}
+	elsif ($arch =~ /Linux/) {
+	    $me->{nupack} .= ".linux";
+	    $me->{nupack_boot} .= ".linux";
+	} 
+	elsif ($arch =~ /Darwin/) {
+	    $me->{nupack} .= ".osx";
+	    $me->{nupack_boot} .= ".osx";
+	}
+    }    ## End checking if multiple architectures are in use
+    $ENV{EFNDATA} = $me->{workdir};
+    $ENV{ENERGY_FILE} = qq"$me->{workdir}/dataS_G.rna";
+    $ENV{EFNDATA} = $me->{workdir};
+    $ENV{ENERGY_FILE} = qq"$me->{workdir}/dataS_G.rna";
 
-    if ($arch =~ /IRIX/) {
-	$PRFConfig::config->{nupack} .= ".irix";
-	$PRFConfig::config->{nupack_boot} .= ".irix";
-    }
-    elsif ($arch =~ /AIX/) {
-	$PRFConfig::config->{nupack} .= ".aix";
-	$PRFConfig::config->{nupack_boot} .= ".aix";
-    }
-    elsif ($arch =~ /Linux/) {
-	$PRFConfig::config->{nupack} .= ".linux";
-	$PRFConfig::config->{nupack_boot} .= ".linux";
-    } 
-    elsif ($arch =~ /Darwin/) {
-	$PRFConfig::config->{nupack} .= ".osx";
-	$PRFConfig::config->{nupack_boot} .= ".osx";
-    }
-}    ## End checking if multiple architectures are in use
-$ENV{EFNDATA} = $PRFConfig::config->{workdir};
-$ENV{ENERGY_FILE} = qq($PRFConfig::config->{workdir}/dataS_G.rna);
-
-$ENV{EFNDATA} = $PRFConfig::config->{workdir};
-$ENV{ENERGY_FILE} = qq($PRFConfig::config->{workdir}/dataS_G.rna);
+    return($me);
+}
 
 sub PRF_Out {
+    my $me = shift;
     my $message = shift;
+    my $out = $me->{log};
     open(OUTFH, ">>$out") or die "Unable to open the log file $out: $!\n";
     ## OPEN OUTFH in PRF_Out
     my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
     my $month = $mon + 1;
     my $y = $year + 1900;
-    my $datestring = qq($hour:$min:$sec $mday/$month/$y);
+    my $datestring = qq"$hour:$min:$sec $mday/$month/$y";
     print OUTFH "$datestring\t$message\n";
     close(OUTFH);
     ## CLOSE OUTFH in PRF_Out
 }
 
 sub PRF_Error {
+    my $me = shift;
     my $message = shift;
     my $accession = shift;
+    my $err = $me->{log_error};
     open(ERRFH, ">>$err") or die "Unable to open the log file $err: $!\n";
     ## OPEN ERRFH in PRF_Error
-    my $db = new PRFdb;
-    $db->Error_Db($message, $accession);
     my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
     my $month = $mon + 1;
     my $y = $year + 1900;
-    my $datestring = qq($hour:$min:$sec $mday/$month/$y);
+    my $datestring = qq"$hour:$min:$sec $mday/$month/$y";
     print ERRFH "$datestring\t$message\n";
     close(ERRFH);
     ## CLOSE ERRFH in PRF_Err
 }
 
-sub Go_Away {
-    return ();
+sub AddOpen {
+    my $me = shift;
+    my $file = shift;
+    my @open_files = @{$me->{open_files}};
+
+    if (ref($file) eq 'ARRAY') {
+	foreach my $f (@{$file}) {
+	    push(@open_files, $f);
+	}
+    }
+    else {
+	push(@open_files, $file);
+    }
+    $me->{open_files} = \@open_files;
+    my $num_open_files = scalar(@open_files);
+    return($num_open_files);
 }
+
+sub RemoveFile {
+    my $me = shift;
+    my $file = shift;
+    my @open_files = @{$me->{open_files}};
+    my @new_open_files = ();
+    my $num_deleted = 0;
+    my @comp = ();
+    
+    if ($file eq 'all') {
+	foreach my $f (@{open_files}) {
+	    unlink($f);
+	    print STDERR "Deleting: $f\n" if (defined($me->{debug}) and $me->{debug} > 0);
+	    $num_deleted++;
+	}
+	$me->{open_files} = \@new_open_files;
+	return($num_deleted);
+    }
+
+    elsif (ref($file) eq 'ARRAY') {
+	@comp = @{$file};
+    }
+    else {
+	push(@comp, $file);
+    }
+
+    foreach my $f (@open_files) {
+	foreach my $c (@comp) {
+	    if ($c eq $f) {
+		$num_deleted++;
+		unlink($f);
+	    }
+	}
+	push(@new_open_files, $f);
+    }
+    $me->{open_files} = \@new_open_files;
+    return($num_deleted);
+}
+
+sub AUTOLOAD {
+    my $me = shift;
+    my $type = ref($me) or die("$me is not an object");
+    my $name = $AUTOLOAD;
+    $name =~ s/.*://;   # strip fully-qualified portion
+    if (@_) {
+	return $me->{$name} = shift;
+    }
+    else {
+	return $me->{$name};
+    }
+}
+
+#END {
+#    my $me = shift;
+#    if (defined($me->{dbh})) {
+#	$me->{dbh}->disconnect();
+#    }
+#    $me->RemoveFile('all');
+#}
 
 1;
