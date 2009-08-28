@@ -17,7 +17,7 @@ BEGIN {
 }
 use lib 'lib';
 use PRFConfig;
-our $config = $PRFConfig::config;
+our $config = new PRFConfig(config_file=>'/usr/local/prfdb/prfdb_beta/prfdb.conf');
 use PRFdb;
 use PRFBlast;
 use PRFGraph;
@@ -32,7 +32,7 @@ our $cgi = new CGI;
 ## Start a new CGI object
 our $template = new Template($config);
 ## And a new Template
-our $base    = "http://" . $ENV{HTTP_HOST} . $ENV{SCRIPT_NAME};
+our $base = "http://" . $ENV{HTTP_HOST} . $ENV{SCRIPT_NAME};
 our $basedir = $base;
 $ENV{BLASTDB} = $config->{blastdir};
 $basedir =~ s/\/index.cgi.*//g;
@@ -851,7 +851,7 @@ sub Color_Stems {
     my $parsed = shift;
     my @br = split(//, $brackets);
     my @pa = split(//, $parsed);
-    my @colors = split(/ /, $config->{stem_colors});
+    my @colors = split(/ /, $config->{graph_stem_colors});
     my $bracket_string = '';
     for my $t (0 .. $#pa) {
 	if ($pa[$t] eq '.') {
@@ -1043,8 +1043,10 @@ sub Print_Single_Accession {
   my $pic = new PRFGraph({accession => $accession});
   my $filename = $pic->Picture_Filename({type => 'landscape',});
   my ($picture_status, $url);
+  $picture_status = 1;
   if (!-r $filename) {
       $picture_status = $pic->Make_Landscape($datum->{species});
+
   }
   if (!defined($picture_status)) {
       $url = undef;

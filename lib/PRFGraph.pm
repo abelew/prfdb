@@ -8,7 +8,7 @@ use GD::Graph::mixed;
 use GD::SVG;
 use Statistics::Basic qw(:all);
 use Statistics::Distributions;
-my $config = $PRFConfig::config;
+my $config = new PRFConfig(config_file=>'/usr/locla/prfdb/prfdb_beta/prfdb.conf');
 
 sub new {
   my ($class, $arg) = @_;
@@ -1256,18 +1256,18 @@ sub Picture_Filename {
 	
 	if (defined($url)) {
 	    if (defined($suffix)) {
-		return(qq(images/$type/$species/cloud$suffix$extension));
+		return(qq"images/$type/$species/cloud$suffix$extension");
 	    }
 	    else {
-		return(qq(images/$type/$species/cloud$extension));
+		return(qq"images/$type/$species/cloud$extension");
 	    }
 	}
 	else {
 	    if (defined($suffix)) {
-		return(qq($config->{base}/images/${type}/${species}/cloud${suffix}$extension));
+		return(qq"$config->{base}/images/${type}/${species}/cloud${suffix}$extension");
 	    }
 	    else {
-		return(qq($config->{base}/images/${type}/${species}/cloud$extension));
+		return(qq"$config->{base}/images/${type}/${species}/cloud$extension");
 	    }
 	}
     }
@@ -1277,18 +1277,18 @@ sub Picture_Filename {
     
     if (defined($mfe_id)) {
 	if (defined($suffix)) {
-	    $filename = qq($directory/${accession}-${mfe_id}${suffix}$extension);
+	    $filename = qq"$directory/${accession}-${mfe_id}${suffix}$extension";
 	}
 	else {
-	    $filename = qq($directory/${accession}-${mfe_id}$extension);
+	    $filename = qq"$directory/${accession}-${mfe_id}$extension";
 	}
     }
     else {
 	if (defined($suffix)) {
-	    $filename = qq($directory/$accession${suffix}$extension);
+	    $filename = qq"$directory/$accession${suffix}$extension";
 	}
 	else {
-	    $filename = qq($directory/$accession$extension);
+	    $filename = qq"$directory/$accession$extension";
 	}
     }
     return ($filename);
