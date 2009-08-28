@@ -66,7 +66,7 @@ sub new {
     $me->{database_args} = {AutoCommit => 1} if (!defined($me->{database_args}));
     $me->{database_host} = 'localhost' if (!defined($me->{database_host}));
     $me->{database_name} = 'test' if (!defined($me->{database_name}));
-    $me->{database_pass} = 'guest' if (!defined($me->{database_guest}));
+    $me->{database_pass} = 'guest' if (!defined($me->{database_pass}));
     $me->{database_type} = 'mysql' if (!defined($me->{database_type}));
     $me->{database_user} = 'guest' if (!defined($me->{database_user}));
     $me->{debug} = undef if (!defined($me->{debug}));
@@ -147,7 +147,7 @@ sub new {
     $me->{stem2_loop_max} = 3 if (!defined($me->{stem2_loop_max}));
     $me->{stem2_spacer_min} = 0 if (!defined($me->{stem2_spacer_min}));
     $me->{stem2_spacer_max} = 100 if (!defined($me->{stem2_spacer_max}));
-    $me->{use_database} = 1 if (!defined($me->{use_database}));
+    $me->{use_database} = 0 if (!defined($me->{use_database}));
     $me->{using_pbs} = 0 if (!defined($me->{using_pbs}));
     $me->{window_space} = 15 if (!defined($me->{window_space}));
     $me->{workdir} = 'work' if (!defined($me->{workdir}));
@@ -233,13 +233,6 @@ sub new {
 
     if (defined($me->{use_database})) {
 	use DBI;
-	$me->{database_type} = 'mysql' if (!defined($me->{database_type}));
-	$me->{database_host} = 'localhost' if (!defined($me->{database_host}));
-	$me->{database_name} = 'test' if (!defined($me->{database_name}));
-	$me->{database_user} = 'guest' if (!defined($me->{database_user}));
-	$me->{database_pass} = 'guest' if (!defined($me->{database_pass}));
-	$me->{database_arge} = {AutoCommit => 1} if (!defined($me->{database_args}));
-	$me->{dsn} = qq"DBI:$me->{database_type}:database=$me->{database_name};host=$me->{database_host}";
 	$me->{dbh} = DBI->connect_cached($me->{dsn}, $me->{database_user}, $me->{database_pass}, $me->{database_args},);
     }
 

@@ -18,7 +18,6 @@ sub new {
 	$config = $arg{config};
     }
     my $me = bless {
-	dsn => $config->{dsn},
 	user => $config->{database_user},
 	num_retries => 60,
 	retry_time => 15,
@@ -263,7 +262,8 @@ sub MyGet {
 sub MyConnect {
     my $me = shift;
     my $statement = shift;
-    $dbh = DBI->connect_cached($me->{dsn}, $config->{database_user}, $config->{database_pass}, { AutoCommit => 1},);
+    $dbh = DBI->connect_cached("dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}", $config->{database_user}, $config->{database_pass}, { AutoCommit => 1},);
+    
     my $retry_count = 0;
     if (!defined($dbh) or
 	(defined($DBI::errstr) and
