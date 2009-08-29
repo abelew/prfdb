@@ -4,11 +4,7 @@ use lib '../lib';
 use PRFConfig;
 use PRFdb;
 
-my $config = $PRFConfig::config;
-my $db     = new PRFdb;
-
-$db->Create_Rnamotif05();
-$db->Create_Nupack05();
-$db->Create_Pknots05();
-$db->Create_Boot05();
-$db->Create_Queue05();
+my $config = new PRFConfig(config_file=>'/usr/local/prfdb/prfdb_beta/prfdb.conf');
+print "TEST: $config->{database_user}\n";
+my $db = new PRFdb(config=>$config);
+$db->Create_Nosy();

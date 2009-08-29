@@ -262,7 +262,11 @@ sub MyGet {
 sub MyConnect {
     my $me = shift;
     my $statement = shift;
-    $dbh = DBI->connect_cached("dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}", $config->{database_user}, $config->{database_pass}, { AutoCommit => 1},);
+    $dbh = DBI->connect_cached(
+			       "dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}",
+			       $config->{database_user},
+			       $config->{database_pass},
+			       { AutoCommit => 1},);
     
     my $retry_count = 0;
     if (!defined($dbh) or
@@ -272,7 +276,10 @@ sub MyConnect {
 	while ($retry_count < $me->{num_retries} and $success == 0) {
 	    $retry_count++;
 	    sleep $me->{retry_time};
-	    $dbh = DBI->connect_cached($me->{dsn}, $config->{user}, $config->{pass});
+	    $dbh = DBI->connect_cached(
+				       "dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}",
+				       $config->{database_user},
+				       $config->{database_pass},);
 	    if (defined($dbh) and
 		(!defined($dbh->errstr) or $dbh->errstr eq '')) {
 		$success++;
@@ -284,9 +291,7 @@ sub MyConnect {
 	$me->{errors}->{statement} = $statement, Write_SQL($statement) if (defined($statement));
 	$me->{errors}->{errstr} = $DBI::errstr;
 	my $time = localtime();
-
-	my $error = qq($time: Could not open cached connection: $me->{dsn}, $DBI::err.
-		       $DBI::errstr);
+	my $error = qq"$time: Could not open cached connection: dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}, $DBI::err. $DBI::errstr";
 	die($error);
     }
     $dbh->{mysql_auto_reconnect} = 1;
@@ -459,7 +464,7 @@ sub MakeTempfile {
 
 sub AddOpen {
     my $file = shift;
-    my @open_files = @{$PRFConfig::config->{open_files}};
+    my @open_files = @{$config->{open_files}};
 
     if (ref($file) eq 'ARRAY') {
 	foreach my $f (@{$file}) {
@@ -469,12 +474,12 @@ sub AddOpen {
     else {
 	push(@open_files, $file);
     }
-    $PRFConfig::config->{open_files} = \@open_files;
+    $config->{open_files} = \@open_files;
 }
 
 sub RemoveFile {
     my $file = shift;
-    my @open_files = @{$PRFConfig::config->{open_files}};
+    my @open_files = @{$config->{open_files}};
     my @new_open_files = ();
     my $num_deleted = 0;
     my @comp = ();
@@ -485,7 +490,7 @@ sub RemoveFile {
 	    print STDERR "Deleting: $f\n" if (defined($config->{debug}) and $config->{debug} > 0);
 	    $num_deleted++;
 	}
-	$PRFConfig::config->{open_files} = \@new_open_files;
+	$config->{open_files} = \@new_open_files;
 	return($num_deleted);
     }
 
@@ -505,7 +510,7 @@ sub RemoveFile {
 	}
 	push(@new_open_files, $f);
     }
-    $PRFConfig::config->{open_files} = \@new_open_files;
+    $config->{open_files} = \@new_open_files;
     return($num_deleted);
 }
 
@@ -1775,6 +1780,15 @@ my $id = $data->{overlap_id};
 return ($id);
 }    ## End of Put_Overlap
 
+sub Update_Nosy {
+    my $me = shift;
+    my $ip = shift;
+    my $stmt = qq"REPLACE INTO nosy SET ip = '$ip'";
+    my ($cp,$cf,$cl) = caller();
+    $me->MyExecute({statement => $stmt,
+                    caller => "$cp,$cf,$cl",});
+}
+
 sub Fill_Globals {
     my $me = shift;
     ## First fill out the means mfe for every sequence in the db
@@ -2052,6 +2066,18 @@ PRIMARY KEY(id))\;
     my ($cp, $cf, $cl) = caller();
     $me->MyExecute({statement => $statement,caller=>"$cp, $cf, $cl",});
 }
+
+sub Create_Nosy {
+    my $me = shift;
+    my $statement = qq\CREATE TABLE nosy (
+ip char(15),
+visited $config->{sql_timestamp},
+PRIMARY KEY(ip))\;
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute({statement =>$statement, caller => "$cp, $cf, $cl",});
+    print "Created nosy\n" if (defined($config->{debug}));
+}
+
 
 sub Create_Landscape {
     my $me = shift;

@@ -151,11 +151,6 @@ sub new {
     $me->{using_pbs} = 0 if (!defined($me->{using_pbs}));
     $me->{window_space} = 15 if (!defined($me->{window_space}));
     $me->{workdir} = 'work' if (!defined($me->{workdir}));
-
-    if (defined($ENV{HOME})) {
-	$me->{config_file} = "$ENV{HOME}/$me->{config_file}";
-    }
-
     my ($open, %data, $config_option);
     if (-r $me->{config_file}) {
 	$open = $me->{appconfig}->file($me->{config_file});
@@ -176,49 +171,45 @@ sub new {
 	$conf_specification{"$default:s"} = \$conf{$default};
     }
     %conf_specification_temp = (
-	'nodaemon:i' => \$conf{nodaemon},  
-	'help|version' => \$conf{help},      
-	'accession|i:s' => \$conf{accession},
-	'blast:s' => \$conf{blast},
-	'makeblast' => \$conf{makeblast},
-	'index_stats' => \$conf{index_stats},
-	'optimize:s' => \$conf{optimize},
-	'species:s' => \$conf{species},
-	'copyfrom:s' => \$conf{copyfrom},
-	'import:s' => \$conf{import_accession},
-	'input_file:s' => \$conf{input_file},
-	'input_fasta:s' => \$conf{input_fasta},
-	'fasta_style:s' => \$conf{fasta_style},
-	'fillqueue' => \$conf{fillqueue},
-	'resetqueue' => \$conf{resetqueue},
-	'stats' => \$conf{stats},
-	'startpos:s' => \$conf{startpos},
-	'startmotif:s' => \$conf{startmotif},
-	'length:i' => \$conf{seqlength},
-	'landscape_length:i' => \$conf{landscape_seqlength},
-	'nupack:i' => \$conf{do_nupack},
-	'pknots:i' => \$conf{do_pknots},
-	'hotknots:i' => \$conf{do_hotknots},
-	'boot:i' => \$conf{do_boot},
-	'utr:i' => \$conf{do_utr},
-	'workdir:s' => \$conf{workdir},
-	'nupack_nopairs:i' => \$conf{nupack_nopairs_hack},
-	'arch:i' => \$conf{arch_specific_exe},
-	'iterations:i' => \$conf{boot_iterations},
-	'db|d:s' => \$conf{db},
-	'host:s' => \$conf{host},
-	'user:s' => \$conf{user},
-	'pass:s' => \$conf{pass},
-	'make_jobs' => \$conf{make_jobs},
-	'make_landscape' => \$conf{make_landscape},
-	'input' => \$conf{input},
-	'output' => \$conf{output},
-	);
+				'accession|i:s' => \$conf{accession},
+				'arch:i' => \$conf{arch_specific_exe},
+				'blast:s' => \$conf{blast},
+				'boot:i' => \$conf{do_boot},
+				'copyfrom:s' => \$conf{copyfrom},
+				'fasta_style:s' => \$conf{fasta_style},
+				'fillqueue' => \$conf{fillqueue},
+				'help|version' => \$conf{help},
+				'hotknots:i' => \$conf{do_hotknots},
+				'import:s' => \$conf{import_accession},
+				'index_stats' => \$conf{index_stats},
+				'input' => \$conf{input},
+				'input_fasta:s' => \$conf{input_fasta},
+				'input_file:s' => \$conf{input_file},
+				'iterations:i' => \$conf{boot_iterations},
+				'landscape_length:i' => \$conf{landscape_seqlength},
+				'length:i' => \$conf{seqlength},
+				'make_jobs' => \$conf{make_jobs},
+				'make_landscape' => \$conf{make_landscape},
+				'makeblast' => \$conf{makeblast},
+				'nodaemon:i' => \$conf{nodaemon},
+				'nupack_nopairs:i' => \$conf{nupack_nopairs_hack},
+				'optimize:s' => \$conf{optimize},
+				'output' => \$conf{output},
+				'pknots:i' => \$conf{do_pknots},
+				'resetqueue' => \$conf{resetqueue},
+				'species:s' => \$conf{species},
+				'startmotif:s' => \$conf{startmotif},
+				'startpos:s' => \$conf{startpos},
+				'stats' => \$conf{stats},
+				'utr:i' => \$conf{do_utr},
+				'workdir:s' => \$conf{workdir},
+				);
     foreach my $name (keys %conf_specification_temp) {
 	$conf_specification{$name} = $conf_specification_temp{$name};
     }
     undef(%conf_specification_temp);
     GetOptions(%conf_specification);
+
 
     foreach my $opt (keys %conf) {
 	if (defined($conf{$opt})) {
@@ -231,9 +222,13 @@ sub new {
 	$ENV{BLASTDB} = qq"$me->{blast_db}/blast";
     }
 
-    if (defined($me->{use_database})) {
+    if (defined($me->{use_database}) and $me->{use_database} > 0) {
 	use DBI;
-	$me->{dbh} = DBI->connect_cached($me->{dsn}, $me->{database_user}, $me->{database_pass}, $me->{database_args},);
+	$me->{dbh} = DBI->connect_cached(
+					 "dbi:$me->{database_type}:database=$me->{database_name};host=$me->{database_host}",
+					 $me->{database_user},
+					 $me->{database_pass},
+					 $me->{database_args},);
     }
 
     if (defined($me->{checks}) and $me->{checks} == 1) {
