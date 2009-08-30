@@ -8,7 +8,7 @@ use GD::Graph::mixed;
 use GD::SVG;
 use Statistics::Basic qw(:all);
 use Statistics::Distributions;
-my $config = new PRFConfig(config_file=>'/usr/locla/prfdb/prfdb_beta/prfdb.conf');
+my $config;
 
 sub new {
   my ($class, $arg) = @_;
@@ -753,8 +753,8 @@ sub Make_Landscape {
 
 sub Make_Distribution {
     my $me = shift;
-    my $graph_x_size = $config->{distribution_graph_x_size};
-    my $graph_y_size = $config->{distribution_graph_y_size};
+    my $graph_x_size = $config->{graph_distribution_x_size};
+    my $graph_y_size = $config->{graph_distribution_y_size};
     #not yet implemented
     my $real_mfe = $me->{real_mfe};
     my @values = @{$me->{list_data}};

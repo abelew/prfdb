@@ -1,29 +1,34 @@
-<& header,document_title=>"My sample component",category=>$category &>
+<FORM action="search.html" enctype="multipart/form-data" method="POST">
 
-   Hello World<BR>
-   This is my <B><% $component_count %></B> Mason component.
-
-
-% if (!($name) && !($email)) {
-   Enter your info:<br><br>
-   <FORM action="index.html" method="GET">
-   Name: <INPUT type="text" size="10" name="name"><br>
-   Email: <INPUT type="text" size="10" name="email"><br>
-   <INPUT type="submit">
-% } else {
-   This is what you entered:<br> 
-   Name: <% $name %><br>
-   Email: <% $email %><br>
-   hitting submit is the same as calling  /index.html,name=>"First Name",email=>"Email Address" 
+<center>
+  To begin browsing the PRFdb, please enter your search terms below.<br>
+  <input type="text" name="query"  size="20"> 
+  <select name="search_species_limit">
+% my $index_species = $config->{index_species};
+% foreach my $spec (@{$index_species}) {
+% my $long_name = $spec;
+% $long_name =~ s/_/ /g;
+% $long_name = ucfirst($long_name);
+  <option value="<% $spec %>"><% $long_name %></option>
 % }
+  <option selected="selected" value="all">all</option>
+  </select>
+  <input type="submit" name="search submit" value="Search"></form>
+</center>
 
-<& footer &>
+A majority of the Accessions in the PRFdb come from the Mammalian Genome Collection.
+It is available here: <a href="http://mgc.nci.nih.gov">http://mgc.nci.nih.gov</a>.
+<hr>
+
+Search the PRFdb for an arbitrary sequence using BLAST.<br>
+<form method="post" action="http://prfdb.umd.edu/index.cgi/search_blast" enctype="application/x-www-form-urlencoded">
+<textarea name='blastsearch' rows=12 cols=100 wrap='physical'></textarea>
+<br>
+<input type="submit" name="blastsearch" value="Perform Blast Search"></form></tr>
 
 <%init>
-   my $component_count = "first";
 </%init>
+
+
 <%args>
-   $category=>undef
-   $name=>undef
-   $email=>undef
 </%args>
