@@ -13,6 +13,5 @@ $sth->execute or die "Couldn't get index_stats " . $dbh->errstr;
     </p>
   </td>
 <%args>
-  $dbh=>undef
   $base=>undef
 </%args>

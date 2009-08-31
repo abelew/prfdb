@@ -20,10 +20,9 @@ use strict;
 use HTML::Mason::ApacheHandler;
 BEGIN {
     use Exporter ();
-    @CBMG::Handler::ISA = qw(Exporter);
-    @CBMG::Handler::EXPORT = qw();
-    @CBMG::Handler::EXPORT_OK = qw($req $dbh $dbs);
-  
+    @PRFdb::Handler::ISA = qw(Exporter);
+    @PRFdb::Handler::EXPORT = qw();
+    @PRFdb::Handler::EXPORT_OK = qw($req $dbh $dbs);
 }
 my $req;
 my $ah = new HTML::Mason::ApacheHandler(

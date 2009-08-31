@@ -143,13 +143,10 @@
  </body>
 </html>
 
-
-
-
-
-
 <%init>
-  my $path = '/prfdb_test';
+  local $dbh = DBI->connect('DBI:mysql:prfdb_test:localhost', $config->{database_user}, $config->{database_pass}) or die "Cannot connect $DBI::errstr";
+  my $session = $m->session;
+  my $path = '';
 </%init>
 
 

@@ -1,4 +1,4 @@
-<& index_stats,dbh=>$dbh &>
+<& index_stats &>
 
 <td width = "70%">
 <center>
@@ -22,12 +22,9 @@
    hitting submit is the same as calling  /index.html,name=>"First Name",email=>"Email Address" 
 % }
 
-<& footer &>
 
 <%init>
    my $component_count = "first";
-   my $dbh = DBI->connect("DBI:mysql:prfdb_test:localhost", "prfdb", "drevil")
-    or die "ERROR: Couldn't connect to DB $DBI::errstr";
 </%init>
 <%args>
    $category=>undef
