@@ -1,18 +1,20 @@
 package HTML::Mason::Commands;
-use vars qw($session $dbh $dbs $ah $req $config);
+use vars qw($session $dbh $db $ah $req $config);
 use Apache2::Request;
 use Apache2::Upload;
 use Data::Dumper;
 use Apache::DBI;
 use lib '/usr/local/prfdb/prfdb_test/lib';
 use PRFConfig;
+use PRFdb;
+use PRFGraph;
 
-
-$dbh = Apache::DBI->connect_on_init('DBI:mysql:prfdb_test:localhost', 'prfdb', 'drevil') or die "Can't connect to database: $DBI::errstr";
-$dbs = Apache::DBI->connect_on_init('DBI:mysql:sessions:localhost', 'sessions', 'cbmg_sessions') or die "Can't connect to database: $DBI::errstr";
+Apache::DBI->connect_on_init('DBI:mysql:prfdb_test:localhost', 'prfdb', 'drevil') or die "Can't connect to database: $DBI::errstr";
+#Apache::DBI->connect_on_init('DBI:mysql:sessions:localhost', 'sessions', 'cbmg_sessions') or die "Can't connect to database: $DBI::errstr";
 Apache::DBI->setPingTimeOut('DBI:mysql:forms:localhost', 0);
-Apache::DBI->setPingTimeOut('DBI:mysql:sessions:localhost', 0);
+#Apache::DBI->setPingTimeOut('DBI:mysql:sessions:localhost', 0);
 $config = new PRFConfig(config_file => '/usr/local/prfdb/prfdb_test/prfdb.conf');
+$db = new PRFdb(config=>$config);
 
 package PRFdb::Handler;
 use strict;

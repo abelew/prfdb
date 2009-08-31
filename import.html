@@ -1,8 +1,9 @@
-<& header,document_title=>"My sample component",category=>$category &>
+Type the exact accession of the sequence you wish to import.<br>
 
-   Hello World<BR>
-   This is my <B><% $component_count %></B> Mason component.
-
+This must be in the NCBI NR database.<br>
+<form method="post" action="http://prfdb.umd.edu/index.cgi/perform_import" enctype="application/x-www-form-urlencoded">
+<input type="text" name="import_accession"  size="20" /><hr>
+<input type="submit" name="perform_import" value="Perform Import"></form></tr>
 
 % if (!($name) && !($email)) {
    Enter your info:<br><br>
@@ -16,8 +17,6 @@
    Email: <% $email %><br>
    hitting submit is the same as calling  /index.html,name=>"First Name",email=>"Email Address" 
 % }
-
-<& footer &>
 
 <%init>
    my $component_count = "first";

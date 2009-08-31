@@ -1,29 +1,95 @@
-<& header,document_title=>"My sample component",category=>$category &>
+<script language="JavaScript">
+<!-- Use the HTML comment to hide JavaScript from old browsers
+function stemdigit()
+{
+   var x = document.snpform.frameshift.selectedIndex
+   var y = document.getElementById("digit")
+   var z = document.snpform.frameshift.options[x].value
+   if (z == "d")
+   {
+         y.style.visibility='visible'
+   }
+   else
+   {
+         y.style.visibility='hidden'
+   }
+}
+function toggleinput()
+{
+   var x = document.getElementById("genetoggle")
+   if ( document.snpform.gene.checked == true )
+   {
+         x.style.visibility='visible'
+	  togglegene("1")
+   }
+   else
+   {
+         x.style.visibility='hidden'
+	  var y = document.getElementById("geneselect")
+         y.style.visibility='visible'
+	  y.deleteRow(0)
+   }
+}
+function togglegene(u)
+{
+   var v = ""
+   var w = document.snpform.genetoggle
+   var x = w.length
+   
+   for (i = 0; i < x; i++) {
+     if (w[i].checked) {
+       v = w[i].value
+     }
+   }
 
-   Hello World<BR>
-   This is my <B><% $component_count %></B> Mason component.
+   var y = document.getElementById("geneselect")
+   if (u != "1") {
+     y.deleteRow(0)
+   }
+
+   var z = y.insertRow(0)
+   var a = z.insertCell(0)
 
 
-% if (!($name) && !($email)) {
-   Enter your info:<br><br>
-   <FORM action="index.html" method="GET">
-   Name: <INPUT type="text" size="10" name="name"><br>
-   Email: <INPUT type="text" size="10" name="email"><br>
-   <INPUT type="submit">
-% } else {
-   This is what you entered:<br> 
-   Name: <% $name %><br>
-   Email: <% $email %><br>
-   hitting submit is the same as calling  /index.html,name=>"First Name",email=>"Email Address" 
-% }
+   if (v == "text")
+   {
+        y.style.visibility='visible'
+	a.innerHTML = '<textarea name="gene_text"  rows="12" cols="100"></textarea>'
+   }
+   else if (v == "upload")
+   {
+        y.style.visibility='visible'
+	a.innerHTML = '<input type="file" name="gene_upload"  size="25" />'
+   }
+   else
+   {
+        y.style.visibility='hidden'
+   }
+}
 
-<& footer &>
+// End hiding JavaScript -->
+</script>
+</td>
+<td width = "70%">
+<form method="post" action="snp.html" enctype="multipart/form-data" name="snpform">
+
+Please select SNP filter options for PRFdb.<br><br>
+Species: <select name="species" >
+<option selected="selected" value="homo_sapiens">Homo sapiens</option>
+</select><br>
+SNP location: <select name="frameshift"  onchange="stemdigit()" id="frameshift">
+<option selected="selected" value="s">slippery site</option>
+<option value="d">stem</option>
+<option value="sdf">PRF signal</option>
+<option value="n">NOT PRF signal</option>
+
+<option value="null">No SNPs</option>
+</select> <span id="digit" class="snphid">number <input type="text" name="snp_digit"  size="5" maxlength="10" /></span><br>
+GI/accession: <label><input type="checkbox" name="gene" value="off" onclick="toggleinput()" /></label> <span id="genetoggle" class="snphid">Select: <label><input type="radio" name="genetoggle" value="text" checked="checked" onclick="togglegene(this)" />Text Input</label> <label><input type="radio" name="genetoggle" value="upload" onclick="togglegene(this)" />Upload List</label></span><br>
+<table id="geneselect" class="snphid" border="0"></table>
+<input type="submit" name="snpfilter" value="Filter PRFdb for SNPs" /><div><input type="hidden" name=".cgifields" value="gene"  /><input type="hidden" name=".cgifields" value="genetoggle"  /></div></form>   </tr>
 
 <%init>
-   my $component_count = "first";
 </%init>
 <%args>
-   $category=>undef
-   $name=>undef
-   $email=>undef
 </%args>

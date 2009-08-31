@@ -1,29 +1,48 @@
-<& header,document_title=>"My sample component",category=>$category &>
+<p>Candidate cPRF signals are
+    available as a batch download from either of the two text files below.
+    Each file is prefaced with the SQL used to generate the results, for
+    clarity. If you desire direct access to the PRFdb via a MySQL client,
+    then please contact
+    Dr. Dinman
+    (<a href="mailto:dinman@umd.edu">dinman@umd.edu</a>). Right-click
+    and choose &quot;Save as...&quot; and then open these up in your favorite
+    plain-text editor. </p><br><br>
+<table width="100%" border="0" cellspacing="2" cellpadding="2">
+  <tr valign="top">
+    <td><p><a href="http://prfdb.umd.edu/data/cPRF_niceformat.txt">cPRF_niceformat.txt</a></p></td>
+    <td><p>This is probably the document that most people will want. It's
+          formatted linearly, so that each record has it's own section. This
+          document can be open in Word without too much trouble.(1.2 MB)</p>
+      <p>&nbsp;</p></td>
 
-   Hello World<BR>
-   This is my <B><% $component_count %></B> Mason component.
+  </tr>
+  <tr valign="top">
+    <td><p><a href="http://prfdb.umd.edu/data/cPRF_cols.txt">cPRF_cols.txt</a></p>
+      <p>&nbsp;</p></td>
+    <td><p>Column formatted document. Becuase the sequence and basepaired
+          columns are so wide, this document is really not intended for use
+          with Word or even Excel. Open this with a plain-text editor and then
+          use Perl or someother scripting language to parse the data.(780 Kb)</p>
+      <p>&nbsp;</p></td>
+  </tr>
 
+  <tr>
+    <td><p><a href="http://prfdb.umd.edu/data/prfdb.tar.gz">The prfdb</a></p></td>
+    <td><p>This archive contains the code of the PRFdb.  It includes the source for the
+    secondary structure algorithms used to generate the database as well as a default
+    configuration file.</p></td>
+  </tr>
+</table>
 
-% if (!($name) && !($email)) {
-   Enter your info:<br><br>
-   <FORM action="index.html" method="GET">
-   Name: <INPUT type="text" size="10" name="name"><br>
-   Email: <INPUT type="text" size="10" name="email"><br>
-   <INPUT type="submit">
-% } else {
-   This is what you entered:<br> 
-   Name: <% $name %><br>
-   Email: <% $email %><br>
-   hitting submit is the same as calling  /index.html,name=>"First Name",email=>"Email Address" 
-% }
-
-<& footer &>
+<form method="post" action="http://prfdb.umd.edu/index.cgi/choose_download" enctype="application/x-www-form-urlencoded">
+<p>
+Download the entire table for the species of your choice:<br>
+  <& species_selector, select_name => "species" &>
+<br>
+<input type="submit" name="download_species" value="Choose Download" /></p>
+</form>   </tr>
 
 <%init>
-   my $component_count = "first";
 </%init>
 <%args>
-   $category=>undef
-   $name=>undef
-   $email=>undef
 </%args>
