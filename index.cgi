@@ -203,6 +203,7 @@ sub MAIN {
 
     if ($path eq '/start' or $path eq '') {
 	Print_Index();
+	$db->Update_Nosy($ENV{REMOTE_ADDR});
     }
     elsif ($path eq '/help') {
 	$template->process('help.html', $vars) or Print_Template_Error($template), die;
@@ -693,7 +694,10 @@ $structure->[8]
 	    $slipstart = '';
 	}
 	my $acc_slip = qq/$accession-$slipstart/;
-	my $feynman_pic = new PRFGraph({mfe_id => $id, accession => $accession});
+	my $feynman_pic = new PRFGraph({
+	    config=> $config,
+	    mfe_id => $id,
+	    accession => $accession});
 	my $pre_feynman_url = $feynman_pic->Picture_Filename({type=> 'feynman', url => 'url',});
 	my $feynman_url = $basedir . '/' . $pre_feynman_url;
 	my $feynman_output_filename = $feynman_pic->Picture_Filename( {type => 'feynman', });
@@ -709,10 +713,12 @@ $structure->[8]
 	    my $mfe_values = $boot->[0];
 	    $mfe_values =~ s/^\s+//g;
 	    my @mfe_values_array = split(/\s+/, $mfe_values);
-	    $chart = new PRFGraph({real_mfe => $mfe,
-				   list_data => \@mfe_values_array,
-				   accession  => $acc_slip,
-				   mfe_id => $id,});
+	    $chart = new PRFGraph({
+		config => $config,
+		real_mfe => $mfe,
+		list_data => \@mfe_values_array,
+		accession  => $acc_slip,
+		mfe_id => $id,});
 	    my $ppcc_values = $chart->Get_PPCC();
 	    $filename = $chart->Picture_Filename({type => 'distribution',});
 	    my $pre_chartURL = $chart->Picture_Filename({type => 'distribution', url => 'url',});
@@ -1040,7 +1046,9 @@ sub Print_Single_Accession {
   $template->process('sliplist_footer.html', $vars) or
       Print_Template_Error($template), die;
   ## Before the RNA sequence, put in the picture of the ORF
-  my $pic = new PRFGraph({accession => $accession});
+  my $pic = new PRFGraph({
+      config => $config,
+      accession => $accession});
   my $filename = $pic->Picture_Filename({type => 'landscape',});
   my ($picture_status, $url);
   $picture_status = 1;
@@ -1172,7 +1180,8 @@ sub Perform_OverlaySearch {
 	inputstring => $vars->{inputstring},
     };
     
-    my $cloud = new PRFGraph();
+    my $cloud = new PRFGraph({
+	config => $config});
     my $overlay_data = $cloud->Make_Overlay($args);
     $template->process('cloud_overlay.html', $vars) or
 	Print_Template_Error($template), die;
@@ -1669,7 +1678,9 @@ sub Print_Blast {
 
 sub Check_Landscape {
     my $accession = $cgi->param('accession');
-    my $pic = new PRFGraph({accession => $accession});
+    my $pic = new PRFGraph({
+	config => $config,
+	accession => $accession});
     
     my $filename = $pic->Picture_Filename({type => 'landscape',});
     if (!-r $filename) {
@@ -1697,7 +1708,8 @@ sub Cloud {
     my $seqlength = $cgi->param('seqlength');
     $seqlength = 100 if (!defined($seqlength));
     $seqlength = ['100'] if (!defined($seqlength));
-    my $cloud = new PRFGraph();
+    my $cloud = new PRFGraph({
+	config => $config});
     my $pknots_only = undef;
     my $boot_table = "boot_$species";
     
@@ -1829,7 +1841,6 @@ sub Download_All {
     my $filename = qq(${table}_${species}.csv);
     print $download_header;
     print "$filename\n\n";
-    print STDERR "TESTME: DESCRIBE $table $species\n";
     my $keys = $db->MySelect("DESCRIBE $table");
     my $key_string = '';
     foreach my $k (@{$keys}) {
@@ -1878,7 +1889,9 @@ sub Download_Sequence {
 sub Download_PNG {
     my $accession = shift;
     my $mfeid = shift;
-    my $pic = new PRFGraph({accession => $accession});
+    my $pic = new PRFGraph({
+	config => $config,
+	accession => $accession});
     my $filename = $pic->Picture_Filename({type => 'feynman',});
     $filename =~ s/\.svg//g;
     $filename .= "-$mfeid.svg";
