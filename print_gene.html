@@ -31,7 +31,7 @@
 </table>
 <p>The minimum free energy 'landscape' for <% $accession %>, black vertical lines delineate the positions of slippery heptamers, the horizontal green line shows the mean Vienna RNAfold value over the ORF, the horizontal red line shows the mean pknots value over the ORF, the horzontal blue line shows the mean nupack value.  green, red, and blue lines delineate the MFE over a sliding 105bp window.</p>
 <center>
-<img src="<% $pic->Picture_Filename({type=>'landscape',url=>'url'}) %>">
+<& print_landscape, accession => "$accession", species => "$species" &>
 </form>   </tr>
 
 <%init>
@@ -39,21 +39,6 @@
  my $fun = $db->MySelect({statement =>$statement});
  my $species = $fun->[0][0];
  my $genename = $fun->[0][1];
- my $pic = new PRFGraph({config=>$config, accession => $accession});
- my $filename = $pic->Picture_Filename({type => 'landscape',});
- my ($picture_status, $url);
- $picture_status = 1;
- if (!-r $filename) {
-  $picture_status = $pic->Make_Landscape($species);
- }
- if (!defined($picture_status)) {
-  $url = undef;
- }
- else {
-  $url = $pic->Picture_Filename({type => 'landscape',url=>'url'});
- }
-
-
 </%init>
 
 <%perl>
