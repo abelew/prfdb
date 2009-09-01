@@ -647,6 +647,7 @@ sub Make_Landscape {
     system("touch $filename");
     my $db = new PRFdb(config=>$config);
     my $data = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM $table WHERE accession='$accession' ORDER BY start, algorithm");
+    return(undef) if (!defined($data));
     my $slipsites = $db->MySelect("SELECT distinct(start) FROM mfe WHERE accession='$accession' ORDER BY start");
     my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession'");
     

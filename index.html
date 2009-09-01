@@ -1,33 +1,113 @@
-<& index_stats,dbh=>$dbh &>
+<& index_stats &>
 
-<td width = "70%">
-<center>
-<b>Welcome!</b>
-</center>
-<p>
-   Hello World<BR>
-   This is my <B><% $component_count %></B> Mason component.
+  <td width="70%">
+    <center>
+    <b>Welcome!</b>
+    </center>
 
+    <p>
+  Cis-acting mRNA elements that program ribosomes to shift
+  translational reading frame were first discovered in viruses. These
+  programmed -1 ribosomal frameshift (-1 PRF) signals are composed of
+  a heptameric "slippery site" followed by an mRNA pseudoknot
+  secondary structure.
+  <font size=-1><a href="#9_angstrom"><sup>1</sup></a></font>
+    </p>
 
-% if (!($name) && !($email)) {
-   Enter your info:<br><br>
-   <FORM action="index.html" method="GET">
-   Name: <INPUT type="text" size="10" name="name"><br>
-   Email: <INPUT type="text" size="10" name="email"><br>
-   <INPUT type="submit">
-% } else {
-   This is what you entered:<br> 
-   Name: <% $name %><br>
-   Email: <% $email %><br>
-   hitting submit is the same as calling  /index.html,name=>"First Name",email=>"Email Address" 
-% }
+    <p>
+ <a href="html/viral.png">Viruses</a>
+ typically use -1 PRF as a genome condensation strategy;
+ enabling them to encode multiple proteins from a single unaltered
+ mRNA. Historically, because of their relative simplicity, many
+ molecular regulatory elements have been first discovered in viruses:
+ -1 PRF is no different.
+    </p>
 
-<& footer &>
+    <p>
+ We developed a computational method to identify putative -1 PRF
+ signals in eukaryotic genomic sequences. Subsets of these sequences
+ were shown to stimulate significant -1 programmed frameshifting using
+ dual-luciferase reporter constructs.
+<font size=-1><a href="#db"><sup>2</sup></a></font>
+    </p>
+
+    <p>
+ Analysis of these signals suggests that, after a frameshifting event,
+ ribosomes would be directed to translate premature termination
+ codons. These should promote mRNA destabilization via the
+ nonsense-mediated mRNA decay (NMD) pathway. We previously showed that
+ a viral -1 PRF signal cloned in a similar context can function as an
+ mRNA destabilizing element.
+<font size=-1><a href="#cis_acting"><sup>3</sup></a></font>
+ This suggests that regulation of  -1 PRF may be used to regulate cellular
+ gene expression by controlling mRNA stability. In addition, ribosome
+ stalling induced by strong mRNA structures can also promote mRNA
+ degradation via 'No-go decay,' suggesting that our computational
+ approach may be capable of identifying a class of mRNA destabilizing
+ elements independent of -1 PRF.
+    </p>
+
+    <p>
+  This online database is focused on cataloging programmed
+  ribosomal frameshift signals (PRF) in eukaryotic genomes.
+  Please search for a gene of interest or select one of the
+  links above to get started.  Most of the sequence information from
+  this database came from either the
+   <a href="http://yeastgenome.org">Yeast Genome Project</a>
+  or the
+   <a href="http://mgc.nci.nih.gov">Mammalian Gene Collection</a>.
+    </p>
+
+    <p>
+  It is possible to search for any word(s) from the NCBI or SGD gene
+  description as well as the canonical gene name.  Thus searching for
+  'RPL' or 'ribosome' are likely candidates for looking at ribosomal
+  genes.
+    </p>
+
+<hr>
+
+ <ol>
+  <a name="9_angstrom"></a>
+  <li>Plant, E.P., Muldoon Jacobs, K.L., Harger, J.W.,
+    Meskauskas, A., Jacobs,  J.L., Baxter, J.L., Petrov, A.N., Dinman, J.D. <strong>The
+    9-&Aring; solution: How mRNA pseudoknots promote efficient programmed -1 ribosomal 
+    frameshifting.</strong> 
+    <a href="http://www.rnajournal.org/cgi/content/abstract/9/2/168" target="_blank">
+      RNA (9), 168-174 (2003).
+    </a>
+  </li>
+
+  <a name="db"></a>
+  <li>
+    Jacobs JL, Belew AT,&nbsp;Rakauskaite R, Dinman
+    JD. <strong>Identification of functional, endogenous programmed -1
+    ribosomal frameshift signals in the genome of Saccharomyces
+    cerevisiae </strong>
+    <a href="http://nar.oxfordjournals.org/cgi/content/abstract/gkl1033v1?ijkey=x0ZyxmvIlvTV2Yp&amp;keytype=ref">
+NAR 2006 Dec7
+    </a>
+  </li>
+
+  <a name="cis_acting"></a>
+  <li>
+    Plant EP, Wang P, Jacobs JL and Dinman JD. <strong>A programmed
+    &ndash;1 ribosomal frameshift signal can function as a cis-acting
+    mRNA destabilizing element.</strong>
+    <a href="http://nar.oupjournals.org/cgi/content/abstract/32/2/784">NAR (32), 784-790 (2004).
+    </a>
+  </li>
+ </ol>
+  </td>
+
+  <td width="10%">
+  </td>
+ </tr>
+</table>
+
 
 <%init>
    my $component_count = "first";
-   my $dbh = DBI->connect("DBI:mysql:prfdb_test:localhost", "prfdb", "drevil")
-    or die "ERROR: Couldn't connect to DB $DBI::errstr";
 </%init>
 <%args>
    $category=>undef

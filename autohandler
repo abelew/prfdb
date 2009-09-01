@@ -19,115 +19,24 @@
   <table style="table-layout: fixed" width="100%" border="0" cellspacing="0" cellpadding="0">
     <colgroup>
     <col width="13%"><col width="12%"><col width="13%"><col width="12%"><col width="13%"><col width="12%"><col width="13%">
-
-% if ($r->uri eq "$path/index.html") {
- <tr>
-  <td align="center" valign="top" bgcolor="#366e6d"><b><a href="./"><font color="white">Home</font></a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="search.html">Search</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="cloud.html">Distribution</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="filter.html">Filter</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="snp.html">SNP</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="download.html">Download</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="import.html">Import</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="help.html">Help</a></b></td>
+<tr>
+<td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/index.html") ? "#366e6d" : "white" %>">
+ <b><a href="./"><% ($r->uri eq "$path/index.html") ? qq(<font color="white">) : "" %>Home</font></a></b></td>
+<td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/search.html") ? "#366e6d" : "white" %>">
+ <b><a href="search.html"><% ($r->uri eq "$path/search.html") ? qq(<font color="white">) : "" %>Search</a></b></td>
+<td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/distribution.html") ? "#366e6d" : "white" %>">
+ <b><a href="distribution.html"><% ($r->uri eq "$path/distribution.html") ? qq(<font color="white">) : "" %>Distribution</a></b></td>
+<td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/filter.html") ? "#366e6d" : "white" %>">
+ <b><a href="filter.html"><% ($r->uri eq "$path/filter.html") ? qq(<font color="white">) : "" %>Filter</a></b></td>
+<td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/snp.html") ? "#366e6d" : "white" %>">
+ <b><a href="snp.html"><% ($r->uri eq "$path/snp.html") ? qq(<font color="white">) : "" %>SNP</a></b></td>
+<td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/download.html") ? "#366e6d" : "white" %>">
+ <b><a href="download.html"><% ($r->uri eq "$path/download.html") ? qq(<font color="white">) : "" %>Download</a></b></td>
+<td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/import.html") ? "#366e6d" : "white" %>">
+ <b><a href="import.html"><% ($r->uri eq "$path/import.html") ? qq(<font color="white">) : "" %>Import</a></b></td>
+<td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/help.html") ? "#366e6d" : "white" %>">
+ <b><a href="help.html"><% ($r->uri eq "$path/help.html") ? qq(<font color="white">) : "" %>Help</a></b></td>
  </tr>
-% }
-% elsif ($r->uri eq "$path/search.html") {
- <tr>
-  <td align="center" valign="top" bgcolor="white"><b><a href="./">Home</font></a></b></td>
-  <td align="center" valign="top" bgcolor="#366e6d"><b><a href="search.html"><font color="white">Search</font></a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="cloud.html">Distribution</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="filter.html">Filter</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="snp.html">SNP</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="download.html">Download</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="import.html">Import</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="help.html">Help</a></b></td>
- </tr>
-% }
-% elsif ($r->uri eq "$path/cloud.html") {
- <tr>
-  <td align="center" valign="top" bgcolor="white"><b><a href="./">Home</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="search.html">Search</a></b></td>
-  <td align="center" valign="top" bgcolor="366e6d"><b><a href="cloud.html"><font color="white">Distribution</font></a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="filter.html">Filter</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="snp.html">SNP</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="download.html">Download</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="import.html">Import</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="help.html">Help</a></b></td>
- </tr>
-% }
-% elsif ($r->uri eq "$path/filter.html") {
- <tr>
-  <td align="center" valign="top" bgcolor="white"><b><a href="./">Home</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="search.html">Search</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="cloud.html">Distribution</a></b></td>
-  <td align="center" valign="top" bgcolor="#366e6d"><b><a href="filter.html"><font color="white">Filter</font></a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="snp.html">SNP</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="download.html">Download</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="import.html">Import</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="help.html">Help</a></b></td>
- </tr>
-% }
-% elsif ($r->uri eq "$path/snp.html") {
- <tr>
-  <td align="center" valign="top" bgcolor="white"><b><a href="./">Home</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="search.html">Search</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="cloud.html">Distribution</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="filter.html">Filter</a></b></td>
-  <td align="center" valign="top" bgcolor="#366e6d"><b><a href="snp.html"><font color="white">SNP</font></a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="download.html">Download</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="import.html">Import</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="help.html">Help</a></b></td>
- </tr>
-% }
-% elsif ($r->uri eq "$path/download.html") {
- <tr>
-  <td align="center" valign="top" bgcolor="white"><b><a href="./">Home</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="search.html">Search</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="cloud.html">Distribution</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="filter.html">Filter</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="snp.html">SNP</a></b></td>
-  <td align="center" valign="top" bgcolor="#366e6d"><b><a href="download.html"><font color="white">Download</font></a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="import.html">Import</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="help.html">Help</a></b></td>
- </tr>
-% }
-% elsif ($r->uri eq "$path/import.html") {
- <tr>
-  <td align="center" valign="top" bgcolor="white"><b><a href="./">Home</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="search.html">Search</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="cloud.html">Distribution</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="filter.html">Filter</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="snp.html">SNP</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="download.html">Download</a></b></td>
-  <td align="center" valign="top" bgcolor="#366e6d"><b><a href="import.html"><font color="white">Import</font></a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="help.html">Help</a></b></td>
- </tr>
-% }
-% elsif ($r->uri eq "$path/help.html") {
- <tr>
-  <td align="center" valign="top" bgcolor="white"><b><a href="./">Home</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="search.html">Search</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="cloud.html">Distribution</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="filter.html">Filter</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="snp.html">SNP</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="download.html">Download</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="import.html">Import</a></b></td>
-  <td align="center" valign="top" bgcolor="#366e6d"><b><a href="help.html"><font color="white">Help</font></a></b></td>
- </tr>
-% }
-% else {
- <tr>
-  <td align="center" valign="top" bgcolor="#366e6d"><b><a href="./"><font color="white">Home</font></a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="search.html">Search</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="cloud.html">Distribution</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="filter.html">Filter</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="snp.html">SNP</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="download.html">Download</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="import.html">Import</a></b></td>
-  <td align="center" valign="top" bgcolor="white"><b><a href="help.html">Help</a></b></td>
- </tr>
-% }
 
  <tr align="left" valign="top">
   <td bgcolor="#366e6d" height="5px" width="100%" colspan="8"></td>
@@ -143,13 +52,10 @@
  </body>
 </html>
 
-
-
-
-
-
 <%init>
-  my $path = '/prfdb_test';
+  local $dbh = DBI->connect('DBI:mysql:prfdb_test:localhost', $config->{database_user}, $config->{database_pass}) or die "Cannot connect $DBI::errstr";
+  my $session = $m->session;
+  my $path = '';
 </%init>
 
 
