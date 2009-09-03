@@ -1,3 +1,45 @@
+% if ($query and $search_species_limit) {
+<%perl>
+my $query_statement = qq"SELECT * FROM genome WHERE ";
+if (defined($search_species_limit)) {
+  $query_statement .= qq"species = '$search_species_limit' AND ";
+}
+elsif ($search_species_limit ne 'all') {
+  $query_statement .= qq"species regexp '$search_species_limit' AND ";
+}
+my $mode = undef;
+if (defined($mode)) {   ## SOME SNP STUFF
+  $query_statement .= qq"";
+}
+else {
+  $query_statement .= qq"(species regexp '$query' OR genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')";
+}
+my $entries = $db->MySelect({statement => $query_statement, type => 'hash', descriptor => 1,});
+foreach my $c (keys %{$entries}) {
+  my $slip_stmt = qq"SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?";
+  my $slipsite_structure_count = $db->MySelect({statement => $slip_stmt, vars => [$entries->{$c}->{accession}], type => 'row',});
+  	$entries->{$c}->{slipsite_count} = $slipsite_structure_count->[0];
+	$entries->{$c}->{structure_count} = $slipsite_structure_count->[1];
+    }
+    my $entries_count = scalar keys %{$entries};
+    if ( $entries_count == 0) {
+       print "  <p>No entry was found</p><br>\n";
+    } else {
+       print "   <p>Some entries, $entries_count were found</p><br>\n";
+    }
+</%perl>
+
+
+
+
+% } elsif ($blastsearch) {
+
+
+
+% } else {
+
+
+
 <FORM action="search.html" enctype="multipart/form-data" method="POST">
 
 <center>
@@ -17,7 +59,13 @@ Search the PRFdb for an arbitrary sequence using BLAST.<br>
 <br>
 <input type="submit" name="blastsearch" value="Perform Blast Search"></form></tr>
 
+
+% }
+
 <%init>
 </%init>
 <%args>
+  $query => undef
+  $search_species_limit => 'saccharomyces_cerevisiae'
+  $blastsearch => undef
 </%args>
