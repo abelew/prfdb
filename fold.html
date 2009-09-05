@@ -1,0 +1,55 @@
+% if (!$algorithm or !$input_fasta) {
+
+Use this form to fold a _short_ sequence.<br>
+<FORM action="fold.html" enctype="multipart/form-data" method="POST">
+<input type="file" name="input_fasta">
+<select name="algorithm">
+<option selected="selected" value="nupack">Nupack</option>
+<option value="pknots">Pknots</option>
+<option value="hotknots">HotKnots</option>
+<option value="rnafold">RNAfold</option>
+<option value="mfold">mfold</option>
+<option value="all">all</option>
+</select> 
+<input type="submit" name="fold submit" value="Fold">
+</form>
+
+% } else {
+
+% use Apache2::Upload;
+% my $req = new Apache2::Request($r);
+% my $upload = $req->upload("input_fasta");
+% my $filename = $upload->filename();
+% my $contents;
+% my $size = $upload->slurp($contents);
+% print "TESTME: $size $filename
+%<pre>
+% $contents
+%</pre>\n";
+% my $tempfile = new File::Temp(DIR => $config->{workdir}, SUFFIX => '.fasta');
+% my $new_filename = $tempfile->filename();
+% print $tempfile $contents;
+% my $fold = new RNAFolders(config => $config, file => $new_filename, genome_id => 0, species => 'saccharomyces_cerevisiae', accession => 2, start => 0,);
+%# my $nupack_mfe_info = $fold->Pknots('nopseudo');
+% my $nupack_mfe_info = $fold->Nupack_NOPAIRS();
+% my $mfe = $nupack_mfe_info->{mfe};
+% my $parsed = $nupack_mfe_info->{parsed};
+% my $barcode = $nupack_mfe_info->{barcode};
+% my $output = $nupack_mfe_info->{output};
+% my $pairs = $nupack_mfe_info->{pairs};
+% my $sequence = $nupack_mfe_info->{sequence};
+% my $output_end = "test.svg";
+% my $pic_output = "$config->{base}/images/tmp/$output_end";
+% my $feynman_pic = new PRFGraph({sequence=>$sequence, parsed => $parsed, output => $output});
+% my $dimensions = $feynman_pic->Make_Feynman($pic_output, 0);
+The MFE of this is: <% $mfe %><br>
+The output is <% $output %><br>
+<embed id="feynman" src="images/tmp/<% $output_end %>" align="bottom"></embed>
+%}
+
+<%init>
+</%init>
+<%args>
+  $algorithm => undef
+  $input_fasta => undef
+</%args>
