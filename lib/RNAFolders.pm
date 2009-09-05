@@ -3,12 +3,13 @@ use strict;
 use IO::Handle;
 use lib 'lib';
 use PkParse;
-use PRFConfig qw / PRF_Error /;
-my $config = $PRFConfig::config;
+use PRFdb qw / AddOpen RemoveFile /;
 
+my $config;
 sub new {
     my ($class, %arg) = @_;
     my $me = bless {
+	config => $arg{config},
 	file => $arg{file},
 	genome_id => $arg{genome_id},
 	species => $arg{species},
@@ -16,6 +17,7 @@ sub new {
 	start => $arg{start},
 	slippery => $arg{slippery},
     }, $class;
+    $config = $me->{config};
     return ($me);
 }
 
@@ -26,10 +28,10 @@ sub Nupack {
     my $accession = $me->{accession};
     my $start = $me->{start};
     my $errorfile = qq(${inputfile}_nupack.err);
-    PRFdb::Add_Open($errorfile);
+    AddOpen($errorfile);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
-    my $nupack = qq($config->{workdir}/$config->{nupack});
-    my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
+    my $nupack = qq($config->{workdir}/$config->{exe_nupack});
+    my $nupack_boot = qq($config->{workdir}/$config->{exe_nupack_boot});
     my $return = {
 	start => $start,
 	slipsite => $slipsite,
@@ -94,9 +96,9 @@ command: $command\n" if (defined($config->{debug}));
 	PRFConfig::PRF_Error("Nupack Error running $nupack: $command $!", $accession);
 	  die("Nupack Error running $nupack: $command $!");
       }
-    PRFdb::RemoveFile($errorfile);
+    RemoveFile($errorfile);
     my $out_pair = qq($config->{workdir}/out.pair);
-    PRFdb::AddFile($out_pair);
+    AddOpen($out_pair);
     open(PAIRS, "<$out_pair") or PRF_Error("Could not open the nupack pairs file: $!", $accession);
     ## OPEN PAIRS in Nupack
     my $pairs = 0;
@@ -149,10 +151,10 @@ sub Nupack_NOPAIRS {
     my $inputfile = $me->{file};
     my $accession = $me->{accession};
     my $start = $me->{start};
-    my $nupack = qq($config->{workdir}/$config->{nupack});
-    my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
+    my $nupack = qq($config->{workdir}/$config->{exe_nupack});
+    my $nupack_boot = qq($config->{workdir}/$config->{exe_nupack_boot});
     my $errorfile = qq(${inputfile}_nupacknopairs.err);
-    PRFdb::AddOpen($errorfile);
+    AddOpen($errorfile);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $return   = {
 	start => $start,
@@ -172,7 +174,7 @@ sub Nupack_NOPAIRS {
 	$command = qq($nupack_boot $inputfile 2>$errorfile);
     } 
     else {
-	warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{nupack} =~ /nopairs/);
+	warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{exe_nupack} =~ /nopairs/);
 	die("$nupack is missing.") unless (-r $nupack);
 	$command = qq($nupack $inputfile 2>$errorfile);
     }
@@ -234,7 +236,7 @@ command: $command\n" if (defined($config->{debug}));
 Error:  $command $!
 Return: $nupack_return\n");
     }
-    PRFdb::RemoveFile($errorfile);
+    RemoveFile($errorfile);
     for my $c (0 .. $#nupack_output) {
 	$nupack_output[$c] = '.' unless (defined $nupack_output[$c]);
     }
@@ -278,7 +280,7 @@ sub Vienna {
         exit(0);
     }
     my $errorfile = qq(${inputfile}_vienna.err);
-    PRFdb::AddOpen($errorfile);
+    AddOpen($errorfile);
     my $return = {
         start => $start,
         slipsite => $slipsite,
@@ -307,7 +309,7 @@ command: $command\n" if (defined($config->{debug}));
             $return->{mfe} = $num;
         }
     }
-    PRFdb::RemoveFile($errorfile);
+    RemoveFile($errorfile);
     $return->{sequence} = Sequence_T_U($return->{sequence});
     return($return);
 }
@@ -319,7 +321,7 @@ sub Pknots {
     my $accession = $me->{accession};
     my $start = $me->{start};
     my $errorfile = qq(${inputfile}_pknots.err);
-    PRFdb::AddOpen($errorfile);
+    AddOpen($errorfile);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
     my $return = {
@@ -334,13 +336,14 @@ sub Pknots {
     };
     chdir($config->{workdir});
     my $command;
-    die("pknots is missing.") unless (-r "$config->{pknots}");
-
+    if (!-r $config->{exe_pknots}) {
+	die("pknots is missing. $config->{exe_pknots}");
+    }
     if (defined($pseudo) and $pseudo eq 'nopseudo') {
-	$command = qq($config->{pknots} $inputfile 2>$errorfile);
+	$command = qq($config->{exe_pknots} $inputfile 2>$errorfile);
     }
     else {
-	$command = qq($config->{pknots} -k $inputfile 2>$errorfile);
+	$command = qq($config->{exe_pknots} -k $inputfile 2>$errorfile);
     }
     print "PKNOTS: infile: $inputfile accession: $accession start: $start
 command: $command\n" if (defined($config->{debug}));
@@ -382,7 +385,7 @@ command: $command\n" if (defined($config->{debug}));
 	PRFConfig::PRF_Error("Pknots Error running $command: $!", $accession);
 #    die("Pknots Error! $!");
     }
-    PRFdb::RemoveFile($errorfile);
+    RemoveFile($errorfile);
     $string =~ s/\s+/ /g;
     $return->{output} = $string;
     if (defined($config->{max_spaces})) {
@@ -465,7 +468,7 @@ sub Pknots_Boot {
     my $accession = shift;
     my $start = shift;
     my $errorfile = qq(${inputfile}_pknots.err);
-    PRFdb::AddOpen($errorfile);
+    AddOpen($errorfile);
     ##  This expected for a bootlace include:
     ##  MFE, PAIRS
     my $return = {
@@ -473,7 +476,7 @@ sub Pknots_Boot {
 	start => $start,
     };
     chdir($config->{workdir});
-    my $command = qq($config->{pknots} $inputfile 2>$errorfile);
+    my $command = qq($config->{exe_pknots} $inputfile 2>$errorfile);
     open(PK, "$command |") or PRF_Error("RNAFolders::Pknots_Boot, Failed to run pknots: $command $!", $accession);
     ## OPEN PK in Pknots_Boot
     my $counter = 0;
@@ -510,7 +513,7 @@ sub Pknots_Boot {
 	PRFConfig::PRF_Error("Pknots Error: $command $!", $accession);
 #    die("Pknots Error! $command $!");
     }
-    PRFdb::RemoveFile($errorfile);
+    RemoveFile($errorfile);
     return ($return);
 }
 
@@ -520,10 +523,10 @@ sub Nupack_Boot {
     my $inputfile = shift;
     my $accession = shift;
     my $start = shift;
-    my $nupack = qq($config->{workdir}/$config->{nupack});
-    my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
+    my $nupack = qq($config->{workdir}/$config->{exe_nupack});
+    my $nupack_boot = qq($config->{workdir}/$config->{exe_nupack_boot});
     my $errorfile = qq(${inputfile}_nupack.err);
-    PRFdb::AddOpen($errorfile);
+    AddOpen($errorfile);
     my $return = {
 	accession => $accession,
 	start => $start,
@@ -555,9 +558,9 @@ sub Nupack_Boot {
 	PRFConfig::PRF_Error("Nupack Error running $command: $!", $accession);
 	die("Nupack Error running $command $!");
     }
-    PRFdb::RemoveFile($errorfile);
+    RemoveFile($errorfile);
     my $out_pair = qq($config->{workdir}/out.pair);
-    PRFdb::AddOpen($out_pair);
+    AddOpen($out_pair);
     open(PAIRS, "<$out_pair") or PRF_Error("Could not open the nupack pairs file: $!", $accession);
     ## OPEN PAIRS in Nupack_Boot
     my $pairs = 0;
@@ -579,10 +582,10 @@ sub Nupack_Boot_NOPAIRS {
     my $inputfile = shift;
     my $accession = shift;
     my $start = shift;
-    my $nupack = qq($config->{workdir}/$config->{nupack});
-    my $nupack_boot = qq($config->{workdir}/$config->{nupack_boot});
+    my $nupack = qq($config->{workdir}/$config->{exe_nupack});
+    my $nupack_boot = qq($config->{workdir}/$config->{exe_nupack_boot});
     my $errorfile = qq(${inputfile}_nupack.err);
-    PRFdb::AddOpen($errorfile);
+    AddOpen($errorfile);
     my $return = {
 	accession => $accession,
 	start => $start,
@@ -591,7 +594,7 @@ sub Nupack_Boot_NOPAIRS {
     die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
     die("$config->{workdir}/dataS_G.rna is missing.") unless (-r "$config->{workdir}/dataS_G.rna");
     die("$nupack_boot is missing.") unless (-r $nupack_boot);
-    warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{nupack} =~ /nopairs/);
+    warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{exe_nupack} =~ /nopairs/);
     my $command = qq($nupack_boot $inputfile 2>$errorfile);
     my @nupack_output;
     open(NU, "$command |") or PRF_Error("RNAFolders::Nupack_Boot_NOPAIRS, Failed to run nupack:  $command $!", $accession);
@@ -622,7 +625,7 @@ sub Nupack_Boot_NOPAIRS {
 	PRFConfig::PRF_Error("Nupack Error running $command: $!", $accession);
 	die("Nupack Error running $command: $!");
     }
-    PRFdb::RemoveFile($errorfile);
+    RemoveFile($errorfile);
     $return->{pairs} = $pairs;
     return ($return);
 }
@@ -633,7 +636,7 @@ sub Hotknots {
     my $accession = $me->{accession};
     my $start = $me->{start};
     my $errorfile = qq(${inputfile}_hotknots.err);
-    PRFdb::AddOpen($errorfile);
+    AddOpen($errorfile);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
     my $ret = {
@@ -654,7 +657,7 @@ sub Hotknots {
     open(IN, ">$tempfile");
     print IN $seq;
     close(IN);
-    my $command = qq($config->{workdir}/$config->{hotknots} -I $seqname -noPS -b);
+    my $command = qq($config->{workdir}/$config->{exe_hotknots} -I $seqname -noPS -b);
     print "HotKnots: infile: $inputfile accession: $accession start: $start
 command: $command\n" if (defined($config->{debug}));
     open(HK, "$command |");
@@ -664,7 +667,7 @@ command: $command\n" if (defined($config->{debug}));
     }
     close(HK);
     my $bpseqfile = "${seqname}0.bpseq";
-    PRFdb::AddOpen($bpseqfile);
+    AddOpen($bpseqfile);
     open(BPSEQ, "<$bpseqfile");
     $ret->{output} = '';
     $ret->{pairs} = 0;
@@ -690,7 +693,7 @@ command: $command\n" if (defined($config->{debug}));
     $ret->{pairs} = $ret->{pairs} / 2;
     close(BPSEQ);
     my $ctfile = qq(${seqname}.ct);
-    PRFdb::AddOpen($ctfile);
+    AddOpen($ctfile);
     open(GETMFE, "grep ENERGY $ctfile | head -1 |");
     while (my $getmfeline = <GETMFE>) {
 	my ($null, $num, $ENERGY, $eq, $mfe, $crap) = split(/\s+/, $getmfeline);
@@ -698,7 +701,7 @@ command: $command\n" if (defined($config->{debug}));
     }
     close(GETMFE);
 
-    PRFdb::RemoveFile([$ctfile, $bpseqfile, $errorfile]);
+    RemoveFile([$ctfile, $bpseqfile, $errorfile]);
 
     my $parser = new PkParse(debug => $config->{debug});
     my @struct_array = split(/\s+/, $ret->{output});
@@ -729,7 +732,7 @@ sub Hotknots_Boot {
     my $start = shift;
 
     my $errorfile = qq(${inputfile}_hotknots.err);
-    PRFdb::AddOpen($errorfile);
+    AddOpen($errorfile);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
     $seq = '' if (!defined($seq));
@@ -749,7 +752,7 @@ sub Hotknots_Boot {
     open(IN, ">$tempfile");
     print IN $seq;
     close(IN);
-    my $command = qq($config->{workdir}/$config->{hotknots} -I $seqname -noPS -b 2>$errorfile);
+    my $command = qq($config->{workdir}/$config->{exe_hotknots} -I $seqname -noPS -b 2>$errorfile);
     print "Hotknots boot: infile: $inputfile accession: $accession start: $start
 command: $command\n" if (defined($config->{debug}));
     open(HK, "$command |");
@@ -758,8 +761,8 @@ command: $command\n" if (defined($config->{debug}));
     }
     close(HK);
     my $bpseqfile = "${seqname}0.bpseq";
-    PRFdb::AddOpen($tempfile);
-    PRFdb::AddOpen($bpseqfile);
+    AddOpen($tempfile);
+    AddOpen($bpseqfile);
     open(BPSEQ, "<$bpseqfile");
     $ret->{output} = '';
     $ret->{pairs} = 0;
@@ -789,7 +792,7 @@ command: $command\n" if (defined($config->{debug}));
     $ret->{pairs} = $ret->{pairs} / 2;
     close(BPSEQ);
     my $ctfile = qq(${seqname}.ct);
-    PRFdb::AddOpen($ctfile);
+    AddOpen($ctfile);
     open(GETMFE, "grep ENERGY $ctfile | head -1 |");
     while (my $getmfeline = <GETMFE>) {
         my ($null, $num, $ENERGY, $eq, $mfe, $crap) = split(/\s+/, $getmfeline);
@@ -797,7 +800,7 @@ command: $command\n" if (defined($config->{debug}));
     }
     close(GETMFE);
 
-    PRFdb::RemoveFile([$ctfile, $bpseqfile, $errorfile, $tempfile]);
+    RemoveFile([$ctfile, $bpseqfile, $errorfile, $tempfile]);
     my $parser = new PkParse(debug => $config->{debug});
     my @struct_array = split(/\s+/, $ret->{output});
     my $out = $parser->Unzip(\@struct_array);

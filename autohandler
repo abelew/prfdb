@@ -18,7 +18,10 @@
   </table>
   <table style="table-layout: fixed" width="100%" border="0" cellspacing="0" cellpadding="0">
     <colgroup>
-    <col width="13%"><col width="12%"><col width="13%"><col width="12%"><col width="13%"><col width="12%"><col width="13%">
+% my $column = 1; while ($column <= $columns) {
+     <col width="11%">
+% $column++;
+% }    
 <tr>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/index.html") ? "#366e6d" : "white" %>">
  <b><a href="./"><% ($r->uri eq "$path/index.html") ? qq(<font color="white">) : "" %>Home</font></a></b></td>
@@ -34,12 +37,14 @@
  <b><a href="download.html"><% ($r->uri eq "$path/download.html") ? qq(<font color="white">) : "" %>Download</a></b></td>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/import.html") ? "#366e6d" : "white" %>">
  <b><a href="import.html"><% ($r->uri eq "$path/import.html") ? qq(<font color="white">) : "" %>Import</a></b></td>
+<td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/fold.html") ? "#366e6d" : "white" %>">
+ <b><a href="fold.html"><% ($r->uri eq "$path/fold.html") ? qq(<font color="white">) : "" %>Fold</a></b></td>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/help.html") ? "#366e6d" : "white" %>">
  <b><a href="help.html"><% ($r->uri eq "$path/help.html") ? qq(<font color="white">) : "" %>Help</a></b></td>
  </tr>
 
  <tr align="left" valign="top">
-  <td bgcolor="#366e6d" height="5px" width="100%" colspan="8"></td>
+  <td bgcolor="#366e6d" height="5px" width="100%" colspan="<% $columns %>"></td>
  </tr>
 % if ($r->uri eq "$path/detail.html") {
   </tr>
@@ -56,6 +61,8 @@
   local $dbh = DBI->connect('DBI:mysql:prfdb_test:localhost', $config->{database_user}, $config->{database_pass}) or die "Cannot connect $DBI::errstr";
   my $session = $m->session;
   my $path = '';
+  my $columns = 9;
+  my $col_width = 11;
 </%init>
 
 

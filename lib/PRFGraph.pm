@@ -891,7 +891,7 @@ sub Make_Feynman {
     my $out_filename = shift;
     my $include_slipsite = shift;
     my ($id, $sequence, $parsed, $pkout, $slipsite);
-    $include_slipsite = 1 if (!defined($slipsite));
+    $include_slipsite = 1 if (!defined($slipsite) and !defined($include_slipsite));
     if (defined($me->{sequence})) {
 	$sequence = $me->{sequence};
 	$parsed = $me->{parsed};

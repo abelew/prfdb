@@ -6,6 +6,8 @@ use SeqMisc;
 use File::Temp qw / tmpnam /;
 use Fcntl ':flock';    # import LOCK_* constants
 use Bio::DB::Universal;
+our @ISA = qw(Exporter);
+our @EXPORT = qw(AddOpen RemoveFile);    # Symbols to be exported by default
 
 ### Holy crap global variables!
 my $config;
