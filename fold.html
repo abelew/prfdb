@@ -31,8 +31,7 @@ $short_filename = $fun[$#fun];
 print $tempfile_fh $contents;
 close $tempfile_fh;
 
-print "TESTME: $size $upload_filename $new_filename $short_filename
-<pre>
+print "<pre>
 $contents
 </pre>\n";
 print $contents;
@@ -41,32 +40,39 @@ my $new_url = "folds/$short_filename.html";
 sub tmp_fold {
   my $config = shift;
   my $new_filename = shift;
+  my $function = shift;
   my $input_path = "$config->{base}/folds/$new_filename";
-  print STDERR "This is filename: $new_filename\n";
   my $fold = new RNAFolders(config => $config, file => $input_path, genome_id => 0, species => 'saccharomyces_cerevisiae', accession => 2, start => 0,);
-  # my $nupack_mfe_info = $fold->Pknots('nopseudo');
-  my $nupack_mfe_info = $fold->Nupack_NOPAIRS();
-  my $mfe = $nupack_mfe_info->{mfe};
-  print STDERR "THIS IS THE MFE: $mfe\n";
-  my $parsed = $nupack_mfe_info->{parsed};
-  my $barcode = $nupack_mfe_info->{barcode};
-  my $output = $nupack_mfe_info->{output};
-  my $pairs = $nupack_mfe_info->{pairs};
-  my $sequence = $nupack_mfe_info->{sequence};
+  my $mfe_info;
+  if ($function eq 'nupack') {
+    $mfe_info = $fold->Nupack_NOPAIRS();
+  }
+  elsif ($function eq 'pknots') {
+    $mfe_info = $fold->Pknots('nopseudo');
+  }
+  elsif ($function eq 'hotknots') {
+    $mfe_info = $fold->Hotknots();
+  }
+  elsif ($function eq 'rnafold') {
+    $mfe_info = $fold->Vienna();
+  }
+  my $mfe = $mfe_info->{mfe};
+  my $parsed = $mfe_info->{parsed};
+  my $barcode = $mfe_info->{barcode};
+  my $output = $mfe_info->{output};
+  my $pairs = $mfe_info->{pairs};
+  my $sequence = $mfe_info->{sequence};
   my $pic_output = "$config->{base}/folds/$new_filename.svg";
   my $feynman_pic = new PRFGraph({sequence=>$sequence, parsed => $parsed, output => $output});
   my $dimensions = $feynman_pic->Make_Feynman($pic_output, 0);
-#  use IO::Handle;
-#  sysopen(HANDLE, "$new_filename.html", "O_RDWR|O_CREAT|O_EXCL") or die "sysopen $new_filename: $!";
-#  my $oldfh = select(HANDLE); $| = 1; select $oldfh;
   open (HANDLE, ">$input_path.html") or die("Cannot open HANDLE $new_filename.html $!");
-  print HANDLE qq(TESTME: $mfe<br>
+  print HANDLE qq(The minimum free using $function energy is: $mfe<br>
  $output<br>
 <embed id=\"feynman\" src=\"$new_filename.svg\" align=\"bottom\"></embed>);
   close(HANDLE);
 }
 use Proc::Forkfunc;
-my @child_args = ($config, $short_filename);
+my @child_args = ($config, $short_filename, $algorithm);
 forkfunc(\&tmp_fold, @child_args);
 </%perl>
 
