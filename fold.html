@@ -16,38 +16,99 @@ Use this form to fold a _short_ sequence.<br>
 
 % } else {
 
-% use Apache2::Upload;
-% my $req = new Apache2::Request($r);
-% my $upload = $req->upload("input_fasta");
-% my $filename = $upload->filename();
-% my $contents;
-% my $size = $upload->slurp($contents);
-% print "TESTME: $size $filename
-%<pre>
-% $contents
-%</pre>\n";
-% my $tempfile = new File::Temp(DIR => $config->{workdir}, SUFFIX => '.fasta');
-% my $new_filename = $tempfile->filename();
-% print $tempfile $contents;
-% my $fold = new RNAFolders(config => $config, file => $new_filename, genome_id => 0, species => 'saccharomyces_cerevisiae', accession => 2, start => 0,);
-%# my $nupack_mfe_info = $fold->Pknots('nopseudo');
-% my $nupack_mfe_info = $fold->Nupack_NOPAIRS();
-% my $mfe = $nupack_mfe_info->{mfe};
-% my $parsed = $nupack_mfe_info->{parsed};
-% my $barcode = $nupack_mfe_info->{barcode};
-% my $output = $nupack_mfe_info->{output};
-% my $pairs = $nupack_mfe_info->{pairs};
-% my $sequence = $nupack_mfe_info->{sequence};
-% my $output_end = "test.svg";
-% my $pic_output = "$config->{base}/images/tmp/$output_end";
-% my $feynman_pic = new PRFGraph({sequence=>$sequence, parsed => $parsed, output => $output});
-% my $dimensions = $feynman_pic->Make_Feynman($pic_output, 0);
-The MFE of this is: <% $mfe %><br>
-The output is <% $output %><br>
-<embed id="feynman" src="images/tmp/<% $output_end %>" align="bottom"></embed>
-%}
+<%perl>
+use Apache2::Upload;
+my $req = new Apache2::Request($r);
+my $upload = $req->upload("input_fasta");
+my $upload_filename = $upload->filename();
+my $contents;
+my $size = $upload->slurp($contents);
+my $tempfile_fh = new File::Temp(DIR => "$config->{base}/folds", UNLINK=>0);
+my $new_filename = $tempfile_fh->filename();
+my $short_filename = $new_filename;
+my @fun = split(/\//, $short_filename);
+$short_filename = $fun[$#fun];
+print $tempfile_fh $contents;
+close $tempfile_fh;
+
+print "TESTME: $size $upload_filename $new_filename $short_filename
+<pre>
+$contents
+</pre>\n";
+print $contents;
+my $new_url = "folds/$short_filename.html";
+
+sub tmp_fold {
+  my $config = shift;
+  my $new_filename = shift;
+  my $input_path = "$config->{base}/folds/$new_filename";
+  print STDERR "This is filename: $new_filename\n";
+  my $fold = new RNAFolders(config => $config, file => $input_path, genome_id => 0, species => 'saccharomyces_cerevisiae', accession => 2, start => 0,);
+  # my $nupack_mfe_info = $fold->Pknots('nopseudo');
+  my $nupack_mfe_info = $fold->Nupack_NOPAIRS();
+  my $mfe = $nupack_mfe_info->{mfe};
+  print STDERR "THIS IS THE MFE: $mfe\n";
+  my $parsed = $nupack_mfe_info->{parsed};
+  my $barcode = $nupack_mfe_info->{barcode};
+  my $output = $nupack_mfe_info->{output};
+  my $pairs = $nupack_mfe_info->{pairs};
+  my $sequence = $nupack_mfe_info->{sequence};
+  my $pic_output = "$config->{base}/folds/$new_filename.svg";
+  my $feynman_pic = new PRFGraph({sequence=>$sequence, parsed => $parsed, output => $output});
+  my $dimensions = $feynman_pic->Make_Feynman($pic_output, 0);
+#  use IO::Handle;
+#  sysopen(HANDLE, "$new_filename.html", "O_RDWR|O_CREAT|O_EXCL") or die "sysopen $new_filename: $!";
+#  my $oldfh = select(HANDLE); $| = 1; select $oldfh;
+  open (HANDLE, ">$input_path.html") or die("Cannot open HANDLE $new_filename.html $!");
+  print HANDLE qq(TESTME: $mfe<br>
+ $output<br>
+<embed id=\"feynman\" src=\"$new_filename.svg\" align=\"bottom\"></embed>);
+  close(HANDLE);
+}
+use Proc::Forkfunc;
+my @child_args = ($config, $short_filename);
+forkfunc(\&tmp_fold, @child_args);
+</%perl>
+
+<p>This should redirect you to the output page for your folding.</p>
+<script language="JavaScript">
+var sURL = "<% "folds/$short_filename.html" %>";
+function doLoad()
+{
+    setTimeout( "refresh()", 1*1000 );
+}
+
+function refresh()
+{
+    //  This version of the refresh function will cause a new
+    //  entry in the visitor's history.  It is provided for
+    //  those browsers that only support JavaScript 1.0.
+    //
+    window.location.href = sURL;
+}
+//-->
+</script>
+
+<script language="JavaScript1.1">
+<!--
+function refresh()
+{
+    //  This version does NOT cause an entry in the browser's
+    //  page view history.  Most browsers will always retrieve
+    //  the document from the web-server whether it is already
+    //  in the browsers page-cache or not.
+    //  
+    window.location.replace( sURL );
+}
+//-->
+</script>
+
+
+% }
 
 <%init>
+  my $tempfile;
+  my $new_filename;
 </%init>
 <%args>
   $algorithm => undef
