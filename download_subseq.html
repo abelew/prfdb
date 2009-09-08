@@ -4,9 +4,7 @@
  my $seq = $db->MySelect({statement => $stmt, vars => [$mfe_id], type => 'row'});
  my @tmp = split(//, $seq->[2]);
  my $filename = qq"$seq->[1]_$seq->[3].fasta";
-# $r->headers_out('Content-disposition' => ("attachment; filename=$filename"));
  $r->headers_out->add('Content-disposition' => ("attachment; filename=$filename"));
-# print "Content-disposition: attachement; filename=$filename\n\n";
  $filename =~ s/SGDID://g;
  print ">$seq->[1] starting at $seq->[3]: $seq->[0]";
  foreach my $c (0 .. $#tmp) {
@@ -14,7 +12,6 @@
    print $tmp[$c];
  }
 </%init>
-
 <%args>
  $mfe_id => undef;
 </%args>

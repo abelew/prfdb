@@ -1,0 +1,131 @@
+% if ($species and $seqlength and $slipsites) {
+%  if (!defined($overlayquery)) {
+
+
+<center>
+<form method="post" action="overlaysearch_perform" enctype="application/x-www-form-urlencoded">
+<input type="text" name="overlayquery"  size="20" /><input type="submit" name="search overlay" value="Overlay" /></form>
+</center>
+
+
+%  }
+
+
+<center>
+<p>This is the <i><% $species %></i> distribution for <% $slipsites %> slipsites.
+<br>
+% my $filename = qq"$config->{base}/images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
+% if (-f $filename) {
+<img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $seqlength %>.png" usemap="#map">
+</center>
+
+<br>
+The x axis displays the range of putative <a href="help_detail#help_mfe">
+minimum free energy</a> values computed for all <i></i>
+ sequences of length 100.<br>
+
+The y axis displays the range of <a href="help_detail#help_z">
+z scores</a> for these same sequences.<br>
+Each dot thus represents a single (mfe, z score) in relation to all
+the others for <i></i>.  
+ The black lines delineate the mean mfe
+and z score for this population.
+This graph shows all points regardless of slipsite.
+
+  Grey dots represent sequence
+windows which have less putative secondary structure than the mean
+<b>and</b> are less structured than their randomized counterparts, as
+such these are unlikely to be of interest.  Green dots have a minimum
+free energy less than the mean, but are less structured than their
+randomized counterparts while the opposite is true of blue dots.  Red
+dots are more significant than the mean in both respects.  Grey lines
+delineate standard deviations less than mean.  Darker dots represent
+coordinates wihch share more than 1 sequence window.
+</p>
+<a href="graphs.html?species=<% $species %>">Click here for some more graphs</a>
+
+% open(MAP, "<$filename.map");
+% while (my $line = <MAP>) { print  $line; }
+
+% } else {
+<p>Generating a new distribution for <% $species %> now.<br>
+These graphs take about a minute to generate, this page will refresh with the freshly generated
+graph in one minute.</p>
+
+<& refresh.js, refresh_url=>"distribution.html?species=$species&seqlength=$seqlength&slipsites=$slipsites", seconds => 30 &>
+<& generate_distribution, species=>$species, slipsites=>$slipsites, seqlength=>$seqlength &>
+
+% }
+
+% }  ## If the parameters are not defined, print the html form to get them
+% else {
+
+
+<tr align="left" valign="top">
+  <td bgcolor="#366e6d" height="5px" width="100%" colspan="8">
+  </td>
+  </tr>
+</table>
+ </td>
+ <td width="70%">
+ <form name="distribution" action="distribution.html" enctype="multipart/form-data" method="POST">
+
+ <p>
+  Using this form, choose the parameters which define the cloud of
+  MFE/z scores of interest.
+ </p>
+ <p>
+  Choose how many bases to examine:<br>
+  <select name="seqlength">
+    <option selected="selected" value="100">100</option>
+    <option value="75">75</option>
+    <option value="50">50</option>
+  </select>
+  <br>
+  Choose a species to examine:<br>
+  <& species_selector, select_name => "species" &>
+
+<label><input type="checkbox" name="cloud_filters" value="pseudoknots only" />pseudoknots only</label><br>
+  Choose a slippery site to examine(listed in order of frequency):<br>
+  <select name="slipsites" >
+<option selected="selected" value="all">all</option>
+<option value="AAAUUUA">AAAUUUA</option>
+<option value="UUUAAAU">UUUAAAU</option>
+<option value="AAAAAAA">AAAAAAA</option>
+
+<option value="UUUAAAA">UUUAAAA</option>
+<option value="UUUUUUA">UUUUUUA</option>
+<option value="AAAUUUU">AAAUUUU</option>
+<option value="UUUUUUU">UUUUUUU</option>
+<option value="UUUAAAC">UUUAAAC</option>
+<option value="AAAAAAU">AAAAAAU</option>
+<option value="AAAUUUC">AAAUUUC</option>
+<option value="AAAAAAC">AAAAAAC</option>
+<option value="GGGUUUA">GGGUUUA</option>
+
+<option value="UUUUUUC">UUUUUUC</option>
+<option value="GGGAAAA">GGGAAAA</option>
+<option value="CCCUUUA">CCCUUUA</option>
+<option value="CCCAAAC">CCCAAAC</option>
+<option value="CCCAAAA">CCCAAAA</option>
+<option value="GGGAAAU">GGGAAAU</option>
+<option value="GGGUUUU">GGGUUUU</option>
+<option value="GGGAAAC">GGGAAAC</option>
+<option value="CCCUUUC">CCCUUUC</option>
+
+<option value="CCCUUUU">CCCUUUU</option>
+<option value="GGGAAAG">GGGAAAG</option>
+<option value="GGGUUUC">GGGUUUC</option>
+</select><br>
+  <input type="submit" name=".submit" /> </p>
+<div><input type="hidden" name=".cgifields" value="cloud_filters"  /></div></form>   </tr>
+
+
+% }  ## End if the parameters are not defined, print the html form
+
+<%args>
+ $species => undef
+ $seqlength => undef
+ $slipsites => undef
+ $overlayquery => undef
+</%args>
