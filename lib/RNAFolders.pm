@@ -653,14 +653,19 @@ sub Hotknots {
     my $seqname = $inputfile;
     $seqname =~ s/\.fasta//g;
     my $tempfile = $inputfile;
-    $tempfile =~ s/\.fasta/\.seq/g;
+    if ($tempfile =~ m/\.fasta/) {
+      $tempfile =~ s/\.fasta/\.seq/g;
+    }
+    else {
+      $tempfile .= ".seq";
+    }
     open(IN, ">$tempfile");
     print IN $seq;
     close(IN);
-    my $command = qq($config->{workdir}/$config->{exe_hotknots} -I $seqname -noPS -b);
+    my $command = qq"$config->{workdir}/$config->{exe_hotknots} -I $seqname -noPS -b";
     print "HotKnots: infile: $inputfile accession: $accession start: $start
 command: $command\n" if (defined($config->{debug}));
-    open(HK, "$command |");
+    open(HK, "$command |") or print STDERR "problem with $command $!";
     while(my $line = <HK>) {
 	print $line;
 	$ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
