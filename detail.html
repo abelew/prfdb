@@ -1,0 +1,220 @@
+<style> .fixedfont { font-size : 14px } </style>
+<input type="hidden" name="species" value="<% $species %>">
+<input type="hidden" name="accession" value="<% accession %>">
+    <table style="table-layout: fixed" width="100%" align="center" border="0" cellpadding="2" cellspacing="1" align="center">
+    <colgroup>
+     <col width="20%"><col width="80%">
+   </colgroup>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_genename"><strong>Gene Name: </strong></a></div>
+	</td>
+	<td>
+        <% genename %>,
+% if ($short_accession) {
+	  <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=<% short_accession %>" rel="external" target="_blank">SGD link</a>
+% elsif ($genbank_accession) {
+          <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=<% genbank_accession %>&go=Go" rel="external" target="_blank">NCBI link</a>
+% }
+	</td>
+      </tr>
+    </table>
+
+     <table style="table-layout: fixed" width="100%" border="0" cellpadding="2" cellspacing="1" align="center">
+     <colgroup>
+       <col width="20%"><col width="35%">
+     </colgroup>
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_species"><strong>Species: </strong></a></div>
+	</td>
+	<td>
+	<i>
+	  <% $long_species %>
+	</i>
+	</td>
+	<td rowspan="12" valign="top">
+	  <div align="left"><a href="/help_detail.html#help_graph"><img src="<% $chartURL %>" border="2"></a></div>
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_accession"><strong>Accession: </strong></a></div>
+	</td>
+	<td>
+	  <a href="/browse.html?accession=<% $accession %>">[% accession %]</a>
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_position"><strong>Position: </strong></a></div>
+	</td>
+	<td>
+	  <% $slipstart %>
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_algorithm"><strong>Algorithm: </strong></a></div>
+	</td>
+	<td>
+	  <% $algorithm %>
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_barcode"><strong>Barcode: </strong></a></div>
+	</td>
+	<td>
+	  <% $barcode %>
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_seqlength"><strong>Sequence Length: </strong></a></div>
+	</td>
+	<td>
+	  <% $seqlength %>
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_slipsite"><strong>Slippery Site: </strong></a></div>
+	</td>
+	<td>
+	  <% $slipsite %>
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_gc"><strong>GC Content: </strong></a></div>
+	</td>
+	<td>
+	  <% $gc_content %>% and <% $gc_stems %>% in stems.
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_bp"><strong>Base Pairs: </strong></a></div>
+	</td>
+	<td>
+	  <% $pairs %>
+	</td>
+
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_mfe"><strong>MFE: </strong></a></div>
+	</td>
+	<td>
+	  <% $mfe %> kcal/mol
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_z"><strong>Z Score: </strong></a></div>
+	</td>
+	<td>
+% if ($boot_db) { 
+<% boot_db %>
+% else {
+<% zscore %>
+% }
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_rand_mfe"><strong>Randomized Mean MFE: </strong></a></div>
+	</td>
+	<td>
+	  <% randmean %> &plusmn; <% randse %> kcal/mol
+	</td>
+      </tr>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_ppcc"><strong>PPCC: </strong></a></div>
+	</td>
+	<td>
+	  <% ppcc %>
+	</td>
+        <td></td>
+      </tr>
+</table>
+
+    <table align="center" style="table-layout: fixed" width="100%" border="0" cellpadding="2" cellspacing="0" bgcolor="#E9EBF7">
+    <colgroup>
+     <col width="100%">
+    </colgroup>
+      <tr>
+	<td text-align="right"><span style="whitespace: nowrap">
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $minus_stop %></font></b>
+	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;<b>-1&nbsp;Frame&nbsp;stop&nbsp;codons</b>
+          </font></div>
+        </span>
+        </td>
+      </tr>
+
+      <tr>
+	<td text-align="right"><span style="whitespace: nowrap">
+	  <div class="fixedfont"><font face="Courier New, Courier, mono"><% $numbers %></font>
+	  <font face="Courier New, Courier, mono" size="-3"><a href="/search_local_blast.html?accession=<% $accession %>&start=<% $slipstart %>">&nbsp;Blast&nbsp;subsequence</a>
+          </font></div>
+         </span>
+        </td>
+      </tr>
+
+      <tr>
+	<td text-align="right"><span style="whitespace: nowrap">
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono"><u><% $slipsite %></u><% $pk_input %></font></b>
+	  <font face="Courier New, Courier, mono" size="-3">
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_subseq.html?mfeid=<% $mfe_id %>">Download&nbsp;subsequence</a>
+	  </font></div>
+         </span>
+        </td>
+      </tr>
+
+      <tr>
+	<td text-align="right"><span style="whitespace: nowrap">
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $brackets %></font></b>
+	  <font face="Courier New, Courier, mono" size="-3">
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_parens.html?mfeid=<% $mfe_id %>">Download&nbsp;brackets</a>
+	  </font></div>
+         </span>
+	</td>
+      </tr>
+
+      <tr>
+        <td text-align="right"><span style="whitespace: nowrap">
+    	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% parsed %></font></b>
+	  <font face="Courier New, Courier, mono" size="-3">
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_parsed.html?mfeid=<% $mfe_id %>">Download&nbsp;parsed</a>
+	  </font></div>
+         </span>
+	</td>
+      </tr>
+
+      <tr>
+        <td text-align="right"><span style="whitespace: nowrap">
+	  <embed id="feynman" src="<% $feynman_url %>" align="bottom" width="<% $feynman_width %>" height="<% $feynman_height %>" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
+	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;&nbsp;<a href="/download_bpseq.html?mfeid=<% $mfe_id %>">Download&nbsp;bpseq</a><br>&nbsp;&nbsp;&nbsp;<a href="/download_png.html?accession=<% $accession %>&mfeid=<% $mfe_id %>&species=<% $species %>">Download&nbsp;png</a><br>
+	  </font>
+        </span>
+        </td>
+      </tr>
+    </table>
+
+</p>
+<hr>

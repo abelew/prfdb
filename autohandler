@@ -1,3 +1,7 @@
+% my $path_name = $r->uri;
+% if ($path_name =~ /^\/download_/) {
+% $m->call_next;
+% } else {
 <HTML>
    <HEAD>
   <title>The Predicted Ribosomal Frameshift Signal Database, <% $document_title %></title>
@@ -55,6 +59,7 @@
 % $m->call_next;
  </body>
 </html>
+% }
 
 <%init>
   local $dbh = DBI->connect('DBI:mysql:prfdb_test:localhost', $config->{database_user}, $config->{database_pass}) or die "Cannot connect $DBI::errstr";
