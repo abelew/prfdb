@@ -1,0 +1,32 @@
+<%init>
+ $r->content_type('application/octet-stream');
+ my $filename = qq"$table_$species.csv";
+ $r->headers_out->add('Content-disposition' => ("attachment; filename=$filename"));
+ my $keys = $db->MySelect("DESCRIBE $table");
+ my $key_string = '';
+ foreach my $k (@{$keys}) {
+  $key_string .= "$k->[0], ";
+ }
+ $key_string =~ s/, $//g;
+ print "$key_string\n";
+ my $stmt = qq(SELECT * FROM $table);
+ unless ($table eq 'snp') {
+  if ($species ne 'all') {
+   $stmt .= " WHERE species = '$species'";
+  }
+ }
+ my $big_stuff = $db->MySelect($stmt);
+ my $stuff_string = '';
+ foreach my $stuff (@{$big_stuff}) {
+  foreach my $item (@{$stuff}) {
+   $stuff_string .= "$item, ";
+  }
+  $stuff_string =~ s/, $//g;
+  print "$stuff_string\n";
+  $stuff_string = '';
+ }
+</%init>
+<%args>
+ $species => 'homo_sapiens';
+ $table => 'mfe';
+</%args>

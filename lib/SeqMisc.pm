@@ -11,8 +11,12 @@ sub new {
     $arg{sequence} = [] if (!defined($arg{sequence}));
     srand();
     my $seqstring = '';
-    foreach my $char (@{$arg{sequence}}) {
-	$seqstring .= $char;
+    if (ref($arg{sequence}) eq 'ARRAY') {
+	foreach my $char (@{$arg{sequence}}) {
+	    $seqstring .= $char;
+	}
+    } else {
+	$seqstring = $arg{sequence};
     }
     my $me = bless {
 	nt => {0 => 'A', 1 => 'U', 2 => 'C', 3 => 'G',},
@@ -121,7 +125,7 @@ sub new {
     
     #  print "TEST: $me->{readop}\n";
     my @ntseq = @{$me->{sequence}};
-    
+    $me->{gc_content} = $me->Get_GC(\@ntseq);    
     #  print "TEST: $length\n";
     my (@aaseq, @codonseq, @dint12seq, @dint23seq, @dint31seq, @dint13seq);
     if ($me->{readop} eq 'orf') {
@@ -225,6 +229,35 @@ sub SameCodons {
 	splice( @codons, $pull, 1 );
     }
     return ( \@return );
+}
+
+sub Get_GC {
+    my $me = shift;
+    my $arr = shift;
+    my $par = shift;
+    my $gc;
+    if (!defined($par)) {
+	my $len = scalar(@{$arr});
+	my $num_strong = 0;
+	foreach my $char (@{$arr}) {
+	    $num_strong++ if ($char eq 'c' or $char eq 'g' or $char eq 'G' or $char eq 'C');
+	}
+        $len = 1 if (!defined($len) or ($len == 0));
+	$gc = $num_strong * 100.0 / $len;
+    }
+    else {
+	my $num_strong = 0;
+	my $total = 0;
+	for my $c (0 .. $#$par) {
+	    next if ($par->[$c] eq '.');
+	    $num_strong++ if ($arr->[$c] eq 'c' or $arr->[$c] eq 'g' or $arr->[$c] eq 'C' or $arr->[$c] eq 'G');
+	    $total++;
+	}
+	$gc = (($total == 0) ? 0 : $num_strong * 100.0 / $total);
+#	$gc = $num_strong * 100.0 / $total;
+    }
+    $gc = sprintf('%.1f', $gc);
+    return($gc);
 }
 
 sub Same31Random {

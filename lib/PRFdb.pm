@@ -479,6 +479,59 @@ sub AddOpen {
     $config->{open_files} = \@open_files;
 }
 
+sub Remove_Duplicates {
+    my $me = shift;
+    my $accession = shift;
+    my $info = $me->MySelect(qq/SELECT id,start,seqlength,algorithm FROM mfe WHERE accession = '$accession'/);
+    my @duplicate_ids;
+    my $dups = {};
+    my $count = 0;
+    foreach my $datum (@{$info}) {
+	my $id = $datum->[0];
+	my $start = $datum->[1];
+	my $seqlength = $datum->[2];
+	my $alg = $datum->[3];
+
+	if (!defined($dups->{$start})) {  ## Start
+	    $dups->{$start} = {};
+	}
+	
+	if (!defined($dups->{$start}->{$seqlength})) {
+	    $dups->{$start}->{$seqlength} = {};
+	    $dups->{$start}->{$seqlength}->{pknots} = [];
+	    $dups->{$start}->{$seqlength}->{nupack} = [];
+	    $dups->{$start}->{$seqlength}->{hotknots} = [];
+	}
+	my @array = @{$dups->{$start}->{$seqlength}->{$alg}};
+	push(@array, $id);
+	$dups->{$start}->{$seqlength}->{$alg} = \@array;
+    }
+    
+    foreach my $st (sort keys %{$dups}) {
+	foreach my $len (sort keys %{$dups->{$st}}) {
+	    my @nupack = @{$dups->{$st}->{$len}->{nupack}};
+	    my @pknots = @{$dups->{$st}->{$len}->{pknots}};
+	    my @hotknots = @{$dups->{$st}->{$len}->{hotknots}};
+	    shift @nupack;
+	    shift @pknots;
+	    shift @hotknots;
+	    foreach my $id (@nupack) {
+		$me->MyExecute("DELETE FROM mfe WHERE id = '$id'");
+		$count++;
+	    }
+	    foreach my $id (@pknots) {
+		$me->MyExecute("DELETE FROM mfe WHERE id = '$id'");
+		$count++;
+	    }
+	    foreach my $id (@hotknots) {
+		$me->MyExecute("DELETE FROM mfe WHERE id = '$id'");
+		$count++;
+	    }
+	}
+    }
+    return($count);
+}
+
 sub RemoveFile {
     my $file = shift;
     my @open_files = @{$config->{open_files}};
