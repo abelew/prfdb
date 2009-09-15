@@ -52,7 +52,7 @@
 % if ($r->uri eq "$path/detail.html") {
   </tr>
   <tr>
-  <td bgcolor="#366e6d" width="100%" colspan="8"><center><b><font color="white">Detail View</font></b></center></td>
+  <td bgcolor="#366e6d" width="100%" colspan="<% $columns %>"><center><b><font color="white">Detail View</font></b></center></td>
 % }
 </tr>
 </table>

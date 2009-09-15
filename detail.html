@@ -1,229 +1,12 @@
 <style> .fixedfont { font-size : 14px } </style>
-<input type="hidden" name="species" value="<% $species %>">
-<input type="hidden" name="accession" value="<% $accession %>">
-    <table style="table-layout: fixed" width="100%" align="center" border="0" cellpadding="2" cellspacing="1" align="center">
-    <colgroup>
-     <col width="20%"><col width="80%">
-   </colgroup>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_genename"><strong>Gene Name: </strong></a></div>
-	</td>
-	<td>
-        <% $genename %>,
-% if ($short_accession) {
-	  <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=<% $short_accession %>" rel="external" target="_blank">SGD link</a>
-% } elsif ($genbank_accession) {
-          <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=<% $genbank_accession %>&go=Go" rel="external" target="_blank">NCBI link</a>
-% }
-	</td>
-      </tr>
-    </table>
-
-     <table style="table-layout: fixed" width="100%" border="0" cellpadding="2" cellspacing="1" align="center">
-     <colgroup>
-       <col width="20%"><col width="35%">
-     </colgroup>
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_species"><strong>Species: </strong></a></div>
-	</td>
-	<td>
-	<i>
-	  <% $long_species %>
-	</i>
-	</td>
-	<td rowspan="12" valign="top">
-	  <div align="left"><a href="/help_detail.html#help_graph"><img src="<% $charturl %>" border="2"></a></div>
-	</td>
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_accession"><strong>Accession: </strong></a></div>
-	</td>
-	<td>
-	  <a href="/browse.html?accession=<% $accession %>"><% $accession %></a>
-	</td>
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_position"><strong>Position: </strong></a></div>
-	</td>
-	<td>
-	  <% $slipstart %>
-	</td>
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_algorithm"><strong>Algorithm: </strong></a></div>
-	</td>
-	<td>
-	  <% $algorithm %>
-	</td>
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_barcode"><strong>Barcode: </strong></a></div>
-	</td>
-	<td>
-	  <% $barcode %>
-	</td>
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_seqlength"><strong>Sequence Length: </strong></a></div>
-	</td>
-	<td>
-	  <% $seqlength %>
-	</td>
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_slipsite"><strong>Slippery Site: </strong></a></div>
-	</td>
-	<td>
-	  <% $slipsite %>
-	</td>
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_gc"><strong>GC Content: </strong></a></div>
-	</td>
-	<td>
-	  <% $gc_content %>% and <% $gc_stems %>% in stems.
-	</td>
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_bp"><strong>Base Pairs: </strong></a></div>
-	</td>
-	<td>
-	  <% $pairs %>
-	</td>
-
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_mfe"><strong>MFE: </strong></a></div>
-	</td>
-	<td>
-	  <% $mfe %> kcal/mol
-	</td>
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_z"><strong>Z Score: </strong></a></div>
-	</td>
-	<td>
-% if ($boot_db) { 
-<% $boot_db %>
-% } else {
-<% $zscore %>
-% }
-	</td>
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_rand_mfe"><strong>Randomized Mean MFE: </strong></a></div>
-	</td>
-	<td>
-	  <% $randmean %> &plusmn; <% $randse %> kcal/mol
-	</td>
-      </tr>
-
-      <tr valign="top" bgcolor="#E9EBF7">
-	<td>
-	  <div align="right"><a href="/help_detail.html#help_ppcc"><strong>PPCC: </strong></a></div>
-	</td>
-	<td>
-	  <% $ppcc %>
-	</td>
-        <td></td>
-      </tr>
-</table>
-
-    <table align="center" style="table-layout: fixed" width="100%" border="0" cellpadding="2" cellspacing="0" bgcolor="#E9EBF7">
-    <colgroup>
-     <col width="100%">
-    </colgroup>
-      <tr>
-	<td text-align="right"><span style="whitespace: nowrap">
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $minus_stop %></font></b>
-	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;<b>-1&nbsp;Frame&nbsp;stop&nbsp;codons</b>
-          </font></div>
-        </span>
-        </td>
-      </tr>
-
-      <tr>
-	<td text-align="right"><span style="whitespace: nowrap">
-	  <div class="fixedfont"><font face="Courier New, Courier, mono"><% $numbers %></font>
-	  <font face="Courier New, Courier, mono" size="-3"><a href="/search_local_blast.html?accession=<% $accession %>&start=<% $slipstart %>">&nbsp;Blast&nbsp;subsequence</a>
-          </font></div>
-         </span>
-        </td>
-      </tr>
-
-      <tr>
-	<td text-align="right"><span style="whitespace: nowrap">
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono"><u><% $slipsite %></u><% $pk_input %></font></b>
-	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_subseq.html?mfeid=<% $mfe_id %>">Download&nbsp;subsequence</a>
-	  </font></div>
-         </span>
-        </td>
-      </tr>
-
-      <tr>
-	<td text-align="right"><span style="whitespace: nowrap">
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $brackets %></font></b>
-	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_parens.html?mfeid=<% $mfe_id %>">Download&nbsp;brackets</a>
-	  </font></div>
-         </span>
-	</td>
-      </tr>
-
-      <tr>        <td text-align="right"><span style="whitespace: nowrap">
-    	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $parsed %></font></b>
-	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_parsed.html?mfeid=<% $mfe_id %>">Download&nbsp;parsed</a>
-	  </font></div>
-         </span>
-	</td>
-      </tr>
-
-      <tr>
-        <td text-align="right"><span style="whitespace: nowrap">
-	  <embed id="feynman" src="<% $feynman_url %>" align="bottom" width="<% $feynman_width %>" height="<% $feynman_height %>" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
-	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;&nbsp;<a href="/download_bpseq.html?mfeid=<% $mfe_id %>">Download&nbsp;bpseq</a><br>&nbsp;&nbsp;&nbsp;<a href="/download_png.html?accession=<% $accession %>&mfeid=<% $mfe_id %>&species=<% $species %>">Download&nbsp;png</a><br>
-	  </font>
-        </span>
-        </td>
-      </tr>
-    </table>
-
-</p>
-<hr>
+<input type="hidden" name="species" value="<% $information->{species} %>">
+<input type="hidden" name="accession" value="<% $information->{accession} %>">
 
 <%init>
-  my ($short_accession, $genbank_accession, $charturl, $algorithm, $barcode, $seqlength, $slipsite, $gc_content, $gc_stems, $pairs, $mfe, $boot_db, $minus_stop, $numbers, $pk_input, $mfe_id, $bracket, $feynman_url, $feynman_width, $feynman_height, $brackets, $zscore, $randmean, $randse, $ppcc, $parsed, $species,);
-my $detail_stmt;
-  my ($ppcc_values,$filename,$chart,$randMean,$randSE,$mfe_mean,$mfe_sd,$mfe_se,$minus_string, $color_minus);
-my $info;
+  my $information;
+$information->{slipstart} = $slipstart;
 $db->Remove_Duplicates($accession);
+my ($detail_stmt, $info);
 if (!defined($slipstart)) {
   $detail_stmt = qq"SELECT * FROM mfe WHERE accession = ? ORDER BY start, seqlength DESC, algorithm DESC";
   $info = $db->MySelect({statement => $detail_stmt, vars => [$accession,]});
@@ -231,25 +14,24 @@ if (!defined($slipstart)) {
   $detail_stmt = qq"SELECT * FROM mfe WHERE accession = ? AND start = ? ORDER BY seqlength DESC, algorithm DESC";
   $info = $db->MySelect({statement => $detail_stmt, vars => [$accession,$slipstart]});
 }
-my $genome_id = $info->[0]->[1];
+$information->{genome_id} = $info->[0]->[1];
 my $genome_stmt = qq"SELECT genename,species FROM genome where id = ?";
-my $genome_info = $db->MySelect({statement =>$genome_stmt,vars => [$genome_id]});
-my $genename = $genome_info->[0]->[0];
-$species = $genome_info->[0]->[1];
-my $long_species = $species;
+my $genome_info = $db->MySelect({statement => $genome_stmt,vars => [$information->{genome_id}]});
+$information->{genename} = $genome_info->[0]->[0];
+$information->{species} = $genome_info->[0]->[1];
+my $long_species = $information->{species};
 $long_species =~ s/_/ /g;
-$long_species = ucfirst($long_species);
-
+$information->{long_species} = ucfirst($long_species);
+my $species = $information->{species};
 foreach my $structure (@{$info}) {
   my $mfe_id = $structure->[0];
-  print "TESTME: $mfe_id<br>\n";
-  $mfe = $structure->[12];
+  $information->{mfe} = $structure->[12];
   my $boot_table = "boot_$species";
   my $boot_stmt = qq"SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM $boot_table WHERE mfe_id = ?";
   my $boot = $db->MySelect({statement => $boot_stmt, type => 'row', vars=>[$mfe_id],});
   if (!defined($boot) and $config->{do_boot} == 2) {
     ## Add it to the webqueue
-    $db->Set_Queue($genome_id, 'webqueue');
+    $db->Set_Queue($information->{genome_id}, 'webqueue');
   } elsif (!defined($boot) and $config->{do_boot} == 1) {
 #    $accession = $structure->[2];
     $m->comp('generate_boot.html');  ## , width => 11, height => 1,
@@ -296,84 +78,92 @@ $structure->[8]
     my $mfe_values = $boot->[0];
     $mfe_values =~ s/^\s+//g;
     my @mfe_values_array = split(/\s+/, $mfe_values);
-    $chart = new PRFGraph({config => $config, real_mfe => $mfe,
+    my $chart = new PRFGraph({config => $config, real_mfe => $information->{mfe},
 			   list_data => \@mfe_values_array, accession  => $acc_slip, mfe_id => $mfe_id,});
     my $ppcc_values = $chart->Get_PPCC();
-    $filename = $chart->Picture_Filename({type => 'distribution',});
+    my $filename = $chart->Picture_Filename({type => 'distribution',});
     my $pre_charturl = $chart->Picture_Filename({type => 'distribution', url => 'url',});
-    $charturl = $pre_charturl;
+    my $charturl = $pre_charturl;
     if (!-r $filename) {
       $chart = $chart->Make_Distribution();
     }
-    $mfe_mean = $boot->[1];
-    $mfe_sd = $boot->[2];
-    $mfe_se = $boot->[3];
-    $boot_db = $boot->[4];
-    if ($mfe_sd == 0) {
-      $zscore = 0;
+    $information->{mfe_mean} = $boot->[1];
+    $information->{mfe_sd} = $boot->[2];
+    $information->{mfe_se} = $boot->[3];
+    $information->{boot_db} = $boot->[4];
+    if ($information->{mfe_sd} == 0) {
+      $information->{zscore} = 0;
     } else {
-      $mfe = 0 if (!defined($mfe));
-      $mfe_mean = 0 if (!defined($mfe_mean));
-      $mfe_sd = 1 if (!defined($mfe_sd));
-      $zscore = sprintf("%.2f", ($mfe - $mfe_mean) / $mfe_sd);
+      $information->{mfe} = 0 if (!defined($information->{mfe}));
+      $information->{mfe_mean} = 0 if (!defined($information->{mfe_mean}));
+      $information->{mfe_sd} = 1 if (!defined($information->{mfe_sd}));
+      $information->{zscore} = sprintf("%.2f", ($information->{mfe} - $information->{mfe_mean}) / $information->{mfe_sd});
     }
-    $randmean = sprintf("%.1f", $mfe_mean);
-    $randse = sprintf("%.1f", $mfe_se);
-    $ppcc = sprintf("%.4f", $ppcc_values);
+    $information->{randmean} = sprintf("%.1f", $information->{mfe_mean});
+    $information->{randse} = sprintf("%.1f", $information->{mfe_se});
+    $information->{ppcc} = sprintf("%.4f", $information->{ppcc_values});
   } else {  ##Boot is not defined!
-    $chart = "undef";
-    $charturl = qq"$config->{base}/html/no_data.gif";
-    $mfe_mean = "undef";
-    $mfe_sd = "undef";
-    $mfe_se = "undef";
-    $zscore = "UNDEF";
-    $randmean = "UNDEF";
-    $randse = "UNDEF";
-    $ppcc = "UNDEF";
+    $information->{chart} = "undef";
+    $information->{charturl} = qq"$config->{base}/html/no_data.gif";
+    $information->{mfe_mean} = "undef";
+    $information->{mfe_sd} = "undef";
+    $information->{mfe_se} = "undef";
+    $information->{zscore} = "UNDEF";
+    $information->{randmean} = "UNDEF";
+    $information->{randse} = "UNDEF";
+    $information->{ppcc} = "UNDEF";
   }
-  $algorithm = $structure->[4];
-  $slipstart = $structure->[5];
-  $slipsite = $structure->[6];
-  $seqlength = $structure->[7];
+  $information->{algorithm} = $structure->[4];
+  $information->{slipstart} = $structure->[5];
+  $information->{slipsite} = $structure->[6];
+  $information->{seqlength} = $structure->[7];
   my $pk_input = $structure->[8];
   $pk_input =~ tr/atgcu/ATGCU/;
-  my $pk_output = $structure->[9];
+  $information->{pk_input} = $pk_input;
+  $information->{pk_output} = $structure->[9];
   my $parsed = $structure->[10];
   $parsed =~ s/\s+//g;
   my $brackets = $structure->[11];
-  $pairs = $structure->[13];
+  my $pairs = $structure->[13];
   my $knotp = $structure->[14];
-  $barcode = $structure->[15];
+  my $barcode = $structure->[15];
   my @in = split(//, $pk_input);
   my @par = split(//, $parsed);
   my $misc = new SeqMisc(sequence=>\@in);
-  $gc_content = $misc->{gc_content};
-  $gc_stems = $misc->Get_GC(\@in, \@par);
+  $information->{gc_content} = $misc->{gc_content};
+  $information->{gc_stems} = $misc->Get_GC(\@in, \@par);
   
-  my $delta = $seqlength - length($parsed);
-  $parsed .= '.' x $delta;
-  $brackets .= '.' x $delta;
+  my $delta = $information->{seqlength} - length($parsed);
+  $information->{parsed} .= '.' x $delta;
+  $information->{brackets} .= '.' x $delta;
   
   my $feynman = $feynman_pic;
   use HTMLMisc;
-  $minus_string = HTMLMisc::Make_Minus($pk_input);
-  $color_minus = HTMLMisc::Color_Stems($minus_string, $parsed, $config->{graph_stem_colors});
-  $minus_stop = HTMLMisc::Color_Stems($color_minus, $parsed, $config->{graph_stem_colors});
-  $numbers = HTMLMisc::Make_Nums($pk_input);
+  my $minus_string = HTMLMisc::Make_Minus($pk_input);
+  my $color_minus = HTMLMisc::Color_Stems($minus_string, $parsed, $config->{graph_stem_colors});
+  my $minus_stop = HTMLMisc::Color_Stems($color_minus, $parsed, $config->{graph_stem_colors});
+  my $numbers = HTMLMisc::Make_Nums($pk_input);
   $pk_input = HTMLMisc::Color_Stems($pk_input, $parsed, $config->{graph_stem_colors});
   $brackets = HTMLMisc::Color_Stems($brackets, $parsed, $config->{graph_stem_colors});
   $parsed = HTMLMisc::Color_Stems($parsed, $parsed, $config->{graph_stem_colors});
-  
-  my $feynman_height = $feynman_dimensions->{height};
-  my $feynman_width = $feynman_dimensions->{width};
+  $information->{minus_string} = $minus_string;
+  $information->{color_minus} = $color_minus;
+  $information->{minus_stop} = $minus_stop;
+  $information->{numbers} = $numbers;
+  $information->{pk_input} = $pk_input;
+  $information->{brackets} = $brackets;
+  $information->{parsed} = $parsed;
+  $information->{feynman_height} = $feynman_dimensions->{height};
+  $information->{feynman_width} = $feynman_dimensions->{width};
  if ($accession =~ /^SGDID/) {
-   $short_accession = $accession;
-   $short_accession =~ s/^SGDID\://g;
+   $information->{short_accession} = $accession;
+   $information->{short_accession} =~ s/^SGDID\://g;
  } elsif ($accession =~ /^BC/) {
-   $short_accession = undef;
-   $genbank_accession = $accession;
+   $information->{short_accession} = undef;
+   $information->{genbank_accession} = $accession;
  }
-#  $m->comp('detail.html')	
+  $information->{accession} = $accession;
+  $m->comp('single_detail.html', information=>$information,);
 }    ## End foreach structure in the database
 my $num_algos = 0;
 $num_algos++ if ($config->{do_pknots} == 1);
@@ -381,7 +171,7 @@ $num_algos++ if ($config->{do_nupack} == 1);
 $num_algos++ if ($config->{do_hotknots} == 1);
 my $num_expected_mfes = scalar(@{$config->{seqlength}}) * $num_algos;
 my $num_have = $db->MySelect({statement => qq/SELECT count(id) FROM mfe WHERE accession = '$accession' AND start = '$slipstart'/, type => 'single'});
-$db->Add_Webqueue($genome_id) if ($num_have < $num_expected_mfes);
+$db->Add_Webqueue($information->{genome_id}) if ($num_have < $num_expected_mfes);
 </%init>
 
 <%args>
