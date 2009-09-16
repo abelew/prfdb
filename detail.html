@@ -64,9 +64,8 @@ $structure->[8]
   }
   my $acc_slip = qq"$accession-$slipstart";
   my $feynman_pic = new PRFGraph({config=> $config, mfe_id => $mfe_id, accession => $accession});
-  my $pre_feynman_url = $feynman_pic->Picture_Filename({type=> 'feynman', url => 'url',});
-  my $feynman_url = $config->{base} . '/' . $pre_feynman_url;
-  my $feynman_output_filename = $feynman_pic->Picture_Filename( {type => 'feynman', });
+  $information->{feynman_url} = $feynman_pic->Picture_Filename({type=> 'feynman', url => 'url',});
+  my $feynman_output_filename = $feynman_pic->Picture_Filename({type => 'feynman', });
   my $feynman_dimensions = {};
   if (!-r $feynman_output_filename) {
     $feynman_dimensions = $feynman_pic->Make_Feynman();
@@ -83,7 +82,7 @@ $structure->[8]
     my $ppcc_values = $chart->Get_PPCC();
     my $filename = $chart->Picture_Filename({type => 'distribution',});
     my $pre_charturl = $chart->Picture_Filename({type => 'distribution', url => 'url',});
-    my $charturl = $pre_charturl;
+    $information->{charturl} = $pre_charturl;
     if (!-r $filename) {
       $chart = $chart->Make_Distribution();
     }
@@ -101,7 +100,7 @@ $structure->[8]
     }
     $information->{randmean} = sprintf("%.1f", $information->{mfe_mean});
     $information->{randse} = sprintf("%.1f", $information->{mfe_se});
-    $information->{ppcc} = sprintf("%.4f", $information->{ppcc_values});
+    $information->{ppcc} = sprintf("%.4f", $ppcc_values);
   } else {  ##Boot is not defined!
     $information->{chart} = "undef";
     $information->{charturl} = qq"$config->{base}/html/no_data.gif";
@@ -124,9 +123,9 @@ $structure->[8]
   my $parsed = $structure->[10];
   $parsed =~ s/\s+//g;
   my $brackets = $structure->[11];
-  my $pairs = $structure->[13];
+  $information->{pairs} = $structure->[13];
   my $knotp = $structure->[14];
-  my $barcode = $structure->[15];
+  $information->{barcode} = $structure->[15];
   my @in = split(//, $pk_input);
   my @par = split(//, $parsed);
   my $misc = new SeqMisc(sequence=>\@in);
@@ -141,6 +140,7 @@ $structure->[8]
   use HTMLMisc;
   my $minus_string = HTMLMisc::Make_Minus($pk_input);
   my $color_minus = HTMLMisc::Color_Stems($minus_string, $parsed, $config->{graph_stem_colors});
+  $information->{color_minus} = $color_minus;
   my $minus_stop = HTMLMisc::Color_Stems($color_minus, $parsed, $config->{graph_stem_colors});
   my $numbers = HTMLMisc::Make_Nums($pk_input);
   $pk_input = HTMLMisc::Color_Stems($pk_input, $parsed, $config->{graph_stem_colors});
