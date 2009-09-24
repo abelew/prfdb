@@ -1,11 +1,11 @@
 #!/usr/bin/perl -w
 use strict;
+use vars qw($db $config);
 use DBI;
 use lib "$ENV{HOME}/usr/lib/perl5";
 use lib 'lib';
 use PRFConfig;
-our $config = $PRFConfig::config;
-use PRFdb;
+use PRFdb qw / AddOpen RemoveFile /;
 use RNAMotif_Search;
 use RNAFolders;
 use Bootlace;
@@ -18,8 +18,10 @@ $SIG{SEGV} = 'CLEANUP';
 $SIG{PIPE} = 'CLEANUP';
 $SIG{ABRT} = 'CLEANUP';
 $SIG{QUIT} = 'CLEANUP';
+
+$config = new PRFConfig(config_file => '/usr/local/prfdb/prfdb_test/prfdb.conf');
+$db = new PRFdb(config => $config);
 setpriority(0,0,$config->{niceness});
-our $db = new PRFdb(config => $config);
 $ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}";
 our $state = {time_to_die => undef,
 	      queue_table => undef,
@@ -50,9 +52,6 @@ if ($config->{checks}) {
 }
 ## Some Arguments should be checked before others...
 ## These first arguments are not exclusive and so are separate ifs
-if (defined($config->{help})) {
-    Print_Help();
-}
 if (defined($config->{index_stats})) {
     Make_Index_Stats();
     exit(0);
@@ -184,36 +183,6 @@ until (defined($state->{time_to_die})) {
     } ## no longer have $state->{genome_id}
 } ### End waiting for time to die
 
-sub Print_Help {
-    print "The prf_daemon script takes many possible options including:
-accession      fold a particular accession
-blast          provide it an accession and it will blast it to the rest of the prfdb
-makeblast      create a local blast database from all the sequences in the genome table
-optimize       perform a mysql specific optimization of the tables in the db
-species        specify a species to work with
-copyfrom       copy the genome table from one database to another
-import         provide a single accession to import into the prfdb
-input_file     provide the filename containing one accession per line
-input_fasta    provide the filename containing fasta input (keep in mind the NCBI format)
-fasta_style    see input_fasta -- currently can handle sgd and ncbi styles
-fillqueue      fill up the queue with everything from the genome table
-resetqueue     set all entries in the queue to unexamined
-startpos       explicitly set the start position for a folding -- for use with --accession
-startmotif     start at a particular subsequence (I don't think this is completed)
-length         set the window size
-landscape_length set the landscape window size
-nupack         explicitly turn on/off nupack
-pknots         explicitly turn on/off pknots
-hotknots       explicitly turn on/off hotknots
-boot           turn on/off randomization
-utr            turn on/off the folding in the 3' utr
-checks         perform a series of checks to see if the database is ready for use
-make_jobs      create job files for PBS
-
-";
-    exit(0);
-}
-
 sub Read_Accessions {
     my $accession_file = shift;
     my $startpos = shift;
@@ -266,7 +235,7 @@ sub PRF_Gatherer {
     $state->{genome_information} = $db->Get_ORF($state->{accession});
     my $sequence = $state->{genome_information}->{sequence};
     my $orf_start = $state->{genome_information}->{orf_start};
-    my $motifs = new RNAMotif_Search();
+    my $motifs = new RNAMotif_Search(config => $config);
     my $rnamotif_information;
     my $sp = 'UNDEF';
     my $ac = 'UNDEF';
@@ -344,6 +313,7 @@ sub PRF_Gatherer {
 				       genome_id => $state->{genome_id},
 				       species => $state->{species},
 				       accession => $state->{accession},
+				       config => $config,
 				       start => $slipsite_start,);
       
       if ($config->{do_nupack}) { ### Do we run a nupack fold?
@@ -395,6 +365,7 @@ sub PRF_Gatherer {
 				  iterations => $config->{boot_iterations},
 				  boot_mfe_algorithms => $config->{boot_mfe_algorithms},
 				  randomizers => $config->{boot_randomizers},
+				  config => $config,
 				  );
           my @algos = keys(%{$config->{boot_mfe_algorithms}});
           my $boot_folds;
@@ -450,7 +421,7 @@ sub Landscape_Gatherer {
 	$state->{fasta_file} = $db->Sequence_to_Fasta($individual_sequence);
 	if (!defined($state->{accession})) {die("The accession is no longer defined. This cannot be allowed.")};
 	my $landscape_table = qq/landscape_$state->{species}/;
-	my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id},
+	my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
 					 species => $state->{species}, accession => $state->{accession},
 					 start => $start_point,);
 	my $nupack_foldedp = $db->Get_Num_RNAfolds('nupack', $state->{genome_id}, $start_point,
@@ -490,18 +461,18 @@ sub Landscape_Gatherer {
 
 ## Start Check_Environment
 sub Check_Environment {
-    die("No rnamotif template file set.") unless (defined($config->{rnamotif_template}));
-    die("No rnamotif descriptor file set.") unless (defined($config->{rnamotif_descriptor}));
+    die("No rnamotif template file set.") unless (defined($config->{exe_rnamotif_template}));
+    die("No rnamotif descriptor file set.") unless (defined($config->{exe_rnamotif_descriptor}));
     die("Workdir must be executable: $config->{workdir} $!") unless (-x $config->{workdir});
     die("Workdir must be writable: $!") unless (-w $config->{workdir});
-    die("Database not defined") if ($config->{db} eq 'prfconfigdefault_db');
-    die("Database host not defined") if ($config->{host} eq 'prfconfigdefault_host');
-    die("Database user not defined") if ($config->{user} eq 'prfconfigdefault_user');
-    die("Database pass not defined") if ($config->{pass} eq 'prfconfigdefault_pass');
+    die("Database not defined") if ($config->{database_name} eq 'prfconfigdefault_db');
+    die("Database host not defined") if ($config->{database_host} eq 'prfconfigdefault_host');
+    die("Database user not defined") if ($config->{database_user} eq 'prfconfigdefault_user');
+    die("Database pass not defined") if ($config->{database_pass} eq 'prfconfigdefault_pass');
     
-    unless (-r $config->{rnamotif_descriptor}) {
+    unless (-r $config->{exe_rnamotif_descriptor}) {
 	RNAMotif_Search::Descriptor();
-	  unless (-r $config->{rnamotif_descriptor}) {
+	  unless (-r $config->{exe_rnamotif_descriptor}) {
 	      die("Unable to read the rnamotif descriptor file: $!");
 	  }
       }
@@ -545,13 +516,13 @@ sub Print_Config {
 	print "I AM NOT using a hacked version of nupack!\n";
     }
     if ($config->{do_nupack}) {
-	print "I AM doing a nupack fold using the program: $config->{nupack}\n";
+	print "I AM doing a nupack fold using the program: $config->{exe_nupack}\n";
     }
     else {
 	print "I AM NOT doing a nupack fold\n"; 
     }
     if ($config->{do_pknots}) {
-	print "I AM doing a pknots fold using the program: $config->{pknots}\n";
+	print "I AM doing a pknots fold using the program: $config->{exe_pknots}\n";
     }
     else {
 	print "I AM NOT doing a pknots fold\n";
@@ -560,7 +531,7 @@ sub Print_Config {
 	print "PLEASE CHECK THE prfdb.conf to see if you are using NOPAIRS\n";
 	my $randomizers = $config->{boot_randomizers};
 	my $mfes = $config->{boot_mfe_algorithms};
-	my $nu_boot = $config->{nupack_boot};
+	my $nu_boot = $config->{exe_nupack_boot};
 	print "I AM doing a boot using the following randomizers\n";
 	foreach my $k (keys %{$randomizers}) {
 	    print "$k\n";
@@ -584,7 +555,7 @@ $nu_boot and running: $config->{boot_iterations} times\n";
 	my @fun = @{$config->{seqlength}};
     print "The default structure length in this run is: @fun\n";
     }
-    print "I am using the database: $config->{db} and user: $config->{user}\n\n\n";
+    print "I am using the database: $config->{database_name} and user: $config->{database_user}\n\n\n";
     sleep(5);
 }
 ## End Print_Config
@@ -619,7 +590,7 @@ sub Check_Boot_Connectivity {
 		if (!defined($state->{accession})) {
 		    die("The accession is no longer defined. This cannot be allowed.")
 		    };
-		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id},
+		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
 						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
 		$new_mfe_id = Check_Nupack($fold_search, $slipsite_start);
@@ -629,7 +600,7 @@ sub Check_Boot_Connectivity {
 		if (!defined($state->{accession})) {
 		    die("The accession is no longer defined. This cannot be allowed.")
 		    };
-		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id},
+		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
 						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
 		$new_mfe_id = Check_Pknots($fold_search, $slipsite_start);
@@ -867,18 +838,18 @@ sub Generate_Stats {
 
 sub Optimize {
     my $table = shift;
-    my $stmt = qq(OPTiMIZE TABLE $table);
+    my $stmt = qq(OPTIMIZE TABLE $table);
     $db->MyExecute({statement => $stmt});
 }
 
 sub CLEANUP {
     $db->Disconnect();
-    PRFdb::RemoveFile('all');
+    PRFdb::RemoveFile('all') if (defined($config->{remove_end}));
     print "\n\nCaught Fatal signal.\n\n";
     exit(0);
 }
 
 END {
     $db->Disconnect();
-    PRFdb::RemoveFile('all');
+    PRFdb::RemoveFile('all') if (defined($config->{remove_end}));
 }

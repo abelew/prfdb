@@ -13,10 +13,15 @@ sub new {
     my $seqstring = '';
     if (ref($arg{sequence}) eq 'ARRAY') {
 	foreach my $char (@{$arg{sequence}}) {
+	    $char = 'U' if ($char eq 'T');
+	    $char = 'u' if ($char eq 't');
 	    $seqstring .= $char;
 	}
     } else {
 	$seqstring = $arg{sequence};
+	$seqstring =~ tr/Tt/Uu/;
+	my @seq = split(//, $seqstring);
+	$arg{sequence} = \@seq;
     }
     my $me = bless {
 	nt => {0 => 'A', 1 => 'U', 2 => 'C', 3 => 'G',},

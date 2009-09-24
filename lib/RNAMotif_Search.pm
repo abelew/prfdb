@@ -4,7 +4,7 @@ use lib '.';
 use PRFdb;
 use Template;
 use PRFConfig qw / PRF_Error PRF_Out /;
-my $config = $PRFConfig::config;
+my $config;
 my %slippery_sites = (aaaaaaa => 'A AAA AAA',
 		      aaaaaac => 'A AAA AAC',
 		      aaaaaat => 'A AAA AAT',
@@ -34,7 +34,10 @@ my %slippery_sites = (aaaaaaa => 'A AAA AAA',
 
 sub new {
     my ($class, %arg) = @_;
-    my $me = bless {}, $class;
+    my $me = bless {
+	config => $arg{config},
+    }, $class;
+    $config = $me->{config};
     $me->{stem_length} = 6;
     $me->{max_dist_from_slip} = 15;
     return ($me);
