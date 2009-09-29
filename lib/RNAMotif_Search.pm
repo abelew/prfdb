@@ -50,7 +50,7 @@ sub Search {
     my $sequence = shift;
     my $orf_start = shift;
     my $seqlength = shift;
-    my $db = new PRFdb(config => $config);
+    $sequence = uc($sequence);
     my %return = ();
     my @information = split(//, $sequence);
     my $end_trim = 70;
@@ -58,7 +58,7 @@ sub Search {
 	if ((($c + 1) % 3) == 0) {    ## Check for correct reading frame
 	    my $next_seven = qq($information[$c] ${information[$c+1]}${information[$c+2]}${information[$c+3]} ${information[$c+4]}${information[$c+5]}${information[$c+6]}) if (defined($information[$c+6]));
 	    ## Check for a slippery site from this position
-	    my $slipsite = Slip_p($next_seven) if ( defined($next_seven) );
+	    my $slipsite = Slip_p($next_seven) if (defined($next_seven));
 	    if ($slipsite) {
 		## Then check that a slippery site is in the correct frame
 		my $start = $c;
@@ -83,7 +83,7 @@ sub Search {
 		my $start_in_full_sequence = $start + $orf_start + 1;
 		my $end_in_full_sequence = $end + $orf_start + 1;
 		## These + 1's are required because thus far the start site has been incorrectly calculated.
-		my $command = qq/$config->{rnamotif} -context -descr $config->{rnamotif_descriptor} $filename 2>rnamotif.err | $config->{rmprune}/;
+		my $command = qq"$config->{exe_rnamotif} -context -descr $config->{exe_rnamotif_descriptor} $filename 2>rnamotif.err | $config->{exe_rmprune}";
 		print "RNAMotif, running $command\n" if (defined($config->{debug}));
 		open(RNAMOT, "$command |") or PRF_Error("RNAMotif_Search:: Search, Unable to run rnamotif: $!", 'rnamotif', '');
 		## OPEN RNAMOT in Search
@@ -144,11 +144,11 @@ sub Descriptor {
     my $template_config = $config;
     $template_config->{PRE_PROCESS} = undef;
     my $template = new Template($template_config);
-    my $rnamotif_template_file = qq\$config->{base}/$config->{INCLUDE_PATH}$config->{rnamotif_template}\;
+    my $rnamotif_template_file = qq\$config->{base}/$config->{INCLUDE_PATH}$config->{exe_rnamotif_template}\;
     if (!-r $rnamotif_template_file) {
 	die("Need an rnamotif template");
     }
-    unless (-r $config->{rnamotif_descriptor}) {
+    unless (-r $config->{exe_rnamotif_descriptor}) {
 	my $vars = {
 	    slip_site_1 => $config->{slip_site_1},
 	    slip_site_2 => $config->{slip_site_2},
@@ -168,8 +168,8 @@ sub Descriptor {
 	    stem2_spacer_min => $config->{stem2_spacer_min},
 	    stem2_spacer_max => $config->{stem2_spacer_max},
 	};
-	$template->process($config->{rnamotif_template}, $vars,
-			   $config->{rnamotif_descriptor}) or die $template->error();
+	$template->process($config->{exe_rnamotif_template}, $vars,
+			   $config->{exe_rnamotif_descriptor}) or die $template->error();
     }    ## Unless the rnamotif descriptor file exists.
 }
 

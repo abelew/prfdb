@@ -213,17 +213,13 @@ sub new {
 
     foreach my $opt (keys %conf) {
 	if (defined($conf{$opt})) {
-	    print "Setting $opt to $conf{$opt}
-What about $me->{sql_id}\n";
 	    $me->{$opt} = $conf{$opt};
 	}
     }
     undef(%conf);
-
     if (defined($me->{help})) {
 	Help();
     }
-
     if (defined($me->{blast_db})) {
 	$ENV{BLASTDB} = qq"$me->{blast_db}/blast";
     }

@@ -36,7 +36,7 @@ our $state = {time_to_die => undef,
 	      seqlength => undef,
 	      sequence => undef,
 	      fasta_file => undef,
-	      genome_information => undef,
+      genome_information => undef,
 	      rnamotif_information => undef,
 	      nupack_information => undef,
 	      pknots_information => undef,
@@ -214,7 +214,6 @@ sub Gather {
     if ($config->{do_landscape}) {
 	Landscape_Gatherer($landscape_state, $message);
     }
-
     foreach my $len (@{$config->{seqlength}}) {
         $state->{seqlength} = $len;
         PRF_Gatherer($state, $len, $startpos);
@@ -242,7 +241,7 @@ sub PRF_Gatherer {
     $sp = $state->{species} if (defined($state->{species}));
     $ac = $state->{accession} if (defined($state->{accession}));
     my $current = "sp:$sp acc:$ac st:$orf_start l:$len";
-    print "About to run $current\n" if (defined($config->{debug}));
+    print "PRF_Gather: about to run $current\n" if (defined($config->{debug}));
     if (defined($startpos)) {
 #      $startpos = $startpos - $orf_start;
 	my $inf = PRFdb::MakeFasta($state->{genome_information}->{sequence},
@@ -566,7 +565,8 @@ sub Check_Boot_Connectivity {
     my $slipsite_start = shift;
     my $genome_id = $state->{genome_id};
     my $species = $state->{species};
-    my $boot_table = "boot_$species";
+    
+    my $boot_table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
     my $check_statement = qq/SELECT mfe_id, mfe_method, id, genome_id FROM $boot_table WHERE genome_id = ? and start = ?/;
     my $answer = $db->MySelect({
 	statement => $check_statement,
@@ -629,7 +629,7 @@ sub Check_Folds {
 	$state->{$mfe_varname} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start,
 						 $state->{seqlength}, $type);
 	$mfe_id = $state->{$mfe_varname};
-	print "Check_Folds $type - already done: state: $mfe_id\n";
+	print "Check_Folds $type - already done: state: $mfe_id\n" if (defined($config->{debug}));
     }
     else { ### If there are NO existing folds...
 	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n" if (defined($config->{debug}));
