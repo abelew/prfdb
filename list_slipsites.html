@@ -7,7 +7,7 @@
   <td width="25%"><div align="center"><strong><font color="#FFFFFF">#Folds</font></strong></div>
   </td>
 </tr>
-
+% my ($slipstart, $slipseq, $pknotscount, $orf_start, $orf_stop, $id);
 % my $slipsites_stmt = qq"SELECT distinct start, slipsite, count(id) FROM mfe WHERE accession = ? AND start < (SELECT orf_stop FROM genome WHERE accession = ?) GROUP BY start ORDER BY start";
 % my $slipsite_information = $db->MySelect(statement => $slipsites_stmt, vars => [$accession, $accession],);
 % my $table = "landscape_$species";
@@ -60,17 +60,18 @@
 <tr>
  <td width="33%">
    <div align="center"><strong><font face="Courier New, Courier, mono">
-    <a href="/detail?id=<% $id %>&accession=<% $accession %>" title="View the detailed information for all slipsites of <% accession %>">All</a>
+    <a href="/detail?id=<% $id %>&accession=<% $accession %>" title="View the detailed information for all slipsites of <% $accession %>">All</a>
   </font></strong></div>
  </td>
  <td width="33%"></td>
  <td width="33%"></td>
 </tr>
 % }
+% }
 </table>
 
 
 <%args>
-  accession => "SGDID:S000001"
-  species => "saccharomyces_cerevisiae"
+  $accession => "SGDID:S000001"
+  $species => "saccharomyces_cerevisiae"
 </%args>

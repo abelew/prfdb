@@ -31,6 +31,8 @@ foreach my $c (keys %{$entries}) {
 #    } else {
 #       print "   <p><% $entries_count %> matches were found.</p><br>\n";
     }
+my $species = $entries->{$entries_keys[0]}->{species};
+my $accession = $entries->{$entries_keys[0]}->{accession};
 my $long_species;
 </%perl>
 <& list_slipsites.html, accession => $accession, species => $species &>
@@ -38,58 +40,15 @@ my $long_species;
 % $long_species = $entries->{$entries_keys[0]}->{species};
 % $long_species =~ s/_/ /g;
 % $long_species = ucfirst($long_species);
-<table width="100%" border="0" cellspacing="2" cellpadding="2">
- <tr align="left" valign="top">
-   <td width="50%">
-    <strong>
-     <a href="/help_genome#help_genename" title="The gene name is provided by genbank or the SGD" rel="external" target="_blank">Gene Name:</a>
-    </strong> <% $entries->{$entries_keys[0]}->{genename} %>
-   <br>
-   <strong>
-    <a href="/help_detail#help_accession" title="Check the help for accession" rel="external" target="_blank">Accession:</a>
-   </strong> <% $entries->{$entries_keys[0]}->{accession} %><br>
-   <strong>
-    <a href="/help_detail#help_species" title="Check the help for species" rel="external" target="_blank">Species:</a>
-   </strong><i> <% $long_species %></i><br>
-   <strong>
-    <a href="/help_genome#help_comments" title="Check the help for the comment field" rel="external" target="_blank">Comments:</a>
-   </strong> <% $entries->{$entries_keys[0]}->{comment} %><br>
-  </td>
-  <td width="50%">
-% my ($short_accession, $accession);
-% if ($entries->{$entries_keys[0]}->{accession} =~ /^SGDID/) {
-%  $accession = $entries->{$entries_keys[0]}->{accession};
-%  $short_accession = $accession;
-%  $short_accession =~ s/^SGDID\://g;
-   <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=<% $short_accession %>" title="View <% $accession %> at yeastgenome.org" rel="external" target="_blank">SGD Link</a>
-% } elsif ($accession =~ /^BC/) {
-   <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=<% $accession %>&go=Go" title="View <% $accession %> at NCBI" rel="external" target="_blank">GenBank Link</a>
-% }
-% if (defined($entries->{$entries_keys[0]}->{omim_id})) {
-   , <a href="http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=<% $entries->{$entries_keys[0]}->{omim_id} %>" title="View associated OMIM:<% $entries->{$entries_keys[0]}->{omim_id} %> at NCBI" rel="external" target="_blank">OMIM Link</a>
-% }
-   <br>
-   Run <a href="/search_local_blast?accession=<% $accession %>" title="Run BLAST to search the PRFdb for sequences similar to this gene.">Local Blast</a>
- or
-   <a href="/remote_blast?accession=<% $accession %>" title="Run BLAST to search the NR database for sequences similar to this gene.">Remote Blast</a> using this gene.</br>
-  <br>
-% my $table = "landscape_$entries->{$entries_keys[0]}->{species}";
-% my $landscape = $db->MySelect("SELECT count(id) FROM $table WHERE accession = '$accession'");
-% if ($landscape->[0][0] > 0) {
-  Graph </strong><a href="/landscape?accession=<% $accession %>" title="View a graph of putative Minimum Free Energy with respect to position." rel="external" target="_blank">MFE minima</a> or
-% }
-   <a href="/download_sequence?accession=<% $accession %>" title="Download a fasta file containing this gene.">Download Sequence</a><br>
-  </td>
- </tr>
-</table>
+% my $genename = $entries->{$entries_keys[0]}->{genename};
+% my $accession = $entries->{$entries_keys[0]}->{accession};
+% my $comment = $entries->{$entries_keys[0]}->{comment};
+% my $omim_id = $entries->{$entries_keys[0]}->{omim_id};
+<& gene_summary.html, accession => $accession, genename => $genename, accession => $accession, long_species => $long_species, species => $species, comment => $comment, omim_id => $omim_id &>
 <& print_gene.html, accession => $accession &>
-
 % }
-
 
 % } elsif ($blastsearch) {
-
-
 
 % } else {
 

@@ -55,9 +55,11 @@ sub Disconnect {
 sub MySelect {
     my $me = shift;
     my %args = ();
+    my $input;
     my $input_type = ref($_[0]);
     my ($statement, $vars, $type, $descriptor);
     if ($input_type eq 'HASH') {
+        $input = $_[0];
 	$statement = $input->{statement};
 	$vars = $input->{vars};
 	$type = $input->{type};
@@ -70,6 +72,7 @@ sub MySelect {
 	$vars = $args{vars};
 	$type = $args{type};
 	$descriptor = $args{descriptor};
+        $input = \%args;
     }
 
     my $return = undef;
