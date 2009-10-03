@@ -4,10 +4,13 @@ use Apache2::Request;
 use Apache2::Upload;
 use Data::Dumper;
 use Apache::DBI;
+use File::Temp qw/ tmpnam /;
 use lib '/usr/local/prfdb/prfdb_test/lib';
 use PRFConfig;
-use PRFdb;
+use PRFdb qw/ AddOpen RemoveFile /;
+use RNAFolders;
 use PRFGraph;
+use SeqMisc;
 
 Apache::DBI->connect_on_init('DBI:mysql:prfdb_test:localhost', 'prfdb', 'drevil') or die "Can't connect to database: $DBI::errstr";
 #Apache::DBI->connect_on_init('DBI:mysql:sessions:localhost', 'sessions', 'cbmg_sessions') or die "Can't connect to database: $DBI::errstr";

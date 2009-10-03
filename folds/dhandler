@@ -1,0 +1,34 @@
+Your file does not yet exist.  Please be patient, it should appear momentarily.
+The filename is: <% $m->dhandler_arg %>
+
+<script language="JavaScript">
+var sURL = "<% $m->dhandler_arg %>";
+function doLoad()
+{
+    setTimeout( "refresh()", 5*1000 );
+}
+
+function refresh()
+{
+    //  This version of the refresh function will cause a new
+    //  entry in the visitor's history.  It is provided for
+    //  those browsers that only support JavaScript 1.0.
+    //
+    window.location.href = sURL;
+}
+//-->
+</script>
+
+<script language="JavaScript1.1">
+<!--
+function refresh()
+{
+    //  This version does NOT cause an entry in the browser's
+    //  page view history.  Most browsers will always retrieve
+    //  the document from the web-server whether it is already
+    //  in the browsers page-cache or not.
+    //  
+    window.location.replace( sURL );
+}
+//-->
+</script>

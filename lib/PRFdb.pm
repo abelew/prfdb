@@ -1,11 +1,13 @@
 package PRFdb;
 use strict;
 use DBI;
-use PRFConfig qw / PRF_Error PRF_Out /;
+use PRFConfig;
 use SeqMisc;
 use File::Temp qw / tmpnam /;
 use Fcntl ':flock';    # import LOCK_* constants
 use Bio::DB::Universal;
+our @ISA = qw(Exporter);
+our @EXPORT = qw(AddOpen RemoveFile);    # Symbols to be exported by default
 
 ### Holy crap global variables!
 my $config;
@@ -31,7 +33,7 @@ sub new {
 	if (defined($config->{index_species})) {
 	    my @sp = @{$config->{index_species}};
 	    foreach my $s (@sp) {
-		my $boot_table = "boot_$s";
+		my $boot_table = ($s =~ /virus/ ? "boot_virus" : "boot_$s");
 	        unless ($me->Tablep($boot_table)) {
 		    $me->Create_Boot($boot_table);
 		}
@@ -52,17 +54,25 @@ sub Disconnect {
 
 sub MySelect {
     my $me = shift;
-    my $input = shift;
-    my $input_type = ref($input);
+    my %args = ();
+    my $input;
+    my $input_type = ref($_[0]);
     my ($statement, $vars, $type, $descriptor);
-    if (!defined($input_type) or $input_type eq '' or $input_type eq 'SCALAR') {
-	$statement = $input;
-    }
-    else {
+    if ($input_type eq 'HASH') {
+        $input = $_[0];
 	$statement = $input->{statement};
 	$vars = $input->{vars};
 	$type = $input->{type};
 	$descriptor = $input->{descriptor};
+    } elsif (!defined($_[1])) {
+	$statement = $_[0];
+    } else {
+	%args = @_;
+	$statement = $args{statement};
+	$vars = $args{vars};
+	$type = $args{type};
+	$descriptor = $args{descriptor};
+        $input = \%args;
     }
 
     my $return = undef;
@@ -477,6 +487,59 @@ sub AddOpen {
     $config->{open_files} = \@open_files;
 }
 
+sub Remove_Duplicates {
+    my $me = shift;
+    my $accession = shift;
+    my $info = $me->MySelect(qq/SELECT id,start,seqlength,algorithm FROM mfe WHERE accession = '$accession'/);
+    my @duplicate_ids;
+    my $dups = {};
+    my $count = 0;
+    foreach my $datum (@{$info}) {
+	my $id = $datum->[0];
+	my $start = $datum->[1];
+	my $seqlength = $datum->[2];
+	my $alg = $datum->[3];
+
+	if (!defined($dups->{$start})) {  ## Start
+	    $dups->{$start} = {};
+	}
+	
+	if (!defined($dups->{$start}->{$seqlength})) {
+	    $dups->{$start}->{$seqlength} = {};
+	    $dups->{$start}->{$seqlength}->{pknots} = [];
+	    $dups->{$start}->{$seqlength}->{nupack} = [];
+	    $dups->{$start}->{$seqlength}->{hotknots} = [];
+	}
+	my @array = @{$dups->{$start}->{$seqlength}->{$alg}};
+	push(@array, $id);
+	$dups->{$start}->{$seqlength}->{$alg} = \@array;
+    }
+    
+    foreach my $st (sort keys %{$dups}) {
+	foreach my $len (sort keys %{$dups->{$st}}) {
+	    my @nupack = @{$dups->{$st}->{$len}->{nupack}};
+	    my @pknots = @{$dups->{$st}->{$len}->{pknots}};
+	    my @hotknots = @{$dups->{$st}->{$len}->{hotknots}};
+	    shift @nupack;
+	    shift @pknots;
+	    shift @hotknots;
+	    foreach my $id (@nupack) {
+		$me->MyExecute("DELETE FROM mfe WHERE id = '$id'");
+		$count++;
+	    }
+	    foreach my $id (@pknots) {
+		$me->MyExecute("DELETE FROM mfe WHERE id = '$id'");
+		$count++;
+	    }
+	    foreach my $id (@hotknots) {
+		$me->MyExecute("DELETE FROM mfe WHERE id = '$id'");
+		$count++;
+	    }
+	}
+    }
+    return($count);
+}
+
 sub RemoveFile {
     my $file = shift;
     my @open_files = @{$config->{open_files}};
@@ -568,8 +631,8 @@ sub Get_Boot {
     my $species = shift;
     my $accession = shift;
     my $start = shift;
-    my $table = "boot_$species";
-    PRF_Error("Undefined value in Get_Boot", $species, $accession)
+    my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
+    $config->PRF_Error("Undefined value in Get_Boot", $species, $accession)
 	unless (defined($species) and defined($accession));
     my $statement;
     if (defined($start)) {
@@ -599,7 +662,7 @@ sub Id_to_AccessionSpecies {
     my $me = shift;
     my $id = shift;
     my $start = shift;
-    PRF_Error("Undefined value in Id_to_AccessionSpecies", $id) unless (defined($id));
+    $config->PRF_Error("Undefined value in Id_to_AccessionSpecies", $id) unless (defined($id));
     my $statement = qq(SELECT accession, species from genome where id = ?);
     my $data = $me->MySelect({
 	statement => $statement,
@@ -819,8 +882,8 @@ sub Get_Queue {
 	$me->Reset_Queue($table, 'complete');
     }
     ## This id is the same id which uniquely identifies a sequence in the genome database
-    #my $single_id = qq(SELECT id, genome_id FROM $table WHERE checked_out = '0' LIMIT 1);
-    my $single_id = qq/SELECT id, genome_id FROM $table WHERE checked_out = '0' ORDER BY RAND() LIMIT 1/;
+#    my $single_id = qq"SELECT id, genome_id FROM $table WHERE id = '51282'"; #checked_out = '0' LIMIT 1);
+    my $single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' ORDER BY RAND() LIMIT 1";
     my $ids = $me->MySelect({statement => $single_id, type => 'row'});
     my $id = $ids->[0];
     my $genome_id = $ids->[1];
@@ -1190,7 +1253,7 @@ sub Import_CDS {
 	    $sub_sequence =~ tr/ATGCatgcuU/TACGtacgaA/;
 	    $tmp_mrna_sequence = $sub_sequence;
 	} else {
-	    print PRF_Error("WTF: Direction is not forward or reverse");
+	    $config->PRF_Error("WTF: Direction is not forward or reverse");
 	    $direction = 'forward';
 	}
 	### Don't change me, this is provided by genbank
@@ -1357,7 +1420,7 @@ sub Get_Num_Bootfolds {
     my $start = shift;
     my $seqlength = shift;
     my $method = shift;
-    my $table = "boot_$species";
+    my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
     my $return = {};
     my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? and start = ? and seqlength = ? and mfe_method = ?/;
     my $count = $me->MySelect({statement => $statement,
@@ -1386,7 +1449,7 @@ sub Get_mRNA {
 sub Get_ORF {
     my $me = shift;
     my $accession = shift;
-    my $statement = qq(SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?);
+    my $statement = qq"SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?";
     my $info = $me->MySelect({
 	statement => $statement,
 	vars => [$accession],
@@ -1572,7 +1635,7 @@ sub Put_MFE {
     my $errorstring = Check_Insertion(\@pknots, $data);
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_MFE: $errorstring";
-	PRF_Error($errorstring, $data->{species}, $data->{accession});
+	$config->PRF_Error($errorstring, $data->{species}, $data->{accession});
     }
     $data->{sequence} =~ tr/actgu/ACTGU/;
     my $statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?));
@@ -1602,7 +1665,7 @@ sub Put_MFE_Landscape {
     my $errorstring = Check_Insertion(\@filled, $data);
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_MFE_Landscape: $errorstring";
-	PRF_Error($errorstring, $data->{accession});
+	$config->PRF_Error($errorstring, $data->{accession});
     }
 
     $data->{sequence} =~ tr/actgu/ACTGU/;
@@ -1620,7 +1683,7 @@ sub Put_Stats {
     my $me = shift;
     my $data = shift;
     foreach my $species (@{$data->{species}}) {
-	my $table = "boot_$species";
+	my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
 	foreach my $seqlength (@{$data->{seqlength}}) {
 	    foreach my $max_mfe (@{$data->{max_mfe}}) {
 		foreach my $algorithm (@{$data->{algorithm}}) {
@@ -1653,10 +1716,10 @@ sub Put_Stats {
 my ($cp,$cf,$cl) = caller();
 $me->MyExecute({statement => $statement,
 		caller => "$cp, $cf, $cl",});
-}
-}
-}
-}
+                }
+            }
+        }
+    }
 }
 
 sub Put_Boot {
@@ -1690,29 +1753,29 @@ sub Put_Boot {
 	    my $errorstring = Check_Insertion(\@boot, $data);
 	    if (defined($errorstring)) {
 		$errorstring = "Undefined value(s) in Put_Boot: $errorstring";
-		PRF_Error($errorstring, $species, $accession);
+		$config->PRF_Error($errorstring, $species, $accession);
 	    }
-	    my $table = "boot_$species";
-	    my $statement = qq(INSERT INTO $table
+	    my $boot_table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
+	    my $statement = qq"INSERT INTO $boot_table
 (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
     VALUES
-(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?));
-my $undefined_values = Check_Defined( { genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values } );
-if ($undefined_values) {
-    $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
-PRF_Error( $errorstring, $species, $accession );
-print "$errorstring, $species, $accession\n";
-}
-my ($cp, $cf, $cl) = caller();
-$me->MyExecute({statement => $statement,
+(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            my $undefined_values = Check_Defined( { genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values } );
+            if ($undefined_values) {
+              $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
+              $config->PRF_Error( $errorstring, $species, $accession );
+              print "$errorstring, $species, $accession\n";
+            }
+            my ($cp, $cf, $cl) = caller();
+            $me->MyExecute({statement => $statement,
 		vars => [ $data->{genome_id}, $mfe_id, $species, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ], 
 		caller => "$cp, $cf, $cl",});
 
-my $boot_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
-push(@boot_ids, $boot_id);
-}    ### Foreach random method
-}    ## Foreach mfe method
-return(\@boot_ids);
+            my $boot_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
+            push(@boot_ids, $boot_id);
+          }    ### Foreach random method
+    }    ## Foreach mfe method
+    return(\@boot_ids);
 }    ## End of Put_Boot
 
 
@@ -1742,28 +1805,28 @@ sub Put_Single_Boot {
     
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_Boot: $errorstring";
-	PRF_Error($errorstring, $species, $accession);
+	$config->PRF_Error($errorstring, $species, $accession);
     }
-    my $table = "boot_$species";
-    my $statement = qq(INSERT INTO $table
+    my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
+    my $statement = qq"INSERT INTO $table
 (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
     VALUES
-('$data->{genome_id}','$mfe_id','$species','$accession','$start','$seqlength','$iterations','$rand_method','$mfe_method','$mfe_mean','$mfe_sd','$mfe_sd','$pairs_mean','$pairs_sd','$pairs_se','$mfe_values'));
+('$data->{genome_id}','$mfe_id','$species','$accession','$start','$seqlength','$iterations','$rand_method','$mfe_method','$mfe_mean','$mfe_sd','$mfe_sd','$pairs_mean','$pairs_sd','$pairs_se','$mfe_values')";
 
-my $undefined_values = Check_Defined( { genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values } );
+    my $undefined_values = Check_Defined( { genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values } );
 
-if ($undefined_values) {
-    $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
-PRF_Error($errorstring, $species, $accession);
-print "$errorstring, $species, $accession\n";
-}
-my ($cp, $cf, $cl) = caller();
-my $rows = $me->MyExecute({statement => $statement,
+    if ($undefined_values) {
+        $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
+        $config->PRF_Error($errorstring, $species, $accession);
+        print "$errorstring, $species, $accession\n";
+    }
+    my ($cp, $cf, $cl) = caller();
+    my $rows = $me->MyExecute({statement => $statement,
 			   caller => "$cp, $cf, $cl",});
 
-my $boot_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
-print "Inserted $boot_id\n";
-return($boot_id);
+    my $boot_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
+    print "Inserted $boot_id\n";
+    return($boot_id);
 }
 
 sub Put_Overlap {

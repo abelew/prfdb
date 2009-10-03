@@ -1,0 +1,18 @@
+<%perl>
+ $r->content_type('application/octet-stream');
+ my $stmt = qq"SELECT genome.comment,mfe.accession,mfe.sequence,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id";
+ my $seq = $db->MySelect(statement => $stmt, vars => [$mfeid], type => 'row');
+ my @tmp = split(//, $seq->[2]);
+ my $filename = qq"$seq->[1]_$seq->[3].fasta";
+ $filename =~ s/SGDID://g;
+ $r->headers_out->add('Content-disposition' => ("attachment; filename=$filename"));
+ print ">mfeid: $mfeid $seq->[1] starting at $seq->[3]: $seq->[0]";
+ foreach my $c (0 .. $#tmp) {
+   print "\n" if (($c %80) == 0);
+   print $tmp[$c];
+ }
+ print "\n";
+</%perl>
+<%args>
+ $mfeid => undef;
+</%args>

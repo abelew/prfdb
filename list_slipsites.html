@@ -1,0 +1,91 @@
+<table width="100%" border="0" cellspacing="2" cellpadding="2">
+<tr bgcolor="#000000">
+  <td width="25%"><div align="center"><strong><font color="#FFFFFF">Position</font></strong></div>
+  </td>
+  <td width="25%"><div align="center"><strong><font color="#FFFFFF">Slippery Site</font></strong></div>
+  </td>
+  <td width="25%"><div align="center"><strong><font color="#FFFFFF">#Folds</font></strong></div>
+  </td>
+</tr>
+
+<tr>
+ <td width="33%">
+  <div align="center"><strong><font face="Courier New, Courier, mono">
+   <% $orf_start %>
+  </font></strong></div>
+ </td>
+ <td width="33%">
+  <div align="center"><strong><font color="green" face="Courier New, Courier, mono">
+   Start Codon
+  </font></strong></div>
+ </td>
+ <td width="33%"><div align="center"><strong> </strong></div>
+ </td>
+</tr>
+% my ($slipseq, $pknotscount, $id, $slipstart);
+% my $slipsites_stmt = qq"SELECT distinct start, slipsite, count(id) FROM mfe WHERE accession = ? AND start < (SELECT orf_stop FROM genome WHERE accession = ?) GROUP BY start ORDER BY start";
+% my $slipsite_information = $db->MySelect(statement => $slipsites_stmt, vars => [$accession, $accession],);
+% my $table = "landscape_$species";
+% my $landscape_num = $db->MySelect(statement => "SELECT count(id) FROM $table WHERE accession = '$accession'", type => 'single');
+% my $num_stops_printed = 0;
+% my $num_starts_printed = 0;
+% my $slipcount = 0;
+% my $sig_count = 0;
+% while (my $slip_info = shift(@{$slipsite_information})) {
+%   $slipcount++;
+%   $slipstart = $slip_info->[0];
+%   $slipseq = $slip_info->[1];
+%   $pknotscount = $slip_info->[2];
+%   $sig_count += $pknotscount;
+<tr>
+ <td width="33%">
+  <div align="center"><strong><font face="Courier New, Courier, mono">
+   <a href="/detail.html?accession=<% $accession %>&slipstart=<% $slipstart %>" title="View the detailed information for <% $accession %> at position <% $slipstart %>"><% $slipstart %></a>
+  </font></strong></div>
+ </td>
+ <td width="33%">
+  <div align="center"><strong><font face="Courier New, Courier, mono">
+   <% $slipseq %>
+  </font></strong></div>
+ </td>
+ <td width="33%">
+ <div align="center"><strong><font face="Courier New, Courier, mono">
+   <% $pknotscount %>
+  </font></strong></div>
+ </td>
+</tr>
+% }
+<tr>
+ <td width="33%">
+  <div align="center"><strong><font face="Courier New, Courier, mono">
+   <% $orf_stop %>
+  </font></strong></div>
+ </td>
+ <td width="33%">
+  <div align="center"><strong><font color="Red" face="Courier New, Courier, mono">
+   Stop Codon
+  </font></strong></div>
+ </td>
+ <td width="33%"><div align="center"><strong> </strong></div>
+ </td>
+</tr>
+<tr>
+ <td width="33%">
+   <div align="center"><strong><font face="Courier New, Courier, mono">
+    <a href="/detail.html?accession=<% $accession %>" title="View the detailed information for all slipsites of <% $accession %>">All</a>
+  </font></strong></div>
+ </td>
+ <td width="33%"></td>
+ <td width="33%"></td>
+</tr>
+</table>
+
+
+<%args>
+  $accession => "SGDID:S000001"
+  $species => "saccharomyces_cerevisiae"
+  $comment => "my_comment"
+  $omim_id => "omim_id"
+  $orf_start => "1"
+  $orf_stop => "0"
+</%args>

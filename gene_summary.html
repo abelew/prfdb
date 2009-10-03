@@ -1,0 +1,52 @@
+<table width="100%" border="0" cellspacing="2" cellpadding="2">
+ <tr align="left" valign="top">
+   <td width="50%">
+    <strong>
+     <a href="/help_genome#help_genename" title="The gene name is provided by genbank or the SGD" rel="external" target="_blank">Gene Name:</a>
+    </strong> <% $genename %>
+   <br>
+   <strong>
+    <a href="/help_detail#help_accession" title="Check the help for accession" rel="external" target="_blank">Accession:</a>
+   </strong> <% $accession %><br>
+   <strong>
+    <a href="/help_detail#help_species" title="Check the help for species" rel="external" target="_blank">Species:</a>
+   </strong><i><% $long_species %></i><br>
+   <strong>
+    <a href="/help_genome#help_comments" title="Check the help for the comment field" rel="external" target="_blank">Comments:</a>
+   </strong> <% $comment %><br>
+  </td>
+  <td width="50%">
+% my ($short_accession);
+% if ($accession =~ /^SGDID/) {
+%  $short_accession = $accession;
+%  $short_accession =~ s/^SGDID\://g;
+   <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=<% $short_accession %>" title="View <% $accession %> at yeastgenome.org" rel="external" target="_blank">SGD Link</a>
+% } elsif ($accession =~ /^BC/) {
+   <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=<% $accession %>&go=Go" title="View <% $accession %> at NCBI" rel="external" target="_blank">GenBank Link</a>
+% }
+% if (defined($omim_id)) {
+   , <a href="http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=<% $omim_id %>" title="View associated OMIM:<% $omim_id %> at NCBI" rel="external" target="_blank">OMIM Link</a>
+% }
+   <br>
+   Run <a href="/search_local_blast?accession=<% $accession %>" title="Run BLAST to search the PRFdb for sequences similar to this gene.">Local Blast</a>
+ or
+   <a href="/remote_blast?accession=<% $accession %>" title="Run BLAST to search the NR database for sequences similar to this gene.">Remote Blast</a> using this gene.</br>
+  <br>
+% my $table = "landscape_$species";
+% my $landscape = $db->MySelect("SELECT count(id) FROM $table WHERE accession = '$accession'");
+% if ($landscape->[0][0] > 0) {
+  Graph </strong><a href="/landscape?accession=<% $accession %>" title="View a graph of putative Minimum Free Energy with respect to position." rel="external" target="_blank">MFE minima</a> or
+% }
+   <a href="/download_sequence?accession=<% $accession %>" title="Download a fasta file containing this gene.">Download Sequence</a><br>
+  </td>
+ </tr>
+</table>
+
+<%args>
+  $accession => 'SGDID:S000001'
+  $genename => 'funkytown'
+  $species => 'saccharomyces_cerevisiae'
+  $long_species => 'Sacchamroyces cerevisiae'
+  $comment => 'my comment'
+  $omim_id => '1'
+</%args>

@@ -1,0 +1,5 @@
+0 6    * * * cd /usr/local/prfdb/prfdb_beta/contrib && ./generate_zscores.pl 2>/dev/null 1>&2
+0 7    * * 1,4 cd /usr/local/prfdb/prfdb_beta && ./prf_daemon.pl --stats 2>/dev/null 1>&2
+0 7    * * 1,4 cd /usr/local/prfdb/prfdb_beta && ./prf_daemon.pl --index_stats 2>/dev/null 1>&2
+0 3    * * 0,2,4 cd /home/abelew/cron && ./mysql_backup.sh 2>/home/abelew/cron/mysql_backup.out 1>&2
+0 5    * * * cd /usr/local/prfdb/prfdb_test/folds/ && rm `ls | grep -v dhandler`

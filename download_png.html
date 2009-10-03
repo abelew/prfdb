@@ -1,0 +1,26 @@
+<%init>
+ $r->content_type('application/octet-stream');
+ my $pic = new PRFGraph({config => $config, accession => $accession});
+ my $filename = $pic->Picture_Filename({type => 'feynman',});
+ $filename =~ s/\.svg//g;
+ $filename .= "-$mfeid.svg";
+ my $output_filename = qq"$accession-$mfeid.$format";
+ $output_filename =~ s/SGDID\://g;
+ $r->headers_out->add('Content-disposition' => ("attachment; filename=$output_filename"));
+# print "$output_filename\n\n";
+# my $fh = new File::Temp();
+# my $fname = $fh->filename;
+ my $command = qq"/usr/bin/rsvg-convert -f $format -d 1200 -p 1200 $filename";
+ open (CONVERT, "$command |");
+ my $buffer = '';
+ use constant BUFFER_SIZE => 1024;
+ while (read(CONVERT, $buffer, BUFFER_SIZE)) {
+   print $buffer;
+ }
+ close CONVERT;
+</%init>
+<%args>
+ $mfeid => undef;
+ $accession => undef;
+ $format => "png";
+</%args>

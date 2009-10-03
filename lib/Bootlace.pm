@@ -23,9 +23,10 @@ sub new {
       ## Expect a hash ref of randomizers
       fasta_comment => undef,
       species => $arg{species},
-    accession => $arg{accession},
+      accession => $arg{accession},
       start => $arg{start},
       seqlength => $arg{seqlength},
+      config => $arg{config},
       fasta_comment => undef,
       fasta_data => undef,
     fasta_arrayref => [],
@@ -37,7 +38,7 @@ sub new {
 	chomp $line;
 	if ($line =~ /^\>/) {
 	    $me->{fasta_comment} = $line;
-	}
+}
 	else {
 	    $me->{fasta_data} .= $line;
 	}
@@ -118,7 +119,7 @@ sub Go {
 		my $new_sequence = $me->Overwrite_Inputfile($randomized_sequence);
 		
 		#	      my $mfe = &{$boot_mfe_algo}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
-		my $mfe = &{$boot_mfe_algo}($me->{inputfile}, $me->{accession}, $me->{start});
+		my $mfe = &{$boot_mfe_algo}($me->{inputfile}, $me->{accession}, $me->{start}, $me->{config});
 		foreach my $k (keys %{$mfe}) {
 		    $return->{$boot_mfe_algo_name}->{$rand_name}->{$iteration_count}->{$k} = $mfe->{$k};
 		}

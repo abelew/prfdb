@@ -1,118 +1,103 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
-<svg height="145" width="724" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="1-10-125" x="10" y="136">g
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="2-18-125" x="18" y="136">a
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="3-26-125" x="26" y="136">c
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="4-34-125" x="34" y="136">g
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="5-42-125" x="42" y="136">g
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="6-50-125" x="50" y="136">t
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="7-58-125" x="58" y="136">c
+<svg height="129.25" width="108140" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="1-10-109.25" x="10" y="120.25">&lt;
 	</text>
-	<path d="M70,125 A40,17.5 0 0,1 150,125" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="9-66-125" x="66" y="136">a
+	<path d="M78,109.25 A156,68.25 0 0,1 390,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="3-18-109.25" x="18" y="120.25">?
 	</text>
-	<path d="M78,125 A32,14 0 0,1 142,125" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="11-74-125" x="74" y="136">c
+	<path d="M86,109.25 A148,64.75 0 0,1 382,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="5-26-109.25" x="26" y="120.25">x
 	</text>
-	<path d="M86,125 A24,10.5 0 0,1 134,125" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="13-82-125" x="82" y="136">c
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="14-90-125" x="90" y="136">t
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="15-98-125" x="98" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="16-106-125" x="106" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="17-114-125" x="114" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="18-122-125" x="122" y="136">g
-	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="19-130-125" x="130" y="136">g
-	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="20-138-125" x="138" y="136">g
-	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="21-146-125" x="146" y="136">t
+	<path d="M94,109.25 A140,61.25 0 0,1 374,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="7-34-109.25" x="34" y="120.25">m
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="8-42-109.25" x="42" y="120.25">l
 	</text>
-	<path d="M158,125 A240,105 0 0,1 638,125" style="fill: none; fill-opacity: 0; stroke: rgb(248,0,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="23-154-125" x="154" y="136">g
+	<path d="M110,109.25 A124,54.25 0 0,1 358,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="10-50-109.25" x="50" y="120.25"> 
 	</text>
-	<path d="M166,125 A232,101.5 0 0,1 630,125" style="fill: none; fill-opacity: 0; stroke: rgb(248,0,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="25-162-125" x="162" y="136">g
+	<path d="M118,109.25 A116,50.75 0 0,1 350,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="12-58-109.25" x="58" y="120.25">v
 	</text>
-	<path d="M174,125 A224,98 0 0,1 622,125" style="fill: none; fill-opacity: 0; stroke: rgb(248,0,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="27-170-125" x="170" y="136">t
+	<path d="M126,109.25 A108,47.25 0 0,1 342,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="14-66-109.25" x="66" y="120.25">e
 	</text>
-	<path d="M182,125 A216,94.5 0 0,1 614,125" style="fill: none; fill-opacity: 0; stroke: rgb(248,0,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="29-178-125" x="178" y="136">A
+	<path d="M134,109.25 A100,43.75 0 0,1 334,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="16-74-109.25" x="74" y="120.25">r
 	</text>
-	<path d="M190,125 A208,91 0 0,1 606,125" style="fill: none; fill-opacity: 0; stroke: rgb(248,0,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="31-186-125" x="186" y="136">A
+	<path d="M142,109.25 A92,40.25 0 0,1 326,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="18-82-109.25" x="82" y="120.25">s
 	</text>
-	<path d="M198,125 A200,87.5 0 0,1 598,125" style="fill: none; fill-opacity: 0; stroke: rgb(248,0,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="33-194-125" x="194" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="34-202-125" x="202" y="136">t
+	<path d="M150,109.25 A84,36.75 0 0,1 318,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="20-90-109.25" x="90" y="120.25">i
 	</text>
-	<path d="M214,125 A40,17.5 0 0,1 294,125" style="fill: none; fill-opacity: 0; stroke: rgb(0,191,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="36-210-125" x="210" y="136">g
+	<path d="M158,109.25 A76,33.25 0 0,1 310,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="22-98-109.25" x="98" y="120.25">o
 	</text>
-	<path d="M222,125 A32,14 0 0,1 286,125" style="fill: none; fill-opacity: 0; stroke: rgb(0,191,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="38-218-125" x="218" y="136">t
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="39-226-125" x="226" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="40-234-125" x="234" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="41-242-125" x="242" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="42-250-125" x="250" y="136">a
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="43-258-125" x="258" y="136">t
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="44-266-125" x="266" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="45-274-125" x="274" y="136">A
-	</text>	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="46-282-125" x="282" y="136">a
-	</text>	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="47-290-125" x="290" y="136">c
+	<path d="M166,109.25 A68,29.75 0 0,1 302,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="24-106-109.25" x="106" y="120.25">n
 	</text>
-	<path d="M302,125 A112,49 0 0,1 526,125" style="fill: none; fill-opacity: 0; stroke: rgb(192,60,192); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="49-298-125" x="298" y="136">t
+	<path d="M174,109.25 A60,26.25 0 0,1 294,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="26-114-109.25" x="114" y="120.25">=
 	</text>
-	<path d="M310,125 A104,45.5 0 0,1 518,125" style="fill: none; fill-opacity: 0; stroke: rgb(192,60,192); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="51-306-125" x="306" y="136">t
+	<path d="M182,109.25 A52,22.75 0 0,1 286,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="28-122-109.25" x="122" y="120.25">&quot;
 	</text>
-	<path d="M318,125 A96,42 0 0,1 510,125" style="fill: none; fill-opacity: 0; stroke: rgb(192,60,192); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="53-314-125" x="314" y="136">g
+	<path d="M190,109.25 A44,19.25 0 0,1 278,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,0,191); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="30-130-109.25" x="130" y="120.25">1
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="31-138-109.25" x="138" y="120.25">.
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="32-146-109.25" x="146" y="120.25">0
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="33-154-109.25" x="154" y="120.25">&quot;
 	</text>
-	<path d="M326,125 A88,38.5 0 0,1 502,125" style="fill: none; fill-opacity: 0; stroke: rgb(192,60,192); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="55-322-125" x="322" y="136">g
+	<path d="M222,109.25 A204,89.25 0 0,1 630,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(248,0,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="35-162-109.25" x="162" y="120.25"> 
 	</text>
-	<path d="M334,125 A80,35 0 0,1 494,125" style="fill: none; fill-opacity: 0; stroke: rgb(192,60,192); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="57-330-125" x="330" y="136">g
+	<path d="M230,109.25 A196,85.75 0 0,1 622,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(248,0,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="37-170-109.25" x="170" y="120.25">e
 	</text>
-	<path d="M342,125 A28,12.25 0 0,1 398,125" style="fill: none; fill-opacity: 0; stroke: rgb(255,165,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(255,165,0)" font-family="Courier New" font-size="13" font-weight="bold" id="59-338-125" x="338" y="136">t
+	<path d="M238,109.25 A188,82.25 0 0,1 614,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(248,0,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="39-178-109.25" x="178" y="120.25">n
 	</text>
-	<path d="M350,125 A20,8.75 0 0,1 390,125" style="fill: none; fill-opacity: 0; stroke: rgb(255,165,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(255,165,0)" font-family="Courier New" font-size="13" font-weight="bold" id="61-346-125" x="346" y="136">g
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="62-354-125" x="354" y="136">g
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="63-362-125" x="362" y="136">t
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="64-370-125" x="370" y="136">g
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="65-378-125" x="378" y="136">g
-	</text>	<text fill="rgb(255,165,0)" font-family="Courier New" font-size="13" font-weight="bold" id="66-386-125" x="386" y="136">c
-	</text>	<text fill="rgb(255,165,0)" font-family="Courier New" font-size="13" font-weight="bold" id="67-394-125" x="394" y="136">A
+	<path d="M246,109.25 A180,78.75 0 0,1 606,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(248,0,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="41-186-109.25" x="186" y="120.25">c
 	</text>
-	<path d="M406,125 A40,17.5 0 0,1 486,125" style="fill: none; fill-opacity: 0; stroke: rgb(192,60,192); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="69-402-125" x="402" y="136">A
+	<path d="M254,109.25 A172,75.25 0 0,1 598,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(248,0,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="43-194-109.25" x="194" y="120.25">o
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="44-202-109.25" x="202" y="120.25">d
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="45-210-109.25" x="210" y="120.25">i
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="46-218-109.25" x="218" y="120.25">n
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="47-226-109.25" x="226" y="120.25">g
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="48-234-109.25" x="234" y="120.25">=
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="49-242-109.25" x="242" y="120.25">&quot;
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="50-250-109.25" x="250" y="120.25">U
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="51-258-109.25" x="258" y="120.25">T
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="52-266-109.25" x="266" y="120.25">F
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="53-274-109.25" x="274" y="120.25">-
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="54-282-109.25" x="282" y="120.25">8
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="55-290-109.25" x="290" y="120.25">&quot;
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="56-298-109.25" x="298" y="120.25"> 
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="57-306-109.25" x="306" y="120.25">s
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="58-314-109.25" x="314" y="120.25">t
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="59-322-109.25" x="322" y="120.25">a
+	</text>	<text fill="rgb(0,0,191)" font-family="Courier New" font-size="13" font-weight="bold" id="60-330-109.25" x="330" y="120.25">n
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="61-338-109.25" x="338" y="120.25">d
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="62-346-109.25" x="346" y="120.25">a
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="63-354-109.25" x="354" y="120.25">l
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="64-362-109.25" x="362" y="120.25">o
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="65-370-109.25" x="370" y="120.25">n
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="66-378-109.25" x="378" y="120.25">e
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="67-386-109.25" x="386" y="120.25">=
 	</text>
-	<path d="M414,125 A32,14 0 0,1 478,125" style="fill: none; fill-opacity: 0; stroke: rgb(192,60,192); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="71-410-125" x="410" y="136">g
+	<path d="M454,109.25 A60,26.25 0 0,1 574,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,191,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="69-394-109.25" x="394" y="120.25">&quot;
 	</text>
-	<path d="M422,125 A24,10.5 0 0,1 470,125" style="fill: none; fill-opacity: 0; stroke: rgb(192,60,192); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="73-418-125" x="418" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="74-426-125" x="426" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="75-434-125" x="434" y="136">g
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="76-442-125" x="442" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="77-450-125" x="450" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="78-458-125" x="458" y="136">c
-	</text>	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="79-466-125" x="466" y="136">t
-	</text>	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="80-474-125" x="474" y="136">c
-	</text>	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="81-482-125" x="482" y="136">t
-	</text>	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="82-490-125" x="490" y="136">c
-	</text>	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="83-498-125" x="498" y="136">c
-	</text>	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="84-506-125" x="506" y="136">c
-	</text>	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="85-514-125" x="514" y="136">a
-	</text>	<text fill="rgb(192,60,192)" font-family="Courier New" font-size="13" font-weight="bold" id="86-522-125" x="522" y="136">g
+	<path d="M462,109.25 A52,22.75 0 0,1 566,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,191,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="71-402-109.25" x="402" y="120.25">y
 	</text>
-	<path d="M534,125 A28,12.25 0 0,1 590,125" style="fill: none; fill-opacity: 0; stroke: rgb(192,148,68); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(192,148,68)" font-family="Courier New" font-size="13" font-weight="bold" id="88-530-125" x="530" y="136">g
+	<path d="M470,109.25 A44,19.25 0 0,1 558,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,191,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="73-410-109.25" x="410" y="120.25">e
 	</text>
-	<path d="M542,125 A20,8.75 0 0,1 582,125" style="fill: none; fill-opacity: 0; stroke: rgb(192,148,68); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(192,148,68)" font-family="Courier New" font-size="13" font-weight="bold" id="90-538-125" x="538" y="136">a
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="91-546-125" x="546" y="136">a
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="92-554-125" x="554" y="136">t
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="93-562-125" x="562" y="136">c
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="94-570-125" x="570" y="136">a
-	</text>	<text fill="rgb(192,148,68)" font-family="Courier New" font-size="13" font-weight="bold" id="95-578-125" x="578" y="136">t
-	</text>	<text fill="rgb(192,148,68)" font-family="Courier New" font-size="13" font-weight="bold" id="96-586-125" x="586" y="136">c
-	</text>	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="97-594-125" x="594" y="136">t
-	</text>	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="98-602-125" x="602" y="136">t
-	</text>	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="99-610-125" x="610" y="136">t
-	</text>	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="100-618-125" x="618" y="136">a
-	</text>	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="101-626-125" x="626" y="136">c
-	</text>	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="102-634-125" x="634" y="136">c
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="103-642-125" x="642" y="136">a
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="104-650-125" x="650" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="105-658-125" x="658" y="136">A
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="106-666-125" x="666" y="136">t
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="107-674-125" x="674" y="136">c
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="108-682-125" x="682" y="136">t
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="109-690-125" x="690" y="136">c
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="110-698-125" x="698" y="136">a
-	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="111-706-125" x="706" y="136">a
+	<path d="M478,109.25 A36,15.75 0 0,1 550,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,191,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="75-418-109.25" x="418" y="120.25">s
+	</text>
+	<path d="M486,109.25 A28,12.25 0 0,1 542,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,191,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="77-426-109.25" x="426" y="120.25">&quot;
+	</text>
+	<path d="M494,109.25 A20,8.75 0 0,1 534,109.25" style="fill: none; fill-opacity: 0; stroke: rgb(0,191,0); stroke-opacity: 1.0; stroke-width: 2" />	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="79-434-109.25" x="434" y="120.25">?
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="80-442-109.25" x="442" y="120.25">&gt;
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="81-450-109.25" x="450" y="120.25">&lt;
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="82-458-109.25" x="458" y="120.25">s
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="83-466-109.25" x="466" y="120.25">v
+	</text>	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="84-474-109.25" x="474" y="120.25">g
+	</text>	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="85-482-109.25" x="482" y="120.25"> 
+	</text>	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="86-490-109.25" x="490" y="120.25">h
+	</text>	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="87-498-109.25" x="498" y="120.25">e
+	</text>	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="88-506-109.25" x="506" y="120.25">i
+	</text>	<text fill="rgb(0,191,0)" font-family="Courier New" font-size="13" font-weight="bold" id="89-514-109.25" x="514" y="120.25">g
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="90-522-109.25" x="522" y="120.25">h
+	</text>	<text fill="rgb(0,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="91-530-109.25" x="530" y="120.25">t
+	</text>	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="92-538-109.25" x="538" y="120.25">=
+	</text>	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="93-546-109.25" x="546" y="120.25">&quot;
+	</text>	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="94-554-109.25" x="554" y="120.25">1
+	</text>	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="95-562-109.25" x="562" y="120.25">2
+	</text>	<text fill="rgb(248,0,0)" font-family="Courier New" font-size="13" font-weight="bold" id="96-570-109.25" x="570" y="120.25">9
 	</text><!-- 
-	Generated using the Perl SVG Module V2.36
+	Generated using the Perl SVG Module V2.49
 	by Ronan Oger
 	Info: http://www.roitsystems.com/
  -->

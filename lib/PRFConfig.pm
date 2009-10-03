@@ -211,14 +211,15 @@ sub new {
     undef(%conf_specification_temp);
     GetOptions(%conf_specification);
 
-
     foreach my $opt (keys %conf) {
 	if (defined($conf{$opt})) {
 	    $me->{$opt} = $conf{$opt};
 	}
     }
     undef(%conf);
-
+    if (defined($me->{help})) {
+	Help();
+    }
     if (defined($me->{blast_db})) {
 	$ENV{BLASTDB} = qq"$me->{blast_db}/blast";
     }
@@ -334,7 +335,8 @@ sub new {
     $ENV{ENERGY_FILE} = qq"$me->{workdir}/dataS_G.rna";
     $ENV{EFNDATA} = $me->{workdir};
     $ENV{ENERGY_FILE} = qq"$me->{workdir}/dataS_G.rna";
-
+    #$me->{remove_end} = 1;
+    $me->{remove_end} = undef;
     return($me);
 }
 
@@ -424,6 +426,38 @@ sub RemoveFile {
     $me->{open_files} = \@new_open_files;
     return($num_deleted);
 }
+
+sub Help {
+    my $helpstring = qq"
+The prfdb takes many possible options including: (consult PRFConfig.pm for more)
+accession      fold a particular accession
+blast          provide it an accession and it will blast it to the rest of the prfdb
+makeblast      create a local blast database from all the sequences in the genome table
+optimize       perform a mysql specific optimization of the tables in the db
+species        specify a species to work with
+copyfrom       copy the genome table from one database to another
+import         provide a single accession to import into the prfdb
+input_file     provide the filename containing one accession per line
+input_fasta    provide the filename containing fasta input (keep in mind the NCBI format)
+fasta_style    see input_fasta -- currently can handle sgd and ncbi styles
+fillqueue      fill up the queue with everything from the genome table
+resetqueue     set all entries in the queue to unexamined
+startpos       explicitly set the start position for a folding -- for use with --accession
+startmotif     start at a particular subsequence (I don't think this is completed)
+length         set the window size
+landscape_length set the landscape window size
+nupack         explicitly turn on/off nupack
+pknots         explicitly turn on/off pknots
+hotknots       explicitly turn on/off hotknots
+boot           turn on/off randomization
+utr            turn on/off the folding in the 3' utr
+checks         perform a series of checks to see if the database is ready for use
+make_jobs      create job files for PBS
+";
+    print $helpstring;
+    exit(0);
+}
+
 
 sub AUTOLOAD {
     my $me = shift;

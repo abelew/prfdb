@@ -996,7 +996,7 @@ sub Print_Single_Accession {
   $vars->{comments} = $datum->{comment};
   $vars->{orf_start} = $datum->{orf_start};
   $vars->{orf_stop} = $datum->{orf_stop};
-  $vars->{slipsite_count}  = $datum->{slipsite_count};
+  $vars->{slipsite_count} = $datum->{slipsite_count};
   $vars->{structure_count} = $datum->{structure_count};
   $vars->{pretty_mrna_seq} = Create_Pretty_mRNA($accession);
 
