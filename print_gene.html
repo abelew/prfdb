@@ -162,7 +162,7 @@ sub Create_Pretty_mRNA {
 
     for my $c (0 .. $#corrected_slipsites) {
 	if ($seq_counter >= $corrected_slipsites[$c] and $seq_counter < $corrected_slipsites[$c] + 7) {
-	    $seq_array[$seq_counter] = qq(<strong><a href="detail?accession=$accession&slipstart=$slipsite_positions->[$c]" title="View the details for $accession at posisition $slipsite_positions->[$c]"><font color = "Blue">$seq_array[$seq_counter]</font></a></strong>);
+	    $seq_array[$seq_counter] = qq(<strong><a href="detail.html?accession=$accession&slipstart=$slipsite_positions->[$c]" title="View the details for $accession at posisition $slipsite_positions->[$c]"><font color = "Blue">$seq_array[$seq_counter]</font></a></strong>);
         $minus_one_stop_switch = 'on';
 	}
     }    ## End foreach slipstart

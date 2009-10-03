@@ -1,11 +1,11 @@
 #!/usr/bin/perl -w
 use strict;
-use vars qw($db $config);
+use vars qw"$db $config";
 use DBI;
 use lib "$ENV{HOME}/usr/lib/perl5";
 use lib 'lib';
 use PRFConfig;
-use PRFdb qw / AddOpen RemoveFile /;
+use PRFdb qw"AddOpen RemoveFile";
 use RNAMotif_Search;
 use RNAFolders;
 use Bootlace;
@@ -23,25 +23,25 @@ $config = new PRFConfig(config_file => '/usr/local/prfdb/prfdb_test/prfdb.conf')
 $db = new PRFdb(config => $config);
 setpriority(0,0,$config->{niceness});
 $ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}";
-our $state = {time_to_die => undef,
-	      queue_table => undef,
-	      queue_id => undef,
-	      pknots_mfe_id => undef,
-	      nupack_mfe_id => undef,
-	      vienna_mfe_id => undef,
-	      hotknots_mfe_id => undef,
-	      genome_id => undef,
-	      accession => undef,
-	      species => undef,
-	      seqlength => undef,
-	      sequence => undef,
-	      fasta_file => undef,
-      genome_information => undef,
-	      rnamotif_information => undef,
-	      nupack_information => undef,
-	      pknots_information => undef,
-	      boot_information => undef,
-	      done_count => 0,};
+our $state = { time_to_die => undef,
+	       queue_table => undef,
+	       queue_id => undef,
+	       pknots_mfe_id => undef,
+	       nupack_mfe_id => undef,
+	       vienna_mfe_id => undef,
+	       hotknots_mfe_id => undef,
+	       genome_id => undef,
+	       accession => undef,
+	       species => undef,
+	       seqlength => undef,
+	       sequence => undef,
+	       fasta_file => undef,
+	       genome_information => undef,
+	       rnamotif_information => undef,
+	       nupack_information => undef,
+	       pknots_information => undef,
+	       boot_information => undef,
+	       done_count => 0, };
 
 ### START DOING WORK NOW
 chdir($config->{base});

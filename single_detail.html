@@ -41,7 +41,7 @@
 	  <div align="right"><a href="/help_detail.html#help_accession"><strong>Accession: </strong></a></div>
 	</td>
 	<td>
-	  <a href="/browse.html?accession=<% $information->{accession} %>"><% $information->{accession} %></a>
+	  <a href="/search.html?short=1&accession=<% $information->{accession} %>"><% $information->{accession} %></a>
 	</td>
       </tr>
 
@@ -206,7 +206,11 @@
       <tr>
         <td text-align="right"><span style="whitespace: nowrap">
 	  <embed id="feynman" src="<% $information->{feynman_url} %>" align="bottom" width="<% $information->{feynman_width} %>" height="<% $information->{feynman_height} %>" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
-	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;&nbsp;<a href="/download_bpseq.html?mfeid=<% $information->{mfe_id} %>">Download&nbsp;bpseq</a><br>&nbsp;&nbsp;&nbsp;<a href="/download_png.html?accession=<% $information->{accession} %>&mfeid=<% $information->{mfe_id} %>&species=<% $information->{species} %>">Download&nbsp;png</a><br>
+	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;&nbsp;<a href="/download_bpseq.html?mfeid=<% $information->{mfe_id} %>">Download&nbsp;bpseq</a><br>&nbsp;&nbsp;&nbsp;Download
+<a href="/download_png.html?accession=<% $information->{accession} %>&format=png&mfeid=<% $information->{mfe_id} %>&species=<% $information->{species} %>">&nbsp;png,</a>
+<a href="/download_png.html?accession=<% $information->{accession} %>&format=pdf&mfeid=<% $information->{mfe_id} %>&species=<% $information->{species} %>">pdf,</a>
+<a href="/download_png.html?accession=<% $information->{accession} %>&format=ps&mfeid=<% $information->{mfe_id} %>&species=<% $information->{species} %>">ps</a>
+<br>
 	  </font>
         </span>
         </td>

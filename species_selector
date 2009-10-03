@@ -1,4 +1,5 @@
 <select name="<% $select_name %>">
+  <option value="all">all</option>
 % my $index_species = $config->{index_species};
 % foreach my $spec (@{$index_species}) {
 %   my $long_name = $spec;
@@ -6,7 +7,6 @@
 %   $long_name =~ s/_/ /g;
   <option value="<% $spec %>"><% $long_name %></option>
 %  }
-  <option value="all">all</option>
 </select>
 
 <%args>

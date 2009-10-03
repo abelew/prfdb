@@ -2,12 +2,12 @@
  $r->content_type('application/octet-stream');
  my $fh = \*STDOUT;
  my $ref = ref($fh);
- my $filename = qq"${id}.bpseq";
+ my $filename = qq"${mfeid}.bpseq";
  $r->headers_out->add('Content-disposition' => ("attachment; filename=$filename"));
- $db->Mfeid_to_Bpseq($id, $fh);
+ $db->Mfeid_to_Bpseq($mfeid, $fh);
 </%init>
 
 <%args>
- $mfe_id => undef;
+ $mfeid => undef;
  $accession => undef;
 </%args>

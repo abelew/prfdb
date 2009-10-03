@@ -25,6 +25,7 @@ $information->{long_species} = ucfirst($long_species);
 my $species = $information->{species};
 foreach my $structure (@{$info}) {
   my $mfe_id = $structure->[0];
+  $information->{mfe_id} = $mfe_id;
   $information->{mfe} = $structure->[12];
   my $boot_table = "boot_$species";
   my $boot_stmt = qq"SELECT mfe_values, mfe_mean, mfe_sd, mfe_se, zscore FROM $boot_table WHERE mfe_id = ?";
