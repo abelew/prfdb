@@ -62,6 +62,7 @@ sub new {
     $me->{check_webqueue} = 1 if (!defined($me->{check_webqueue}));
     $me->{checks} = 0 if (!defined($me->{checks}));
     $me->{config_file} = 'prfdb.conf' if (!defined($me->{config_file}));
+    $me->{create_boot} = 0 if (!defined($me->{create_boot}));
     $me->{daemon_name} = 'prf_daemon.pl' if (!defined($me->{daemon_name}));
     $me->{database_args} = {AutoCommit => 1} if (!defined($me->{database_args}));
     $me->{database_host} = 'localhost' if (!defined($me->{database_host}));
@@ -99,7 +100,7 @@ sub new {
     $me->{graph_landscape_y_size} = 600 if (!defined($me->{graph_landscape_y_size}));
     $me->{graph_stem_colors} = "black blue red green purple orange brown darkslategray" if (!defined($me->{graph_stem_colors}));
     $me->{has_modperl} = 0 if (!defined($me->{has_modperl}));
-    $me->{index_species} = ['saccharomyces_cerevisiae', 'homo_sapiens', 'bos_taurus', 'danio_rerio', 'mus_musculus', 'rattus_norvegicus', 'xenopus_laevis', 'xenopus_tropicalis', 'saccharomyces_kudriavzevii', 'saccharomyces_castellii', 'saccharomyces_kluyveri', 'saccharomyces_bayanus', 'saccharomyces_paradoxus', 'saccharomyces_mikatae', 'caenorhabiditis_elegans', 'virus'] if (!defined($me->{index_species}));
+    $me->{index_species} = ['saccharomyces_cerevisiae', 'homo_sapiens', 'bos_taurus', 'danio_rerio', 'mus_musculus', 'rattus_norvegicus', 'xenopus_laevis', 'xenopus_tropicalis', 'saccharomyces_kudriavzevii', 'saccharomyces_castellii', 'saccharomyces_kluyveri', 'saccharomyces_bayanus', 'saccharomyces_paradoxus', 'schizosaccharomyces_pombe', 'saccharomyces_mikatae', 'caenorhabiditis_elegans', 'virus'] if (!defined($me->{index_species}));
     $me->{INCLUDE_PATH} = 'html/' if (!defined($me->{INCLUDE_PATH}));
     $me->{INTERPOLATE} = 1 if (!defined($me->{INTERPOLATE}));
     $me->{landscape_seqlength} = 105 if (!defined($me->{landscape_seqlength}));

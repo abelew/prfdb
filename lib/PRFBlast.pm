@@ -5,12 +5,14 @@ use Bio::SeqIO;
 use Bio::SearchIO::blast;
 use Bio::Tools::Run::StandAloneBlast;
 use Bio::Tools::Run::RemoteBlast;
-use PRFConfig;
 
-my $config = $PRFConfig::config;
+my $config;
 
 sub new {
     my ($class, %arg) = @_;
+    if (defined($arg{config})) {
+	$config = $arg{config};
+    }
     my $me = bless {}, $class;
     return ($me);
 }
@@ -18,7 +20,8 @@ sub new {
 sub Format_Db {
     my $me = shift;
     my $input = shift;                                                       ## Fasta file to format.
-    my $command = qq(cd $config->{blastdir} && formatdb  -i $input -p F -o T -n nr -s);
+    my $command = qq"cd $config->{blastdir} && formatdb  -i $input -p F -o T -n nr -s";
+    print "TESTME: $command\n";
     system($command);
 }
 
@@ -35,7 +38,6 @@ sub Search {
     $sequence =~ s/\d+//g;
     $sequence =~ tr/Uu/Tt/;
     my @tmp = split(//, $sequence);
-    
     foreach my $char (@tmp) {
 	if ($char != "A" and $char != "a" 
 	    and $char != "T" and $char != "t" 
@@ -47,6 +49,7 @@ sub Search {
     }
     my $seq = new Bio::Seq(-display_id => 'query',
 			   -seq => $sequence,);
+    $location = 'local' if ($location ne 'local' and $location ne 'remote');
     if ($location eq 'local') {
 	my @params = (program => 'blastn',
 		      ## -I tells blast to output the GI identifier
@@ -73,25 +76,25 @@ sub Search {
 		      );
 	
 	$factory = new Bio::Tools::Run::RemoteBlast(@params);
-	print STDERR "TESTME:$seq $factory\n";
+#	print STDERR "TESTME:$seq $factory\n";
 	my $r = $factory->submit_blast($seq);
-	print STDERR "TESTME, did submit_blast work? $r\n";
+#	print STDERR "TESTME, did submit_blast work? $r\n";
 	my $rid_counter = 0;
       LOOP: while (my @rids = $factory->each_rid()) {
 	  foreach my $rid (@rids) {
 	      $rid_counter++;
-	      print STDERR "RID_COUNTER: $rid_counter\n";
+#	      print STDERR "RID_COUNTER: $rid_counter\n";
 	      $blast_output = $factory->retrieve_blast($rid);
 	      if (!ref($blast_output)) {
 		  if ($blast_output < 0) {
-		      print STDERR "blast_output is less than 0 $blast_output\n";
+#		      print STDERR "blast_output is less than 0 $blast_output\n";
 		      $factory->remove_rid($rid);
 		  }
-		  print STDERR ". ";
+#		  print STDERR ". ";
 		  sleep(1);
 	      } 
 	      else {
-		  print STDERR "Got here\n";
+#		  print STDERR "Got here\n";
 		  $result = $blast_output->next_result();
 		  if (defined($result)) {
 		      $factory->remove_rid($rid);
@@ -101,7 +104,7 @@ sub Search {
       }    ## End all rids
     } ## Endif is the location 'remote'
     else {
-	print STDERR "$location is neither remote nor local, something is wrong\n";
+#	print STDERR "$location is neither remote nor local, something is wrong\n";
 	return(undef);
     }
     my $count = 0;

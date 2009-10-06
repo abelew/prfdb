@@ -156,13 +156,6 @@ $structure->[8]
   $information->{parsed} = $parsed;
   $information->{feynman_height} = $feynman_dimensions->{height};
   $information->{feynman_width} = $feynman_dimensions->{width};
- if ($accession =~ /^SGDID/) {
-   $information->{short_accession} = $accession;
-   $information->{short_accession} =~ s/^SGDID\://g;
- } elsif ($accession =~ /^BC/) {
-   $information->{short_accession} = undef;
-   $information->{genbank_accession} = $accession;
- }
   $information->{accession} = $accession;
   $m->comp('single_detail.html', information=>$information,);
 }    ## End foreach structure in the database

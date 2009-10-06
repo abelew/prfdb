@@ -1,0 +1,24 @@
+% my ($short_accession, $genbank_accession);
+% if ($accession =~ /^SGDID/) {
+%  $short_accession = $accession;
+%  $short_accession =~ s/^SGDID\://g;
+%  $genbank_accession = undef;
+% } elsif ($accession =~ /^BC/) {
+%  $genbank_accession = $accession;
+%  $short_accession = undef;
+% }
+% if (defined($short_accession)) {
+	  <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=<% $short_accession %>" rel="external" target="_blank">SGD link</a>
+% } elsif (defined($genbank_accession)) {
+          <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=<% $genbank_accession %>&go=Go" rel="external" target="_blank">NCBI link</a>
+% }
+
+% if (defined($omim_id)) {
+   , <a href="http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=<% $omim_id %>" title="View the omim entry associated with <% $genbank_accession %>" rel="external" target="_blank">OMIM Link</a>
+% }
+
+
+<%args>
+  $accession => "SGDID:S00001"
+  $omim_id => undef,
+</%args>

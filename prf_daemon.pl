@@ -56,6 +56,11 @@ if (defined($config->{index_stats})) {
     Make_Index_Stats();
     exit(0);
 }
+if ($config->{create_boot}) {
+    die("Need species unless") unless (defined($config->{species}));
+    my $table = "boot_$config->{species}";
+    $db->Create_Boot($table);
+}
 if (defined($config->{makeblast})) {
     Make_Blast();
     exit(0);
@@ -118,7 +123,6 @@ if (defined($config->{accession})) {
 }
 if (defined($config->{import_accession})) {
     my $accession = $config->{import_accession};
-    print "Importing Accession: $accession\n";
     $db->Import_CDS($accession);
     $state->{queue_id} = 0;
     ## Dumb hack lives on
@@ -137,18 +141,11 @@ if (defined($config->{import_accession})) {
 }  ## Endif used the import_accession arg
 if (defined($config->{input_fasta})) {
     my $queue_ids;
-    if (defined( $config->{startpos})) {
+    if (defined($config->{startpos})) {
 	$queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style}, $config->{startpos});
     } 
     else {
 	$queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style});
-    }
-    
-    foreach my $queue_id (@{$queue_ids}) {
-	$state->{genome_id} = $db->Get_GenomeId_From_QueueId($queue_id);
-	$state->{queue_id}  = $queue_id;
-	print "Performing gather for genome_id $state->{genome_id}";
-	Gather($state);
     }
     exit(0);
 }
@@ -843,13 +840,13 @@ sub Optimize {
 }
 
 sub CLEANUP {
-    $db->Disconnect();
+    $db->Disconnect() if (defined($db));
     PRFdb::RemoveFile('all') if (defined($config->{remove_end}));
     print "\n\nCaught Fatal signal.\n\n";
     exit(0);
 }
 
 END {
-    $db->Disconnect();
+    $db->Disconnect() if (defined($db));
     PRFdb::RemoveFile('all') if (defined($config->{remove_end}));
 }

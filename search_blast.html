@@ -1,0 +1,71 @@
+% if (!defined($search_string)) {
+<p>search_string is not defined</p>
+%   if (defined($start) and defined($accession)) {
+%     $search_string = $db->MySelect(statement => "SELECT sequence FROM mfe WHERE accession = ? AND start = ? LIMIT 1", vars => [$accession, $start], type => 'single');
+%   } elsif (defined($accession)) {
+%     $search_string = $db->MySelect(statement => "SELECT mrna_Seq FROM genome WHERE accession = ? LIMIT 1", vars => [$accession], type => 'single');
+%   }
+% }
+% $search_string =~ tr/Uu/Tt/;
+% $search_string =~ s/\s//g;
+% my $blast = new PRFBlast(config=>$config);
+</p>
+% my $local_info = $blast->Search($search_string, $location);
+<p>Searching the <% $location %> BLAST database, the query sequence has <% $local_info->{query_length} %> bases.<br>
+% my (%hit_names, %accessions, %lengths, %descriptions, %scores, %significances, %bitses);
+% my (%hsps_evalue, %hsps_expect, %hsps_gaps, %hsps_querystring, %hsps_homostring, %hsps_hitstring, %hsps_numid, %hsps_numcon, %hsps_length, %hsps_score);
+% if (!defined($local_info->{hits})) {
+    <p>There were no hits in the blast database.<br></p>
+% }
+% my @hits = @{$local_info->{hits}};
+% foreach my $c (0 .. $#hits) {
+<p>Hit Number: <% $c %><br>
+Name: <% $local_info->{hits}->[$c]->{hit_name} %><br>
+Accession: <a href="/browse.html?accession=<% $local_info->{hits}->[$c]->{accession} %>">
+  <% $local_info->{hits}->[$c]->{accession} %></a><br>
+Length: <% $local_info->{hits}->[$c]->{length} %><br>
+Description: <% $local_info->{hits}->[$c]->{description} %><br>
+Score: <% $local_info->{hits}->[$c]->{score} %>
+   Signifigance: <% $local_info->{hits}->[$c]->{significance} %>
+   Bits: <% $local_info->{hits}->[$c]->{bits} %><br>
+%    my @hsps = ();
+%    if (defined(@{$local_info->{hits}->[$c]->{hsps}})) {
+%      @hsps = @{$local_info->{hits}->[$c]->{hsps}};
+%    }
+%    foreach my $d (0 .. $#hsps) {
+HSP: <% $d %><br>
+Evalue: <% $local_info->{hits}->[$c]->{hsps}->[$d]->{evalue} %>
+  Gaps: <% $local_info->{hits}->[$c]->{hsps}->[$d]->{gaps} %>
+  Number Identical: <% $local_info->{hits}->[$c]->{hsps}->[$d]->{num_identical} %>
+  Score: <% $local_info->{hits}->[$c]->{hsps}->[$d]->{score} %>
+% my @query_array = split(//, $local_info->{hits}->[$c]->{hsps}->[$d]->{query_string});
+% my @homo_array = split(//, $local_info->{hits}->[$c]->{hsps}->[$d]->{homology_string});
+% my @hit_array = split(//, $local_info->{hits}->[$c]->{hsps}->[$d]->{hit_string});
+% my ($query_string, $homo_string, $hit_string);
+% while (scalar(@query_array) > 90 or scalar(@query_array) > 0) {
+%  foreach my $c (0 .. 89) {
+%    $query_string .= shift(@query_array) if (defined($query_array[0]));
+%    $homo_string .= shift(@homo_array) if (defined($homo_array[0]));
+%    $hit_string .= shift(@hit_array) if (defined($hit_array[0]));
+% }
+<pre>
+<% $query_string %>
+<% $homo_string %>
+<% $hit_string %>
+</pre>
+% $query_string = '';
+% $homo_string = '';
+% $hit_string = '';
+%       }
+%     }
+<hr>
+<br>
+% }
+
+
+<%args>
+  $start => undef
+  $accession => undef
+  $search_string => undef
+  $location => undef
+</%args>
