@@ -723,24 +723,22 @@ sub Add_Webqueue {
 
 sub Set_Queue {
     my $me = shift;
-    my $id = shift;
-    my $datum = shift;
+    my %args = @_;
+    my $id = $args{id};
     my $table = 'queue';
     if (defined($config->{queue_table})) {
 	$table = $config->{queue_table};
     }
-    if (defined($datum->{queue_table})) {
-	$table = $datum->{queue_table};
+    if (defined($args{queue_table})) {
+	$table = $args{queue_table};
     }
     my $num_existing_stmt = qq"SELECT count(id) FROM $table WHERE genome_id = '$id'";
-    my $num_existing = $me->MySelect({
-	statement => $num_existing_stmt,
-	type => 'single',});
+    my $num_existing = $me->MySelect(statement => $num_existing_stmt,type => 'single',);
     if (!defined($num_existing) or $num_existing == 0) {
 	my $statement = qq"INSERT INTO $table VALUES('','$id','0','','0','')";
 	my ($cp,$cf,$cl) = caller();
-	my $rc = $me->MyExecute({statement => $statement, caller => "$cp,$cf,$cl",});
-	my $last_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
+	my $rc = $me->MyExecute(statement => $statement, caller => "$cp,$cf,$cl",);
+	my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
 	return ($last_id);
     }
     else {
@@ -983,7 +981,7 @@ sub Import_Fasta {
                     $datum{orf_stop} = length($datum{mrna_seq});
                 }
                 my $genome_id = $me->Insert_Genome_Entry(\%datum);
-                my $queue_id = $me->Set_Queue($genome_id, \%datum);
+                my $queue_id = $me->Set_Queue(id => $genome_id,);
                 my $queue_num = "$queue_id";
                 print "Added $queue_num\n";
                 push(@return_array, $queue_num);
@@ -1100,7 +1098,7 @@ sub Import_Fasta {
     }
     
     my $genome_id = $me->Insert_Genome_Entry(\%datum);
-    my $queue_id = $me->Set_Queue($genome_id, \%datum);
+    my $queue_id = $me->Set_Queue(id => $genome_id,);
     print "Added $queue_id\n" if(defined($config->{debug}));
     push(@return_array, $queue_id);
     return (\@return_array);
@@ -1185,7 +1183,7 @@ sub Import_Genbank_Flatfile {
 	    # my $genome_id = $me->Insert_Genome_Entry(\%datum);
 	    # if (defined($genome_id)) {
 	    # my $return = "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
-	    # $me->Set_Queue($genome_id);
+	    # $me->Set_Queue(id => $genome_id);
 	    # }
 	    # else {
 	    # $return .= "Did not insert anything into the genome table.\n";
@@ -1193,7 +1191,7 @@ sub Import_Genbank_Flatfile {
 	    # statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",
 	    # type => 'single'});
 	    # print "Doing set_Queue with genome_id $gid\n";
-	    # $me->Set_Queue($gid);
+	    # $me->Set_Queue(id => $gid);
 	    # }
 	    # print $return;
 	    #}
@@ -1298,7 +1296,7 @@ sub Import_CDS {
 	my $genome_id = $me->Insert_Genome_Entry(\%datum);
 	if (defined($genome_id)) {
 	    $return .= "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
-	    $me->Set_Queue($genome_id);
+	    $me->Set_Queue(id => $genome_id);
 	}
 	else {
 	    $return .= "Did not insert anything into the genome table.\n";
@@ -1306,7 +1304,7 @@ sub Import_CDS {
 		statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",
 		type => 'single'});
 	    print "Doing set_Queue with genome_id $gid\n";
-	    $me->Set_Queue($gid);
+	    $me->Set_Queue(id => $gid);
 	}
 	print $return;
     }

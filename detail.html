@@ -32,9 +32,11 @@ foreach my $structure (@{$info}) {
   my $boot = $db->MySelect({statement => $boot_stmt, type => 'row', vars=>[$mfe_id],});
   if (!defined($boot) and $config->{do_boot} == 2) {
     ## Add it to the webqueue
-    $db->Set_Queue($information->{genome_id}, 'webqueue');
+    $db->Set_Queue(id => $information->{genome_id}, queue_table => 'webqueue');
   } elsif (!defined($boot) and $config->{do_boot} == 1) {
-#    $accession = $structure->[2];
+#
+
+    $accession = $structure->[2];
     $m->comp('generate_boot.html');  ## , width => 11, height => 1,
     my $data = ">tmp
 $structure->[8]
