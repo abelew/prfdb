@@ -12,6 +12,7 @@ use RNAFolders;
 use PRFGraph;
 use SeqMisc;
 use PRFBlast;
+use HTMLMisc;
 
 Apache::DBI->connect_on_init('DBI:mysql:prfdb_test:localhost', 'prfdb', 'drevil') or die "Can't connect to database: $DBI::errstr";
 #Apache::DBI->connect_on_init('DBI:mysql:sessions:localhost', 'sessions', 'cbmg_sessions') or die "Can't connect to database: $DBI::errstr";

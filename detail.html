@@ -140,7 +140,6 @@ $structure->[8]
   $information->{brackets} .= '.' x $delta;
   
   my $feynman = $feynman_pic;
-  use HTMLMisc;
   my $minus_string = HTMLMisc::Make_Minus($pk_input);
   my $color_minus = HTMLMisc::Color_Stems($minus_string, $parsed, $config->{graph_stem_colors});
   $information->{color_minus} = $color_minus;

@@ -21,7 +21,11 @@
 % foreach my $c (0 .. $#hits) {
 <p>Hit Number: <% $c %><br>
 Name: <% $local_info->{hits}->[$c]->{hit_name} %><br>
+% if ($location eq 'local') {
 Accession: <a href="/browse.html?accession=<% $local_info->{hits}->[$c]->{accession} %>">
+% } else {
+Importing doesn't work yet, Accession: <a href="/import.html?accession=<% $local_info->{hits}->[$c]->{accession} %>">
+% }
   <% $local_info->{hits}->[$c]->{accession} %></a><br>
 Length: <% $local_info->{hits}->[$c]->{length} %><br>
 Description: <% $local_info->{hits}->[$c]->{description} %><br>

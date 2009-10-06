@@ -38,9 +38,7 @@ my $accession = $entries->{$entries_keys[0]}->{accession};
 my $long_species;
 </%perl>
 % if ($entries_count == 1) {
-% $long_species = $entries->{$entries_keys[0]}->{species};
-% $long_species =~ s/_/ /g;
-% $long_species = ucfirst($long_species);
+% $long_species = HTMLMisc::Make_Species($entries->{$entries_keys[0]}->{species});
 % my $genename = $entries->{$entries_keys[0]}->{genename};
 % my $accession = $entries->{$entries_keys[0]}->{accession};
 % my $comment = $entries->{$entries_keys[0]}->{comment};
