@@ -19,9 +19,7 @@ my $genome_stmt = qq"SELECT genename,species FROM genome where id = ?";
 my $genome_info = $db->MySelect({statement => $genome_stmt,vars => [$information->{genome_id}]});
 $information->{genename} = $genome_info->[0]->[0];
 $information->{species} = $genome_info->[0]->[1];
-my $long_species = $information->{species};
-$long_species =~ s/_/ /g;
-$information->{long_species} = ucfirst($long_species);
+my $long_species = HTMLMisc::Make_Species($information->{species});
 my $species = $information->{species};
 foreach my $structure (@{$info}) {
   my $mfe_id = $structure->[0];

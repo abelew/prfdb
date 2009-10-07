@@ -70,9 +70,7 @@ my $long_species;
   </tr>
 % foreach my $entry (sort keys %{$entries}) {
 % my $species = $entries->{$entry}->{species};
-% $long_species = $entries->{$entry}->{species};
-% $long_species =~ s/_/ /g;
-% $long_species = ucfirst($long_species);
+% $long_species = HTMLMisc::Make_Species($entries->{$entry}->{species});
 % $entries->{$entry}->{long_species} = $long_species;
 % my $slip_stmt = qq"SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?";
 % my $slipsite_structure_count = $db->MySelect(statement => $slip_stmt, vars => [$entries->{$entry}->{accession}], type => 'row');

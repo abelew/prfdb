@@ -7,9 +7,7 @@ $sth->execute or die "Couldn't get index_stats " . $dbh->errstr;
   <td width="20%">
     <p>
 % while (my $datum = $sth->fetchrow_hashref) {
-% my $long_species = ucfirst($datum->{species});
-% $long_species =~ s/\_/ /g;
- <i><% $datum->{num_mfe_entries} %> <a href="/distribution.html?species=<% $datum->{species} %>&seqlength=100&slipsites=all"><% $long_species %></a></i> sequence windows<br>
+ <i><% $datum->{num_mfe_entries} %> <a href="/distribution.html?species=<% $datum->{species} %>&seqlength=100&slipsites=all"><% HTMLMisc::Make_Species($datum->{species}) %></a></i> sequence windows<br>
  comprising <% $datum->{num_mfe_knotted} %> of <% $datum->{num_genome} %> genes.<br><br>
 %}
     </p>
