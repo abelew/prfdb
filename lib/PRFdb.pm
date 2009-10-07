@@ -197,7 +197,7 @@ sub MyExecute {
     my $sth = $dbh->prepare($statement);
     my $rv;
     if (defined($input->{vars})) {
-	$rv = $sth->execute( @{$input->{vars}});
+	$rv = $sth->execute(@{$input->{vars}});
     }
     else {
 	$rv = $sth->execute();

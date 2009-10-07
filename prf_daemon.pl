@@ -86,8 +86,8 @@ if (defined($config->{blast})) {
 }
 if (defined($config->{fillqueue})) {
     $db->FillQueue();
-    my $num = $db->MySelect("SELECT count(id) from $config->{queue_table}");
-    print "The queue now has $num->[0] entries\n";
+    my $num = $db->MySelect(statement => "SELECT count(id) from $config->{queue_table}", type => 'single');
+    print "The queue now has $num entries\n";
     exit(0);
 }
 if (defined($config->{resetqueue})) {
@@ -224,9 +224,7 @@ sub PRF_Gatherer {
     my $len = shift;
     my $startpos = shift;
     ## Check for existence in the noslipsite table
-    my $noslipsite = $db->MySelect({
-	statement =>"SELECT num_slipsite FROM numslipsite WHERE accession = '$state->{accession}'",
-	type => 'row'});
+    my $noslipsite = $db->MySelect(statement =>"SELECT num_slipsite FROM numslipsite WHERE accession = ?", type => 'row', vars => [$state->{accession}],);
     return(undef) if (defined($noslipsite->[0]) and $noslipsite->[0] == 0);
     $state->{genome_information} = $db->Get_ORF($state->{accession});
     my $sequence = $state->{genome_information}->{sequence};
@@ -267,10 +265,7 @@ sub PRF_Gatherer {
       print "PRF_Gatherer: $current $slipsite_start\n" if (defined($config->{debug}));
       $num_slipsites++;
       if ($config->{do_utr} == 0) {
-	  my $end_of_orf = $db->MySelect({
-	      statement => "SELECT orf_stop FROM genome WHERE accession = ?",
-	      vars => [$state->{accession}], 
-	      type =>'row',});
+	  my $end_of_orf = $db->MySelect(statement => "SELECT orf_stop FROM genome WHERE accession = ?", vars => [$state->{accession}], type =>'row',);
 	  if ($end_of_orf->[0] < $slipsite_start) {
 	      PRFdb::RemoveFile($rnamotif_information->{$slipsite_start}{filename});
 		next STARTSITE;
@@ -335,18 +330,9 @@ sub PRF_Gatherer {
 	  $db->MyExecute($update_string);
       }
       if ($config->{do_boot}) {
-          my $tmp_nupack_mfe_id = $db->MySelect({
-              statement => qq/SELECT id FROM mfe WHERE accession = '$state->{accession}' AND start = '$slipsite_start'
- AND seqlength = '$state->{seqlength}' AND algorithm = 'nupack'/,
-              type => 'single'});
-          my $tmp_pknots_mfe_id = $db->MySelect({
-              statement => qq/SELECT id FROM mfe WHERE accession = '$state->{accession}' AND start = '$slipsite_start'
- AND seqlength = '$state->{seqlength}' AND algorithm = 'pknots'/,
-              type => 'single'});
-          my $tmp_hotknots_mfe_id = $db->MySelect({
-              statement => qq/SELECT id FROM mfe WHERE accession = '$state->{accession}' AND start = '$slipsite_start'
- AND seqlength = '$state->{seqlength}' AND algorithm = 'hotknots'/,
-              type => 'single'});
+          my $tmp_nupack_mfe_id = $db->MySelect(statement => qq"SELECT id FROM mfe WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'nupack'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
+          my $tmp_pknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM mfe WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'pknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
+          my $tmp_hotknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM mfe WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'hotknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
 
 	  my $boot = new Bootlace(genome_id => $state->{genome_id},
 				  nupack_mfe_id => (defined($state->{nupack_mfe_id})) ?
@@ -565,9 +551,7 @@ sub Check_Boot_Connectivity {
     
     my $boot_table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
     my $check_statement = qq/SELECT mfe_id, mfe_method, id, genome_id FROM $boot_table WHERE genome_id = ? and start = ?/;
-    my $answer = $db->MySelect({
-	statement => $check_statement,
-	vars =>[$genome_id, $slipsite_start],});
+    my $answer = $db->MySelect(statement => $check_statement, vars =>[$genome_id, $slipsite_start],);
     my $num_fixed = 0;
     foreach my $boot (@{$answer}) {
 	my $mfe_id = $boot->[0];
@@ -577,9 +561,7 @@ sub Check_Boot_Connectivity {
 	if (!defined($mfe_id) or $mfe_id == '0') {
 	    ## Then reconnect it using $mfe_method and $boot_id and $genome_id
 	    my $new_mfe_id_stmt = qq(SELECT id FROM mfe where genome_id = ? and start = ? and algorithm = ?);
-	    my $new_mfe_id_arrayref = $db->MySelect({
-		statement => $new_mfe_id_stmt,
-		vars => [$genome_id, $slipsite_start, $mfe_method],});
+	    my $new_mfe_id_arrayref = $db->MySelect(statement => $new_mfe_id_stmt, vars => [$genome_id, $slipsite_start, $mfe_method],);
 	    my $new_mfe_id = $new_mfe_id_arrayref->[0]->[0];
 	    if ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'nupack') {
 		### Then there is no nupack information :(
@@ -604,9 +586,7 @@ sub Check_Boot_Connectivity {
 	    } ### End if there is no mfe_id and pknots was the algorithm
 	    my $update_mfe_id_statement = qq(UPDATE $boot_table SET mfe_id = ? WHERE id = ?);
 	    my ($cp,$cf, $cl) = caller(0);
-	    $db->MyExecute({statement => $update_mfe_id_statement,
-			    vars =>[$new_mfe_id, $boot_id],
-			    caller =>"$cp $cf $cl",});
+	    $db->MyExecute(statement => $update_mfe_id_statement, vars =>[$new_mfe_id, $boot_id], caller =>"$cp $cf $cl",);
 	    $num_fixed++;
 	}    ### End if there is no mfe_id
     }    ### End foreach boot in the list
@@ -756,18 +736,18 @@ sub Make_Index_Stats {
     foreach my $species (@{$species_list}) {
 	print "Working on $species->[0]\n";
 	next if ($species->[0] =~ /^virus-/);
-	$num_genome = $db->MySelect({statement=>qq/SELECT COUNT(id) FROM genome WHERE species = '$species->[0]'/, type=>'single'});
-	$num_mfe_entries = $db->MySelect({statement=>qq/SELECT COUNT(id) FROM mfe WHERE species = '$species->[0]'/,type=>'single'});
-	$num_mfe_knotted = $db->MySelect({statement=>qq/SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = '$species->[0]'/,type=>'single'});
+	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species->[0],]);
+	$num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species = ?",type=>'single', vars => [$species->[0],]);
+	$num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = ?",type=>'single', vars => [$species->[0]],);
 	my ($cp,$cf,$cl) = caller();
-	my $rc = $db->MyExecute({statement => qq/DELETE FROM index_stats WHERE species = '$species->[0]'/, caller => "$cp,$cf,$cl",});
-	$rc = $db->MyExecute({statement => qq/INSERT INTO index_stats VALUES('', '$species->[0]', '$num_genome','$num_mfe_entries','$num_mfe_knotted')/});
+	my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = ?", caller => "$cp,$cf,$cl", vars => [$species->[0]],);
+	$rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('',?,?,?,?)", vars => [$species->[0], $num_genome, $num_mfe_entries, $num_mfe_knotted],);
     }
-    my $rc = $db->MyExecute({statement => qq/DELETE FROM index_stats WHERE species = 'virus'/});
-    $num_genome = $db->MySelect({statement=>qq/SELECT COUNT(id) FROM genome WHERE species like 'virus-%'/, type=>'single'});
-    $num_mfe_entries = $db->MySelect({statement=>qq/SELECT COUNT(id) FROM mfe WHERE species like 'virus-%'/,type=>'single'});
-    $num_mfe_knotted = $db->MySelect({statement=>qq/SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species like 'virus-%'/,type=>'single'});
-    $rc = $db->MyExecute({statement => qq/INSERT INTO index_stats VALUES('', 'virus', '$num_genome','$num_mfe_entries','$num_mfe_knotted')/});
+    my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = 'virus'");
+    $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species like 'virus-%'", type=>'single');
+    $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species like 'virus-%'",type=>'single');
+    $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species like 'virus-%'",type=>'single');
+    $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('', 'virus',?,?,?)", vars => [$num_genome, $num_mfe_entries, $num_mfe_knotted],);
 }
 
 sub Make_Landscape_Tables {

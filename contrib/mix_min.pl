@@ -22,103 +22,11 @@ my $num = {
 };
 my $total = $num->{A} + $num->{T} + $num->{C} + $num->{G};
 my @order = ();
-if ($num->{A} >= $num->{T} and $num->{A} >= $num->{G} and $num->{A} >= $num->{C}) {
-    push(@order, 'A');
-    if ($num->{T} >= $num->{G} and $num->{T} >= $num->{C}) {
-	push(@order, 'T');
-	if ($num->{G} >= $num->{C}) {
-	    push(@order, 'G'), push(@order, 'C');
-	} else {
-	    push(@order, 'C'), push(@order, 'G');
-	}
-    } elsif ($num->{G} >= $num->{C} and $num->{G} >= $num->{T}) {
-	push(@order, 'G');
-	if ($num->{C} >= $num->{T}) {
-	    push(@order, 'C'), push(@order, 'T');
-	} else {
-	    push(@order, 'T'), push(@order, 'C');
-	}
-    } elsif ($num->{C} >= $num->{G} and $num->{C} >= $num->{T}) {
-	push(@order, 'C');
-	if ($num->{G} >= $num->{T}) {
-	    push(@order, 'G'), push(@order, 'T');
-	} else {
-	    push(@order, 'T'), push(@order, 'G');
-	}
-    }
-} elsif ($num->{T} >= $num->{G} and $num->{T} >= $num->{C} and $num->{T} >= $num->{A}) {
-    push(@order, 'T');
-    if ($num->{A} >= $num->{G} and $num->{A} >= $num->{C}) {
-	push(@order, 'A');
-	if ($num->{G} >= $num->{C}) {
-	    push(@order, 'G'), push(@order, 'C');
-	} else {
-	    push(@order, 'C'), push(@order, 'G');
-	}
-    } elsif ($num->{G} >= $num->{A} and $num->{G} >= $num->{C}) {
-	push(@order, 'G');
-	if ($num->{A} >= $num->{C}) {
-	    push(@order, 'C'), push(@order, 'A');
-	} else {
-	    push(@order, 'A'), push(@order, 'C');
-	}
-    } elsif ($num->{C} >= $num->{A} and $num->{C} >= $num->{G}) {
-	push(@order, 'C');
-	if ($num->{A} >= $num->{G}) {
-	    push(@order, 'A'), push(@order, 'G');
-	} else {
-	    push(@order, 'G'), push(@order, 'A');
-	}
-    }
-} elsif ($num->{G} >= $num->{C} and $num->{G} >= $num->{A} and $num->{G} >= $num->{T}) {
-    push(@order, 'G');
-    if ($num->{A} >= $num->{C} and $num->{A} >= $num->{T}) {
-	push(@order, 'A');
-	if ($num->{C} >= $num->{T}) {
-	    push(@order, 'C'), push(@order, 'T');
-	} else {
-	    push(@order, 'T'), push(@order, 'C');
-	}
-    } elsif ($num->{C} >= $num->{A} and $num->{C} >= $num->{T}) {
-	push(@order, 'C');
-	if ($num->{A} >= $num->{T}) {
-	    push(@order, 'A'), push(@order, 'T');
-	} else {
-	    push(@order, 'T'), push(@order, 'A');
-	}
-    } elsif ($num->{T} >= $num->{A} and $num->{T} >= $num->{C}) {
-	push(@order, 'T');
-	if ($num->{A} >= $num->{C}) {
-	    push(@order, 'A'), push(@order, 'C');
-	} else {
-	    push(@order, 'C'), push(@order, 'A');
-	}
-    }
-} else {
-    push(@order, 'C');
-    if ($num->{A} >= $num->{G} and $num->{A} >= $num->{T}) {
-	push(@order, 'A');
-	if ($num->{G} >= $num->{T}) {
-	    push(@order, 'G'), push(@order, 'T');
-	} else {
-	    push(@order, 'T'), push(@order, 'G');
-	}
-    } elsif ($num->{G} >= $num->{T} and $num->{G} >= $num->{A}) {
-	push(@order, 'G');
-	if ($num->{T} >= $num->{A}) {
-	    push(@order, 'T'), push(@order, 'A');
-	} else {
-	    push(@order, 'A'), push(@order, 'T');
-	}
-    } elsif ($num->{T} >= $num->{A} and $num->{T} >= $num->{A}) {
-	push(@order, 'T');
-	if ($num->{A} >= $num->{G}) {
-	    push(@order, 'A'), push(@order, 'G');
-	} else {
-	    push(@order, 'G'), push(@order, 'A');
-	}
-    }
+foreach my $nucleotide (sort { $num->{$b} <=> $num->{$a} } keys %{$num}) {
+    print "TESTME $nucleotide $num->{$nucleotide}\n";
+    push(@order, $nucleotide);
 }
+
 print "Nums: A:$num->{A} T:$num->{T} C:$num->{C} G:$num->{G} total:$total\n";
 my @new = ();
 my %pairs = ('A' => ['T'],
@@ -126,7 +34,7 @@ my %pairs = ('A' => ['T'],
 	     'G' => ['C','T'],
 	     'C' => ['G'],);
 my $min;
-my $fun = 4;
+$fun = 4;
 while ($fun > 0) {
     $fun--;
     $min = pop(@order);
