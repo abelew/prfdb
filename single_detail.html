@@ -9,11 +9,7 @@
 	</td>
 	<td>
         <% $information->{genename} %>,
-% if ($information->{short_accession}) {
-	  <a href="http://db.yeastgenome.org/cgi-bin/locus.pl?locus=<% $information->{short_accession} %>" rel="external" target="_blank">SGD link</a>
-% } elsif ($information->{genbank_accession}) {
-          <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=nuccore&cmd=&term=<% $information->{genbank_accession} %>&go=Go" rel="external" target="_blank">NCBI link</a>
-% }
+<& link_out.html, accession => $information->{accession} &>
 	</td>
       </tr>
     </table>
@@ -168,7 +164,7 @@
       <tr>
 	<td text-align="right"><span style="whitespace: nowrap">
 	  <div class="fixedfont"><font face="Courier New, Courier, mono"><% $information->{numbers} %></font>
-	  <font face="Courier New, Courier, mono" size="-3"><a href="/search_local_blast.html?accession=<% $information->{accession} %>&start=<% $information->{slipstart} %>">&nbsp;Blast&nbsp;subsequence</a>
+	  <font face="Courier New, Courier, mono" size="-3"><a href="/search_blast.html?location=local&accession=<% $information->{accession} %>&start=<% $information->{slipstart} %>">&nbsp;Blast&nbsp;subsequence</a>
           </font></div>
          </span>
         </td>

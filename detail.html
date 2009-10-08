@@ -19,9 +19,7 @@ my $genome_stmt = qq"SELECT genename,species FROM genome where id = ?";
 my $genome_info = $db->MySelect({statement => $genome_stmt,vars => [$information->{genome_id}]});
 $information->{genename} = $genome_info->[0]->[0];
 $information->{species} = $genome_info->[0]->[1];
-my $long_species = $information->{species};
-$long_species =~ s/_/ /g;
-$information->{long_species} = ucfirst($long_species);
+my $long_species = HTMLMisc::Make_Species($information->{species});
 my $species = $information->{species};
 foreach my $structure (@{$info}) {
   my $mfe_id = $structure->[0];
@@ -32,9 +30,11 @@ foreach my $structure (@{$info}) {
   my $boot = $db->MySelect({statement => $boot_stmt, type => 'row', vars=>[$mfe_id],});
   if (!defined($boot) and $config->{do_boot} == 2) {
     ## Add it to the webqueue
-    $db->Set_Queue($information->{genome_id}, 'webqueue');
+    $db->Set_Queue(id => $information->{genome_id}, queue_table => 'webqueue');
   } elsif (!defined($boot) and $config->{do_boot} == 1) {
-#    $accession = $structure->[2];
+#
+
+    $accession = $structure->[2];
     $m->comp('generate_boot.html');  ## , width => 11, height => 1,
     my $data = ">tmp
 $structure->[8]
@@ -138,7 +138,6 @@ $structure->[8]
   $information->{brackets} .= '.' x $delta;
   
   my $feynman = $feynman_pic;
-  use HTMLMisc;
   my $minus_string = HTMLMisc::Make_Minus($pk_input);
   my $color_minus = HTMLMisc::Color_Stems($minus_string, $parsed, $config->{graph_stem_colors});
   $information->{color_minus} = $color_minus;
@@ -156,13 +155,6 @@ $structure->[8]
   $information->{parsed} = $parsed;
   $information->{feynman_height} = $feynman_dimensions->{height};
   $information->{feynman_width} = $feynman_dimensions->{width};
- if ($accession =~ /^SGDID/) {
-   $information->{short_accession} = $accession;
-   $information->{short_accession} =~ s/^SGDID\://g;
- } elsif ($accession =~ /^BC/) {
-   $information->{short_accession} = undef;
-   $information->{genbank_accession} = $accession;
- }
   $information->{accession} = $accession;
   $m->comp('single_detail.html', information=>$information,);
 }    ## End foreach structure in the database

@@ -1,5 +1,12 @@
 package HTMLMisc;
 
+sub Make_Species {
+    my $species = shift;
+    $species =~ s/_/ /g;
+    $species = ucfirst($species);
+    return($species);
+}
+
 sub Make_Nums {
   my $sequence = shift;
   my @nums = ('&nbsp;', '&nbsp;', '&nbsp;', '&nbsp;', '&nbsp;', '&nbsp;', 0);

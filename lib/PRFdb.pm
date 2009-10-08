@@ -174,16 +174,25 @@ with: error $DBI::errstr\n";
 
 sub MyExecute {
     my $me = shift;
-    my $input = shift;
-    my $input_type = ref($input);
-    my $statement;
-    if (!defined($input_type) or $input_type eq '' or $input_type eq 'SCALAR') {
-	$statement = $input;
-	$input = undef;
-    }
-    else {
+    my %args = ();
+    my $input;
+    my $input_type = ref($_[0]);
+    my ($statement, $vars, $caller);
+    if ($input_type eq 'HASH') {
+        $input = $_[0];
+	$caller = $input->{caller};
+	$vars = $input->{vars};
 	$statement = $input->{statement};
+    } elsif (!defined($_[1])) {
+	$statement = $_[0];
+    } else {
+	%args = @_;
+	$statement = $args{statement};
+	$vars = $args{vars};
+	$caller = $args{caller};
+        $input = \%args;
     }
+
     my $dbh = $me->MyConnect($statement);
     my $sth = $dbh->prepare($statement);
     my $rv;
@@ -714,24 +723,22 @@ sub Add_Webqueue {
 
 sub Set_Queue {
     my $me = shift;
-    my $id = shift;
-    my $override_table = shift;
+    my %args = @_;
+    my $id = $args{id};
     my $table = 'queue';
-    if (defined( $config->{queue_table})) {
+    if (defined($config->{queue_table})) {
 	$table = $config->{queue_table};
     }
-    if (defined($override_table)) {
-	$table = $override_table;
+    if (defined($args{queue_table})) {
+	$table = $args{queue_table};
     }
-    my $num_existing_stmt = qq(SELECT count(id) FROM $table WHERE genome_id = '$id');
-    my $num_existing = $me->MySelect({
-	statement => $num_existing_stmt,
-	type => 'single',});
+    my $num_existing_stmt = qq"SELECT count(id) FROM $table WHERE genome_id = '$id'";
+    my $num_existing = $me->MySelect(statement => $num_existing_stmt,type => 'single',);
     if (!defined($num_existing) or $num_existing == 0) {
-	my $statement = qq/INSERT INTO $table VALUES('','$id','0','','0','')/;
+	my $statement = qq"INSERT INTO $table VALUES('','$id','0','','0','')";
 	my ($cp,$cf,$cl) = caller();
-	my $rc = $me->MyExecute({statement => $statement, caller => "$cp,$cf,$cl",});
-	my $last_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
+	my $rc = $me->MyExecute(statement => $statement, caller => "$cp,$cf,$cl",);
+	my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
 	return ($last_id);
     }
     else {
@@ -945,7 +952,11 @@ sub Import_Fasta {
     open(IN, "<$file") or die "Could not open the input file. $!";
     my %datum = (accession => undef, genename => undef, version => undef, comment => undef, mrna_seq => undef);
     my $linenum = 0;
-    
+    if (defined($config->{species})) {
+	print "Species is defined as $config->{species}\n";
+    } else {
+	die ("Species must be defined.");
+    }
     while (my $line = <IN>) {
 	$linenum++;
 	chomp $line;
@@ -970,7 +981,7 @@ sub Import_Fasta {
                     $datum{orf_stop} = length($datum{mrna_seq});
                 }
                 my $genome_id = $me->Insert_Genome_Entry(\%datum);
-                my $queue_id = $me->Set_Queue($genome_id, \%datum);
+                my $queue_id = $me->Set_Queue(id => $genome_id,);
                 my $queue_num = "$queue_id";
                 print "Added $queue_num\n";
                 push(@return_array, $queue_num);
@@ -1078,8 +1089,16 @@ sub Import_Fasta {
     }
     $datum{orf_start} = 0;
     $datum{orf_stop}  = length($datum{mrna_seq});
+    if (!defined($datum{protein_seq}) or $datum{protein_seq} eq '') {
+	my $seq = new SeqMisc(sequence => $datum{mrna_seq});
+	my $aa_seq = $seq->{aaseq};
+	my $aa = '';
+	foreach my $c (@{$aa_seq}) { $aa .= $c; }
+	$datum{protein_seq} = $aa;
+    }
+    
     my $genome_id = $me->Insert_Genome_Entry(\%datum);
-    my $queue_id = $me->Set_Queue($genome_id, \%datum);
+    my $queue_id = $me->Set_Queue(id => $genome_id,);
     print "Added $queue_id\n" if(defined($config->{debug}));
     push(@return_array, $queue_id);
     return (\@return_array);
@@ -1164,7 +1183,7 @@ sub Import_Genbank_Flatfile {
 	    # my $genome_id = $me->Insert_Genome_Entry(\%datum);
 	    # if (defined($genome_id)) {
 	    # my $return = "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
-	    # $me->Set_Queue($genome_id);
+	    # $me->Set_Queue(id => $genome_id);
 	    # }
 	    # else {
 	    # $return .= "Did not insert anything into the genome table.\n";
@@ -1172,7 +1191,7 @@ sub Import_Genbank_Flatfile {
 	    # statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",
 	    # type => 'single'});
 	    # print "Doing set_Queue with genome_id $gid\n";
-	    # $me->Set_Queue($gid);
+	    # $me->Set_Queue(id => $gid);
 	    # }
 	    # print $return;
 	    #}
@@ -1277,7 +1296,7 @@ sub Import_CDS {
 	my $genome_id = $me->Insert_Genome_Entry(\%datum);
 	if (defined($genome_id)) {
 	    $return .= "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
-	    $me->Set_Queue($genome_id);
+	    $me->Set_Queue(id => $genome_id);
 	}
 	else {
 	    $return .= "Did not insert anything into the genome table.\n";
@@ -1285,7 +1304,7 @@ sub Import_CDS {
 		statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",
 		type => 'single'});
 	    print "Doing set_Queue with genome_id $gid\n";
-	    $me->Set_Queue($gid);
+	    $me->Set_Queue(id => $gid);
 	}
 	print $return;
     }
@@ -1508,16 +1527,23 @@ sub Insert_Genome_Entry {
 	print "The accession $datum->{accession} is already in the database with id: $already_id\n";
 	return ($already_id);
     }
-    my $statement = qq(INSERT INTO genome
+    $datum->{version} = 0 if (!defined($datum->{version}));
+    $datum->{comment} = "" if (!defined($datum->{comment}));
+#    my $statement = qq(INSERT INTO genome
+#(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
+#    VALUES('$datum->{accession}', '$datum->{species}', '$datum->{genename}', '$datum->{version}', '$datum->{comment}', '$datum->{mrna_seq}', '$datum->{protein_seq}', '$datum->{orf_start}', '$datum->{orf_stop}', '$datum->{direction}'));
+    my $statement = qq"INSERT INTO genome
 (accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
-    VALUES('$datum->{accession}', '$datum->{species}', '$datum->{genename}', '$datum->{version}', '$datum->{comment}', '$datum->{mrna_seq}', '$datum->{protein_seq}', '$datum->{orf_start}', '$datum->{orf_stop}', '$datum->{direction}'));
+VALUES(?,?,?,?,?,?,?,?,?,?)";
 my ($cp,$cf,$cl) = caller();
-$me->MyExecute({statement => $statement,caller => "$cp, $cf, $cl",});
+$me->MyExecute(statement => $statement,
+               caller => "$cp, $cf, $cl",
+               vars => [$datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{protein_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
 ## The following line is very important to ensure that multiple
 ## calls to this don't end up with
 ## Increasingly long sequences
 foreach my $k (keys %{$datum}) {$datum->{$k} = undef;}
-my $last_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
+my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
 return ($last_id);
 }
 
