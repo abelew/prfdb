@@ -176,7 +176,7 @@ sub Make_Extension {
 	my $x_coord = sprintf("%.2f", (($x_range / 100) * $x_percentage + $left_x_coord));
 	my $percent_y_coord = sprintf("%.2f", ((($y_range / 130) * (130 - $y_percentage)) + $bottom_y_coord));
 	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons) + $bottom_y_coord);
-	my $url = qq"/browse.html?accession=$accession";
+	my $url = qq"/browse.html?short=1&accession=$accession";
 	if ($type eq 'percent') {
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession">\n/;
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);
@@ -379,7 +379,7 @@ sub Make_Cloud {
 		$x_coord = sprintf('%.0f', $x_coord);
 		$y_coord = sprintf('%.0f', $y_coord);
 		if ($points->{$x_point}->{$y_point}->{count} == 1) {
-		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?accession=$accessions&slipstart=$start" title="$genenames">\n);
+		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accessions&slipstart=$start" title="$genenames">\n);
 		}
 		else {
 		    if (defined($pknot)) {
@@ -461,7 +461,7 @@ sub Make_Cloud {
 		$gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $black, 4);
 		
 		if ($slipsites_numbers{$slipsite}{num} > 1) {
-		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?accession=$accessions&slipstart=$start" title="$genenames">\n);
+		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accessions&slipstart=$start" title="$genenames">\n);
 		}
 		else {
 		    if (defined($pknot)) {
@@ -589,7 +589,7 @@ sub Make_Overlay {
 	$x_coord = sprintf('%.0f', $x_coord);
 	$y_coord = sprintf('%.0f', $y_coord);
 	$gd->filledArc($x_coord, $y_coord, $radius, $radius, 0, 360, $black, 4);
-	my $map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?accession=$accession&slipstart=$slipstart" title="Position $slipstart of $accession ($inputstring) using $algorithm">\n);
+	my $map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accession&slipstart=$slipstart" title="Position $slipstart of $accession ($inputstring) using $algorithm">\n);
         print MAP $map_string;
     }
     print MAP "</map>\n";

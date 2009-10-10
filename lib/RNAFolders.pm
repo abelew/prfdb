@@ -689,7 +689,7 @@ sub Hotknots {
 command: $command\n" if (defined($config->{debug}));
     open(HK, "$command |") or print STDERR "problem with $command $!";
     while(my $line = <HK>) {
-	print $line;
+#	print $line;
 	$ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);

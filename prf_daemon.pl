@@ -339,6 +339,8 @@ sub PRF_Gatherer {
 				  $state->{nupack_mfe_id} : $nupack_mfe_id,
 				  pknots_mfe_id => (defined($state->{pknots_mfe_id})) ?
 				  $state->{pknots_mfe_id} : $pknots_mfe_id,
+				  hotknots_mfe_id => (defined($state->{hotknots_mfe_id})) ?
+				  $state->{hotknots_mfe_id} : $hotknots_mfe_id,
 				  inputfile => $state->{fasta_file},
 				  species => $state->{species},
 				  accession => $state->{accession},

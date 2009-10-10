@@ -13,6 +13,7 @@ sub new {
       mfe_id => $arg{mfe_id},
       nupack_mfe_id => $arg{nupack_mfe_id},
       pknots_mfe_id => $arg{pknots_mfe_id},
+      hotknots_mfe_id => $arg{hotknots_mfe_id},
       inputfile => $arg{inputfile},
       ## Expect an array reference of sequence
       iterations => $arg{iterations},    ## How many repetitions
@@ -71,11 +72,9 @@ sub Go {
     my @algos = keys(%{$me->{boot_mfe_algorithms}});
     foreach my $boot_mfe_algo_name (keys %{$me->{boot_mfe_algorithms}}) {
 	my $mfe_id;
-	if ($boot_mfe_algo_name eq 'nupack') {
-	    $mfe_id = $me->{nupack_mfe_id},;
-	}
-	elsif ($boot_mfe_algo_name eq 'pknots') {
-	    $mfe_id = $me->{pknots_mfe_id},;
+	if (defined($boot_mfe_algo_name)) {
+	    my $key = "${boot_mfe_algo_name}_mfe_id";
+	    $mfe_id = $me->{$key};
 	}
 	if (!defined($mfe_id)) {
 	    $mfe_id = $me->{mfe_id};
