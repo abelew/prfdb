@@ -22,7 +22,7 @@ $SIG{QUIT} = 'CLEANUP';
 $config = new PRFConfig(config_file => '/usr/local/prfdb/prfdb_test/prfdb.conf');
 $db = new PRFdb(config => $config);
 setpriority(0,0,$config->{niceness});
-$ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}";
+$ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}" if(defined($config->{ENV_LIBRARY_PATH}));
 our $state = { time_to_die => undef,
 	       queue_table => undef,
 	       queue_id => undef,
@@ -827,9 +827,6 @@ sub Generate_Stats {
     $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species like 'virus-%'",type=>'single');
     $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species like 'virus-%'",type=>'single');
     $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('', 'virus',?,?,?)", vars => [$num_genome, $num_mfe_entries, $num_mfe_knotted],);
-}
-
-
 }
 
 sub Optimize {
