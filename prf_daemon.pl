@@ -52,10 +52,6 @@ if ($config->{checks}) {
 }
 ## Some Arguments should be checked before others...
 ## These first arguments are not exclusive and so are separate ifs
-if (defined($config->{index_stats})) {
-    Make_Index_Stats();
-    exit(0);
-}
 if ($config->{create_boot}) {
     die("Need species unless") unless (defined($config->{species}));
     my $table = "boot_$config->{species}";
@@ -730,28 +726,6 @@ sub Make_Blast {
     $blast->Format_Db($outputfile);
 }
 
-sub Make_Index_Stats {
-    my $test = $db->Tablep('index_stats');
-    $db->Create_Index_Stats() unless($test);
-    my $species_list = $db->MySelect("SELECT distinct(species) FROM genome");
-    my ($num_genome, $num_mfe_entries, $num_mfe_knotted);
-    foreach my $species (@{$species_list}) {
-	print "Working on $species->[0]\n";
-	next if ($species->[0] =~ /^virus-/);
-	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species->[0],]);
-	$num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species = ?",type=>'single', vars => [$species->[0],]);
-	$num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = ?",type=>'single', vars => [$species->[0]],);
-	my ($cp,$cf,$cl) = caller();
-	my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = ?", caller => "$cp,$cf,$cl", vars => [$species->[0]],);
-	$rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('',?,?,?,?)", vars => [$species->[0], $num_genome, $num_mfe_entries, $num_mfe_knotted],);
-    }
-    my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = 'virus'");
-    $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species like 'virus-%'", type=>'single');
-    $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species like 'virus-%'",type=>'single');
-    $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species like 'virus-%'",type=>'single');
-    $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('', 'virus',?,?,?)", vars => [$num_genome, $num_mfe_entries, $num_mfe_knotted],);
-}
-
 sub Make_Landscape_Tables {
     my $tables = $db->MySelect("SELECT distinct(species) from genome");
     my @spec = @{$tables};
@@ -813,6 +787,49 @@ sub Generate_Stats {
 	algorithm => ['pknots','nupack','hotknots'],
     };
     $db->Put_Stats($data);
+
+    my $all_boot_stmt = qq"SELECT id, mfe_id, mfe_mean, mfe_sd FROM boot WHERE zscore is NULL";
+    my $all_boot = $db->MySelect($all_boot_stmt);
+    foreach my $boot (@{$all_boot}) {
+	my $id = $boot->[0];
+	my $mfe_id = $boot->[1];
+	my $mfe_mean = $boot->[2];
+	my $mfe_sd = $boot->[3];
+	my $mfe_stmt = qq"SELECT mfe FROM mfe WHERE id = '$mfe_id'";
+	my $mfe = $db->MySelect(statement => $mfe_stmt, type =>'single');
+	$mfe_sd = 1 if (!defined($mfe_sd) or $mfe_sd == 0);
+	$mfe = 0 if (!defined($mfe));
+	$mfe_mean = 0 if (!defined($mfe_mean));
+	my $zscore = sprintf("%.3f", ($mfe - $mfe_mean) / $mfe_sd);
+	my $update_stmt = qq(UPDATE boot SET zscore = '$zscore' WHERE id = '$id');
+	print "$update_stmt\n";
+	$db->MyExecute($update_stmt);
+    }
+    my $cleaning = qq(DELETE FROM mfe WHERE mfe > '10');
+    $db->MyExecute($cleaning);
+
+    my $test = $db->Tablep('index_stats');
+    $db->Create_Index_Stats() unless($test);
+    my $species_list = $db->MySelect("SELECT distinct(species) FROM genome");
+    my ($num_genome, $num_mfe_entries, $num_mfe_knotted);
+    foreach my $species (@{$species_list}) {
+	print "Working on $species->[0]\n";
+	next if ($species->[0] =~ /^virus-/);
+	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species->[0],]);
+	$num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species = ?",type=>'single', vars => [$species->[0],]);
+	$num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = ?",type=>'single', vars => [$species->[0]],);
+	my ($cp,$cf,$cl) = caller();
+	my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = ?", caller => "$cp,$cf,$cl", vars => [$species->[0]],);
+	$rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('',?,?,?,?)", vars => [$species->[0], $num_genome, $num_mfe_entries, $num_mfe_knotted],);
+    }
+    my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = 'virus'");
+    $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species like 'virus-%'", type=>'single');
+    $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species like 'virus-%'",type=>'single');
+    $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species like 'virus-%'",type=>'single');
+    $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('', 'virus',?,?,?)", vars => [$num_genome, $num_mfe_entries, $num_mfe_knotted],);
+}
+
+
 }
 
 sub Optimize {
