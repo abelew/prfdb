@@ -1,0 +1,23 @@
+<%init>
+ $r->content_type('application/octet-stream');
+ my $stmt = qq"SELECT comment,mrna_seq FROM genome WHERE accession = ?";
+ my $seq = $db->MySelect({statement => $stmt, vars => [$accession], type => 'row'});
+ use SeqMisc;
+ my @tmp = split(//, $seq->[1]);
+ my $s = '';
+ foreach my $c (@tmp) { $s .= $c; }
+ my $sequence = new SeqMisc(sequence => $s);
+ my $aaseq = $sequence->{aaseq};
+ my $filename = qq(${accession}.fasta);
+ $filename =~ s/SGDID://g;
+ $r->headers_out->add('Content-disposition' => ("attachment; filename=$filename"));
+ print ">$accession $seq->[0]";
+ foreach my $c (0 .. $#$aaseq) {
+   print "\n" if (($c %80) == 0);
+   print $aaseq->[$c];
+ }
+ print "\n\n";
+</%init>
+<%args>
+ $accession => "SGDID:S000001";
+</%args>
