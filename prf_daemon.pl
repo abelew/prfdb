@@ -65,8 +65,8 @@ if (defined($config->{make_landscape})) {
     Make_Landscape_Tables();
     exit(0);
 }
-if (defined($config->{stats})) {
-    Generate_Stats();
+if (defined($config->{maintain})) {
+    Maintenance();
     exit(0);
 }
 if (defined($config->{optimize})) {
@@ -778,7 +778,8 @@ sub Make_Jobs {
 }
 
 
-sub Generate_Stats {
+sub Maintenance {
+    ## The stats table
     my $fun = $db->MyExecute("DELETE FROM stats");
     my $data = {
 	species => $config->{index_species},
@@ -787,7 +788,9 @@ sub Generate_Stats {
 	algorithm => ['pknots','nupack','hotknots'],
     };
     $db->Put_Stats($data);
+    ## End the stats table
 
+    ## Zscore crapola
     my $all_boot_stmt = qq"SELECT id, mfe_id, mfe_mean, mfe_sd FROM boot WHERE zscore is NULL";
     my $all_boot = $db->MySelect($all_boot_stmt);
     foreach my $boot (@{$all_boot}) {
@@ -827,12 +830,105 @@ sub Generate_Stats {
     $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species like 'virus-%'",type=>'single');
     $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species like 'virus-%'",type=>'single');
     $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('', 'virus',?,?,?)", vars => [$num_genome, $num_mfe_entries, $num_mfe_knotted],);
-}
+    ## End zscore crapola
 
-sub Optimize {
-    my $table = shift;
-    my $stmt = qq(OPTIMIZE TABLE $table);
-    $db->MyExecute({statement => $stmt});
+    ## Optimize the tables
+    my $tables = $db->MySelect("show tables");
+    foreach my $t (@{$tables}) {
+	$db->MyExecute("OPTIMIZE TABLE $t->[0]");
+    }
+    ## End that sillyness
+
+    ## Generate all clouds
+    my @slipsites = ('AAAUUUA', 'UUUAAAU', 'AAAAAAA', 'UUUAAAA', 'UUUUUUA', 'AAAUUUU', 'UUUUUUU', 'UUUAAAC', 'AAAAAAU', 'AAAUUUC', 'AAAAAAC', 'GGGUUUA', 'UUUUUUC', 'GGGAAAA', 'CCCUUUA', 'CCCAAAC', 'CCCAAAA', 'GGGAAAU', 'GGGUUUU', 'GGGAAAC', 'CCCUUUC', 'CCCUUUU', 'GGGAAAG', 'GGGUUUC', 'all');
+    my @pknot = ('yes','no');
+    foreach my $seqlength (@{$config->{seqlength}}) {
+	foreach my $pk (@pknot) {
+	    foreach my $species (@{$config->{index_species}}) {
+		foreach my $slip (@slipsites) {
+		    print "Generating picture for $species slipsite: $slip knotted: $pk seqlength: $seqlength\n";
+		    my $cloud = new PRFGraph({config => $config});
+		    my $pknots_only = undef;
+		    my $boot_table = "boot_$species";
+		    my $suffix = undef;
+		    if ($pk eq 'yes') {
+			$suffix .= "-pknot";
+			$pknots_only = 1;
+		    }
+		    if ($slip eq 'all') {
+			$suffix .= "-all";
+		    } else {
+			$suffix .= "-${slip}";
+		    }
+		    $suffix .= "-${seqlength}";
+		    my $cloud_output_filename = $cloud->Picture_Filename({type => 'cloud',
+									  species => $species,
+									  suffix => $suffix,});
+		    my $cloud_url = $cloud->Picture_Filename({type => 'cloud',
+							      species => $species,
+							      url => 'url',
+							      suffix => $suffix,});
+		    $cloud_url = $config->{base} . '/' . $cloud_url;
+		    my ($points_stmt, $averages_stmt, $points, $averages);
+		    if (!-f $cloud_output_filename) {
+			$points_stmt = qq"SELECT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
+			$averages_stmt = qq"SELECT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
+	    
+			if ($pk eq 'yes') {
+			    $points_stmt .= "mfe.knotp = '1' AND ";
+			    $averages_stmt .= "mfe.knotp = '1' AND ";
+			}
+			$points_stmt .= " mfe.genome_id = genome.id";
+			$averages_stmt =~ s/AND $//g;
+			$points = $db->MySelect(statement => $points_stmt, vars => [$species]);
+			$averages = $db->MySelect(statement => $averages_stmt, vars => [$species], type => 'row',);
+			my $cloud_data;
+			my $args;
+			if ($pk eq 'yes') {
+			    $args = {
+				seqlength => $seqlength,
+				species => $species,
+				points => $points,
+				averages => $averages,
+				filename => $cloud_output_filename,
+				url => $config->{base},
+				pknot => 1,
+				slipsites => $slip,
+			    };
+			} else {
+			    $args = {
+				seqlength => $seqlength,
+				species => $species,
+				points => $points,
+				averages => $averages,
+				filename => $cloud_output_filename,
+				url => $config->{base},
+				slipsites => $slip,
+			    };
+			}
+			$cloud_data = $cloud->Make_Cloud($args);
+		    }
+		        
+		    my $map_file = $cloud_output_filename . '.map';
+		    my $extension_percent_filename = $cloud->Picture_Filename({type => 'extension_percent',
+									       species => $species,});
+		    my $extension_codons_filename = $cloud->Picture_Filename({type=> 'extension_codons',
+									      species => $species,});
+		    my $percent_map_file = $extension_percent_filename . '.map';
+		    my $codons_map_file = $extension_codons_filename . '.map';
+
+		    if (!-f $extension_codons_filename) {
+			$cloud->Make_Extension($species, $extension_codons_filename, 'codons', $config->{base});
+		    }
+		    if (!-f $extension_percent_filename) {
+			$cloud->Make_Extension($species, $extension_percent_filename, 'percent', $config->{base});
+		    }
+		} ## Foreach slipsite
+	    } ## foreach species
+	}  ## if pknotted
+    } ## seqlengths
+
+    ## End generating all clouds
 }
 
 sub CLEANUP {
