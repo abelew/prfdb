@@ -193,6 +193,7 @@ sub new {
 				'make_jobs' => \$conf{make_jobs},
 				'make_landscape' => \$conf{make_landscape},
 				'makeblast' => \$conf{makeblast},
+				'maintain' => \$conf{maintain},
 				'nodaemon:i' => \$conf{nodaemon},
 				'nupack_nopairs:i' => \$conf{nupack_nopairs_hack},
 				'optimize:s' => \$conf{optimize},
