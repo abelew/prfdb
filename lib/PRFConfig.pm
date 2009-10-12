@@ -106,7 +106,6 @@ sub new {
     $me->{landscape_seqlength} = 105 if (!defined($me->{landscape_seqlength}));
     $me->{log} = 'prfdb.log' if (!defined($me->{log}));
     $me->{log_error} = 'prfdb.errors' if (!defined($me->{log_error}));
-    $me->{maintain} = 0 if (!defined($me->{maintain}));
     $me->{max_mfe} = 10.0 if (!defined($me->{max_mfe}));
     $me->{niceness} = 20 if (!defined($me->{niceness}));
     $me->{num_daemons} = '60' if (!defined($me->{num_daemons}));
