@@ -47,7 +47,7 @@ our $state = { time_to_die => undef,
 chdir($config->{base});
 if ($config->{checks}) {
     Check_Environment();
-    Check_Tables();
+#    Check_Tables();  ## This is taken by the constructor of PRFdb
     Check_Blast();
 }
 ## Some Arguments should be checked before others...
@@ -467,14 +467,6 @@ sub Check_Environment {
 	system($copy_command);
     }
 ## End Check_Environment
-}
-
-sub Check_Tables {
-    my $test = $db->Tablep($config->{queue_table});
-    unless ($test) {
-	$db->Create_Queue($config->{queue_table});
-	$db->FillQueue();
-    }
 }
 
 sub Check_Blast {
