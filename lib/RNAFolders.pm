@@ -766,7 +766,7 @@ command: $command\n" if (defined($config->{debug}));
 	$ret->{knotp} = 1;
     }
     chdir($config->{base});
-    if (!defined($return->{sequence})) {
+    if (!defined($ret->{sequence})) {
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
     }

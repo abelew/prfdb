@@ -1916,7 +1916,7 @@ sub Check_Insertion {
 sub Check_Defined {
     my %args = @_;
     my $return = '';
-    foreach my $k (keys %{$args}) {
+    foreach my $k (keys %args) {
 	if (!defined($args{$k})) {
 	    $return .= "$k,";
 	}
