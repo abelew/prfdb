@@ -177,6 +177,7 @@ sub new {
 				'arch:i' => \$conf{arch_specific_exe},
 				'blast:s' => \$conf{blast},
 				'boot:i' => \$conf{do_boot},
+				'clear_queue' => \$conf{clear_queue},
 				'copyfrom:s' => \$conf{copyfrom},
 				'fasta_style:s' => \$conf{fasta_style},
 				'fillqueue' => \$conf{fillqueue},

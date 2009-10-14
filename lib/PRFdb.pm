@@ -160,7 +160,8 @@ with: error $DBI::errstr\n";
     }
 
     if (defined($DBI::errstr)) {
-	print STDERR "Error for: $statement
+	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
+	print STDERR "$hour:$min:$sec $mon-$mday Execute failed for: $statement
 from: $input->{caller}
 with: error $DBI::errstr\n";
 	$me->{errors}->{statement} = $statement;
@@ -311,8 +312,8 @@ sub MyConnect {
     if (!defined($dbh)) {
 	$me->{errors}->{statement} = $statement, Write_SQL($statement) if (defined($statement));
 	$me->{errors}->{errstr} = $DBI::errstr;
-	my $time = localtime();
-	my $error = qq"$time: Could not open cached connection: dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}, $DBI::err. $DBI::errstr";
+	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
+	my $error = qq"$hour:$min:$sec $mon-$mday Could not open cached connection: dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}, $DBI::err. $DBI::errstr";
 	die($error);
     }
     $dbh->{mysql_auto_reconnect} = 1;
@@ -323,28 +324,20 @@ sub MyConnect {
 sub Get_GenomeId_From_Accession {
     my $me = shift;
     my $accession = shift;
-    my $info = $me->MySelect({
-	statement => qq(SELECT id FROM genome WHERE accession = ?),
-	vars => [$accession],
-	type => 'single'});
+    my $info = $me->MySelect(statement => qq"SELECT id FROM genome WHERE accession = ?", vars => [$accession], type => 'single');
     return ($info);
 }
 
 sub Get_GenomeId_From_QueueId {
     my $me = shift;
     my $queue_id = shift;
-    my $info = $me->MySelect({
-	statement => qq(SELECT genome_id FROM $config->{queue_table} WHERE id = ?),
-	vars => [$queue_id],
-	type => 'single'});
+    my $info = $me->MySelect(statement => qq"SELECT genome_id FROM $config->{queue_table} WHERE id = ?", vars => [$queue_id], type => 'single');
     return ($info);
 }
 
 sub Get_All_Sequences {
     my $me = shift;
-    my $statement = "SELECT accession, mrna_seq FROM genome";
-    my $crap = $me->MySelect({
-	statement => $statement});
+    my $crap = $me->MySelect("SELECT accession, mrna_seq FROM genome");
     return ($crap);
 }
 
@@ -352,10 +345,8 @@ sub Keyword_Search {
     my $me = shift;
     my $species = shift;
     my $keyword = shift;
-    my $statement = qq(SELECT accession, comment FROM genome WHERE comment like ? ORDER BY accession);
-    my $info = $me->MySelect({
-	statement => $statement,
-	vars => ['%$keyword%']});
+    my $statement = qq"SELECT accession, comment FROM genome WHERE comment like ? ORDER BY accession";
+    my $info = $me->MySelect(statement => $statement, vars => ['%$keyword%']);
     my $return = {};
     foreach my $accession (@{$info}) {
 	my $accession_id = $accession->[0];
@@ -372,7 +363,7 @@ sub Mfeid_to_Bpseq {
     my $add_slipsite = shift;
     my ($fh, $filename);
     if (!defined($outputfile)) {
-	$fh = PRFdb::MakeTempfile({SUFFIX => '.bpseq'});
+	$fh = PRFdb::MakeTempfile(SUFFIX => '.bpseq');
 	$filename = $fh->filename;
     }
     elsif (ref($outputfile) eq 'GLOB') {
@@ -384,11 +375,8 @@ sub Mfeid_to_Bpseq {
 	$filename = $outputfile;
     }
 
-    my $input_stmt = qq(SELECT sequence, output, slipsite FROM mfe WHERE id = ?);
-    my $input = $me->MySelect({
-	statement => $input_stmt,
-	vars => [$mfeid],
-	type => 'row'});
+    my $input_stmt = qq"SELECT sequence, output, slipsite FROM mfe WHERE id = ?";
+    my $input = $me->MySelect(statement => $input_stmt,	vars => [$mfeid], type => 'row');
     my $seq = $input->[0];
     my $in = $input->[1];
     my $slipsite = $input->[2];
@@ -431,7 +419,7 @@ sub Genome_to_Fasta {
     my $me = shift;
     my $output = shift;
     my $species = shift;
-    my $statement = qq(SELECT DISTINCT accession, species, comment, mrna_seq FROM genome);
+    my $statement = qq"SELECT DISTINCT accession, species, comment, mrna_seq FROM genome";
     my $info;
     system("mkdir $config->{base}/blast") if (!-r  "$config->{base}/blast");
     open(OUTPUT, ">$config->{base}/blast/$output") or die("Could not open the fasta output file. $!");
@@ -471,12 +459,12 @@ sub Sequence_to_Fasta {
 }
 
 sub MakeTempfile {
-    my $args = shift;
+    my %args = @_;
     $File::Temp::KEEP_ALL = 1;
-    my $fh = new File::Temp(DIR => defined($args->{directory}) ? $args->{directory} : $config->{workdir},
-			    TEMPLATE => defined($args->{template}) ? $args->{template} : 'slip_XXXXX',
-			    UNLINK => defined($args->{unlink}) ? $args->{unlink} : 0,
-			    SUFFIX => defined($args->{SUFFIX}) ? $args->{SUFFIX} : '.fasta',);
+    my $fh = new File::Temp(DIR => defined($args{directory}) ? $args{directory} : $config->{workdir},
+			    TEMPLATE => defined($args{template}) ? $args{template} : 'slip_XXXXX',
+			    UNLINK => defined($args{unlink}) ? $args{unlink} : 0,
+			    SUFFIX => defined($args{SUFFIX}) ? $args{SUFFIX} : '.fasta',);
 
     my $filename = $fh->filename();
     AddOpen($filename);
@@ -501,7 +489,7 @@ sub AddOpen {
 sub Remove_Duplicates {
     my $me = shift;
     my $accession = shift;
-    my $info = $me->MySelect(qq/SELECT id,start,seqlength,algorithm FROM mfe WHERE accession = '$accession'/);
+    my $info = $me->MySelect(qq"SELECT id,start,seqlength,algorithm FROM mfe WHERE accession = '$accession'");
     my @duplicate_ids;
     my $dups = {};
     my $count = 0;
@@ -795,8 +783,9 @@ $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl"});
 
 sub Reset_Queue {
     my $me = shift;
-    my $table = shift;
-    my $complete = shift;
+    my %args = @_;
+    my $table = $args{table};
+    my $complete = $args{complete};
     if (!defined($table)) {
 	if (defined($config->{queue_table})) {
 	    $table = $config->{queue_table};
@@ -814,7 +803,7 @@ sub Reset_Queue {
 	$statement = "UPDATE $table SET checked_out = '0' where done = '0' and checked_out = '1'";
     }
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $statement, caller => "$cp, $cf, $cl"});
+    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl");
 }
 
 sub Get_Input {

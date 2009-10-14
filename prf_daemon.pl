@@ -61,6 +61,10 @@ if (defined($config->{makeblast})) {
     Make_Blast();
     exit(0);
 }
+if (defined($config->{clear_queue})) {
+    $db->Reset_Queue(complete => 1);
+    exit(0);
+}
 if (defined($config->{make_landscape})) {
     Make_Landscape_Tables();
     exit(0);
