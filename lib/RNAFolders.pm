@@ -144,6 +144,10 @@ command: $command\n" if (defined($config->{debug}));
     $return->{parsed} = $parsed;
     $return->{barcode} = $barcode;
     chdir($config->{base});
+    if (!defined($return->{sequence})) {
+	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
+    }
     $return->{sequence} = Sequence_T_U($return->{sequence});
     return ($return);
 }
@@ -271,6 +275,10 @@ Return: $nupack_return\n");
     $return->{parsed} = $parsed;
     $return->{barcode} = $barcode;
     chdir($config->{base});
+    if (!defined($return->{sequence})) {
+	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
+    }
     $return->{sequence} = Sequence_T_U($return->{sequence});
     return ($return);
 }
@@ -319,6 +327,10 @@ command: $command\n" if (defined($config->{debug}));
         }
     }
     RemoveFile($errorfile);
+    if (!defined($return->{sequence})) {
+	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
+    }
     $return->{sequence} = Sequence_T_U($return->{sequence});
     return($return);
 }
@@ -427,6 +439,10 @@ command: $command\n" if (defined($config->{debug}));
 	$return->{knotp} = 1;
     }
     chdir($config->{base});
+    if (!defined($return->{sequence})) {
+	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
+    }
     $return->{sequence} = Sequence_T_U( $return->{sequence} );
     return ($return);
 }
@@ -750,6 +766,11 @@ command: $command\n" if (defined($config->{debug}));
 	$ret->{knotp} = 1;
     }
     chdir($config->{base});
+    if (!defined($return->{sequence})) {
+	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
+    }
+    $ret->{sequence} = Sequence_T_U($ret->{sequence});
     return($ret);
 }
 
@@ -848,11 +869,13 @@ command: $command\n" if (defined($config->{debug}));
         $ret->{knotp} = 1;
     }
     chdir($config->{base});
+    $ret->{sequence} = Sequence_T_U($ret->{sequence});
     return($ret);
 }
 
 sub Sequence_T_U {
     my $sequence = shift;
+    return(undef) if (!defined($sequence));
     $sequence =~ tr/T/U/;
     return ($sequence);
 }
