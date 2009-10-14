@@ -92,7 +92,8 @@ sub MySelect {
     }
     
     if (!defined($rv)) {
-	print STDERR "Execute failed for: $statement
+	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
+	print STDERR "$hour:$min:$sec $mon-$mday Execute failed for: $statement
 from: $input->{caller}
 with: error $DBI::errstr\n";
 	$me->{errors}->{statement} = $statement;
@@ -205,7 +206,8 @@ sub MyExecute {
     
     my $rows = 0;
     if (!defined($rv)) {
-	print STDERR "Execute failed for: $statement
+	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
+	print STDERR "$hour:$min:$sec $mon-$mday Execute failed for: $statement
 from: $input->{caller}
 with: error $DBI::errstr\n";
 	print STDERR "Host: $config->{database_host} Db: $config->{database_name}\n" if (defined($config->{debug}) and $config->{debug} > 0);
@@ -1682,6 +1684,8 @@ sub Put_MFE_Landscape {
     my $data = shift;
     my $table = shift;
     ## What fields do we want to fill in this MFE table?
+    $table = 'landscape_virus' if ($table =~ /virus/);
+	
     my @filled;
     if ($algo eq 'vienna') {
 	@filled = ('genome_id','species','accession','start','seqlength','sequence','parens','mfe');
