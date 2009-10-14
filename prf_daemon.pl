@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/local/bin/perl -w 
 use strict;
 use vars qw"$db $config";
 use DBI;
@@ -19,7 +19,7 @@ $SIG{PIPE} = 'CLEANUP';
 $SIG{ABRT} = 'CLEANUP';
 $SIG{QUIT} = 'CLEANUP';
 
-$config = new PRFConfig(config_file => '/usr/local/prfdb/prfdb_test/prfdb.conf');
+$config = new PRFConfig(config_file => '/a/deepthought/data/dt-raid10/abelew/prfdb_beta/prfdb.conf');
 $db = new PRFdb(config => $config);
 setpriority(0,0,$config->{niceness});
 $ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}" if(defined($config->{ENV_LIBRARY_PATH}));
@@ -451,7 +451,7 @@ sub Check_Environment {
     die("Database pass not defined") if ($config->{database_pass} eq 'prfconfigdefault_pass');
     
     unless (-r $config->{exe_rnamotif_descriptor}) {
-	RNAMotif_Search::Descriptor();
+	RNAMotif_Search::Descriptor(config=>$config);
 	  unless (-r $config->{exe_rnamotif_descriptor}) {
 	      die("Unable to read the rnamotif descriptor file: $!");
 	  }
