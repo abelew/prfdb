@@ -1413,6 +1413,8 @@ sub Get_Num_RNAfolds {
     my $seqlength = shift;
     my $table = shift;
     $table = 'mfe' unless (defined($table));
+    $table = "boot_virus" if ($table =~ /boot/ and $table =~ /virus/);
+    $table = "landscape_virus" if ($table =~ /landscape/ and $table =~ /virus/);
     my $return = {};
     my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? AND algorithm = ? AND start = ? AND seqlength = ?/;
     my $count = $me->MySelect({statement =>$statement,
