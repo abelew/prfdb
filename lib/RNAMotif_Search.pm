@@ -141,10 +141,12 @@ sub Slip_p {
 }
 
 sub Descriptor {
+    my %args = @_;
+    my $config = $args{config};
     my $template_config = $config;
     $template_config->{PRE_PROCESS} = undef;
     my $template = new Template($template_config);
-    my $rnamotif_template_file = qq\$config->{base}/$config->{INCLUDE_PATH}$config->{exe_rnamotif_template}\;
+    my $rnamotif_template_file = qq"$config->{base}/descr/$config->{exe_rnamotif_template}";
     if (!-r $rnamotif_template_file) {
 	die("Need an rnamotif template");
     }

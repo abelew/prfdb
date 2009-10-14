@@ -211,6 +211,7 @@ sub MyExecute {
 	print STDERR "$hour:$min:$sec $mon-$mday Execute failed for: $statement
 from: $input->{caller}
 with: error $DBI::errstr\n";
+	print STDERR "Host: $config->{database_host} Db: $config->{database_name}\n" if (defined($config->{debug}) and $config->{debug} > 0);
 	$me->{errors}->{statement} = $statement;
 	$me->{errors}->{errstr} = $DBI::errstr;
 	if (defined($input->{caller})) {
