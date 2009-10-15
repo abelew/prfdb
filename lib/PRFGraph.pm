@@ -1063,6 +1063,7 @@ sub Overlap_Feynman {
     my $sequence = $info->[0]->[0];
     my $slipsite = $info->[0]->[1];
     my (@parsed, @pkout, @algorithm);
+    my @seq = split(//, $sequence);
     foreach my $datum (@{$info}) {
 	push(@parsed, $datum->[2]);
 	push(@pkout, $datum->[3]);
@@ -1178,27 +1179,53 @@ sub Overlap_Feynman {
 	    $comp->{$c}->{color} = [5,2];
 	}
     }
-    
-#    my $colors = {
-#	0 => $white,
-#	1 => $black,
-#	2 => $red,  ## nupack
-#	3 => $yellow,  ## hotknots
-#	4 => $blue,    ## pknots
-#	5 => $green,
-#	6 => $orange,
-#	7 => $purple,
-#    };
-    my @colors = ($white, $black, $red, $yellow, $blue, $green, $orange, $purple);
-    
+
+    my @colors = ($white, $black, $red, $yellow, $blue, $green, $orange, $purple);    
     my $start_x = $x_pad;
     my $start_y = $height - 10;
-    
     my $distance_per_char = $character_size - 2;
     my $string_x_distance = $character_size * length($sequence);
-
-###  ENDED HERE, NEXT PRINT OUT THE SEQUENCE, THEN DRAW COLORED LINES
     
+    my $c = -1;
+    while ($c < 200) {
+	$c++;
+	## Draw the base
+	$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
+	## Draw the curves
+	my @curves = @{$comp->{$c}->{partner}};
+	my @colors = @{$comp->{$c}->{color}};
+	for my $a (0 .. $#curves) {
+	    next if ($curves[$a] eq '.');
+	    ## Current character is $seq[$c], position is $c
+	    ## Paired character's position is $curves[$a],
+	    ## Resulting color is $colors[$a]
+	    my $center_characters = ($curves[$a] - $c) / 2;
+	    my $center_position = $center_characters * $distance_per_char;
+	    my $center_x = $center_position + ($c * $distance_per_char);  ## + $slipsite_padding
+	    my $dist_x = $center_characters * $distance_per_char * 2;
+	    my $dist_nt = $curves[$a] - $c;
+	    my $dist_y = $dist_nt * $height_per_nt;
+	    $center_x = $center_x + $x_pad + ($distance_per_char / 2);
+	    $center_y = $center_y - 20;
+	    $fey->setThickness(2);
+	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$a]);
+	}
+    }
+#	    my $center_characters = ($paired[$c] - $c) / 2;
+#	    my $center_position = $center_characters * $distance_per_char;
+#	    ## Note the random +56 here (8 pixels for each character of the slipsite and 7 characters)
+#	    my $center_x = $center_position + ($c * $distance_per_char) + $slipsite_padding;
+#	    my $center_y = $height;
+#	    my $dist_x = $center_characters * $distance_per_char * 2;
+#	    my $dist_nt = $paired[$c] - $c;
+#	    my $dist_y = $dist_nt * $height_per_nt;
+#	    $center_x = $center_x + $x_pad + ($distance_per_char / 2);
+#	    $center_y = $center_y - 20;
+#	    $fey->setThickness(2);
+#	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$stems[$c]]);
+#	    $paired[$paired[$c]] = '.';
+#	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
+#	}    
 #    my @stems = split(/\s+/, $parsed);
 #    my @paired = split(/\s+/, $pkout);
 #    my @seq = split(//, $sequence);
