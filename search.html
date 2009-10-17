@@ -88,7 +88,7 @@ my $long_species;
   </td>
     <td valign="top" width="35%">
       <div align="left">
-<a href="/search.html?accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><% $genename %></a>
+<a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><% $genename %></a>
 <& link_out.html, accession => $accession &>
 
   </div>
@@ -99,7 +99,7 @@ my $long_species;
       </div>
     </td>
     <td valign="top" width="15%">
-      <div align="left"><i><% $species %></i></div>
+      <div align="left"><i><% HTMLMisc::Make_Species($species) %></i></div>
     </td>
     <td valign="top" width="5%">
       <div align="center"><strong><% $slipsite_count %></strong></div>

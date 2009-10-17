@@ -1050,7 +1050,7 @@ sub Char_Position {
     return(\@ret);
 }
 
-sub Overlap_Feynman {
+sub Make_OFeynman {
     my $me = shift;
     my $out_filename = shift;
     my $include_slipsite = shift;
@@ -1058,10 +1058,10 @@ sub Overlap_Feynman {
     $include_slipsite = 1 if (!defined($slipsite) and !defined($include_slipsite));
     my $ids = $me->{ids};
     my $db = new PRFdb(config=>$config);
-    my $stmt = qq"SELECT sequence, slipsite, parsed, output algorithm FROM mfe WHERE id = ? or id = ? or id = ?";
-    my $info = $db->MySelect(statement => $stmt, vars => [$ids->[0], $ids->[1], $ids->[2]], type => 'row');
+    my $stmt = qq"SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ? or id = ? or id = ?";
+    my $info = $db->MySelect(statement => $stmt, vars => [$ids->[0], $ids->[1], $ids->[2]],);
     my $sequence = $info->[0]->[0];
-    my $slipsite = $info->[0]->[1];
+    $slipsite = $info->[0]->[1];
     my (@parsed, @pkout, @algorithm);
     my @seq = split(//, $sequence);
     foreach my $datum (@{$info}) {
@@ -1083,10 +1083,13 @@ sub Overlap_Feynman {
     }
     my $width = ($seqlength * ($character_size - 2)) + ($x_pad * 2) + $slipsite_padding;
     my $height = 400;
+    ## originally (($height_per_nt * $max_dist) / 2) + ($character_size * 4);
     my $fey = new GD::SVG::Image($width,$height);
     my $white = $fey->colorAllocate(255,255,255);
     my $black = $fey->colorAllocate(0,0,0);
-    my $blue = $fey->colorAllocate(0,0,191);
+#    my $blue = $fey->colorAllocate(0,0,191);
+# new blue
+    my $blue = $fey->colorAllocate(83,144,255);
     my $red = $fey->colorAllocate(248,0,0);
     my $green = $fey->colorAllocate(0,191,0);
     my $purple = $fey->colorAllocate(192,60,192);
@@ -1097,7 +1100,7 @@ sub Overlap_Feynman {
     my $aqua = $fey->colorAllocate(127,255,212);
     my $yellow = $fey->colorAllocate(255,255,0);
     my $gb = $fey->colorAllocate(0,97,97);
-    $fey->transparent($white);
+    $fey->transparent($gray);
 
     my $struct;
     LOOP: for my $c (0 .. 120) {  ## Grossly overshoot the number of basepairs
@@ -1106,42 +1109,62 @@ sub Overlap_Feynman {
 	    my @patmp = split(/\s+/, $parsed[$d]);
 	    next LOOP if (!defined($pktmp[$c]));
 	    $struct->{$c}->{$algorithm[$d]}->{partner} = $pktmp[$c];
+	    $patmp[$c] = '.' if (!defined($patmp[$c]));
 	    $struct->{$c}->{$algorithm[$d]}->{stemnum} = $patmp[$c];
 	}
     }
     
-    my $count = -1;
     my $comp = {};
-    while (my $c < 200) {
+    my $agree = {
+	all => 0,
+	none => 0,
+	n => 0,
+	h => 0,
+	p => 0,
+	hn => 0,
+	np => 0,
+	hp => 0,
+	hnp => 0,
+    };
+    my $c = -1;
+    while ($c < 200) {
 	$c++;
-	next if (!defined($struct->{$count}));
+	next if (!defined($struct->{$c}));
 	my $n = $struct->{$c}->{nupack}->{partner};
 	my $h = $struct->{$c}->{hotknots}->{partner};
 	my $p = $struct->{$c}->{pknots}->{partner};
+#	sleep(1);
 	if ($struct->{$c}->{hotknots}->{partner} eq '.' and $struct->{$c}->{pknots}->{partner} eq '.' and $struct->{$c}->{nupack}->{partner} eq '.') {
+	    $agree->{none}++;
 	    $comp->{$c}->{partner} = ['.'];
 	    $comp->{$c}->{color} = [0];
 	    ## Nothing is 0
 	} elsif (($n eq $h) and ($n eq $p)) {
+	    $agree->{all}++;
 	    $comp->{$c}->{partner} = [$n];
 	    $comp->{$c}->{color} = [1];
 	    ## All 3 same is 1
 	} elsif (($n ne $h) and ($n ne $p)) {
+	    $agree->{hnp}++;
 	    $comp->{$c}->{partner} = [$n,$h,$p];
 	    $comp->{$c}->{color} = [2,3,4];
 	    ## nupack is 2
 	    ## hotknots is 3
 	    ## pknots is 4
 	} elsif ($n eq '.' and $h eq '.') {
+	    $agree->{p}++;
 	    $comp->{$c}->{partner} = [$p];
 	    $comp->{$c}->{color} = [4];
 	} elsif ($n eq '.' and $p eq '.') {
+	    $agree->{h}++;
 	    $comp->{$c}->{partner} = [$h];
 	    $comp->{$c}->{color} = [3];
 	} elsif ($h eq '.' and $p eq '.') {
+	    $agree->{n}++;
 	    $comp->{$c}->{partner} = [$n];
 	    $comp->{$c}->{color} = [2];
 	} elsif ($n eq '.') {
+	    $agree->{hp}++;
 	    if ($h eq $p) {
 		$comp->{$c}->{partner} = [$h];
 		$comp->{$c}->{color} = [5];
@@ -1151,6 +1174,7 @@ sub Overlap_Feynman {
 		$comp->{$c}->{color} = [3,4];
 	    }
 	} elsif ($h eq '.') {
+	    $agree->{np}++;
 	    if ($n eq $p) {
 		$comp->{$c}->{partner} = [$n];
 		$comp->{$c}->{color} = [6];
@@ -1160,130 +1184,85 @@ sub Overlap_Feynman {
 		$comp->{$c}->{color} = [2,4];
 	    }
 	} elsif ($p eq '.') {
+	    $agree->{hn}++;
 	    if ($h eq $n) {
 		$comp->{$c}->{partner} = [$h];
 		$comp->{$c}->{color} = [7];
 		## hotknots+nupack is 7
 	    } else {
 		$comp->{$c}->{partner} = [$h,$n];
-		$comp->{$c}->{color} = [3,2];
+		$comp->{$c}->{color} = [2,3];
 	    }
 	} elsif ($n eq $p) {
-	    $comp->{$c}->{partner} = [$n,$h];
-	    $comp->{$c}->{color} = [6,3];
+	    $agree->{hnp}++;
+#	    $comp->{$c}->{partner} = [$n,$h];
+#	    $comp->{$c}->{color} = [6,3];
+	    $comp->{$c}->{partner} = [$h,$n];
+	    $comp->{$c}->{color} = [3,6];
 	} elsif ($n eq $h) {
-	    $comp->{$c}->{partner} = [$n,$p];
-	    $comp->{$c}->{color} = [7,4];
-	} elsif ($p eq $h) {
+	    $agree->{hnp}++;
+#	    $comp->{$c}->{partner} = [$n,$p];
+#	    $comp->{$c}->{color} = [7,4];
 	    $comp->{$c}->{partner} = [$p,$n];
-	    $comp->{$c}->{color} = [5,2];
+	    $comp->{$c}->{color} = [4,7];
+	} elsif ($p eq $h) {
+	    $agree->{hnp}++;
+#	    $comp->{$c}->{partner} = [$p,$n];
+#	    $comp->{$c}->{color} = [5,2];
+	    $comp->{$c}->{partner} = [$n,$p];
+	    $comp->{$c}->{color} = [2,5];
 	}
     }
-
-    my @colors = ($white, $black, $red, $yellow, $blue, $green, $orange, $purple);    
+    ##             0            1       2        3       4      5       6        7   8 9 10 are catchalls
+    ##             nothing      all    nupack   hot    pknot   h+p    n+p       h+n
+#    my @colornames = ('white','black','orange','aqua','yellow','green','red','blue','darkslategray','darkslategray','darkslategray');
+    my @color_list = ($white, $black, $yellow, $red, $blue, $purple, $green, $orange, $darkslategray, $darkslategray, $darkslategray);
     my $start_x = $x_pad;
     my $start_y = $height - 10;
     my $distance_per_char = $character_size - 2;
     my $string_x_distance = $character_size * length($sequence);
+    my $character_x = $start_x;
+    my $character_y = $start_y - 10;
     
-    my $c = -1;
+    $c = -1;
     while ($c < 200) {
 	$c++;
+	next if (!defined($seq[$c]));
 	## Draw the base
 	$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
+	$character_x += 8;
 	## Draw the curves
+	if (!defined($comp->{$c}->{partner})) {
+	    $comp->{$c}->{partner} = ['.'];
+	    $comp->{$c}->{color} = [$darkslategray];
+	}
 	my @curves = @{$comp->{$c}->{partner}};
 	my @colors = @{$comp->{$c}->{color}};
 	for my $a (0 .. $#curves) {
 	    next if ($curves[$a] eq '.');
 	    ## Current character is $seq[$c], position is $c
 	    ## Paired character's position is $curves[$a],
-	    ## Resulting color is $colors[$a]
+	    ## Resulting color is $color_list[$colors[$a]]
+	    ## color name: $colornames[$a]
 	    my $center_characters = ($curves[$a] - $c) / 2;
 	    my $center_position = $center_characters * $distance_per_char;
 	    my $center_x = $center_position + ($c * $distance_per_char);  ## + $slipsite_padding
+	    my $center_y = $height;
 	    my $dist_x = $center_characters * $distance_per_char * 2;
 	    my $dist_nt = $curves[$a] - $c;
 	    my $dist_y = $dist_nt * $height_per_nt;
 	    $center_x = $center_x + $x_pad + ($distance_per_char / 2);
 	    $center_y = $center_y - 20;
 	    $fey->setThickness(2);
-	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$a]);
+	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $color_list[$colors[$a]]);
 	}
     }
-#	    my $center_characters = ($paired[$c] - $c) / 2;
-#	    my $center_position = $center_characters * $distance_per_char;
-#	    ## Note the random +56 here (8 pixels for each character of the slipsite and 7 characters)
-#	    my $center_x = $center_position + ($c * $distance_per_char) + $slipsite_padding;
-#	    my $center_y = $height;
-#	    my $dist_x = $center_characters * $distance_per_char * 2;
-#	    my $dist_nt = $paired[$c] - $c;
-#	    my $dist_y = $dist_nt * $height_per_nt;
-#	    $center_x = $center_x + $x_pad + ($distance_per_char / 2);
-#	    $center_y = $center_y - 20;
-#	    $fey->setThickness(2);
-#	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$stems[$c]]);
-#	    $paired[$paired[$c]] = '.';
-#	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
-#	}    
-#    my @stems = split(/\s+/, $parsed);
-#    my @paired = split(/\s+/, $pkout);
-#    my @seq = split(//, $sequence);
-#    my $last_stem = $me->Get_Last(\@stems);
-#    my $bp_per_stem = $me->Get_Stems(\@stems);
-#    
-#    my $character_x = $start_x;
-#    my $character_y = $start_y - 10;
-#    
-#    ## Print out the slipsite
-#    my @slipsite = split(//, $slipsite);
-#    for my $c (0 .. $#slipsite) {
-#	$fey->char(gdMediumBoldFont, $character_x, $character_y, $slipsite[$c], $black);
-#	$character_x = $character_x + 8;
-#    }
-#    
-#    for my $c (0 .. $#seq) {
-#	my $count = $c+1;
-#	next if (!defined($paired[$c]));
-#	if ($paired[$c] eq '.') {
-#	    if ($stems[$c] =~ /\d+/) {
-#		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
-#	    }
-#	    elsif ($stems[$c] eq '.') {
-#		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
-#	    }
-#	}
-#	elsif ($paired[$c] =~ /\d+/) {
-#	    my $current_stem = $stems[$c];
-#	    my $bases_in_stem = $bp_per_stem->{$current_stem};
-#	    my $center_characters = ($paired[$c] - $c) / 2;
-#	    my $center_position = $center_characters * $distance_per_char;
-#	    ## Note the random +56 here (8 pixels for each character of the slipsite and 7 characters)
-#	    my $center_x = $center_position + ($c * $distance_per_char) + $slipsite_padding;
-#	    my $center_y = $height;
-#	    my $dist_x = $center_characters * $distance_per_char * 2;
-#	    my $dist_nt = $paired[$c] - $c;
-#	    my $dist_y = $dist_nt * $height_per_nt;
-#	    $center_x = $center_x + $x_pad + ($distance_per_char / 2);
-#	    $center_y = $center_y - 20;
-#	    $fey->setThickness(2);
-#	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$stems[$c]]);
-#	    $paired[$paired[$c]] = '.';
-#	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
-#	}
-#### Why are there spaces?
-#	else {
-##	    print "Crap in a hat the character is $paired[$c]\n";
-#	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
-#	}
-#	$character_x = $character_x + 8;
-#    }  ## End for each of the 3 returned structures
 
     my $output;
     if(defined($out_filename)) {
 	$output = $out_filename;
     } else {
-	$output = $me->Picture_Filename({type => 'feynman',});
+	$output = $me->Picture_Filename({type => 'ofeynman',});
     }
     open(OUT, ">$output");
     binmode OUT;
@@ -1297,6 +1276,7 @@ sub Overlap_Feynman {
     my $ret = {
 	width => $width + 1 + $slipsite_padding,
 	height => $height + 1,
+	agree => $agree,
     };
     return($ret);
 }
@@ -1628,7 +1608,6 @@ sub Picture_Filename {
     my $url = $args->{url};
     my $species = $args->{species};
     my $suffix = $args->{suffix};
-
     if ($type eq 'extension_percent') {
 	return(qq"images/cloud/$species/extension-percent.png");
     }

@@ -29,6 +29,7 @@ sub new {
 	$me->Create_Queue() unless ($me->Tablep($config->{queue_table}));
 	$me->Create_MFE() unless ($me->Tablep('mfe'));
 	$me->Create_Errors() unless ($me->Tablep('errors'));
+	$me->Create_Agree() unless ($me->Tablep('agree'));
 	$me->Create_NumSlipsite() unless ($me->Tablep('numslipsite'));
 	if (defined($config->{index_species})) {
 	    my @sp = @{$config->{index_species}};
@@ -1704,6 +1705,18 @@ sub Put_MFE_Landscape {
     return ($id);
 }    ## End put_mfe_landscape
 
+sub Put_Agree {
+    my $me = shift;
+    my %args = @_;
+    my $agree = $args{agree};
+    my ($cp,$cf,$cl) = caller();
+    my $stmt = qq"INSERT INTO agree (accession, start, length, all_agree, no_agree, n_alone, h_alone, p_alone, hplusn, nplusp, hplusp, hnp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+    my $rows = $me->MyExecute(statement => $stmt,
+		   vars => [$args{accession}, $args{start}, $args{length}, $agree->{all}, $agree->{none}, $agree->{n}, $agree->{h}, $agree->{p}, $agree->{hn}, $agree->{np}, $agree->{hp}, $agree->{hnp}],
+		   caller =>"$cp,$cf,$cl");
+    return($rows);
+}
+
 sub Put_Stats {
     my $me = shift;
     my $data = shift;
@@ -1964,6 +1977,27 @@ PRIMARY KEY (id))/;
     my ($cp, $cf, $cl) = caller();
     $me->MyExecute({statement =>$statement, 
 		    caller => "$cp, $cf, $cl",});
+}
+
+sub Create_Agree {
+    my $me = shift;
+    my $statement = qq"CREATE table agree (
+id $config->{sql_id},
+accession $config->{sql_accession},
+start int,
+length int,
+all_agree int,
+no_agree int,
+n_alone int,
+h_alone int,
+p_alone int,
+hplusn int,
+nplusp int,
+hplusp int,
+hnp int,
+PRIMARY KEY (id))";
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
 }
 
 sub Create_Index_Stats {
