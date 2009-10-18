@@ -17,7 +17,7 @@
  while (read(CONVERT, $buffer, BUFFER_SIZE)) {
    print $buffer;
  }
- close CONVERT;
+ close(CONVERT);
 </%init>
 <%args>
  $mfeid => undef;

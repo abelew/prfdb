@@ -194,6 +194,7 @@ sub Read_Accessions {
 	    $db->Import_CDS($accession);
 	}
     }
+    close(AC);
 }
 
 ## Start Gather

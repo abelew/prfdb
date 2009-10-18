@@ -325,7 +325,8 @@ command: $command\n" if (defined($config->{debug}));
             $return->{parens} = $struct;
             $return->{mfe} = $num;
         }
-    }
+    } ## End the while
+    close(VI);
     RemoveFile($errorfile);
     if (!defined($return->{sequence})) {
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";

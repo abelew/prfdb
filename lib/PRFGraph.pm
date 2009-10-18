@@ -1133,6 +1133,17 @@ sub Make_OFeynman {
 	my $n = $struct->{$c}->{nupack}->{partner};
 	my $h = $struct->{$c}->{hotknots}->{partner};
 	my $p = $struct->{$c}->{pknots}->{partner};
+	if (!defined($n)) {
+	    print "n not defined\n";
+	    next;
+	} elsif (!defined($h)) {
+	    print "h not defined\n";
+	    next;
+	} elsif (!defined($p)) {
+	    print "$p not defined\n";
+	    next;
+	}
+
 #	sleep(1);
 	if ($struct->{$c}->{hotknots}->{partner} eq '.' and $struct->{$c}->{pknots}->{partner} eq '.' and $struct->{$c}->{nupack}->{partner} eq '.') {
 	    $agree->{none}++;
@@ -1627,10 +1638,17 @@ sub Picture_Filename {
     my $mfe_id = $me->{mfe_id};
     
     if (defined($species)) {
-	my $tmpdir = "$config->{base}/images/$type/$species";
+	my $tmpdir = qq"$config->{base}/images/$type/$species";
+	my $command = qq"/bin/mkdir -p $tmpdir";
+	my $output = '';
 	if (!-d $tmpdir) {
-	    system("mkdir -p $tmpdir");
-	}
+	    open (CMD, "$command |") or die("Could not run $command
+Make sure that user $< and/or group $( has write permissions: $!");
+	    while (my $line = <CMD>) {
+		$output .= $line;
+	    }  ## End while mkdir
+	    close(CMD);
+	}  ## End if the directory does not exist.
 	
 	if (defined($url)) {
 	    if (defined($suffix)) {
@@ -1732,8 +1750,9 @@ sub Make_Directory {
 Make sure that user $< and/or group $( has write permissions: $!");
 	    while (my $line = <CMD>) {
 		$output .= $line;
-	    }
-	}
+	    }  ## End while mkdir
+	    close(CMD);
+	}  ## End if the directory does not exist.
     }
     return ($directory);
 }

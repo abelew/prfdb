@@ -133,7 +133,7 @@ sub new {
     $me->{sql_comment} = 'text not null' if (!defined($me->{sql_comment}));
     $me->{sql_genename} = 'varchar(120)' if (!defined($me->{sql_genename}));
     $me->{sql_gi_number} = 'varchar(80)' if (!defined($me->{sql_gi_number}));
-    $me->{sql_id} = 'int not null auto_increment' if (!defined($me->{sql_id}));
+    $me->{sql_id} = 'bigint not null auto_increment' if (!defined($me->{sql_id}));
     $me->{sql_index} = $PRFConfig::config->{sql_id} if (!defined($me->{sql_index}));
     $me->{sql_species} = 'varchar(80)' if (!defined($me->{sql_species}));
     $me->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP' if (!defined($me->{sql_timestamp}));
