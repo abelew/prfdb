@@ -38,7 +38,7 @@ foreach my $datum (@{$everything}) {
 	print "Skipping $accession $start $seqlength\n";
 	next;
     }
-    my $overlap_pic = new PRFGraph({config=>$config, ids => \@id, mfe_id => $seqlength, accession => $accession});
+    my $overlap_pic = new PRFGraph({config=>$config, ids => \@id, mfe_id => "$start-$seqlength", accession => $accession});
     my $overlap_url = $overlap_pic->Picture_Filename({type => 'ofeynman', url => 'url',});
     my $overlap_output_filename = $overlap_pic->Picture_Filename({type => 'ofeynman',});
     my $ofeynman_dimensions = {};
