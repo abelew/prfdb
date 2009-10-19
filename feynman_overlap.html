@@ -4,7 +4,7 @@
 % foreach my $id (@{$mfe_ids}) {
 %  push(@ids, $id->[0]);
 % }
-% my $overlap_pic = new PRFGraph({config=>$config, ids => \@ids, mfe_id=> $seqlength, accession => $accession});
+% my $overlap_pic = new PRFGraph({config=>$config, ids => \@ids, mfe_id=> "$start-$seqlength", start => $start, accession => $accession});
 % my $overlap_url = $overlap_pic->Picture_Filename({type => 'ofeynman', url => 'url',});
 % my $overlap_output_filename = $overlap_pic->Picture_Filename({type => 'ofeynman',});
 % my $ofeynman_dimensions = {};
