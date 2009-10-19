@@ -176,7 +176,7 @@ sub Make_Extension {
 	my $x_coord = sprintf("%.2f", (($x_range / 100) * $x_percentage + $left_x_coord));
 	my $percent_y_coord = sprintf("%.2f", ((($y_range / 130) * (130 - $y_percentage)) + $bottom_y_coord));
 	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons) + $bottom_y_coord);
-	my $url = qq"/browse.html?accession=$accession";
+	my $url = qq"/browse.html?short=1&accession=$accession";
 	if ($type eq 'percent') {
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession, mfe: $avg_mfe z: $avg_zscore">\n/;
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);
@@ -379,7 +379,7 @@ sub Make_Cloud {
 		$x_coord = sprintf('%.0f', $x_coord);
 		$y_coord = sprintf('%.0f', $y_coord);
 		if ($points->{$x_point}->{$y_point}->{count} == 1) {
-		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?accession=$accessions&slipstart=$start" title="$genenames">\n);
+		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accessions&slipstart=$start" title="$genenames">\n);
 		}
 		else {
 		    if (defined($pknot)) {
@@ -461,7 +461,7 @@ sub Make_Cloud {
 		$gd->filledArc($x_coord, $y_coord, 4, 4, 0, 360, $black, 4);
 		
 		if ($slipsites_numbers{$slipsite}{num} > 1) {
-		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?accession=$accessions&slipstart=$start" title="$genenames">\n);
+		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accessions&slipstart=$start" title="$genenames">\n);
 		}
 		else {
 		    if (defined($pknot)) {
@@ -589,7 +589,7 @@ sub Make_Overlay {
 	$x_coord = sprintf('%.0f', $x_coord);
 	$y_coord = sprintf('%.0f', $y_coord);
 	$gd->filledArc($x_coord, $y_coord, $radius, $radius, 0, 360, $black, 4);
-	my $map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?accession=$accession&slipstart=$slipstart" title="Position $slipstart of $accession ($inputstring) using $algorithm">\n);
+	my $map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accession&slipstart=$slipstart" title="Position $slipstart of $accession ($inputstring) using $algorithm">\n);
         print MAP $map_string;
     }
     print MAP "</map>\n";
@@ -1050,12 +1050,254 @@ sub Char_Position {
     return(\@ret);
 }
 
-sub Make_CFeynman {
+sub Make_OFeynman {
+    my $me = shift;
+    my $out_filename = shift;
+    my $include_slipsite = shift;
+    my $slipsite = undef;
+    $include_slipsite = 1 if (!defined($slipsite) and !defined($include_slipsite));
+    my $ids = $me->{ids};
+    my $db = new PRFdb(config=>$config);
+    my $stmt = qq"SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ? or id = ? or id = ?";
+    my $info = $db->MySelect(statement => $stmt, vars => [$ids->[0], $ids->[1], $ids->[2]],);
+    my $sequence = $info->[0]->[0];
+    $slipsite = $info->[0]->[1];
+    my (@parsed, @pkout, @algorithm);
+    my @seq = split(//, $sequence);
+    foreach my $datum (@{$info}) {
+	push(@parsed, $datum->[2]);
+	push(@pkout, $datum->[3]);
+	push(@algorithm, $datum->[4]);
+    }
+    my $seqlength = length($sequence);
+    my $character_size = 10;
+    my $height_per_nt = 3.5;
+    
+    ## x_pad takes into account the size of the blank space on the left
+    my $x_pad = 10;
+    ## Width takes into account the size of each character, the number of character, the padding between them, and
+    ## The size of the padding
+    my $slipsite_padding = 0;
+    if ($include_slipsite == 1) {
+	$slipsite_padding = 56;
+    }
+    my $width = ($seqlength * ($character_size - 2)) + ($x_pad * 2) + $slipsite_padding;
+    my $height = 400;
+    ## originally (($height_per_nt * $max_dist) / 2) + ($character_size * 4);
+    my $fey = new GD::SVG::Image($width,$height);
+    my $white = $fey->colorAllocate(255,255,255);
+    my $black = $fey->colorAllocate(0,0,0);
+#    my $blue = $fey->colorAllocate(0,0,191);
+# new blue
+    my $blue = $fey->colorAllocate(83,144,255);
+    my $red = $fey->colorAllocate(248,0,0);
+    my $green = $fey->colorAllocate(0,191,0);
+    my $purple = $fey->colorAllocate(192,60,192);
+    my $orange = $fey->colorAllocate(255,165,0);
+    my $brown = $fey->colorAllocate(192,148,68);
+    my $darkslategray = $fey->colorAllocate(165,165,165);
+    my $gray = $fey->colorAllocate(127,127,127);
+    my $aqua = $fey->colorAllocate(127,255,212);
+    my $yellow = $fey->colorAllocate(255,255,0);
+    my $gb = $fey->colorAllocate(0,97,97);
+    $fey->transparent($gray);
+
+    my $struct;
+    LOOP: for my $c (0 .. 120) {  ## Grossly overshoot the number of basepairs
+	for my $d (0 .. $#pkout) {   ## The 3 or so algorithms available
+	    my @pktmp = split(/\s+/, $pkout[$d]);
+	    my @patmp = split(/\s+/, $parsed[$d]);
+	    next LOOP if (!defined($pktmp[$c]));
+	    $struct->{$c}->{$algorithm[$d]}->{partner} = $pktmp[$c];
+	    $patmp[$c] = '.' if (!defined($patmp[$c]));
+	    $struct->{$c}->{$algorithm[$d]}->{stemnum} = $patmp[$c];
+	}
+    }
+    
+    my $comp = {};
+    my $agree = {
+	all => 0,
+	none => 0,
+	n => 0,
+	h => 0,
+	p => 0,
+	hn => 0,
+	np => 0,
+	hp => 0,
+	hnp => 0,
+    };
+    my $c = -1;
+    while ($c < 200) {
+	$c++;
+	next if (!defined($struct->{$c}));
+	my $n = $struct->{$c}->{nupack}->{partner};
+	my $h = $struct->{$c}->{hotknots}->{partner};
+	my $p = $struct->{$c}->{pknots}->{partner};
+	if (!defined($n)) {
+	    print "n not defined\n";
+	    next;
+	} elsif (!defined($h)) {
+	    print "h not defined\n";
+	    next;
+	} elsif (!defined($p)) {
+	    print "$p not defined\n";
+	    next;
+	}
+
+#	sleep(1);
+	if ($struct->{$c}->{hotknots}->{partner} eq '.' and $struct->{$c}->{pknots}->{partner} eq '.' and $struct->{$c}->{nupack}->{partner} eq '.') {
+	    $agree->{none}++;
+	    $comp->{$c}->{partner} = ['.'];
+	    $comp->{$c}->{color} = [0];
+	    ## Nothing is 0
+	} elsif (($n eq $h) and ($n eq $p)) {
+	    $agree->{all}++;
+	    $comp->{$c}->{partner} = [$n];
+	    $comp->{$c}->{color} = [1];
+	    ## All 3 same is 1
+	} elsif (($n ne $h) and ($n ne $p)) {
+	    $agree->{hnp}++;
+	    $comp->{$c}->{partner} = [$n,$h,$p];
+	    $comp->{$c}->{color} = [2,3,4];
+	    ## nupack is 2
+	    ## hotknots is 3
+	    ## pknots is 4
+	} elsif ($n eq '.' and $h eq '.') {
+	    $agree->{p}++;
+	    $comp->{$c}->{partner} = [$p];
+	    $comp->{$c}->{color} = [4];
+	} elsif ($n eq '.' and $p eq '.') {
+	    $agree->{h}++;
+	    $comp->{$c}->{partner} = [$h];
+	    $comp->{$c}->{color} = [3];
+	} elsif ($h eq '.' and $p eq '.') {
+	    $agree->{n}++;
+	    $comp->{$c}->{partner} = [$n];
+	    $comp->{$c}->{color} = [2];
+	} elsif ($n eq '.') {
+	    $agree->{hp}++;
+	    if ($h eq $p) {
+		$comp->{$c}->{partner} = [$h];
+		$comp->{$c}->{color} = [5];
+		## hotknots+pknots is 5
+	    } else {
+		$comp->{$c}->{partner} = [$h,$p];
+		$comp->{$c}->{color} = [3,4];
+	    }
+	} elsif ($h eq '.') {
+	    $agree->{np}++;
+	    if ($n eq $p) {
+		$comp->{$c}->{partner} = [$n];
+		$comp->{$c}->{color} = [6];
+		## nupack+pknots is 6
+	    } else {
+		$comp->{$c}->{partner} = [$n,$p];
+		$comp->{$c}->{color} = [2,4];
+	    }
+	} elsif ($p eq '.') {
+	    $agree->{hn}++;
+	    if ($h eq $n) {
+		$comp->{$c}->{partner} = [$h];
+		$comp->{$c}->{color} = [7];
+		## hotknots+nupack is 7
+	    } else {
+		$comp->{$c}->{partner} = [$h,$n];
+		$comp->{$c}->{color} = [2,3];
+	    }
+	} elsif ($n eq $p) {
+	    $agree->{hnp}++;
+#	    $comp->{$c}->{partner} = [$n,$h];
+#	    $comp->{$c}->{color} = [6,3];
+	    $comp->{$c}->{partner} = [$h,$n];
+	    $comp->{$c}->{color} = [3,6];
+	} elsif ($n eq $h) {
+	    $agree->{hnp}++;
+#	    $comp->{$c}->{partner} = [$n,$p];
+#	    $comp->{$c}->{color} = [7,4];
+	    $comp->{$c}->{partner} = [$p,$n];
+	    $comp->{$c}->{color} = [4,7];
+	} elsif ($p eq $h) {
+	    $agree->{hnp}++;
+#	    $comp->{$c}->{partner} = [$p,$n];
+#	    $comp->{$c}->{color} = [5,2];
+	    $comp->{$c}->{partner} = [$n,$p];
+	    $comp->{$c}->{color} = [2,5];
+	}
+    }
+    ##             0            1       2        3       4      5       6        7   8 9 10 are catchalls
+    ##             nothing      all    nupack   hot    pknot   h+p    n+p       h+n
+#    my @colornames = ('white','black','orange','aqua','yellow','green','red','blue','darkslategray','darkslategray','darkslategray');
+    my @color_list = ($white, $black, $yellow, $red, $blue, $purple, $green, $orange, $darkslategray, $darkslategray, $darkslategray);
+    my $start_x = $x_pad;
+    my $start_y = $height - 10;
+    my $distance_per_char = $character_size - 2;
+    my $string_x_distance = $character_size * length($sequence);
+    my $character_x = $start_x;
+    my $character_y = $start_y - 10;
+    
+    $c = -1;
+    while ($c < 200) {
+	$c++;
+	next if (!defined($seq[$c]));
+	## Draw the base
+	$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
+	$character_x += 8;
+	## Draw the curves
+	if (!defined($comp->{$c}->{partner})) {
+	    $comp->{$c}->{partner} = ['.'];
+	    $comp->{$c}->{color} = [$darkslategray];
+	}
+	my @curves = @{$comp->{$c}->{partner}};
+	my @colors = @{$comp->{$c}->{color}};
+	for my $a (0 .. $#curves) {
+	    next if ($curves[$a] eq '.');
+	    ## Current character is $seq[$c], position is $c
+	    ## Paired character's position is $curves[$a],
+	    ## Resulting color is $color_list[$colors[$a]]
+	    ## color name: $colornames[$a]
+	    my $center_characters = ($curves[$a] - $c) / 2;
+	    my $center_position = $center_characters * $distance_per_char;
+	    my $center_x = $center_position + ($c * $distance_per_char);  ## + $slipsite_padding
+	    my $center_y = $height;
+	    my $dist_x = $center_characters * $distance_per_char * 2;
+	    my $dist_nt = $curves[$a] - $c;
+	    my $dist_y = $dist_nt * $height_per_nt;
+	    $center_x = $center_x + $x_pad + ($distance_per_char / 2);
+	    $center_y = $center_y - 20;
+	    $fey->setThickness(2);
+	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $color_list[$colors[$a]]);
+	}
+    }
+
+    my $output;
+    if(defined($out_filename)) {
+	$output = $out_filename;
+    } else {
+	$output = $me->Picture_Filename({type => 'ofeynman',});
+    }
+    open(OUT, ">$output");
+    binmode OUT;
+    print OUT $fey->svg;
+    close OUT;
+    my $command = qq(sed 's/font=\"Helvetica\"/font-family="Courier New"/g' ${output} > ${output}.tmp);
+    system($command);
+    $command = qq(mv ${output}.tmp ${output});
+    system($command);
+    
+    my $ret = {
+	width => $width + 1 + $slipsite_padding,
+	height => $height + 1,
+	agree => $agree,
+    };
+    return($ret);
+}
+
+sub Make_Classical {
     my $me = shift;
     my $id = $me->{mfe_id};
     my $db = new PRFdb(config => $config);
-    my $stmt = qq(SELECT sequence, parsed, output FROM mfe WHERE id = ?);
-    my $info = $db->MySelect({statement => $stmt, vars => [$id], type => 'row' });
+    my $stmt = qq"SELECT sequence, parsed, output FROM mfe WHERE id = ?";
+    my $info = $db->MySelect(statement => $stmt, vars => [$id], type => 'row');
     my $sequence = $info->[0];
     my $parsed = $info->[1];
     my $pkout = $info->[2];
@@ -1088,8 +1330,151 @@ sub Make_CFeynman {
     my $orange = $fey->colorAllocate(255,165,0);
     my $brown = $fey->colorAllocate(192,148,68);
     my $darkslategray = $fey->colorAllocate(165,165,165);
-    my $gray   = $fey->colorAllocate(127,127,127);
-    my $aqua   = $fey->colorAllocate(127,255,212);
+    my $gray = $fey->colorAllocate(127,127,127);
+    my $aqua = $fey->colorAllocate(127,255,212);
+    my $yellow = $fey->colorAllocate(255,255,0);
+    my $gb = $fey->colorAllocate(0, 97, 97);
+    
+    $fey->transparent($white);
+#1    $fey->filledRectangle(0,0,$width,$height,$white);
+    
+    my @colors = ($black, $blue, $red, $green, $purple, $orange, $brown, $darkslategray,
+		  $black, $blue, $red, $green, $purple, $orange, $brown, $darkslategray,
+		  $black, $blue, $red, $green, $purple, $orange, $brown, $darkslategray,
+		  );
+    
+    my $center_x = $width / 2;
+    my $center_y = $height / 2;
+    
+    my $distance_per_char = $character_size - 2;
+    my $string_x_distance = $character_size * length($sequence);
+    
+    my @stems = split(/\s+/, $parsed);
+    my @paired = split(/\s+/, $pkout);
+    my @seq = split(//, $sequence);
+    my $last_stem = $me->Get_Last(\@stems);
+    my $bp_per_tsem = $me->Get_Stems(\@stems);
+    
+    my %return_position = ();
+    my $num_characters = scalar(@seq) + 5;
+    my $struct = {};
+    for my $c (0 .. $#seq) {
+	my $position_info = Char_Position($c, $num_characters, $width, $height);
+	my $degrees = $position_info->[2];
+	my $rads = $position_info->[3];
+	my $position_x = $position_info->[0];
+	my $position_y = $position_info->[1];
+	$struct->{$c}->{x} = $position_x;
+	$struct->{$c}->{y} = $position_y;
+	$struct->{$c}->{char} = $seq[$c];
+	$struct->{$c}->{stem} = $stems[$c];
+	$struct->{$c}->{paired} = $paired[$c];
+    }
+
+    my $max_iter = 10;
+    for my $iter (0 .. $max_iter) {
+	for my $bp (0 .. $num_characters) {
+	    if ($struct->{$bp}->{stem} =~ /\d+/) {
+		print "rawr\n";
+	    }
+	}
+    }
+
+    for my $c (0 .. $#seq) {
+        my $position_info = Char_Position($c, $num_characters, $width, $height);
+        my $degrees = $position_info->[2];
+        my $rads = $position_info->[3];
+        my $position_x = $position_info->[0];
+        my $position_y = $position_info->[1];
+        $return_position{$c}->{x} = $position_x;
+        $return_position{$c}->{y} = $position_y;
+        $return_position{$c}->{char} = $seq[$c];
+        $return_position{$c}->{stem} = $stems[$c];
+        $return_position{$c}->{paired} = $paired[$c];
+	my $count = $c+1;
+	if ($paired[$c] eq '.') {
+	    if ($stems[$c] =~ /\d+/) {
+#		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
+#		$fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
+		$fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
+	    } elsif ($stems[$c] eq '.') {
+#		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
+#		$fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
+		$fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
+	    }
+	} elsif ($paired[$c] =~ /\d+/) {
+	    my $old_position = Char_Position($paired[$c], $num_characters, $width, $height);
+	    my $old_degrees = $old_position->[2];
+	    my $old_x = $old_position->[0];
+	    my $old_y = $old_position->[1];
+	    
+	    my $c_x = abs($position_x - $old_x) / 2;
+	    my $c_y = abs($position_y - $old_y) / 2;
+	    
+	    $fey->setThickness(2);
+	    $fey->line($old_x+5, $old_y+5, $position_x+5, $position_y+5, $colors[$stems[$c]]);
+	    $paired[$paired[$c]] = '.';
+#	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
+#	    $fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
+	    $fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
+	} else { ### Why are there spaces?
+#	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
+#	    $fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
+	    $fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
+	}
+    }
+    my $output = $me->Picture_Filename( {type => 'cfeynman',});
+    open(OUT, ">$output");
+    binmode OUT;
+    print OUT $fey->svg;
+    close OUT;
+    my $command = qq(sed 's/font=\"Helvetica\"/font-family="Courier New"/g' ${output} > ${output}.tmp);
+    system($command);
+    $command = qq(mv ${output}.tmp ${output});
+    system($command);   
+    return(\%return_position);
+}
+
+sub Make_CFeynman {
+    my $me = shift;
+    my $id = $me->{mfe_id};
+    my $db = new PRFdb(config => $config);
+    my $stmt = qq"SELECT sequence, parsed, output FROM mfe WHERE id = ?";
+    my $info = $db->MySelect(statement => $stmt, vars => [$id], type => 'row');
+    my $sequence = $info->[0];
+    my $parsed = $info->[1];
+    my $pkout = $info->[2];
+    my $seqlength = length($sequence);
+    my $character_size = 10;
+    my $height_per_nt = 3.5;
+    
+    my $x_pad = 10;
+    my $width = 800;
+    my $height = 800;
+    
+    my $pkt = $pkout;
+    my @pktmp = split(/\s+/, $pkt);
+    my $max_dist = 0;
+    for my $c (0 .. $#pktmp) {
+	my $count = $c + 1;
+	next if ($pktmp[$c] eq '.');
+	my $dist = $pktmp[$c] - $c;
+	$max_dist = $dist if ($dist > $max_dist);
+	$pktmp[$pktmp[$c]] = '.';
+    }
+    
+    my $fey = new GD::SVG::Image($width,$height);
+    my $white = $fey->colorAllocate(255, 255, 255);
+    my $black = $fey->colorAllocate(0, 0, 0);
+    my $blue = $fey->colorAllocate(0, 0, 191);
+    my $red = $fey->colorAllocate(248,0,0);
+    my $green = $fey->colorAllocate(0, 191, 0);
+    my $purple = $fey->colorAllocate(192,60,192);
+    my $orange = $fey->colorAllocate(255,165,0);
+    my $brown = $fey->colorAllocate(192,148,68);
+    my $darkslategray = $fey->colorAllocate(165,165,165);
+    my $gray = $fey->colorAllocate(127,127,127);
+    my $aqua = $fey->colorAllocate(127,255,212);
     my $yellow = $fey->colorAllocate(255,255,0);
     my $gb = $fey->colorAllocate(0, 97, 97);
     
@@ -1129,13 +1514,15 @@ sub Make_CFeynman {
 	my $count = $c+1;
 	if ($paired[$c] eq '.') {
 	    if ($stems[$c] =~ /\d+/) {
-		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
+#		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
+#		$fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
+		$fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
+	    } elsif ($stems[$c] eq '.') {
+#		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
+#		$fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
+		$fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
 	    }
-	    elsif ($stems[$c] eq '.') {
-		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
-	    }
-	}
-	elsif ($paired[$c] =~ /\d+/) {
+	} elsif ($paired[$c] =~ /\d+/) {
 	    my $old_position = Char_Position($paired[$c], $num_characters, $width, $height);
 	    my $old_degrees = $old_position->[2];
 	    my $old_x = $old_position->[0];
@@ -1147,11 +1534,13 @@ sub Make_CFeynman {
 	    $fey->setThickness(2);
 	    $fey->line($old_x+5, $old_y+5, $position_x+5, $position_y+5, $colors[$stems[$c]]);
 	    $paired[$paired[$c]] = '.';
-	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
-	}
-### Why are there spaces?
-	else {
-	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
+#	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
+#	    $fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
+	    $fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
+	} else { ### Why are there spaces?
+#	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
+#	    $fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
+	    $fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
 	}
     }
     my $output = $me->Picture_Filename( {type => 'cfeynman',});
@@ -1230,7 +1619,6 @@ sub Picture_Filename {
     my $url = $args->{url};
     my $species = $args->{species};
     my $suffix = $args->{suffix};
-
     if ($type eq 'extension_percent') {
 	return(qq"images/cloud/$species/extension-percent.png");
     }
@@ -1239,7 +1627,7 @@ sub Picture_Filename {
     }
 
     my $extension; 
-    if ($type =~ /feynman/) {
+    if ($type =~ /feynman/ or $type eq 'overlap') {
 	$extension = '.svg'; 
     }
     else {
@@ -1250,10 +1638,17 @@ sub Picture_Filename {
     my $mfe_id = $me->{mfe_id};
     
     if (defined($species)) {
-	my $tmpdir = "$config->{base}/images/$type/$species";
+	my $tmpdir = qq"$config->{base}/images/$type/$species";
+	my $command = qq"/bin/mkdir -p $tmpdir";
+	my $output = '';
 	if (!-d $tmpdir) {
-	    system("mkdir -p $tmpdir");
-	}
+	    open (CMD, "$command |") or die("Could not run $command
+Make sure that user $< and/or group $( has write permissions: $!");
+	    while (my $line = <CMD>) {
+		$output .= $line;
+	    }  ## End while mkdir
+	    close(CMD);
+	}  ## End if the directory does not exist.
 	
 	if (defined($url)) {
 	    if (defined($suffix)) {
@@ -1355,8 +1750,9 @@ sub Make_Directory {
 Make sure that user $< and/or group $( has write permissions: $!");
 	    while (my $line = <CMD>) {
 		$output .= $line;
-	    }
-	}
+	    }  ## End while mkdir
+	    close(CMD);
+	}  ## End if the directory does not exist.
     }
     return ($directory);
 }

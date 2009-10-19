@@ -72,6 +72,7 @@ sub new {
     $me->{database_user} = 'guest' if (!defined($me->{database_user}));
     $me->{debug} = undef if (!defined($me->{debug}));
     $me->{dirvar} = undef if (!defined($me->{dirvar}));
+    $me->{do_comparison} = 1 if (!defined($me->{do_comparison}));
     $me->{do_nupack} = 1 if (!defined($me->{do_nupack}));
     $me->{do_pknots} = 1 if (!defined($me->{do_pknots}));
     $me->{do_hotknots} = 1 if (!defined($me->{do_hotknots}));
@@ -107,7 +108,7 @@ sub new {
     $me->{log} = 'prfdb.log' if (!defined($me->{log}));
     $me->{log_error} = 'prfdb.errors' if (!defined($me->{log_error}));
     $me->{max_mfe} = 10.0 if (!defined($me->{max_mfe}));
-    $me->{niceness} = 10 if (!defined($me->{niceness}));
+    $me->{niceness} = 20 if (!defined($me->{niceness}));
     $me->{num_daemons} = '60' if (!defined($me->{num_daemons}));
     $me->{nupack_nopairs_hack} = 0 if (!defined($me->{nupack_nopairs_hack}));
     $me->{open_files} = [] if (!defined($me->{open_files}));
@@ -132,7 +133,7 @@ sub new {
     $me->{sql_comment} = 'text not null' if (!defined($me->{sql_comment}));
     $me->{sql_genename} = 'varchar(120)' if (!defined($me->{sql_genename}));
     $me->{sql_gi_number} = 'varchar(80)' if (!defined($me->{sql_gi_number}));
-    $me->{sql_id} = 'int not null auto_increment' if (!defined($me->{sql_id}));
+    $me->{sql_id} = 'bigint not null auto_increment' if (!defined($me->{sql_id}));
     $me->{sql_index} = $PRFConfig::config->{sql_id} if (!defined($me->{sql_index}));
     $me->{sql_species} = 'varchar(80)' if (!defined($me->{sql_species}));
     $me->{sql_timestamp} = 'TIMESTAMP ON UPDATE CURRENT_TIMESTAMP DEFAULT CURRENT_TIMESTAMP' if (!defined($me->{sql_timestamp}));
@@ -177,6 +178,7 @@ sub new {
 				'arch:i' => \$conf{arch_specific_exe},
 				'blast:s' => \$conf{blast},
 				'boot:i' => \$conf{do_boot},
+				'clear_queue' => \$conf{clear_queue},
 				'copyfrom:s' => \$conf{copyfrom},
 				'fasta_style:s' => \$conf{fasta_style},
 				'fillqueue' => \$conf{fillqueue},
@@ -193,6 +195,7 @@ sub new {
 				'make_jobs' => \$conf{make_jobs},
 				'make_landscape' => \$conf{make_landscape},
 				'makeblast' => \$conf{makeblast},
+				'maintain' => \$conf{maintain},
 				'nodaemon:i' => \$conf{nodaemon},
 				'nupack_nopairs:i' => \$conf{nupack_nopairs_hack},
 				'optimize:s' => \$conf{optimize},

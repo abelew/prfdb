@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w  -I/usr/share/httpd/prfdb/usr/lib/perl5/site_perl/
-
 use strict;
 use lib '../lib';
 use PRFdb;
@@ -7,9 +6,9 @@ use PRFConfig;
 use PRFGraph;
 use PkParse;
 
-our $config = $PRFConfig::config;
-our $db = new PRFdb;
-our $graph = new PRFGraph;
+my $config = new PRFConfig(config_file => "$ENV{HOME}/prfdb.conf");
+my $db = new PRFdb(config => $config);
+my $graph = new PRFGraph({config => $config});
 
 my $inputfile = $ARGV[0];
 my $seqfile = $ARGV[1];

@@ -1,0 +1,40 @@
+% my $cfeynman_pic = new PRFGraph({config => $config, mfe_id => $mfeid, accession => $accession});
+% my $cfeynman_url = $cfeynman_pic->Picture_Filename({type=> 'cfeynman', url => 'url',});
+% my $cfeynman_output_filename = $cfeynman_pic->Picture_Filename({type => 'cfeynman',});
+% my $cfeynman_dimensions = {};
+% if (!-r $cfeynman_output_filename) {
+%    $cfeynman_dimensions = $cfeynman_pic->Make_CFeynman();
+% }
+% my $cfeynman_width = $cfeynman_dimensions->{width};
+% my $cfeynman_height = $cfeynman_dimensions->{height};
+
+    <table style="table-layout: fixed" width="100%" align="center" border="0" cellpadding="2" cellspacing="1" align="center">
+    <colgroup>
+     <col width="20%"><col width="80%">
+   </colgroup>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_genename"><strong>Gene Name: </strong></a></div>
+	</td>
+	<td>
+	</td>
+      </tr>
+    </table>
+      <tr>
+        <td text-align="right"><span style="whitespace: nowrap">
+	  <embed id="cfeynman" src="<% $cfeynman_url %>" align="bottom" width="<% $cfeynman_width %>" height="<% $cfeynman_height %>" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
+	  </font>
+        </span>
+        </td>
+      </tr>
+    </table>
+
+</p>
+<hr>
+
+<%args>
+  $accession => undef;
+  $mfeid => undef;
+  $species => undef;
+</%args>

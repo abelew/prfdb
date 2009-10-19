@@ -23,7 +23,7 @@ my $upload = $req->upload("input_fasta");
 my $upload_filename = $upload->filename();
 my $contents;
 my $size = $upload->slurp($contents);
-my $tempfile_fh = new File::Temp(DIR => "$config->{base}/folds", UNLINK=>0);
+my $tempfile_fh = new File::Temp(SUFFIX => "fasta", DIR => "$config->{base}/folds", UNLINK=>0);
 my $new_filename = $tempfile_fh->filename();
 my $short_filename = $new_filename;
 my @fun = split(/\//, $short_filename);

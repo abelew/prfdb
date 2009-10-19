@@ -1,0 +1,63 @@
+% my $stmt = qq"SELECT id FROM mfe WHERE accession = ? AND seqlength = ? AND start = ?";
+% my $mfe_ids = $db->MySelect(statement => $stmt, vars => [$accession, $seqlength, $start]);
+% my @ids = ();
+% foreach my $id (@{$mfe_ids}) {
+%  push(@ids, $id->[0]);
+% }
+% my $overlap_pic = new PRFGraph({config=>$config, ids => \@ids, mfe_id=> $seqlength, accession => $accession});
+% my $overlap_url = $overlap_pic->Picture_Filename({type => 'ofeynman', url => 'url',});
+% my $overlap_output_filename = $overlap_pic->Picture_Filename({type => 'ofeynman',});
+% my $ofeynman_dimensions = {};
+% if (!-r $overlap_output_filename) {
+%  $ofeynman_dimensions = $overlap_pic->Make_OFeynman();
+% }
+% my $overlap_width = $ofeynman_dimensions->{width};
+% my $overlap_height = $ofeynman_dimensions->{height};
+    <table style="table-layout: fixed" width="100%" align="center" border="0" cellpadding="2" cellspacing="1" align="center">
+    <colgroup>
+     <col width="20%"><col width="80%">
+   </colgroup>
+
+      <tr valign="top" bgcolor="#E9EBF7">
+	<td>
+	  <div align="right"><a href="/help_detail.html#help_genename"><strong>Accession: </strong></a></div>
+	</td>
+	<td>
+	<% $accession %>
+	</td>
+      </tr>
+      <tr><td>
+<p>Look in PRFGraph to see if I changed these, but right now the colors are:<br>
+all agree: black<br>
+nupack alone: yellow<br>
+hotknots alone: red<br>
+pknots alone: blue<br>
+hotknots and pknots: purple<br>
+nupack and pknots: green<br>
+hotknots and nupack: orange<br>
+if something goes wrong, darkslategray<br>
+</p>
+% my $agree = $ofeynman_dimensions->{agree};
+% foreach my $k (keys %{$agree}) {
+%  print "Key: $k Value: $agree->{$k}<br>\n";
+% }
+% $db->Put_Agree(accession => $accession, start => $start, length => $seqlength, agree => $agree);
+
+     </td></tr>
+      <tr>
+        <td text-align="right"><span style="whitespace: nowrap">
+	  <embed id="cfeynman" src="<% $overlap_url %>" align="bottom" width="<% $overlap_width %>" height="<% $overlap_height %>" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
+	  </font>
+        </span>
+        </td>
+      </tr>
+    </table>
+
+</p>
+<hr>
+
+<%args>
+  $start => undef;
+  $accession => undef;
+  $seqlength => undef;
+</%args>

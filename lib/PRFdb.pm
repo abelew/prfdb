@@ -29,6 +29,7 @@ sub new {
 	$me->Create_Queue() unless ($me->Tablep($config->{queue_table}));
 	$me->Create_MFE() unless ($me->Tablep('mfe'));
 	$me->Create_Errors() unless ($me->Tablep('errors'));
+	$me->Create_Agree() unless ($me->Tablep('agree'));
 	$me->Create_NumSlipsite() unless ($me->Tablep('numslipsite'));
 	if (defined($config->{index_species})) {
 	    my @sp = @{$config->{index_species}};
@@ -92,7 +93,8 @@ sub MySelect {
     }
     
     if (!defined($rv)) {
-	print STDERR "Execute failed for: $statement
+	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
+	print STDERR "$hour:$min:$sec $mon-$mday Execute failed for: $statement
 from: $input->{caller}
 with: error $DBI::errstr\n";
 	$me->{errors}->{statement} = $statement;
@@ -159,7 +161,8 @@ with: error $DBI::errstr\n";
     }
 
     if (defined($DBI::errstr)) {
-	print STDERR "Error for: $statement
+	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
+	print STDERR "$hour:$min:$sec $mon-$mday Execute failed for: $statement
 from: $input->{caller}
 with: error $DBI::errstr\n";
 	$me->{errors}->{statement} = $statement;
@@ -197,7 +200,7 @@ sub MyExecute {
     my $sth = $dbh->prepare($statement);
     my $rv;
     if (defined($input->{vars})) {
-	$rv = $sth->execute( @{$input->{vars}});
+	$rv = $sth->execute(@{$input->{vars}});
     }
     else {
 	$rv = $sth->execute();
@@ -205,9 +208,11 @@ sub MyExecute {
     
     my $rows = 0;
     if (!defined($rv)) {
-	print STDERR "Execute failed for: $statement
+	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
+	print STDERR "$hour:$min:$sec $mon-$mday Execute failed for: $statement
 from: $input->{caller}
 with: error $DBI::errstr\n";
+	print STDERR "Host: $config->{database_host} Db: $config->{database_name}\n" if (defined($config->{debug}) and $config->{debug} > 0);
 	$me->{errors}->{statement} = $statement;
 	$me->{errors}->{errstr} = $DBI::errstr;
 	if (defined($input->{caller})) {
@@ -309,8 +314,8 @@ sub MyConnect {
     if (!defined($dbh)) {
 	$me->{errors}->{statement} = $statement, Write_SQL($statement) if (defined($statement));
 	$me->{errors}->{errstr} = $DBI::errstr;
-	my $time = localtime();
-	my $error = qq"$time: Could not open cached connection: dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}, $DBI::err. $DBI::errstr";
+	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
+	my $error = qq"$hour:$min:$sec $mon-$mday Could not open cached connection: dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}, $DBI::err. $DBI::errstr";
 	die($error);
     }
     $dbh->{mysql_auto_reconnect} = 1;
@@ -321,28 +326,20 @@ sub MyConnect {
 sub Get_GenomeId_From_Accession {
     my $me = shift;
     my $accession = shift;
-    my $info = $me->MySelect({
-	statement => qq(SELECT id FROM genome WHERE accession = ?),
-	vars => [$accession],
-	type => 'single'});
+    my $info = $me->MySelect(statement => qq"SELECT id FROM genome WHERE accession = ?", vars => [$accession], type => 'single');
     return ($info);
 }
 
 sub Get_GenomeId_From_QueueId {
     my $me = shift;
     my $queue_id = shift;
-    my $info = $me->MySelect({
-	statement => qq(SELECT genome_id FROM $config->{queue_table} WHERE id = ?),
-	vars => [$queue_id],
-	type => 'single'});
+    my $info = $me->MySelect(statement => qq"SELECT genome_id FROM $config->{queue_table} WHERE id = ?", vars => [$queue_id], type => 'single');
     return ($info);
 }
 
 sub Get_All_Sequences {
     my $me = shift;
-    my $statement = "SELECT accession, mrna_seq FROM genome";
-    my $crap = $me->MySelect({
-	statement => $statement});
+    my $crap = $me->MySelect("SELECT accession, mrna_seq FROM genome");
     return ($crap);
 }
 
@@ -350,10 +347,8 @@ sub Keyword_Search {
     my $me = shift;
     my $species = shift;
     my $keyword = shift;
-    my $statement = qq(SELECT accession, comment FROM genome WHERE comment like ? ORDER BY accession);
-    my $info = $me->MySelect({
-	statement => $statement,
-	vars => ['%$keyword%']});
+    my $statement = qq"SELECT accession, comment FROM genome WHERE comment like ? ORDER BY accession";
+    my $info = $me->MySelect(statement => $statement, vars => ['%$keyword%']);
     my $return = {};
     foreach my $accession (@{$info}) {
 	my $accession_id = $accession->[0];
@@ -370,7 +365,7 @@ sub Mfeid_to_Bpseq {
     my $add_slipsite = shift;
     my ($fh, $filename);
     if (!defined($outputfile)) {
-	$fh = PRFdb::MakeTempfile({SUFFIX => '.bpseq'});
+	$fh = PRFdb::MakeTempfile(SUFFIX => '.bpseq');
 	$filename = $fh->filename;
     }
     elsif (ref($outputfile) eq 'GLOB') {
@@ -382,11 +377,8 @@ sub Mfeid_to_Bpseq {
 	$filename = $outputfile;
     }
 
-    my $input_stmt = qq(SELECT sequence, output, slipsite FROM mfe WHERE id = ?);
-    my $input = $me->MySelect({
-	statement => $input_stmt,
-	vars => [$mfeid],
-	type => 'row'});
+    my $input_stmt = qq"SELECT sequence, output, slipsite FROM mfe WHERE id = ?";
+    my $input = $me->MySelect(statement => $input_stmt,	vars => [$mfeid], type => 'row');
     my $seq = $input->[0];
     my $in = $input->[1];
     my $slipsite = $input->[2];
@@ -429,7 +421,7 @@ sub Genome_to_Fasta {
     my $me = shift;
     my $output = shift;
     my $species = shift;
-    my $statement = qq(SELECT DISTINCT accession, species, comment, mrna_seq FROM genome);
+    my $statement = qq"SELECT DISTINCT accession, species, comment, mrna_seq FROM genome";
     my $info;
     system("mkdir $config->{base}/blast") if (!-r  "$config->{base}/blast");
     open(OUTPUT, ">$config->{base}/blast/$output") or die("Could not open the fasta output file. $!");
@@ -469,12 +461,12 @@ sub Sequence_to_Fasta {
 }
 
 sub MakeTempfile {
-    my $args = shift;
+    my %args = @_;
     $File::Temp::KEEP_ALL = 1;
-    my $fh = new File::Temp(DIR => defined($args->{directory}) ? $args->{directory} : $config->{workdir},
-			    TEMPLATE => defined($args->{template}) ? $args->{template} : 'slip_XXXXX',
-			    UNLINK => defined($args->{unlink}) ? $args->{unlink} : 0,
-			    SUFFIX => defined($args->{SUFFIX}) ? $args->{SUFFIX} : '.fasta',);
+    my $fh = new File::Temp(DIR => defined($args{directory}) ? $args{directory} : $config->{workdir},
+			    TEMPLATE => defined($args{template}) ? $args{template} : 'slip_XXXXX',
+			    UNLINK => defined($args{unlink}) ? $args{unlink} : 0,
+			    SUFFIX => defined($args{SUFFIX}) ? $args{SUFFIX} : '.fasta',);
 
     my $filename = $fh->filename();
     AddOpen($filename);
@@ -499,7 +491,7 @@ sub AddOpen {
 sub Remove_Duplicates {
     my $me = shift;
     my $accession = shift;
-    my $info = $me->MySelect(qq/SELECT id,start,seqlength,algorithm FROM mfe WHERE accession = '$accession'/);
+    my $info = $me->MySelect(qq"SELECT id,start,seqlength,algorithm FROM mfe WHERE accession = '$accession'");
     my @duplicate_ids;
     my $dups = {};
     my $count = 0;
@@ -793,8 +785,9 @@ $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl"});
 
 sub Reset_Queue {
     my $me = shift;
-    my $table = shift;
-    my $complete = shift;
+    my %args = @_;
+    my $table = $args{table};
+    my $complete = $args{complete};
     if (!defined($table)) {
 	if (defined($config->{queue_table})) {
 	    $table = $config->{queue_table};
@@ -812,7 +805,7 @@ sub Reset_Queue {
 	$statement = "UPDATE $table SET checked_out = '0' where done = '0' and checked_out = '1'";
     }
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $statement, caller => "$cp, $cf, $cl"});
+    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl");
 }
 
 sub Get_Input {
@@ -1421,6 +1414,8 @@ sub Get_Num_RNAfolds {
     my $seqlength = shift;
     my $table = shift;
     $table = 'mfe' unless (defined($table));
+    $table = "boot_virus" if ($table =~ /boot/ and $table =~ /virus/);
+    $table = "landscape_virus" if ($table =~ /landscape/ and $table =~ /virus/);
     my $return = {};
     my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? AND algorithm = ? AND start = ? AND seqlength = ?/;
     my $count = $me->MySelect({statement =>$statement,
@@ -1681,6 +1676,8 @@ sub Put_MFE_Landscape {
     my $data = shift;
     my $table = shift;
     ## What fields do we want to fill in this MFE table?
+    $table = 'landscape_virus' if ($table =~ /virus/);
+	
     my @filled;
     if ($algo eq 'vienna') {
 	@filled = ('genome_id','species','accession','start','seqlength','sequence','parens','mfe');
@@ -1693,17 +1690,32 @@ sub Put_MFE_Landscape {
 	$errorstring = "Undefined value(s) in Put_MFE_Landscape: $errorstring";
 	$config->PRF_Error($errorstring, $data->{accession});
     }
-
-    $data->{sequence} =~ tr/actgu/ACTGU/;
-    my $statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
+    if (defined($data->{sequence})) {
+	$data->{sequence} =~ tr/actgu/ACTGU/;
+    } else {
+	print STDERR "Sequence is not defined for Species:$data->{species}, Accession:$data->{accession}, Start:$data->{start}, Seqlength:$data->{seqlength}\n";
+    }
+    my $statement = qq"INSERT INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     my ($cp,$cf,$cl) = caller();
     $me->MyExecute({statement => $statement,
 		    vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],
 		    caller =>"$cp,$cf,$cl",});
-    my $get_inserted_id = qq(SELECT LAST_INSERT_ID());
-    my $id = $me->MySelect({statement => $get_inserted_id, type => 'single'});
+    my $get_inserted_id = qq"SELECT LAST_INSERT_ID()";
+    my $id = $me->MySelect(statement => $get_inserted_id, type => 'single');
     return ($id);
 }    ## End put_mfe_landscape
+
+sub Put_Agree {
+    my $me = shift;
+    my %args = @_;
+    my $agree = $args{agree};
+    my ($cp,$cf,$cl) = caller();
+    my $stmt = qq"INSERT INTO agree (accession, start, length, all_agree, no_agree, n_alone, h_alone, p_alone, hplusn, nplusp, hplusp, hnp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+    my $rows = $me->MyExecute(statement => $stmt,
+		   vars => [$args{accession}, $args{start}, $args{length}, $agree->{all}, $agree->{none}, $agree->{n}, $agree->{h}, $agree->{p}, $agree->{hn}, $agree->{np}, $agree->{hp}, $agree->{hnp}],
+		   caller =>"$cp,$cf,$cl");
+    return($rows);
+}
 
 sub Put_Stats {
     my $me = shift;
@@ -1714,7 +1726,7 @@ sub Put_Stats {
 	    foreach my $max_mfe (@{$data->{max_mfe}}) {
 		foreach my $algorithm (@{$data->{algorithm}}) {
 		    print "Now doing $species $seqlength $max_mfe $algorithm\n";
-		    my $statement = qq/INSERT DELAYED INTO stats
+		    my $statement = qq"INSERT DELAYED INTO stats
 (species, seqlength, max_mfe, min_mfe, algorithm, num_sequences, avg_mfe, stddev_mfe, avg_pairs, stddev_pairs, num_sequences_noknot, avg_mfe_noknot, stddev_mfe_noknot, avg_pairs_noknot, stddev_pairs_noknot, num_sequences_knotted, avg_mfe_knotted, stddev_mfe_knotted, avg_pairs_knotted, stddev_pairs_knotted, avg_zscore, stddev_zscore)
     VALUES
 ('$species', '$seqlength', 
@@ -1738,7 +1750,7 @@ sub Put_Stats {
 (SELECT stddev(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
 (SELECT avg(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'),
 (SELECT stddev(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength')
-    )/;
+    )";
 my ($cp,$cf,$cl) = caller();
 $me->MyExecute({statement => $statement,
 		caller => "$cp, $cf, $cl",});
@@ -1786,7 +1798,7 @@ sub Put_Boot {
 (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
     VALUES
 (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-            my $undefined_values = Check_Defined( { genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values } );
+            my $undefined_values = Check_Defined(genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values);
             if ($undefined_values) {
               $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
               $config->PRF_Error( $errorstring, $species, $accession );
@@ -1839,7 +1851,7 @@ sub Put_Single_Boot {
     VALUES
 ('$data->{genome_id}','$mfe_id','$species','$accession','$start','$seqlength','$iterations','$rand_method','$mfe_method','$mfe_mean','$mfe_sd','$mfe_sd','$pairs_mean','$pairs_sd','$pairs_se','$mfe_values')";
 
-    my $undefined_values = Check_Defined( { genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values } );
+    my $undefined_values = Check_Defined(genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values);
 
     if ($undefined_values) {
         $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
@@ -1915,10 +1927,10 @@ sub Check_Insertion {
 }
 
 sub Check_Defined {
-    my $args = shift;
+    my %args = @_;
     my $return = '';
-    foreach my $k (keys %{$args}) {
-	if (!defined($args->{$k})) {
+    foreach my $k (keys %args) {
+	if (!defined($args{$k})) {
 	    $return .= "$k,";
 	}
     }
@@ -1965,6 +1977,27 @@ PRIMARY KEY (id))/;
     my ($cp, $cf, $cl) = caller();
     $me->MyExecute({statement =>$statement, 
 		    caller => "$cp, $cf, $cl",});
+}
+
+sub Create_Agree {
+    my $me = shift;
+    my $statement = qq"CREATE table agree (
+id $config->{sql_id},
+accession $config->{sql_accession},
+start int,
+length int,
+all_agree int,
+no_agree int,
+n_alone int,
+h_alone int,
+p_alone int,
+hplusn int,
+nplusp int,
+hplusp int,
+hnp int,
+PRIMARY KEY (id))";
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
 }
 
 sub Create_Index_Stats {
@@ -2089,7 +2122,7 @@ id $config->{sql_id},
 genome_id int,
 species $config->{sql_species},
 accession $config->{sql_accession},
-algorithm char(10),
+algorithm char(20),
 start int,
 slipsite char(7),
 seqlength int,
@@ -2101,7 +2134,9 @@ mfe float,
 pairs int,
 knotp bool,
 barcode text,
+compare_mfes varchar(30),
 has_snp bool DEFAULT FALSE,
+bp_mstop int,
 lastupdate $config->{sql_timestamp},
 INDEX(genome_id),
 INDEX(accession),

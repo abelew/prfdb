@@ -127,11 +127,8 @@ sub new {
 	    UAG => '*',
 	},
     }, $class;
-    
-    #  print "TEST: $me->{readop}\n";
     my @ntseq = @{$me->{sequence}};
     $me->{gc_content} = $me->Get_GC(\@ntseq);    
-    #  print "TEST: $length\n";
     my (@aaseq, @codonseq, @dint12seq, @dint23seq, @dint31seq, @dint13seq);
     if ($me->{readop} eq 'orf') {
 	my @init = ('A', 'T', 'G');
@@ -147,8 +144,7 @@ sub new {
 	$me->{dintfreq}{13}{join('', $ntseq[0], $ntseq[2])}++;
 	if ($count == $me->{length}) {
 	    $me->{dintfreq}{31}{join('', $ntseq[2], '*')}++;
-	}
-	else {
+	} else {
 	    $me->{dintfreq}{31}{join('', $ntseq[2], $ntseq[3])}++;
 	}
 	my ($one, $two, $three) = splice(@ntseq, 0, 3);
@@ -202,38 +198,31 @@ sub Random {
 	    my $test = $return[$count - 2] . $return[$count - 1] . $return[$count];
 	    my $fun = $me->{codons}->{$test};
 	    
-	    #	  print "Please tell me $test and $count and $fun\n";
 	    while ($me->{codons}->{$test} eq '*') {
-		#		print "Stop codon! $fun";
 		$return[$count - 2] = $me->{nt}->{int(rand(4))};
 		$return[$count - 1] = $me->{nt}->{int(rand(4))};
 		$return[$count] = $me->{nt}->{int(rand(4))};
 		$test = join('', $return[$count - 2], $return[$count - 1], $return[$count]);
-		#		print "Now it is $test\n";
 	    }    ## End while we have a ptc
 	}    ## End codon check.
 	($codon_count == 2) ? $codon_count = 0 : $codon_count++;
 	$count++;
     }    ## End top level while
-    return ( \@return );
+    return (\@return);
 }
 
 ###  Shuffle the codons, maintain codon frequencies.
 sub SameCodons {
-    my $me     = shift;
-    my @codons = @{ $me->{codonseq} };
+    my $me = shift;
+    my @codons = @{$me->{codonseq}};
     my @return;
-    while ( scalar(@codons) > 0 ) {
-	#	my $left = scalar(@codons);
-	#	print "TEST: $left\n";
-	my $pull = int( rand( scalar(@codons) ) );
-	my ( $first, $second, $third ) = split( //, $codons[$pull] );
-	push( @return, $first, $second, $third );
-	
-	#	push(@return, $codons[$pull]);
-	splice( @codons, $pull, 1 );
+    while (scalar(@codons) > 0) {
+	my $pull = int(rand(scalar(@codons)));
+	my ($first, $second, $third) = split(//, $codons[$pull]);
+	push(@return, $first, $second, $third);
+	splice(@codons, $pull, 1);
     }
-    return ( \@return );
+    return (\@return);
 }
 
 sub Get_GC {
@@ -249,8 +238,7 @@ sub Get_GC {
 	}
         $len = 1 if (!defined($len) or ($len == 0));
 	$gc = $num_strong * 100.0 / $len;
-    }
-    else {
+    } else {
 	my $num_strong = 0;
 	my $total = 0;
 	for my $c (0 .. $#$par) {
@@ -259,30 +247,29 @@ sub Get_GC {
 	    $total++;
 	}
 	$gc = (($total == 0) ? 0 : $num_strong * 100.0 / $total);
-#	$gc = $num_strong * 100.0 / $total;
     }
     $gc = sprintf('%.1f', $gc);
     return($gc);
 }
 
 sub Same31Random {
-    my $me        = shift;
-    my @dint31seq = @{ $me->{dint31seq} };
+    my $me = shift;
+    my @dint31seq = @{$me->{dint31seq}};
     my @return;
     
-    my ( $third, $first ) = undef;
-    while ( scalar(@dint31seq) > 0 ) {
+    my ($third, $first) = undef;
+    while (scalar(@dint31seq) > 0) {
 	
 	#  The first nucleotide in the codon, checking if we are starting or ending.
-	if ( defined($first) ) {    ## Not at the beginning of the sequence?
-	    if ( $first eq '*' ) {    ## Maybe at the end?
-		return ( \@return );    ## If so, drop out
+	if (defined($first)) {    ## Not at the beginning of the sequence?
+	    if ($first eq '*') {    ## Maybe at the end?
+		return (\@return);    ## If so, drop out
 	    } else {                  ## If not at the end push the first
-		push( @return, $first );
+		push(@return, $first);
 	    }
 	}         ## End the if not at the beginning of the sequence
 	else {    ## at the beginning add a random nucleotide at position 1.
-	    push( @return, $me->{nt}->{ int( rand(4) ) } );
+	    push(@return, $me->{nt}->{ int( rand(4))});
 	}
 	
 	#	!defined($first)    ?   ## 1st nucleotide in the sequence?
@@ -292,13 +279,13 @@ sub Same31Random {
 	#			push(@return, $first);  ## no
 	
 	#  The second nucleotide in the codon
-	push( @return, $me->{nt}->{ int( rand(4) ) } );
+	push(@return, $me->{nt}->{int(rand(4))});
 	
 	#  The third nucleotide in the codon
 	####  Why do I do the shift here?  Think about the recreation of the nucleotide sequence
 	####  for a moment in terms of the first codon and you will see :)
-	( $third, $first ) = split( //, shift(@dint31seq) );
-	push( @return, $third );
+	($third, $first) = split(//, shift(@dint31seq));
+	push(@return, $third);
     }    ## End while.
     return ( \@return );
 }
@@ -311,60 +298,57 @@ sub Same31Random {
 ##  So if I call SameDint(['12'], undef) then I want the first two nucleotides
 ##   every codon to remain the same from parent to child, all else is randomized.
 ##  If I call SameDint(undef, ['12','23','31']) I want to maintain all codon dinucleotide frequencies.
+
+## This does not do anything right now
 sub SameDint {
-    my $me              = shift;
-    my $saved_positions = shift;
-    my $freq_positions  = shift;
-    ## The parent dinucleotide sequences
-    my @onetwo   = @{ $me->{dintseq}{12} };
-    my @twothree = @{ $me->{dintseq}{23} };
-    my @threeone = @{ $me->{dintseq}{31} };
-    
-    my @return;
-    my $count  = 0;
-    my $rotate = 0;
-    
-    # while (scalar(@dint) > 0) {
-    #   if ($rotate == 1) {
-    #	 my @tmp;
-    #	 if ($saved_positions->[0] eq '12') {
-    #	   @tmp = split(//, shift @onetwo);
-    #	 }
-    #	 elsif ($freq_positions->[0] eq '12') {
-    #	   @tmp = split(//, splice(@onetwo, int(rand(scalar(@onetwo)))));
-    #	 }
-    #	 else {
-    #	   shift @onetwo;
-    #	   push(@tmp, $me->{nt}->{int(rand(4))});
-    #	   push(@tmp, $me->{nt}->{int(rand(4))});
-    #	   }
-    #	 $rotate++;
-    #   }
-    #   }  ## End top level while
-    #	my $pull = int(rand(scalar(@dint)));
-    #	my ($one, $two) = split(//, $dint[$pull]);
-    #	push(@return, $one, $two);
-    #	splice(@dint, $pull, 1);
-    #  }
-    return ( \@return );
+#    my $me = shift;
+    return(undef);
+#    my $saved_positions = shift;
+#    my $freq_positions  = shift;
+#    ## The parent dinucleotide sequences
+#    my @onetwo = @{$me->{dintseq}{12}};
+#    my @twothree = @{$me->{dintseq}{23}};
+#    my @threeone = @{$me->{dintseq}{31}};
+#    
+#    my @return;
+#    my $count = 0;
+#    my $rotate = 0;
+#    
+#    while (scalar(@dint) > 0) {
+#	if ($rotate == 1) {
+#	    my @tmp;
+#	    if ($saved_positions->[0] eq '12') {
+#		@tmp = split(//, shift @onetwo);
+#	    } elsif ($freq_positions->[0] eq '12') {
+#		@tmp = split(//, splice(@onetwo, int(rand(scalar(@onetwo)))));
+#	    } else {
+#		shift @onetwo;
+#		push(@tmp, $me->{nt}->{int(rand(4))});
+#		push(@tmp, $me->{nt}->{int(rand(4))});
+#	    }
+#	    $rotate++;
+#	}
+#    }  ## End top level while
+#    my $pull = int(rand(scalar(@dint)));
+#    my ($one, $two) = split(//, $dint[$pull]);
+#    push(@return, $one, $two);
+#    splice(@dint, $pull, 1);
+#    return (\@return);
 }
 
 ###  Maintain amino acid frequencies but choose a random codon from those
 ###   available for each amino acid.
 sub Sameaa {
-    my $me     = shift;
-    my $aaref  = shift;
-    my @aaseq  = @{$aaref};
+    my $me = shift;
+    my $aaref = shift;
+    my @aaseq = @{$aaref};
     my @return = ();
-    while ( scalar(@aaseq) > 0 ) {
+    while (scalar(@aaseq) > 0) {
 	my $aa = shift @aaseq;
-	
-    #   my $newaa = $me->{codons}->{$aa}->[0]->[int(rand(scalar(@{$me->{codons}->{$aa}->[0]})))];
-	#   my @tmp = split(//, $newaa);
-    my ( $first, $second, $third ) = split( //, $me->{codons}->{$aa}->[0]->[ int( rand( scalar( @{ $me->{codons}->{$aa}->[0] } ) ) ) ] );
-	push( @return, $first, $second, $third );
+	my ($first, $second, $third) = split(//, $me->{codons}->{$aa}->[0]->[int(rand(scalar(@{$me->{codons}->{$aa}->[0]})))]);
+	push(@return, $first, $second, $third);
     }
-    return ( \@return );
+    return (\@return);
 }
 
 ## Step 1:  Acquire a sequence to randomize
@@ -377,26 +361,25 @@ sub Sameaa {
 ##  Recurse for all other codons for all amino acids.
 
 sub Same31Composite {
-    my $me        = shift;
-    my @dint31seq = @{ $me->{dint31seq} };
-    my @aminos    = @{ $me->{aaseq} };
+    my $me = shift;
+    my @dint31seq = @{$me->{dint31seq}};
+    my @aminos = @{$me->{aaseq}};
     my @codons;
     
     my $first = undef;
-    my ($third) = split( //, $dint31seq[0] );
-    while ( scalar(@dint31seq) > 0 ) {
+    my ($third) = split(//, $dint31seq[0]);
+    while (scalar(@dint31seq) > 0) {
 	my $aa = shift @aminos;
-	
 	#  The first nucleotide in the codon, checking if we are starting or ending.
 	!defined($first)
 	    ?    ## 1st nucleotide in the sequence?
-	    push( @codons, $me->Find_Alternates( $aa, "..$third" ) )
+	    push(@codons, $me->Find_Alternates($aa, "..$third"))
 	    :    ## yes
-	    ( $first eq '*' )
+	    ($first eq '*')
 	    ?    ## End of sequence?
-	    return ( \@codons )
+	    return (\@codons)
 	    :    ## yes
-	    push( @codons, $me->Find_Alternates( $aa, "$first.$third" ) );
+	    push(@codons, $me->Find_Alternates($aa, "$first.$third"));
 	
 	#			push(@codons, $first);  ## no
 	#  The second nucleotide in the codon
@@ -404,55 +387,49 @@ sub Same31Composite {
 	#  The third nucleotide in the codon
 	####  Why do I do the shift here?  Think about the recreation of the nucleotide sequence
 	####  for a moment in terms of the first codon and you will see :)
-	( $third, $first ) = split( //, shift(@dint31seq) );
+	($third, $first) = split(//, shift(@dint31seq));
     }    ## End while.
-    return ( \@codons );
+    return (\@codons);
 }
 
 sub Find_Alternates {
-    my $me       = shift;
-    my $amino    = shift;
-    my $spec     = shift;
-    my @return   = ();
+    my $me = shift;
+    my $amino = shift;
+    my $spec = shift;
+    my @return = ();
     my $starters = $me->{codons}->{$amino}->[0];    ### An array reference like ['GCA','GCC','GCG','GCU']
-    return ($starters) if ( $spec eq '...' );
-    my ( $dumbone, $dumbtwo, $dumbthree ) = split( //, $spec );
-    if ( $dumbtwo eq '.' and $dumbone eq '.' ) {
-	
-	foreach my $codon ( @{$starters} ) {
-	    my ( $one, $two, $three ) = split( //, $codon );
-	    push( @return, $codon ) if ( $dumbthree eq $three );
+    return ($starters) if ($spec eq '...');
+    my ($dumbone, $dumbtwo, $dumbthree) = split(//, $spec);
+    if ($dumbtwo eq '.' and $dumbone eq '.') {
+	foreach my $codon (@{$starters}) {
+	    my ($one, $two, $three) = split(//, $codon);
+	    push(@return, $codon) if ($dumbthree eq $three);
 	}
-    } elsif ( $dumbtwo eq '.' ) {
-	foreach my $codon ( @{$starters} ) {
-	    my ( $one, $two, $three ) = split( //, $codon );
-	    push( @return, $codon ) if ( $dumbthree eq $three and $dumbone eq $one );
+    } elsif ($dumbtwo eq '.') {
+	foreach my $codon (@{$starters}) {
+	    my ($one, $two, $three) = split(//, $codon);
+	    push(@return, $codon) if ($dumbthree eq $three and $dumbone eq $one);
 	}
     } else {
 	print "What!?\n";
     }
-    return ( \@return );
+    return (\@return);
 }
 
 sub Translate {
-    my $me       = shift;
+    my $me = shift;
     my $sequence = $me->{seqstring};
     $sequence =~ tr/atgcT/AUGCU/;
-    if ( ( !$me->{sequence} ) and ( !defined($sequence) ) ) {
+    if ((!$me->{sequence}) and (!defined($sequence))) {
 	die("Nothing to work with");
-    }
-    
-    #  elsif ($me->{sequence} and defined($sequence)) {
-    #    die("Too much to work with");
-    #  }
-    elsif ( defined($sequence) ) {
-	my @seqtmp = split( //, $sequence );
-	my $t = new SeqMisc( sequence => \@seqtmp );
-	my $aaseq = join( "", @{ $t->{aaseq} } );
+    } elsif (defined($sequence)) {
+	my @seqtmp = split(//, $sequence);
+	my $t = new SeqMisc(sequence => \@seqtmp);
+	my $aaseq = join("", @{$t->{aaseq}});
 	undef $t;
 	return ($aaseq);
     } else {
-	my $aaseq = join( "", @{ $me->{aaseq} } );
+	my $aaseq = join("", @{$me->{aaseq}});
 	return ($aaseq);
     }
 }
@@ -460,11 +437,11 @@ sub Translate {
 ## Just do a pseudo random number randomization of each incoming nucleotide
 ## Code shamelessly taken from Jonathan Jacobs' <jlj email> work from 2003.
 sub Coin_Random {
-  my $me          = shift;
-  my $sequence    = shift;
-  my @nucleotides = ( 'a', 'u', 'g', 'c' );
+  my $me = shift;
+  my $sequence = shift;
+  my @nucleotides = ('a','u','g','c');
   for my $c ($#$sequence) {
-    $sequence->[$c] = $nucleotides[ int( rand(4) ) ];
+    $sequence->[$c] = $nucleotides[int(rand(4))];
   }
   return ($sequence);
 }
@@ -474,14 +451,14 @@ sub Coin_Random {
 ## Code shamelessly taken from Jonathan Jacobs' <jlj email> work from 2003.
 sub Nucleotide_Montecarlo {
   my $start_sequence = shift;
-  my @st             = @{$start_sequence};
-  my $new_sequence   = [];
-  my $new_seq_count  = 0;
+  my @st = @{$start_sequence};
+  my $new_sequence = [];
+  my $new_seq_count = 0;
   while (@st) {
     my $position = rand(@st);
     $new_sequence->[$new_seq_count] = $position;
     $new_seq_count++;
-    splice( @st, $position, 1 );
+    splice(@st, $position, 1);
   }
   return ($new_sequence);
 }
@@ -491,51 +468,52 @@ sub Nucleotide_Montecarlo {
 ## Code shamelessly taken from Jonathan Jacobs' <jlj email> work from 2003.
 ## I don't know why, but I love the way Jonathan wrote this.
 sub Dinucletode {
-  my $start_sequence = shift;
-  my @st             = @{$start_sequence};
-  my @new_sequence   = ();
-
-  #  my @startA = my @startT = my @startG = my @startC = ();
-  #  ## Create 4 arrays containing
-  ## Create an array containing all the dinucleotides
-  my @doublets = ();
-  push( @doublets, $start_sequence =~ /(?=(\w\w))/g );
-  while ( scalar( @{$start_sequence} ) > scalar(@new_sequence) ) {
-    my $chosen_doublet = int( rand(@doublets) );
-    my ( $base1, $base2 ) = split( //, $doublets[$chosen_doublet] );
-    push( @new_sequence, $base1, $base2 );
-  }
-  return ( \@new_sequence );
+    my $start_sequence = shift;
+    my @st = @{$start_sequence};
+    my @new_sequence = ();
+    
+    #  my @startA = my @startT = my @startG = my @startC = ();
+    #  ## Create 4 arrays containing
+    ## Create an array containing all the dinucleotides
+    my @doublets = ();
+    push(@doublets, $start_sequence =~ /(?=(\w\w))/g);
+    while (scalar(@{$start_sequence}) > scalar(@new_sequence)) {
+	my $chosen_doublet = int(rand(@doublets));
+	my ($base1, $base2) = split(//, $doublets[$chosen_doublet]);
+	push(@new_sequence, $base1, $base2);
+    }
+    return (\@new_sequence);
 }
 
 ## Expect an array reference
 ## Perform a shuffle keeping the same triplet frequencies as original sequence.
 ## Code shamelessly taken from Jonathan Jacobs' <jlj email> work from 2003.
 sub Codon_montecarlo {
-  my $start_sequence = shift;
-  my @new_sequence   = ();
-  my $new_seq_count  = 0;
-  my @codons         = $$start_sequence =~ /(\w\w\w)/g;
-  while (@codons) {
-    my $position = rand(@codons);
-    my @nts = split( //, $codons[$position] );
-    push( @new_sequence, @nts );
-    splice( @codons, $position, 1 );
-  }
-  return ( \@new_sequence );
+    my $start_sequence = shift;
+    my @new_sequence = ();
+    my $new_seq_count = 0;
+    my @codons = $$start_sequence =~ /(\w\w\w)/g;
+    while (@codons) {
+	my $position = rand(@codons);
+	my @nts = split(//, $codons[$position]);
+	push(@new_sequence, @nts);
+	splice(@codons, $position, 1);
+    }
+    return (\@new_sequence);
 }
 
 ## Expect an array reference
 ## Perform a shuffle keeping the same triplet frequencies as original sequence.
 ## Code shamelessly taken from Jonathan Jacobs' <jlj email> work from 2003.
+## This will clearly not work anymore.
 sub Related_Codon {
-  my $start_sequence = shift;
-  my @codons = $start_sequence =~ /(\w\w\w)/g;
-  for my $c ( 0 .. $#codons ) {
-    my @potential = split( /\s/, $Randomize::amino_acids{ $codons[$c] } );
-    $codons[$c] = $potential[ rand(@potential) ];
-  }
-  return ( \@codons );
+    my $start_sequence = shift;
+    my @codons = $start_sequence =~ /(\w\w\w)/g;
+    for my $c (0 .. $#codons) {
+	my @potential = split(/\s/, $Randomize::amino_acids{$codons[$c]});
+	$codons[$c] = $potential[ rand(@potential)];
+    }
+    return (\@codons);
 }
 
 ## ARRAYSHUFFLE
@@ -543,76 +521,76 @@ sub Related_Codon {
 ## This shuffles a referenced array like a deck of cards.
 ## From the Perl cookbook. Uses the Fischer-Yates Shuffle.
 sub ArrayShuffle {
-  my $seqArrayREF = shift;
-  my @arrayREF    = @$seqArrayREF;
-  for ( my $i = @arrayREF ; --$i ; ) {
-    my $j = int rand( $i + 1 );
-    next if $i == $j;
-    @arrayREF[ $i, $j ] = @arrayREF[ $j, $i ];
-  }
-  return ( \@arrayREF );
+    my $seqArrayREF = shift;
+    my @arrayREF = @$seqArrayREF;
+    for (my $i = @arrayREF ; --$i ;) {
+	my $j = int rand($i + 1);
+	next if $i == $j;
+	@arrayREF[$i, $j] = @arrayREF[$j, $i];
+    }
+    return (\@arrayREF);
 }
 
 sub Squid {
-  my $inarray = shift;
-  my $shuffle = shift;
-  my $inseq   = '';
-  my $shuffle_exe;
-  foreach my $char ( @{$inarray} ) { $inseq = join( '', $inseq, $char ); }
-  if   ( defined($shuffle) ) { $shuffle_exe = $shuffle; }
-  else                       { $shuffle_exe = 'shuffle'; }
-  my $out_text;
-  {    ## Begin a File::Temp Block
-    my $fh = new File::Temp( DIR => $config->{workdir}, UNLINK => 0, );
-    ## OPEN $fh in Squid
-    print $fh ">tmpsquid
+    my $inarray = shift;
+    my $shuffle = shift;
+    my $inseq = '';
+    my $shuffle_exe;
+    foreach my $char (@{$inarray}) { $inseq = join('', $inseq, $char); }
+    if (defined($shuffle)) { $shuffle_exe = $shuffle; }
+    else { $shuffle_exe = 'shuffle'; }
+    my $out_text;
+    {    ## Begin a File::Temp Block
+	my $fh = new File::Temp(DIR => $config->{workdir}, UNLINK => 0,);
+	## OPEN $fh in Squid
+	print $fh ">tmpsquid
 $inseq
 ";
-    my $infile  = $fh->filename;
-    my $command = "$shuffle_exe $infile";
-    open( CMD, "$command |" ) or die("Could not execute shuffle. $!");
-    ## OPEN CMD in Squid
-    while ( my $line = <CMD> ) {
-      chomp $line;
-      next if ( $line =~ /^\>/ );
-      $out_text = join( '', $out_text, $line );
-    }    ## End while
-    close(CMD);
-    unlink($infile);
-    ## CLOSE CMD in Squid
-  }    ## End a File::Temp Block -- the tempfile should now no longer exist.
-  my @out_array = split( //, $out_text );
-  return ( \@out_array );
+	my $infile = $fh->filename;
+	my $command = "$shuffle_exe $infile";
+	open(CMD, "$command |") or die("Could not execute shuffle. $!");
+	## OPEN CMD in Squid
+	while (my $line = <CMD>) {
+	    chomp $line;
+	    next if ($line =~ /^\>/);
+	    $out_text = join('', $out_text, $line);
+	}    ## End while
+	close(CMD);
+	unlink($infile);
+	## CLOSE CMD in Squid
+    }    ## End a File::Temp Block -- the tempfile should now no longer exist.
+    my @out_array = split(//, $out_text);
+    return (\@out_array);
 }
 
 sub Squid_Dinuc {
-  my $inarray = shift;
-  my $shuffle = shift;
-  my $inseq   = '';
-  my $shuffle_exe;
-  foreach my $char ( @{$inarray} ) { $inseq = join( '', $inseq, $char ); }
-  if   ( defined($shuffle) ) { $shuffle_exe = $shuffle; }
-  else                       { $shuffle_exe = qq($config->{workdir}/shuffle); }
-  my $out_text = '';
-  {    ## Begin a File::Temp Block
-    my $fh = new File::Temp( DIR => $config->{workdir}, UNLINK => 0, );
-    print $fh ">tmp
+    my $inarray = shift;
+    my $shuffle = shift;
+    my $inseq = '';
+    my $shuffle_exe;
+    foreach my $char (@{$inarray}) { $inseq = join('', $inseq, $char); }
+    if (defined($shuffle)) { $shuffle_exe = $shuffle; }
+    else { $shuffle_exe = qq($config->{workdir}/shuffle); }
+    my $out_text = '';
+    {    ## Begin a File::Temp Block
+	my $fh = new File::Temp(DIR => $config->{workdir}, UNLINK => 0,);
+	print $fh ">tmp
 $inseq
 ";
-    my $infile = $fh->filename;
-    my $command = qq($shuffle_exe -d $infile);
-    open( CMD, "$command |" ) or die("Could not execute shuffle $command. $!");
-    ## OPEN CMD in Squid_Dinuc
-    while ( my $line = <CMD> ) {
-      chomp $line;
-      next if ( $line =~ /^\>/ );
-      $out_text = join( '', $out_text, $line );
-    }
-    close(CMD);
-    unlink($infile);
-  }    ## End a ifile::temp block
-  my @out_array = split( //, $out_text );
-  return ( \@out_array );
+	my $infile = $fh->filename;
+	my $command = qq($shuffle_exe -d $infile);
+	open(CMD, "$command |") or die("Could not execute shuffle $command. $!");
+	## OPEN CMD in Squid_Dinuc
+	while (my $line = <CMD>) {
+	    chomp $line;
+	    next if ($line =~ /^\>/);
+	    $out_text = join('', $out_text, $line);
+	}
+	close(CMD);
+	unlink($infile);
+    }    ## End a ifile::temp block
+    my @out_array = split(//, $out_text);
+    return (\@out_array);
 }
 
 1;

@@ -144,6 +144,10 @@ command: $command\n" if (defined($config->{debug}));
     $return->{parsed} = $parsed;
     $return->{barcode} = $barcode;
     chdir($config->{base});
+    if (!defined($return->{sequence})) {
+	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
+    }
     $return->{sequence} = Sequence_T_U($return->{sequence});
     return ($return);
 }
@@ -271,6 +275,10 @@ Return: $nupack_return\n");
     $return->{parsed} = $parsed;
     $return->{barcode} = $barcode;
     chdir($config->{base});
+    if (!defined($return->{sequence})) {
+	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
+    }
     $return->{sequence} = Sequence_T_U($return->{sequence});
     return ($return);
 }
@@ -317,8 +325,13 @@ command: $command\n" if (defined($config->{debug}));
             $return->{parens} = $struct;
             $return->{mfe} = $num;
         }
-    }
+    } ## End the while
+    close(VI);
     RemoveFile($errorfile);
+    if (!defined($return->{sequence})) {
+	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
+    }
     $return->{sequence} = Sequence_T_U($return->{sequence});
     return($return);
 }
@@ -427,6 +440,10 @@ command: $command\n" if (defined($config->{debug}));
 	$return->{knotp} = 1;
     }
     chdir($config->{base});
+    if (!defined($return->{sequence})) {
+	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
+    }
     $return->{sequence} = Sequence_T_U( $return->{sequence} );
     return ($return);
 }
@@ -689,7 +706,7 @@ sub Hotknots {
 command: $command\n" if (defined($config->{debug}));
     open(HK, "$command |") or print STDERR "problem with $command $!";
     while(my $line = <HK>) {
-	print $line;
+#	print $line;
 	$ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
@@ -750,6 +767,11 @@ command: $command\n" if (defined($config->{debug}));
 	$ret->{knotp} = 1;
     }
     chdir($config->{base});
+    if (!defined($ret->{sequence})) {
+	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
+    }
+    $ret->{sequence} = Sequence_T_U($ret->{sequence});
     return($ret);
 }
 
@@ -848,11 +870,13 @@ command: $command\n" if (defined($config->{debug}));
         $ret->{knotp} = 1;
     }
     chdir($config->{base});
+    $ret->{sequence} = Sequence_T_U($ret->{sequence});
     return($ret);
 }
 
 sub Sequence_T_U {
     my $sequence = shift;
+    return(undef) if (!defined($sequence));
     $sequence =~ tr/T/U/;
     return ($sequence);
 }
