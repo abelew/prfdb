@@ -1,12 +1,4 @@
-% if (defined($translate)) {
-% }
 <table width="100%" border="0" cellspacing="2" cellpadding="2">
- <tr>
-  <td>
-    <hr align="center" width="100%" noshade>
-  </td>
- </tr>
-
  <tr align="left" valign="top">
   <td>
    <table align="left" border="0" cellspacing="0" cellpadding="0">
@@ -18,58 +10,48 @@
    </table>
   </td>
  </tr>
- <tr align="left" valign="top"></tr>
  <tr align="left" valign="top">
-  <td colspan="4">
-   <table bgcolor="#E8E8E8"><tr><td><font face="Courier New, Courier, mono">&nbsp;</font>
-    <strong><font color="#000000" face="Courier New, Courier, mono">&gt;<% $accession %> | <% $genename %><br>
-
-    </font></strong>
-    <font face="Courier New, Courier, mono">
-<% Create_Pretty_mRNA($accession, $translate) %>
-   </table>
-  </td>
  </tr>
 </table>
-<p>The minimum free energy 'landscape' for <% $accession %>, black vertical lines delineate the positions of slippery heptamers, the horizontal green line shows the mean Vienna RNAfold value over the ORF, the horizontal red line shows the mean pknots value over the ORF, the horzontal blue line shows the mean nupack value.  green, red, and blue lines delineate the MFE over a sliding 105bp window.</p>
-<center>
-<& print_landscape, accession => "$accession", species => "$species" &>
-</form>   </tr>
-
-% my $ac = 'SGDID:S0000015';
-% my $in = $db->MySelect(statement => "SELECT mrna_seq, orf_start, orf_stop, direction FROM genome WHERE accession = ?", vars =>[$ac], type => 'row');
-% my $slips = $db->MySelect(statement =>"SELECT DISTINCT(start), bp_mstop FROM mfe WHERE accession = ? ORDER BY start", vars => [$ac],);
+% my $in = $db->MySelect(statement => "SELECT mrna_seq, orf_start, orf_stop, direction FROM genome WHERE accession = ?", vars =>[$accession], type => 'row');
+% my $slips = $db->MySelect(statement =>"SELECT DISTINCT(start), bp_mstop FROM mfe WHERE accession = ? ORDER BY start", vars => [$accession],);
 % my (@slipsites, @minus);
 % foreach my $s (@{$slips}) {
 %   push (@slipsites, $s->[0]);
 %   push (@minus, $s->[1]);
 %  }
 % my $str = HTMLMisc::Create_Pretty_mRNA(show_frame => $show_frame, accession => $accession, mrna_seq => $in->[0], orf_start => $in->[1], orf_stop => $in->[2], slipsites => \@slipsites, minus_bp => \@minus);
-<form action="print_gene.html" enctype="multipart/form-data" method="POST">
-<input type="hidden" name="accession" value="<% $accession %>">
-<select name="show_frame"  onchange="this.form.submit()">
-  <option value="none" <% (($show_frame eq 'none') ? 'SELECTED' : '') %>>none</option>
-  <option value="all" <% (($show_frame eq 'all') ? 'SELECTED' : '') %>>all</option>
-  <option value="zero" <% (($show_frame eq 'zero') ? 'SELECTED' : '') %>>zero frame</option>
-  <option value="one" <% (($show_frame eq 'one') ? 'SELECTED' : '') %>>minus one frame</option>
-  <option value="two" <% (($show_frame eq 'two') ? 'SELECTED' : '') %>>minus two frame</option>
-</select>
-</form>
 
-<table bgcolor="#E8E8E8">
+<table bgcolor="#E8E8E8" align="center">
   <tr>
     <td>
-    <font face="Courier New, Courier, mono">&nbsp;
     <strong>
-&gt;<% $accession %> | <% $genename %><br>
       <pre>
+&gt;<% $accession %> | <% $genename %>
 <% $str %>
       </pre>
     </strong>
     </font>
+    </td>
     </tr>
-  </tr>
+    <tr><td>
+      <form action="print_gene.html" enctype="multipart/form-data" method="POST">
+      <input type="hidden" name="accession" value="<% $accession %>">
+      <select name="show_frame"  onchange="this.form.submit()">
+        <option value="none" <% (($show_frame eq 'none') ? 'SELECTED' : '') %>>none</option>
+        <option value="zero" <% (($show_frame eq 'zero') ? 'SELECTED' : '') %>>zero frame</option>
+        <option value="one" <% (($show_frame eq 'one') ? 'SELECTED' : '') %>>minus one frame</option>
+        <option value="two" <% (($show_frame eq 'two') ? 'SELECTED' : '') %>>minus two frame</option>
+        <option value="all" <% (($show_frame eq 'all') ? 'SELECTED' : '') %>>all</option>
+      </select>
+      Show translated reading frame(s).
+    </td></tr>
+</form>
 </table>
+
+<p>The minimum free energy 'landscape' for <% $accession %>, black vertical lines delineate the positions of slippery heptamers, the horizontal green line shows the mean Vienna RNAfold value over the ORF, the horizontal red line shows the mean pknots value over the ORF, the horzontal blue line shows the mean nupack value.  green, red, and blue lines delineate the MFE over a sliding 105bp window.</p>
+<& print_landscape, accession => "$accession", species => "$species" &>
+</form>   </tr>
 
 <%init>
  my $statement = "SELECT species,genename FROM genome WHERE accession = '$accession'";
@@ -77,194 +59,6 @@
  my $species = $fun->[0][0];
  my $genename = $fun->[0][1];
 </%init>
-
-<%perl>
-sub Create_Pretty_mRNA {
-  my $accession = shift;
-  my $translate = shift;
-  my $result = '';
-  my $st = qq"SELECT mrna_seq, orf_start, orf_stop, direction FROM genome WHERE accession = ?";
-  my $info = $db->MySelect(statement => $st, vars => [$accession], type => 'row');
-  my $mrna_seq = $info->[0];
-  my $orf_start = $info->[1];
-  my $orf_stop = $info->[2];
-  my $direction = $info->[3];
-  my @seq_array = split(//, $mrna_seq);
-  my $total_seq_length = scalar(@seq_array);
-
-  ## An option to translate a given sequence from the PRFdb
-  my @translated;
-  if (defined($translate)) {
-    use SeqMisc;
-    my $sequence_object = new SeqMisc(sequence => \@seq_array);
-    if ($translate == 0) {
-      @translated = @{$sequence_object->{aaseq}};
-    } elsif ($translate == 1) {
-      @translated = @{$sequence_object->{aaminusone}};
-    } elsif ($translate == 2) {
-      @translated = @{$sequence_object->{aaminustwo}};
-    } else {
-      @translated = ($sequence_object->{aaseq}, $sequence_object->{aaminusone}, $sequence_object->{aaminustwo});
-    }
-  }
-
-  ## First step:  Figure out how many bases we need to pad to get the start codon in the 0 frame.
-  ## The orf_start is a 1 indexed integer
-  my $pre_padding_bases = $orf_start % 3;
-  my $start_padding_bases;
-  if ($pre_padding_bases == 0) {
-    $start_padding_bases = 0;
-  } elsif ($pre_padding_bases == 1) {
-    $start_padding_bases = 2;
-  } elsif ($pre_padding_bases == 2) {
-    $start_padding_bases = 1;
-  } else {
-    $start_padding_bases = 10;
-  }
-  my $decrement = $start_padding_bases + 1;
-  my $slipsite_positions = $db->MySelect(statement =>"SELECT DISTINCT start FROM mfe WHERE accession = ? ORDER BY start", vars => [$accession], type =>'flat');
-  ## Each slipsite_position will probably have to have the number of start_padding_bases added to it
-  ## Now move all attributes by the number of padding bases, otherwise the non bases will get colored.
-  my $corrected_orf_start = $orf_start + $start_padding_bases;
-  my $corrected_orf_stop  = $orf_stop + $start_padding_bases;
-  my @corrected_slipsites = ();
-  my $snp_statement = qq"SELECT id, cluster_id, location, alleles FROM snp WHERE gene_acc = ?";
-  my $snp_data = $db->MySelect(statement => $snp_statement, vars => [$accession], type => 'list_of_hashes');
-    
-  my $snp_struct = {};
-  foreach my $snp_row (@{$snp_data}) {
-    my $snp_start = $snp_row->{location};
-    my $snp_end = '';
-    if ($snp_start =~ /\.\./) {
-      ($snp_start, $snp_end) = split(/\.\./, $snp_start);
-      $snp_struct->{($snp_start + $start_padding_bases)} = ($snp_end + $start_padding_bases);
-      $snp_struct->{($snp_end + $start_padding_bases)} = $snp_row;
-    } else {
-      $snp_struct->{($snp_start + $start_padding_bases)} = $snp_row;
-    }
-  }
-  for my $d ( 0 .. $#$slipsite_positions ) {
-    $corrected_slipsites[$d] = $slipsite_positions->[$d] + $start_padding_bases;    ## Lazy
-  }
-  ## If you make an array of stems, keep this in mind.
-    
-  my $first_pass  = '';
-  my @codon_array = ();
-    
-  while ($start_padding_bases >= 0) { unshift(@seq_array, '&nbsp;'), $start_padding_bases--;}
-  my $new_seq_length = $#seq_array;
-  my $end_padding_bases = $new_seq_length % 3;
-  while ($end_padding_bases >= 0) { push(@seq_array, '&nbsp;'), $end_padding_bases--; }
-    my $codon_string = '';
-    my $minus_one_stop_switch = 'off';
-    for my $seq_counter (0 .. $#seq_array) {
-      if ($minus_one_stop_switch eq 'on') {
-        if ((( $seq_counter % 3) == 2) and $seq_array[$seq_counter] eq 'T' and ($seq_array[$seq_counter + 1] eq 'A') and ($seq_array[$seq_counter + 2] eq 'A')) {
-          $seq_array[$seq_counter] = qq(<strong><font color = "Orange">$seq_array[$seq_counter]</font></strong>);
-          $seq_array[$seq_counter + 1] = qq(<strong><font color = "Orange">$seq_array[$seq_counter + 1]</font></strong>);
-          $seq_array[$seq_counter + 2] = qq(<strong><font color = "Orange">$seq_array[$seq_counter + 2]</font></strong>);
-          $minus_one_stop_switch = 'off';
-	} elsif ((($seq_counter % 3) == 2) and $seq_array[$seq_counter] eq 'T' and ($seq_array[$seq_counter + 1] eq 'G') and ($seq_array[$seq_counter + 2] eq 'A')) {
-          $seq_array[$seq_counter] = qq(<strong><font color = "Orange">$seq_array[$seq_counter]</font></strong>);
-          $seq_array[$seq_counter + 1] = qq(<strong><font color = "Orange">$seq_array[$seq_counter + 1]</font></strong>);
-          $seq_array[$seq_counter + 2] = qq(<strong><font color = "Orange">$seq_array[$seq_counter + 2]</font></strong>);
-          $minus_one_stop_switch = 'off';
-        } elsif ((($seq_counter % 3) == 2) and $seq_array[$seq_counter] eq 'T' and ($seq_array[$seq_counter + 1] eq 'A') and ($seq_array[$seq_counter + 2] eq 'G')) {
-          $seq_array[$seq_counter] = qq(<strong><font color = "Orange">$seq_array[$seq_counter]</font></strong>);
-          $seq_array[$seq_counter + 1] = qq(<strong><font color = "Orange">$seq_array[$seq_counter + 1]</font></strong>);
-          $seq_array[$seq_counter + 2] = qq(<strong><font color = "Orange">$seq_array[$seq_counter + 2]</font></strong>);
-          $minus_one_stop_switch = 'off';
-	}
-      }    ## If the minus one stop switch is on.
-
-      if ($seq_counter >= $corrected_orf_start and ($seq_counter < ($corrected_orf_start + 3))) {
-	    $seq_array[$seq_counter] = qq(<strong><font color = "Green">$seq_array[$seq_counter]</font></strong>);
-      }    ## End if the current bases are a part of the start codon
-      if ($seq_counter >= ($corrected_orf_stop - 2) and ($seq_counter < ($corrected_orf_stop + 1))) {
-        $seq_array[$seq_counter] = qq(<strong><font color = "Red">$seq_array[$seq_counter]</font></strong>);
-      }    ## End if the current bases are a part of a stop codon
-
-      if (defined($snp_struct->{$seq_counter})) {
-        if ($snp_struct->{$seq_counter} !~ /HASH/) {
-          my $snp_end = $snp_struct->{$seq_counter};
-          my $link = qq(http://www.ncbi.nlm.nih.gov/sites/entrez?db=snp&cmd=search&term=$snp_struct->{$snp_end}->{cluster_id});
-          $seq_array[$seq_counter] = qq(<a class="snp" href=$link title="View dbSNP:$snp_struct->{$snp_end}->{cluster_id} with alleles $snp_struct->{$snp_end}->{alleles} at NCBI" rel="external" target="_blank">$seq_array[$seq_counter]);
-          $seq_array[$snp_struct->{$seq_counter}] = qq($seq_array[$snp_struct->{$seq_counter}]</a>);
-          delete $snp_struct->{$snp_end};
-          delete $snp_struct->{$seq_counter};
-        } else {
-          my $link = qq(http://www.ncbi.nlm.nih.gov/sites/entrez?db=snp&cmd=search&term=$snp_struct->{$seq_counter}->{cluster_id});
-          $seq_array[$seq_counter] = qq(<a class="snp" href=$link title="View dbSNP:$snp_struct->{$seq_counter}->{cluster_id} with alleles $snp_struct->{$seq_counter}->{alleles} at NCBI" rel="external" target="_blank">$seq_array[$seq_counter]</a>);
-          delete $snp_struct->{$seq_counter};
-        }
-      }
-
-      for my $c (0 .. $#corrected_slipsites) {
-        if ($seq_counter >= $corrected_slipsites[$c] and $seq_counter < $corrected_slipsites[$c] + 7) {
-          $seq_array[$seq_counter] = qq(<strong><a href="detail.html?accession=$accession&slipstart=$slipsite_positions->[$c]" title="View the details for $accession at posisition $slipsite_positions->[$c]"><font color = "Blue">$seq_array[$seq_counter]</font></a></strong>);
-          $minus_one_stop_switch = 'on';
-        }
-      }    ## End foreach slipstart
-
-      if (($seq_counter % 3) == 0) {
-        if ($seq_counter != 0) {
-          push(@codon_array, $codon_string);
-        }
-	$codon_string = '';
-      }
-      $codon_string = $codon_string . $seq_array[$seq_counter];
-    }    ## End the first pass of the sequence array
-    my $codon_count = 0;
-    my $base_count = 1;
-    my $end_base_string = '';
-    my $start_base_string = '';
-    my $aa_string_one = '';
-    my $aa_string_two = '';
-    my $aa_string_three = '';
-    foreach my $codon (@codon_array) {
-      my $aa_string = '';
-      if ($codon_count == 0) {
-        my $prefix = qq"${base_count}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-        $base_count = $base_count - $decrement;
-        $first_pass = join('', $prefix, $first_pass);
-        $aa_string .= shift(@translated);
-      }
-      $codon_count++;
-      if (($codon_count % 15) == 0) {
-        $base_count = $base_count + 45;
-        my $suffix_base_count = $base_count - 1;
-        if ($base_count > 99999) { 
-          $start_base_string = qq(${base_count}&nbsp;);
-          $end_base_string = qq(&nbsp;$suffix_base_count);
-        } elsif ($base_count > 9999) {
-          $start_base_string = qq(${base_count}&nbsp;&nbsp;); 
-          $end_base_string = qq(&nbsp;&nbsp;$suffix_base_count);
-        } elsif ($base_count > 999) {
-          $start_base_string = qq(${base_count}&nbsp;&nbsp;&nbsp;); 
-          $end_base_string = qq(&nbsp;&nbsp;&nbsp;$suffix_base_count);
-        } elsif ($base_count > 99) {
-          $start_base_string = qq(${base_count}&nbsp;&nbsp;&nbsp;&nbsp;); 
-          $end_base_string = qq(&nbsp;&nbsp;&nbsp;&nbsp;$suffix_base_count);
-        } elsif ($base_count > 9) {
-          $start_base_string = qq(${base_count}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;); 
-          $end_base_string = qq(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$suffix_base_count);
-        }
-        $first_pass = join('', $first_pass, $codon, "$end_base_string<br>\n");
-        if (defined($translate)) {
-          $first_pass = join('', "$aa_string<br>\n");
-        } else {
-          $first_pass = join('', $first_pass, $start_base_string);
-        }
-      }
-      else {
-        $first_pass = join('', $first_pass, $codon, ' ');
-      }
-    }  ## End foreach codon
-    my $suffix = qq(&nbsp;$total_seq_length);
-    $first_pass = join('', $first_pass, $suffix);
-    return ($first_pass);
-}
-</%perl>
 
 <%args>
  $accession => "SGDID:S0004310"
