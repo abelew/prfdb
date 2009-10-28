@@ -882,8 +882,12 @@ sub Get_Queue {
 	$me->Reset_Queue($table, 'complete');
     }
     ## This id is the same id which uniquely identifies a sequence in the genome database
-#    my $single_id = qq"SELECT id, genome_id FROM $table WHERE id = '51282'"; #checked_out = '0' LIMIT 1);
-    my $single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' ORDER BY RAND() LIMIT 1";
+    my $single_id;
+    if (defined($config->{randomize_id})) {
+      $single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' ORDER BY RAND() LIMIT 1";
+    } else {
+#     $single_id = qq"SELECT id, genome_id FROM $table WHERE id = '51282'"; #checked_out = '0' LIMIT 1);
+    }
     my $ids = $me->MySelect({statement => $single_id, type => 'row'});
     my $id = $ids->[0];
     my $genome_id = $ids->[1];
