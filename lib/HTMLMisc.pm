@@ -120,4 +120,142 @@ sub Color_Stems {
     return($bracket_string);
 }
 
+sub Create_Pretty_mRNA {
+    my %args = @_;
+    my $accession = $args{accession};
+    my $mrna_seq = $args{mrna_seq};
+    my $orf_start = $args{orf_start};
+    my $orf_stop = $args{orf_stop};
+    my $slipsites = $args{slipsites};
+    my $minus_bp = $args{minus_bp};
+    my $show_frame = $args{show_frame};
+    my @s = split(//, $mrna_seq);
+
+    use SeqMisc;
+    my $seqobj = new SeqMisc(sequence => \@s);
+    my $amino_seq = $seqobj->{aaseq};
+    my @a = @{$amino_seq};
+    my @o = @{$seqobj->{aaminusone}};
+    my @t = @{$seqobj->{aaminustwo}};
+
+    ### A filter over the course of the nucleotide array to replace elements which are slipsites etc
+    my $slipcount = 0;
+    for my $count (0 .. $#$slipsites) {
+	my $slip = $slipsites->[$count];
+	my $minus = $minus_bp->[$count];
+	my $slipcount = -1;
+	while ($slipcount < 6) {
+	    my $num_bp = $slip + $slipcount;
+	    $s[$num_bp] = qq(<a href="detail.html?accession=$accession&slipstart=$slip" title="View the details for $accession at position $slip"><font color="Blue">$s[$num_bp]</font></a>);
+	    $slipcount++;
+	}
+	my $minuscount = 6;
+	while ($minuscount < 9) {
+	    my $num = $slip + $minus + $minuscount;
+	    $s[$num] = qq(<font color="Orange">$s[$num]</font>);
+	    $minuscount++;
+	}
+    }
+
+
+
+
+    my $nuc_len = scalar(@s);
+    my $aa_len = scalar(@a);
+    my $mo_len = scalar(@o);
+    my $mt_len = scalar(@t);
+    my $leftover = ($nuc_len % 48) + 48;
+    while ($leftover > 0) {
+	push(@s, '');
+	push(@a, ''), push(@a, '') ,push(@a, '');
+	push(@o, ''), push(@o, '') ,push(@o, '');
+	push(@t, ''), push(@t, '') ,push(@t, '');
+	$leftover--;
+    }
+
+    my $counter = 0;
+    my $counterplus = 53;
+    my $increment = 53;
+    my $blank = '';
+    my ($all, $none, $zero, $one, $two) = '';
+    open(ALL,'>', \$all);
+    open(ZERO, '>', \$zero);
+    open(NONE,'>', \$none);
+    open(ONE,'>', \$one);
+    open(TWO,'>', \$two);
+    while ($s[0] ne '') {
+	$counter++;
+	$counterplus++;
+	if ($show_frame eq 'all') {
+	    format ALL  =
+Nuc:@<<<<<   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@*   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@*   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@* @>>>>>>
+$counter, shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s),shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), $counterplus
+AA:@<<<<<    @   @   @    @   @   @     @   @   @    @   @   @     @   @   @    @   @   @ @<<<<<
+$blank,shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),$blank
+-1:@<<<<<     @   @   @    @   @   @     @   @   @    @   @   @     @   @   @    @   @   @  @<<<<<
+$blank,shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),$blank
+-2:@<<<<<      @   @   @    @   @   @     @   @   @    @   @   @     @   @   @    @   @   @  @<<<<<
+$blank,shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),$blank
+.
+        write ALL;
+        $counter = $counter + $increment;
+        $counterplus = $counterplus + $increment;
+      } elsif ($show_frame eq 'zero') {
+	    format ZERO  =
+Nuc:@<<<<<   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@*   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@*   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@* @>>>>>>
+$counter, shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s),shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), $counterplus
+AA:@<<<<<   @   @   @    @   @   @     @   @   @    @   @   @     @   @   @    @   @   @ @<<<<<
+$blank,shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),shift(@a),$blank
+.
+        write ZERO;
+        $counter = $counter + $increment;
+        $counterplus = $counterplus + $increment;
+      } elsif ($show_frame eq 'one') {
+        format ONE  =
+Nuc:@<<<<<   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@*   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@*   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@* @>>>>>>
+$counter, shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s),shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), $counterplus
+-1:@<<<<<    @   @   @    @   @   @     @   @   @    @   @   @     @   @   @    @   @   @  @<<<<<
+$blank,shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),shift(@o),$blank
+.
+        write ONE;
+        $counter = $counter + $increment;
+        $counterplus = $counterplus + $increment;
+      } elsif ($show_frame eq 'two') {
+        format TWO  =
+Nuc:@<<<<<   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@*   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@*   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@* @>>>>>>
+$counter, shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s),shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), $counterplus
+-2:@<<<<<     @   @   @    @   @   @     @   @   @    @   @   @     @   @   @    @   @   @  @<<<<<
+$blank,shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),shift(@t),$blank
+.
+          write TWO;
+          $counter = $counter + $increment;
+          $counterplus = $counterplus + $increment;
+        } else {
+          format NONE  =
+Nuc:@<<<<<   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@*   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@*   @*@*@* @*@*@* @*@*@*  @*@*@* @*@*@* @*@*@* @>>>>>>
+$counter, shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s),shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), $counterplus
+.
+         write NONE;
+         $counter = $counter + $increment;
+         $counterplus = $counterplus + $increment;
+        }
+    }  ## End while
+
+  my $ret;
+  if ($show_frame eq 'all') {
+      $ret = $all;
+  } elsif ($show_frame eq 'zero') {
+      $ret = $zero;
+  } elsif ($show_frame eq 'one') {
+      $ret = $one;
+  } elsif ($show_frame eq 'two') {
+      $ret = $two;
+  } else {
+      $ret = $none;
+  }
+
+   return($ret);
+}
+
+
 1;

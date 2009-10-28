@@ -47,7 +47,7 @@ my $long_species;
 % my $orf_stop = $entries->{$entries_keys[0]}->{orf_stop};
 <& gene_summary.html, accession => $accession, genename => $genename, accession => $accession, long_species => $long_species, species => $species, comment => $comment, omim_id => $omim_id &>
 <& list_slipsites.html, accession => $accession, species => $species, comment => $comment, omim_id => $omim_id, orf_start => $orf_start, orf_stop => $orf_stop &>
-<& print_gene.html, accession => $accession &>
+<& print_gene.html, accession => $accession, translate => $translate &>
 % } else { ### If there is not 0 nor 1 hit, then there are multiple.
 <table width="100%" border="0" cellspacing="0" cellpadding="2">
   <tr bgcolor="#000000">
@@ -149,4 +149,5 @@ Search the <select name="location">
   $query => undef
   $search_species_limit => undef
   $blastsearch => undef
+  $translate => undef
 </%args>

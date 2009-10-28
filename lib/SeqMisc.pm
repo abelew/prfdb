@@ -29,6 +29,8 @@ sub new {
 	seqstring => $seqstring,
 	length => scalar(@{$arg{sequence}}),
 	aaseq => [],
+	aaminusone => [],
+	aaminustwo => [],
 	dint12seq => [],
 	dint23seq => [],
 	dint31seq => [],
@@ -129,7 +131,7 @@ sub new {
     }, $class;
     my @ntseq = @{$me->{sequence}};
     $me->{gc_content} = $me->Get_GC(\@ntseq);    
-    my (@aaseq, @codonseq, @dint12seq, @dint23seq, @dint31seq, @dint13seq);
+    my (@aaseq, @aaminusone, @aaminustwo, @codonseq, @dint12seq, @dint23seq, @dint31seq, @dint13seq);
     if ($me->{readop} eq 'orf') {
 	my @init = ('A', 'T', 'G');
 	next until (splice(@ntseq, 0, 3) eq @init);
@@ -137,6 +139,7 @@ sub new {
     
     my $finished = 0;
     my $count = 0;
+    my ($one, $two, $three, $last_one, $last_two, $last_three);
     while (scalar(@ntseq) > 2 and $finished == 0) {
 	$count = $count + 3;
 	$me->{dintfreq}{12}{join('', $ntseq[0], $ntseq[1])}++;
@@ -147,9 +150,22 @@ sub new {
 	} else {
 	    $me->{dintfreq}{31}{join('', $ntseq[2], $ntseq[3])}++;
 	}
-	my ($one, $two, $three) = splice(@ntseq, 0, 3);
+	$last_one = $one;
+	$last_two = $two;
+	$last_three = $three;
+	($one, $two, $three) = splice(@ntseq, 0, 3);
 	my $codon_string = join('', $one, $two, $three);
-	if ( !defined($me->{codons}{$codon_string})) {
+	my ($minus_one_codon_string, $minus_two_codon_string);
+	if (defined($last_three)) {
+	    $minus_one_codon_string = join('', $last_three, $one, $two);
+	    push(@aaminusone, $me->{codons}{$minus_one_codon_string});
+	}
+	if (defined($last_two)) {
+	    $minus_two_codon_string = join('', $last_two, $last_three, $one);
+	    push(@aaminustwo, $me->{codons}{$minus_two_codon_string});
+	}
+
+	if (!defined($me->{codons}{$codon_string})) {
 	    print "$codon_string is not defined!\n";
 	}
 	push(@aaseq, $me->{codons}{$codon_string});
@@ -168,6 +184,8 @@ sub new {
 	$finished++ if ($me->{readop} eq 'orf' and ($me->{codons}{$codon_string} eq '*'));
     }    ## End while the length of sequence > 2
     $me->{aaseq} = \@aaseq;
+    $me->{aaminusone} = \@aaminusone;
+    $me->{aaminustwo} = \@aaminustwo;
     $me->{codonseq} = \@codonseq;
     $me->{dint12seq} = \@dint12seq;
     $me->{dint23seq} = \@dint23seq;

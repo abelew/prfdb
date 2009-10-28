@@ -5,19 +5,18 @@ use PRFConfig;
 use PRFdb;
 use Bio::DB::Universal;
 use Bio::Index::GenBank;
-
-my $config = $PRFConfig::config;
+my $config = new PRFConfig(config_file => "$ENV{HOME}/prfdb.conf");
 my $db = new PRFdb(config=>$config);
 
 my $uni = new Bio::DB::Universal();
 
 
-#my $genbank = new Bio::Index::GenBank(-filename => 'staph.gb');
-my $in  = Bio::SeqIO->new(-file => "streptococcus_pyogenes.gb",
+#my $genbank = new Bio::Index::GenBank(-filename => 'ecoli.gb');
+my $in  = Bio::SeqIO->new(-file => "ecoli.gb",
 		       -format => 'genbank');
 while (my $seq = $in->next_seq()) {
 #$uni->use_database('genbank',$genbank);
-    my $accession = 'NC_008024';
+    my $accession = 'NC_000913';
 #my $seq = $uni->get_Seq_by_id($accession);
     my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
     
