@@ -201,6 +201,7 @@ sub new {
 				'optimize:s' => \$conf{optimize},
 				'output' => \$conf{output},
 				'pknots:i' => \$conf{do_pknots},
+				'randomize' => \$conf{randomize_id},
 				'resetqueue' => \$conf{resetqueue},
 				'species:s' => \$conf{species},
 				'startmotif:s' => \$conf{startmotif},

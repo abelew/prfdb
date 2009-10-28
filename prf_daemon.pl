@@ -326,8 +326,7 @@ sub PRF_Gatherer {
 	  my $vi = $vienna_mfe_info->{mfe};
 	  my $comparison_string = "$pk,$nu,$vi";
 	  $comparison_string =~ s/\s+//g;
-	  my $update_string = qq(UPDATE MFE set compare_mfes = '$comparison_string' WHERE accession = '$state->{accession}' AND seqlength = '$state->{seqlength}' AND start = '$slipsite_start');
-	  print "Did $update_string\n";
+	  my $update_string = qq(UPDATE mfe SET compare_mfes = '$comparison_string' WHERE accession = '$state->{accession}' AND seqlength = '$state->{seqlength}' AND start = '$slipsite_start');
 	  $db->MyExecute($update_string);
       }
       if ($config->{do_boot}) {
