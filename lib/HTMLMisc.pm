@@ -173,21 +173,18 @@ sub Create_Pretty_mRNA {
     my $frame = $start_pad % 3;
     my @tmp;
     if ($frame == 2) {
-	print "Frame is 2<br>\n";
 	@tmp = @a;
 	@a = @o;
 	@o = @t;
 	@t = @tmp;
 	unshift(@a, ' '); unshift(@o, ' '); unshift(@t, ' ');
     } elsif ($frame == 1) {
-	print "Frame is 1<br>\n";
 	@tmp = @a;
 	@a = @t;
 	@t = @tmp;
 
 	unshift(@a, ' '); unshift(@o, ' '); unshift(@t, ' ');
     } else {
-	print "frame is else $frame<br>\n";
 	unshift(@a, ' '); unshift(@o, ' '); unshift(@t, ' ');
     }
     

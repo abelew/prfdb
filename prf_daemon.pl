@@ -124,20 +124,7 @@ if (defined($config->{accession})) {
 if (defined($config->{import_accession})) {
     my $accession = $config->{import_accession};
     $db->Import_CDS($accession);
-    $state->{queue_id} = 0;
-    ## Dumb hack lives on
-    $state->{accession} = $accession;
-    $state->{genome_id} = $db->Get_GenomeId_From_Accession($accession);
-    if (defined($config->{startpos})) {
-	Gather($state, $config->{startpos});
-    }
-    elsif (defined($config->{startmotif})) {
-	Gather($state, $config->{startmotif});
-    }
-    else {
-	Gather($state);
-    }
-    ## Once the prf_daemon finishes this accession it will start reading the queue...
+    exit(0);
 }  ## Endif used the import_accession arg
 if (defined($config->{input_fasta})) {
     my $queue_ids;

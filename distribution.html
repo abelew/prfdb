@@ -82,7 +82,7 @@ graph in one minute.</p>
   </select>
   <br>
   Choose a species to examine:<br>
-  <& species_selector, select_name => "species" &>
+  <& species_selector, select_name => "species", skip_species => 'all' &>
 
 <label><input type="checkbox" name="cloud_filters" value="pseudoknots only" />pseudoknots only</label><br>
   Choose a slippery site to examine(listed in order of frequency):<br>

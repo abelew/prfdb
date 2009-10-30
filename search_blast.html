@@ -22,7 +22,7 @@
 <p>Hit Number: <% $c %><br>
 Name: <% $local_info->{hits}->[$c]->{hit_name} %><br>
 % if ($location eq 'local') {
-Accession: <a href="/browse.html?accession=<% $local_info->{hits}->[$c]->{accession} %>">
+Accession: <a href="/search.html?short=1&accession=<% $local_info->{hits}->[$c]->{accession} %>">
 % } else {
 Importing doesn't work yet, Accession: <a href="/import.html?accession=<% $local_info->{hits}->[$c]->{accession} %>">
 % }
