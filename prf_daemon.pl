@@ -170,15 +170,29 @@ until (defined($state->{time_to_die})) {
 sub Read_Accessions {
     my $accession_file = shift;
     my $startpos = shift;
+    my $retries = 10;
     open(AC, "<$accession_file") or die "Could not open the file of accessions $!";
-    while (my $accession = <AC>) {
-	chomp $accession;
-	print "Importing Accession: $accession\n";
-	if (defined($startpos)) {
-	    $db->Import_CDS($accession, $startpos);
-	} 
-	else {
-	    $db->Import_CDS($accession);
+    OUTER: while (my $accession = <AC>) {
+	sleep(2);
+	my $attempts = 0;
+	while ($attempts < $retries) {
+	    if ($attempts >= $retries) {
+		die("Unable to acquire sequence for $accession after $retries attempts.");
+	    }
+	    chomp $accession;
+	    print "Importing Accession: $accession\n";
+	    my $seq;
+	    if (defined($startpos)) {
+		$seq = $db->Import_CDS($accession, $startpos);
+	    } else {
+		$seq = $db->Import_CDS($accession);
+	    }
+	    if ($seq =~ /^Error/) {
+		sleep(30);
+		$attempts++;
+	    } else {
+		next OUTER;
+	    }
 	}
     }
     close(AC);

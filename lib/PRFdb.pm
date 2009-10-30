@@ -6,6 +6,8 @@ use SeqMisc;
 use File::Temp qw / tmpnam /;
 use Fcntl ':flock';    # import LOCK_* constants
 use Bio::DB::Universal;
+use Bio::Root::Exception;
+use Error qw(:try);
 our @ISA = qw(Exporter);
 our @EXPORT = qw(AddOpen RemoveFile);    # Symbols to be exported by default
 
@@ -1220,7 +1222,17 @@ sub Import_CDS {
     my $startpos = shift;
     my $return = '';
     my $uni = new Bio::DB::Universal;
-    my $seq = $uni->get_Seq_by_id($accession);
+    my $seq;
+    try {
+	$seq = $uni->get_Seq_by_id($accession);
+    }
+    catch Bio::Root::Exception with {
+	my $err = shift;
+	return("Error $err");
+    };
+    if (!defined($seq)) {
+	return(undef);
+    }
     my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
     my ($protein_sequence, $orf_start, $orf_stop);
     my $binomial_species = $seq->species->binomial();

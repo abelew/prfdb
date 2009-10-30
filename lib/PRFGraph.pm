@@ -700,7 +700,8 @@ sub Make_Landscape {
     }
     my @mfe_data = (\@axis_x, \@nupack_y, \@pknots_y, \@vienna_y, \@m_nupack, \@m_pknots, \@m_vienna);
     my $width = $end_spot;
-    my $graph = new GD::Graph::mixed($width,400);
+    my $height = 400;
+    my $graph = new GD::Graph::mixed($width,$height);
     $graph->set(bgclr => 'white',
 		x_label => 'Distance on ORF',
 		y_label => 'kcal/mol',
@@ -748,6 +749,8 @@ sub Make_Landscape {
 	mean_pknots => $mean_pknots,
 	mean_nupack => $mean_nupack,
 	mean_vienna => $mean_vienna,
+	height => $height,
+	width => $width,
     };
     return ($ret);
 }
