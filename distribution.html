@@ -52,7 +52,7 @@ These graphs take about a minute to generate, this page will refresh with the fr
 graph in one minute.</p>
 
 <& refresh.js, refresh_url=>"distribution.html?species=$species&seqlength=$seqlength&slipsites=$slipsites", seconds => 30 &>
-<& generate_distribution, species=>$species, slipsites=>$slipsites, seqlength=>$seqlength &>
+<& generate_distribution.html, species=>$species, slipsites=>$slipsites, seqlength=>$seqlength &>
 
 % }
 
@@ -82,7 +82,7 @@ graph in one minute.</p>
   </select>
   <br>
   Choose a species to examine:<br>
-  <& species_selector, select_name => "species", skip_species => 'all' &>
+  <& species_selector.html, select_name => "species", skip_species => 'all' &>
 
 <label><input type="checkbox" name="cloud_filters" value="pseudoknots only" />pseudoknots only</label><br>
   Choose a slippery site to examine(listed in order of frequency):<br>

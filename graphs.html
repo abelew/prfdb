@@ -7,7 +7,7 @@ green, 'GGG' are blue, and 'CCC' are black.
 <center>
 % if (!-f "$config->{base}/images/cloud/$species/cloud-all-bar.png") {
 Generating new bar graphs now.
-<& generate_bar_graphs, species => $species &>
+<& generate_bar_graphs.html, species => $species &>
 % } 
  <img src="images/cloud/<% $species %>/cloud-all-bar.png">
 </center>
