@@ -2210,6 +2210,7 @@ PRIMARY KEY(ip))\;
 sub Create_Landscape {
     my $me = shift;
     my $table = shift;
+    $table = 'landscape_virus' if ($table =~ /virus/);
     my $statement = qq\CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,
@@ -2238,6 +2239,7 @@ PRIMARY KEY(id))\;
 sub Create_Boot {
     my $me = shift;
     my $table = shift;
+    $table = 'boot_virus' if ($table =~ /virus/);
     my $statement = qq\CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,

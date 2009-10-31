@@ -203,8 +203,8 @@ sub Gather {
     my $ref = $db->Id_to_AccessionSpecies($state->{genome_id});
     $state->{accession} = $ref->{accession};
     $state->{species} = $ref->{species};
-    $db->Create_Landscape("landscape_$state->{species}") unless($me->Tablep("landscape_$state->{species}"));
-    $db->Create_Landscape("boot_$state->{species}") unless($me->Tablep("boot_$state->{species}"));    
+    $db->Create_Landscape("landscape_$state->{species}") unless($db->Tablep("landscape_$state->{species}"));
+    $db->Create_Boot("boot_$state->{species}") unless($db->Tablep("boot_$state->{species}"));    
     my $message = "qid:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
     print "Working with: $message";
     
