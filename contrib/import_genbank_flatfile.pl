@@ -12,11 +12,11 @@ my $uni = new Bio::DB::Universal();
 
 
 #my $genbank = new Bio::Index::GenBank(-filename => 'ecoli.gb');
-my $in  = Bio::SeqIO->new(-file => "ecoli.gb",
+my $in  = Bio::SeqIO->new(-file => "orzya_sativa.gb",
 		       -format => 'genbank');
 while (my $seq = $in->next_seq()) {
 #$uni->use_database('genbank',$genbank);
-    my $accession = 'NC_000913';
+    my $accession = 'NC_008405';
 #my $seq = $uni->get_Seq_by_id($accession);
     my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
     

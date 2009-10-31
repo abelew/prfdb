@@ -6,6 +6,8 @@ use SeqMisc;
 use File::Temp qw / tmpnam /;
 use Fcntl ':flock';    # import LOCK_* constants
 use Bio::DB::Universal;
+use Bio::Root::Exception;
+use Error qw(:try);
 our @ISA = qw(Exporter);
 our @EXPORT = qw(AddOpen RemoveFile);    # Symbols to be exported by default
 
@@ -1220,7 +1222,17 @@ sub Import_CDS {
     my $startpos = shift;
     my $return = '';
     my $uni = new Bio::DB::Universal;
-    my $seq = $uni->get_Seq_by_id($accession);
+    my $seq;
+    try {
+	$seq = $uni->get_Seq_by_id($accession);
+    }
+    catch Bio::Root::Exception with {
+	my $err = shift;
+	return("Error $err");
+    };
+    if (!defined($seq)) {
+	return(undef);
+    }
     my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
     my ($protein_sequence, $orf_start, $orf_stop);
     my $binomial_species = $seq->species->binomial();
@@ -1433,11 +1445,12 @@ sub Get_Num_RNAfolds {
 
 sub Get_Num_Bootfolds {
     my $me = shift;
-    my $species = shift;
-    my $genome_id = shift;
-    my $start = shift;
-    my $seqlength = shift;
-    my $method = shift;
+    my %args = @_;
+    my $species = $args{species};
+    my $genome_id = $args{genome_id};
+    my $start = $args{start};
+    my $seqlength = $args{seqlength};
+    my $method = $args{method};
     my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
     my $return = {};
     my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? and start = ? and seqlength = ? and mfe_method = ?/;

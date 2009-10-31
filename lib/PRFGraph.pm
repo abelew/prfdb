@@ -11,16 +11,18 @@ use Statistics::Distributions;
 my $config;
 
 sub new {
-  my ($class, $arg) = @_;
-  if (defined($arg->{config})) {
-    $config = $arg->{config};
-  }
-  my $me = bless {}, $class;
-  foreach my $key (%{$arg}) {
-      $me->{$key} = $arg->{$key} if (defined($arg->{$key}));
-  }
-  return ($me);
+    my $class = shift;
+    my %arg = @_;
+    if (defined($arg{config})) {
+	$config = $arg{config};
+    }
+    my $me = bless {}, $class;
+    foreach my $key (%{$arg}) {
+	$me->{$key} = $arg{$key} if (defined($arg{$key}));
+    }
+    return ($me);
 }
+
 sub deg2rad {PI * $_[0] / 180}
 
 sub Make_Extension {
@@ -202,22 +204,22 @@ sub Make_Extension {
 
 sub Make_Cloud {
     my $me = shift;
-    my $args = shift;
-    my $species = $args->{species};
-    my $data = $args->{points};
-    my $averages = $args->{averages};
-    my $filename = $args->{filename};
-    my $url = $args->{url};
-    my $args_slipsites = $args->{slipsites};
+    my %args = @_;
+    my $species = $args{species};
+    my $data = $args{points};
+    my $averages = $args{averages};
+    my $filename = $args{filename};
+    my $url = $args{url};
+    my $args_slipsites = $args{slipsites};
     my $seqlength;
-    if (defined($args->{seqlength})) {
-	$seqlength = $args->{seqlength};
+    if (defined($args{seqlength})) {
+	$seqlength = $args{seqlength};
     }
     else {
 	$seqlength = 100;
     }
     my $pknot = undef;
-    if (defined($args->{pknot}) and $args->{pknot} == 1) {
+    if (defined($args{pknot}) and $args{pknot} == 1) {
 	$pknot = 1;
     }
     
@@ -225,37 +227,24 @@ sub Make_Cloud {
     my $db = new PRFdb(config => $config);
     my ($mfe_min_value, $mfe_max_value);
     if ($species eq 'all') {
-	$mfe_min_value = $db->MySelect({statement => qq/SELECT min(mfe) FROM mfe/, type => 'single'});
-	$mfe_max_value = $db->MySelect({statement => qq/SELECT max(mfe) FROM mfe/, type => 'single'});
+	$mfe_min_value = $db->MySelect(statement => qq/SELECT min(mfe) FROM mfe/, type => 'single');
+	$mfe_max_value = $db->MySelect(statement => qq/SELECT max(mfe) FROM mfe/, type => 'single');
     }
     else {
-	$mfe_min_value = $db->MySelect({statement => qq/SELECT min(mfe) FROM mfe WHERE species = '$species'/, type => 'single'});
-	$mfe_max_value = $db->MySelect({statement => qq/SELECT max(mfe) FROM mfe WHERE species = '$species'/, type => 'single'});
+	$mfe_min_value = $db->MySelect(statement => qq/SELECT min(mfe) FROM mfe WHERE species = '$species'/, type => 'single');
+	$mfe_max_value = $db->MySelect(statement => qq/SELECT max(mfe) FROM mfe WHERE species = '$species'/, type => 'single');
     }
     $mfe_min_value -= 3.0;
     $mfe_max_value += 3.0;
     my $z_min_value = -10;
     my $z_max_value = 5;
-    $graph->set(bgclr => 'white',
-		x_min_value => $mfe_min_value,
-		x_max_value => $mfe_max_value,
-		x_ticks => 1,
-		x_label => 'MFE',
-		x_labels_vertical => 1,
-		x_label_skip => 0,
-		x_number_format => "%.1f",
-		x_tick_number => 20,
-		x_all_ticks => 1,
-		y_min_value => $z_min_value,
-		y_max_value => $z_max_value,
-		y_ticks => 1,
-		y_label => 'Zscore',
-		y_label_skip => 0,
-		y_number_format => "%.2f",
-		y_tick_number => 20,
-		y_all_ticks => 1,
-		dclrs => ['black','black'],
-		marker_size => 0,);
+    $graph->set(bgclr => 'white', x_min_value => $mfe_min_value, x_max_value => $mfe_max_value,
+		x_ticks => 1, x_label => 'MFE', x_labels_vertical => 1,
+		x_label_skip => 0, x_number_format => "%.1f", x_tick_number => 20,
+		x_all_ticks => 1, y_min_value => $z_min_value, y_max_value => $z_max_value,
+		y_ticks => 1, y_label => 'Zscore', y_label_skip => 0,
+		y_number_format => "%.2f", y_tick_number => 20, y_all_ticks => 1,
+		dclrs => ['black','black'], marker_size => 0,);
     $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -517,14 +506,14 @@ sub Make_Cloud {
 
 sub Make_Overlay {
     my $me = shift;
-    my $args = shift;
-    my $species = $args->{species};
-    my $data = $args->{points};
-    my $filename = $args->{filename};
-    my $map_filename = $args->{map};
-    my $url = $args->{url};
-    my $accession = $args->{accession};
-    my $inputstring = $args->{inputstring};
+    my %args = @_;
+    my $species = $args{species};
+    my $data = $args{points};
+    my $filename = $args{filename};
+    my $map_filename = $args{map};
+    my $url = $args{url};
+    my $accession = $args{accession};
+    my $inputstring = $args{inputstring};
     
     my $graph = new GD::Graph::points('800','800');
     my $db = new PRFdb(config => $config);
@@ -534,26 +523,13 @@ sub Make_Overlay {
     $mfe_max_value += 3.0;
     my $z_min_value = -10;
     my $z_max_value = 5;
-    $graph->set(transparent => 1,
-		x_min_value => $mfe_min_value,
-		x_max_value => $mfe_max_value,
-		x_ticks => 1,
-		x_label => 'MFE',
-		x_labels_vertical => 1,
-		x_label_skip => 0,
-		x_number_format => "%.1f",
-		x_tick_number => 20,
-		x_all_ticks => 1,
-		y_min_value => $z_min_value,
-		y_max_value => $z_max_value,
-		y_ticks => 1,
-		y_label => 'Zscore',
-		y_label_skip => 0,
-		y_number_format => "%.2f",
-		y_tick_number => 20,
-		y_all_ticks => 1,
-		dclrs => ['black','black'],
-		marker_size => 0,);
+    $graph->set(transparent => 1,x_min_value => $mfe_min_value, x_max_value => $mfe_max_value,
+		x_ticks => 1, x_label => 'MFE', x_labels_vertical => 1,
+		x_label_skip => 0, x_number_format => "%.1f", x_tick_number => 20,
+		x_all_ticks => 1, y_min_value => $z_min_value, y_max_value => $z_max_value,
+		y_ticks => 1, y_label => 'Zscore', y_label_skip => 0,
+		y_number_format => "%.2f", y_tick_number => 20, y_all_ticks => 1,
+		dclrs => ['black','black'], marker_size => 0,);
     $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -616,17 +592,11 @@ sub Make_SlipBars {
     }
     my @data = (\@keys, \@values);
     my $bargraph = new GD::Graph::bars(700,400);
-    $bargraph->set(x_label => 'slipsite',
-		   y_label => 'number',
-		   title => 'How many of each slipsite',
-#	dclrs => [ qw($color_string) ],
-		   dclrs => [ qw(blue black red green) ],
-		   cycle_clrs => 1,
-		   dclrs => \@colors,
-		   show_values => 1,
-		   values_vertical => 1,
-		   x_labels_vertical => 1,
+    $bargraph->set(x_label => 'slipsite', y_label => 'number', title => 'How many of each slipsite',
+		   dclrs => [ qw(blue black red green) ], cycle_clrs => 1, dclrs => \@colors,
+		   show_values => 1, values_vertical => 1, x_labels_vertical => 1,
 		   y_max_value => $values[0],);
+    #	dclrs => [ qw($color_string) ],
     $bargraph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $bargraph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $bargraph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -700,18 +670,12 @@ sub Make_Landscape {
     }
     my @mfe_data = (\@axis_x, \@nupack_y, \@pknots_y, \@vienna_y, \@m_nupack, \@m_pknots, \@m_vienna);
     my $width = $end_spot;
-    my $graph = new GD::Graph::mixed($width,400);
-    $graph->set(bgclr => 'white',
-		x_label => 'Distance on ORF',
-		y_label => 'kcal/mol',
-		y_label_skip => 2,
-		y_number_format => "%.2f",
-		x_labels_vertical => 1,
-		x_label_skip => 100,
-		line_width => 2,
-		dclrs => [qw(blue red green blue red green)],
-		default_type => 'lines',
-		types => [qw(lines lines lines lines lines lines)],) or die $graph->error;
+    my $height = 400;
+    my $graph = new GD::Graph::mixed($width,$height);
+    $graph->set(bgclr => 'white', x_label => 'Distance on ORF', y_label => 'kcal/mol',
+		y_label_skip => 2, y_number_format => "%.2f", x_labels_vertical => 1,
+		x_label_skip => 100, line_width => 2, dclrs => [qw(blue red green blue red green)],
+		default_type => 'lines', types => [qw(lines lines lines lines lines lines)],) or die $graph->error;
     $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -748,6 +712,8 @@ sub Make_Landscape {
 	mean_pknots => $mean_pknots,
 	mean_nupack => $mean_nupack,
 	mean_vienna => $mean_vienna,
+	height => $height,
+	width => $width,
     };
     return ($ret);
 }
@@ -844,17 +810,10 @@ sub Make_Distribution {
     
     my $graph = GD::Graph::mixed->new($graph_x_size, $graph_y_size);
     $graph->set_legend("Rand. MFEs", "Normal Dist.", "Actual MFE", "Mean MFE");
-    $graph->set(bgclr => 'white',
-		types => [qw(bars lines lines lines)],
-		x_label => 'kcal/mol',
-		y_label => 'p(x)',
-		y_label_skip => 2,
-		y_number_format => "%.2f",
-		x_labels_vertical => 1,
-		x_label_skip => 1,
-		line_width => 3,
-		dclrs => [qw(blue red green black)],
-		borderclrs => [qw(black)]) or die $graph->error;
+    $graph->set(bgclr => 'white', types => [qw(bars lines lines lines)], x_label => 'kcal/mol',
+		y_label => 'p(x)', y_label_skip => 2, y_number_format => "%.2f",
+		x_labels_vertical => 1, x_label_skip => 1, line_width => 3,
+		dclrs => [qw(blue red green black)], borderclrs => [qw(black)]) or die $graph->error;
     
     $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -1614,11 +1573,11 @@ sub Get_PPCC {
 
 sub Picture_Filename {
     my $me = shift;
-    my $args = shift;
-    my $type = $args->{type};
-    my $url = $args->{url};
-    my $species = $args->{species};
-    my $suffix = $args->{suffix};
+    my %args = @_;
+    my $type = $args{type};
+    my $url = $args{url};
+    my $species = $args{species};
+    my $suffix = $args{suffix};
     if ($type eq 'extension_percent') {
 	return(qq"images/cloud/$species/extension-percent.png");
     }

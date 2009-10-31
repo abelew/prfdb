@@ -1,6 +1,6 @@
-% my $cfeynman_pic = new PRFGraph({config => $config, mfe_id => $mfeid, accession => $accession});
-% my $cfeynman_url = $cfeynman_pic->Picture_Filename({type=> 'cfeynman', url => 'url',});
-% my $cfeynman_output_filename = $cfeynman_pic->Picture_Filename({type => 'cfeynman',});
+% my $cfeynman_pic = new PRFGraph(config => $config, mfe_id => $mfeid, accession => $accession);
+% my $cfeynman_url = $cfeynman_pic->Picture_Filename(type=> 'cfeynman', url => 'url',);
+% my $cfeynman_output_filename = $cfeynman_pic->Picture_Filename(type => 'cfeynman',);
 % my $cfeynman_dimensions = {};
 % if (!-r $cfeynman_output_filename) {
 %    $cfeynman_dimensions = $cfeynman_pic->Make_CFeynman();

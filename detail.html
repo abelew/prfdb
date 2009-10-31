@@ -63,7 +63,7 @@ $structure->[8]
     $slipstart = '';
   }
   my $acc_slip = qq"$accession-$slipstart";
-  my $feynman_pic = new PRFGraph({config=> $config, mfe_id => $mfe_id, accession => $accession});
+  my $feynman_pic = new PRFGraph(config=> $config, mfe_id => $mfe_id, accession => $accession);
   $information->{feynman_url} = $feynman_pic->Picture_Filename({type=> 'feynman', url => 'url',});
   my $feynman_output_filename = $feynman_pic->Picture_Filename({type => 'feynman', });
   my $feynman_dimensions = {};
@@ -77,11 +77,11 @@ $structure->[8]
     my $mfe_values = $boot->[0];
     $mfe_values =~ s/^\s+//g;
     my @mfe_values_array = split(/\s+/, $mfe_values);
-    my $chart = new PRFGraph({config => $config, real_mfe => $information->{mfe},
-			   list_data => \@mfe_values_array, accession  => $acc_slip, mfe_id => $mfe_id,});
+    my $chart = new PRFGraph(config => $config, real_mfe => $information->{mfe},
+			   list_data => \@mfe_values_array, accession  => $acc_slip, mfe_id => $mfe_id,);
     my $ppcc_values = $chart->Get_PPCC();
-    my $filename = $chart->Picture_Filename({type => 'distribution',});
-    my $pre_charturl = $chart->Picture_Filename({type => 'distribution', url => 'url',});
+    my $filename = $chart->Picture_Filename(type => 'distribution',);
+    my $pre_charturl = $chart->Picture_Filename(type => 'distribution', url => 'url',);
     $information->{charturl} = $pre_charturl;
     if (!-r $filename) {
       $chart = $chart->Make_Distribution();
@@ -162,7 +162,7 @@ $num_algos++ if ($config->{do_pknots} == 1);
 $num_algos++ if ($config->{do_nupack} == 1);
 $num_algos++ if ($config->{do_hotknots} == 1);
 my $num_expected_mfes = scalar(@{$config->{seqlength}}) * $num_algos;
-my $num_have = $db->MySelect({statement => qq/SELECT count(id) FROM mfe WHERE accession = '$accession' AND start = '$slipstart'/, type => 'single'});
+my $num_have = $db->MySelect(statement => qq/SELECT count(id) FROM mfe WHERE accession = '$accession' AND start = '$slipstart'/, type => 'single');
 $db->Add_Webqueue($information->{genome_id}) if ($num_have < $num_expected_mfes);
 </%init>
 

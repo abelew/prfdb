@@ -124,20 +124,7 @@ if (defined($config->{accession})) {
 if (defined($config->{import_accession})) {
     my $accession = $config->{import_accession};
     $db->Import_CDS($accession);
-    $state->{queue_id} = 0;
-    ## Dumb hack lives on
-    $state->{accession} = $accession;
-    $state->{genome_id} = $db->Get_GenomeId_From_Accession($accession);
-    if (defined($config->{startpos})) {
-	Gather($state, $config->{startpos});
-    }
-    elsif (defined($config->{startmotif})) {
-	Gather($state, $config->{startmotif});
-    }
-    else {
-	Gather($state);
-    }
-    ## Once the prf_daemon finishes this accession it will start reading the queue...
+    exit(0);
 }  ## Endif used the import_accession arg
 if (defined($config->{input_fasta})) {
     my $queue_ids;
@@ -182,15 +169,29 @@ until (defined($state->{time_to_die})) {
 sub Read_Accessions {
     my $accession_file = shift;
     my $startpos = shift;
+    my $retries = 10;
     open(AC, "<$accession_file") or die "Could not open the file of accessions $!";
-    while (my $accession = <AC>) {
-	chomp $accession;
-	print "Importing Accession: $accession\n";
-	if (defined($startpos)) {
-	    $db->Import_CDS($accession, $startpos);
-	} 
-	else {
-	    $db->Import_CDS($accession);
+    OUTER: while (my $accession = <AC>) {
+	sleep(2);
+	my $attempts = 0;
+	while ($attempts < $retries) {
+	    if ($attempts >= $retries) {
+		die("Unable to acquire sequence for $accession after $retries attempts.");
+	    }
+	    chomp $accession;
+	    print "Importing Accession: $accession\n";
+	    my $seq;
+	    if (defined($startpos)) {
+		$seq = $db->Import_CDS($accession, $startpos);
+	    } else {
+		$seq = $db->Import_CDS($accession);
+	    }
+	    if ($seq =~ /^Error/) {
+		sleep(30);
+		$attempts++;
+	    } else {
+		next OUTER;
+	    }
 	}
     }
     close(AC);
@@ -330,6 +331,12 @@ sub PRF_Gatherer {
 	  my $update_string = qq(UPDATE mfe SET compare_mfes = '$comparison_string' WHERE accession = '$state->{accession}' AND seqlength = '$state->{seqlength}' AND start = '$slipsite_start');
 	  $db->MyExecute($update_string);
       }
+      if ($config->{do_agree}) {
+	  my $agree = new Agree(nupack_id => $nupack_mfe_id, pknots_id => $pknots_mfe_id, hotknots_id => $hotknots_mfe_id);
+	  my $agree_datum = agree->Do();
+	  $db->Put_Agree(accession => $state->{accession}, start => $slipsite_start, length => $state->{seqlength}, agree => $agree_datum);
+	  undef $agree;
+      }
       if ($config->{do_boot}) {
           my $tmp_nupack_mfe_id = $db->MySelect(statement => qq"SELECT id FROM mfe WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'nupack'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
           my $tmp_pknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM mfe WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'pknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
@@ -355,8 +362,11 @@ sub PRF_Gatherer {
           my @algos = keys(%{$config->{boot_mfe_algorithms}});
           my $boot_folds;
           foreach my $method (@algos) {
-              $boot_folds = $db->Get_Num_Bootfolds($state->{species}, $state->{genome_id}, $slipsite_start,
-						   $state->{seqlength}, $method);
+              $boot_folds = $db->Get_Num_Bootfolds(species => $state->{species},
+						   genome_id =>$state->{genome_id},
+						   start => $slipsite_start,
+						   seqlength => $state->{seqlength},
+						   method => $method,);
               print "$current has $boot_folds randomizations for method: $method\n" if (defined($config->{debug}));
               if (!defined($boot_folds) or $boot_folds == 0) {
                   my $bootlaces = $boot->Go($method);
@@ -844,7 +854,7 @@ sub Maintenance {
 	    foreach my $species (@{$config->{index_species}}) {
 		foreach my $slip (@slipsites) {
 		    print "Generating picture for $species slipsite: $slip knotted: $pk seqlength: $seqlength\n";
-		    my $cloud = new PRFGraph({config => $config});
+		    my $cloud = new PRFGraph(config => $config);
 		    my $pknots_only = undef;
 		    my $boot_table = "boot_$species";
 		    my $suffix = undef;
@@ -858,13 +868,13 @@ sub Maintenance {
 			$suffix .= "-${slip}";
 		    }
 		    $suffix .= "-${seqlength}";
-		    my $cloud_output_filename = $cloud->Picture_Filename({type => 'cloud',
-									  species => $species,
-									  suffix => $suffix,});
-		    my $cloud_url = $cloud->Picture_Filename({type => 'cloud',
-							      species => $species,
-							      url => 'url',
-							      suffix => $suffix,});
+		    my $cloud_output_filename = $cloud->Picture_Filename(type => 'cloud',
+									 species => $species,
+									 suffix => $suffix,);
+		    my $cloud_url = $cloud->Picture_Filename(type => 'cloud',
+							     species => $species,
+							     url => 'url',
+							     suffix => $suffix,);
 		    $cloud_url = $config->{base} . '/' . $cloud_url;
 		    my ($points_stmt, $averages_stmt, $points, $averages);
 		    if (!-f $cloud_output_filename) {
@@ -880,9 +890,9 @@ sub Maintenance {
 			$points = $db->MySelect(statement => $points_stmt, vars => [$species]);
 			$averages = $db->MySelect(statement => $averages_stmt, vars => [$species], type => 'row',);
 			my $cloud_data;
-			my $args;
+			my %args;
 			if ($pk eq 'yes') {
-			    $args = {
+			    %args = (
 				seqlength => $seqlength,
 				species => $species,
 				points => $points,
@@ -891,9 +901,9 @@ sub Maintenance {
 				url => $config->{base},
 				pknot => 1,
 				slipsites => $slip,
-			    };
+			    );
 			} else {
-			    $args = {
+			    %args = (
 				seqlength => $seqlength,
 				species => $species,
 				points => $points,
@@ -901,16 +911,16 @@ sub Maintenance {
 				filename => $cloud_output_filename,
 				url => $config->{base},
 				slipsites => $slip,
-			    };
+			    );
 			}
-			$cloud_data = $cloud->Make_Cloud($args);
+			$cloud_data = $cloud->Make_Cloud(%args);
 		    }
 		        
 		    my $map_file = $cloud_output_filename . '.map';
-		    my $extension_percent_filename = $cloud->Picture_Filename({type => 'extension_percent',
-									       species => $species,});
-		    my $extension_codons_filename = $cloud->Picture_Filename({type=> 'extension_codons',
-									      species => $species,});
+		    my $extension_percent_filename = $cloud->Picture_Filename(type => 'extension_percent',
+									      species => $species,);
+		    my $extension_codons_filename = $cloud->Picture_Filename(type=> 'extension_codons',
+									     species => $species,);
 		    my $percent_map_file = $extension_percent_filename . '.map';
 		    my $codons_map_file = $extension_codons_filename . '.map';
 

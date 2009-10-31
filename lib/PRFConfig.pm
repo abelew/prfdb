@@ -72,6 +72,7 @@ sub new {
     $me->{database_user} = 'guest' if (!defined($me->{database_user}));
     $me->{debug} = undef if (!defined($me->{debug}));
     $me->{dirvar} = undef if (!defined($me->{dirvar}));
+    $me->{do_agree} = 1 if (!defined($me->{do_agree}));
     $me->{do_comparison} = 1 if (!defined($me->{do_comparison}));
     $me->{do_nupack} = 1 if (!defined($me->{do_nupack}));
     $me->{do_pknots} = 1 if (!defined($me->{do_pknots}));

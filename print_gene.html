@@ -50,12 +50,12 @@
 </table>
 
 <p>The minimum free energy 'landscape' for <% $accession %>, black vertical lines delineate the positions of slippery heptamers, the horizontal green line shows the mean Vienna RNAfold value over the ORF, the horizontal red line shows the mean pknots value over the ORF, the horzontal blue line shows the mean nupack value.  green, red, and blue lines delineate the MFE over a sliding 105bp window.</p>
-<& print_landscape, accession => "$accession", species => "$species" &>
+<& print_landscape.html, accession => "$accession", species => "$species" &>
 </form>   </tr>
 
 <%init>
  my $statement = "SELECT species,genename FROM genome WHERE accession = '$accession'";
- my $fun = $db->MySelect({statement =>$statement});
+ my $fun = $db->MySelect(statement =>$statement);
  my $species = $fun->[0][0];
  my $genename = $fun->[0][1];
 </%init>

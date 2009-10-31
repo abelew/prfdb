@@ -1,0 +1,16 @@
+<select name="<% $select_name %>">
+% if ($skip_species ne 'all') {
+ <option value="all">all</option>
+% }
+% my $index_species = $config->{index_species};
+% foreach my $spec (@{$index_species}) {
+%  if ($skip_species ne $spec) {
+ <option value="<% $spec %>"><% HTMLMisc::Make_Species($spec) %></option>
+%   }
+%  }
+</select>
+
+<%args>
+  $select_name => "species"
+  $skip_species => 0
+</%args>
