@@ -170,7 +170,6 @@ until (defined($state->{time_to_die})) {
     $state->{queue_table} = $ids->{queue_table};
     $state->{queue_id}  = $ids->{queue_id};
     $state->{genome_id} = $ids->{genome_id};
-    
     if (defined($state->{genome_id})) {
 	Gather($state);
     } ## End if have an entry in the queue
@@ -204,6 +203,8 @@ sub Gather {
     my $ref = $db->Id_to_AccessionSpecies($state->{genome_id});
     $state->{accession} = $ref->{accession};
     $state->{species} = $ref->{species};
+    $db->Create_Landscape("landscape_$state->{species}") unless($me->Tablep("landscape_$state->{species}"));
+    $db->Create_Landscape("boot_$state->{species}") unless($me->Tablep("boot_$state->{species}"));    
     my $message = "qid:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
     print "Working with: $message";
     
