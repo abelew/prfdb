@@ -55,7 +55,7 @@
 
 <%init>
  my $statement = "SELECT species,genename FROM genome WHERE accession = '$accession'";
- my $fun = $db->MySelect({statement =>$statement});
+ my $fun = $db->MySelect(statement =>$statement);
  my $species = $fun->[0][0];
  my $genename = $fun->[0][1];
 </%init>

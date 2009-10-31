@@ -18,7 +18,7 @@ if ($short) {
   } else {
     $query_statement .= qq"(species regexp '$query' OR genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')";
   }
-  $entries = $db->MySelect({statement => $query_statement, type => 'hash', descriptor => 1,});
+  $entries = $db->MySelect(statement => $query_statement, type => 'hash', descriptor => 1,);
 }
 my @entries_keys = ();
 my $entries_count = 0;
@@ -26,7 +26,7 @@ foreach my $c (keys %{$entries}) {
   push(@entries_keys, $c);
   $entries_count++;
   my $slip_stmt = qq"SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?";
-  my $slipsite_structure_count = $db->MySelect({statement => $slip_stmt, vars => [$entries->{$c}->{accession}], type => 'row',});
+  my $slipsite_structure_count = $db->MySelect(statement => $slip_stmt, vars => [$entries->{$c}->{accession}], type => 'row',);
   $entries->{$c}->{slipsite_count} = $slipsite_structure_count->[0];
   $entries->{$c}->{structure_count} = $slipsite_structure_count->[1];
 } ## End foreach

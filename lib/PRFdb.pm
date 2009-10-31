@@ -1445,11 +1445,12 @@ sub Get_Num_RNAfolds {
 
 sub Get_Num_Bootfolds {
     my $me = shift;
-    my $species = shift;
-    my $genome_id = shift;
-    my $start = shift;
-    my $seqlength = shift;
-    my $method = shift;
+    my %args = @_;
+    my $species = $args{species};
+    my $genome_id = $args{genome_id};
+    my $start = $args{start};
+    my $seqlength = $args{seqlength};
+    my $method = $args{method};
     my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
     my $return = {};
     my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? and start = ? and seqlength = ? and mfe_method = ?/;

@@ -4,8 +4,8 @@
 <a href="<% $url %"><img src="<% $url %>" title="<% $title %>" alt="<% $title %>"></a>
 % }
 <%init>
- my $pic = new PRFGraph({config=>$config, accession => $accession});
- my $filename = $pic->Picture_Filename({type => 'landscape',});
+ my $pic = new PRFGraph(config=>$config, accession => $accession);
+ my $filename = $pic->Picture_Filename(type => 'landscape',);
  my $picture_status = 1;
  my $url;
  my $height;
@@ -22,7 +22,7 @@
  else {
   use Image::Size;
   ($width, $height) = imgsize($filename);
-  $url = $pic->Picture_Filename({type => 'landscape',url=>'url'});
+  $url = $pic->Picture_Filename(type => 'landscape',url=>'url');
  }
  if (!defined($width) or $width == 0) {
 	$width = undef;

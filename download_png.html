@@ -1,7 +1,7 @@
 <%init>
  $r->content_type('application/octet-stream');
- my $pic = new PRFGraph({config => $config, accession => $accession});
- my $filename = $pic->Picture_Filename({type => 'feynman',});
+ my $pic = new PRFGraph(config => $config, accession => $accession);
+ my $filename = $pic->Picture_Filename(type => 'feynman',);
  $filename =~ s/\.svg//g;
  $filename .= "-$mfeid.svg";
  my $output_filename = qq"$accession-$mfeid.$format";

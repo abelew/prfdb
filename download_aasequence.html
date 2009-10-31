@@ -1,7 +1,7 @@
 <%init>
  $r->content_type('application/octet-stream');
  my $stmt = qq"SELECT comment,mrna_seq FROM genome WHERE accession = ?";
- my $seq = $db->MySelect({statement => $stmt, vars => [$accession], type => 'row'});
+ my $seq = $db->MySelect(statement => $stmt, vars => [$accession], type => 'row');
  use SeqMisc;
  my @tmp = split(//, $seq->[1]);
  my $s = '';

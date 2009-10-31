@@ -42,8 +42,8 @@ Below is the same with the number of codons on the y axis.
 </center>
 
 <%init>
- my $pic = new PRFGraph({config=>$config,});
- my $test = $pic->Picture_Filename({type => 'cloud', species => $species, suffix => "-AAAAAAA-$seqlength",});
+ my $pic = new PRFGraph(config=>$config,);
+ my $test = $pic->Picture_Filename(type => 'cloud', species => $species, suffix => "-AAAAAAA-$seqlength",);
  if (!-f $test) {
 #  $m->comp('make_distribution.html', species => $species, slipsites => 'AAAAAAA', seqlength => 100);
  }

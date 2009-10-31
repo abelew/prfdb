@@ -63,7 +63,7 @@ sub tmp_fold {
   my $pairs = $mfe_info->{pairs};
   my $sequence = $mfe_info->{sequence};
   my $pic_output = "$config->{base}/folds/$new_filename.svg";
-  my $feynman_pic = new PRFGraph({sequence=>$sequence, parsed => $parsed, output => $output});
+  my $feynman_pic = new PRFGraph(sequence=>$sequence, parsed => $parsed, output => $output);
   my $dimensions = $feynman_pic->Make_Feynman($pic_output, 0);
   open (HANDLE, ">$input_path.html") or die("Cannot open HANDLE $new_filename.html $!");
   print HANDLE qq(The minimum free using $function energy is: $mfe<br>
