@@ -171,6 +171,32 @@ sub Read_Accessions {
     my $accession_file = shift;
     my $startpos = shift;
     my $retries = 10;
+    ## Rewrite the list of things to do removing the ones which are done
+    system("touch ${accession_file}.done");
+    open(D, "<${accession_file}.done") or die "Could not open the done file.";
+    my @done_list = ();
+    while (my $line = <D>) {
+	chomp $line;
+	push(@done_list, $line);
+    }
+    close(D);
+    open(A, ">${accession_file}.new") or die "Could not open the accession file.";
+    open(AA, "<$accession_file") or die "Could niot open the accession file.";
+  AA: while (my $line = <AA>) {
+      chomp $line;
+      my $num_left = scalar(@done_list);
+      foreach my $test (@done_list) {
+	  if ($test eq $line) {
+	      next AA;
+	  }
+      }
+      print A "$line\n";
+    }
+    close(A);
+    close(AA);
+    system("rm $accession_file.done");
+    system("mv ${accession_file}.new $accession_file");
+    open(DONE, ">${accession_file}.done") or die "Could not open the done file.";
     open(AC, "<$accession_file") or die "Could not open the file of accessions $!";
     OUTER: while (my $accession = <AC>) {
 	sleep(2);

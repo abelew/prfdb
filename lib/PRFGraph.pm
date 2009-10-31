@@ -17,7 +17,7 @@ sub new {
 	$config = $arg{config};
     }
     my $me = bless {}, $class;
-    foreach my $key (%{$arg}) {
+    foreach my $key (%arg) {
 	$me->{$key} = $arg{$key} if (defined($arg{$key}));
     }
     return ($me);
