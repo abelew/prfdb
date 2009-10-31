@@ -4,19 +4,13 @@ use PRFdb;
 sub new {
     my ($class, %arg) = @_;
     my $me = bless {
-	nupack_id => $arg{nupack_id},
-	pknots_id => $arg{pknots_id},
-	hotknots_id => $arg{hotknots_id},
-	config => $arg{config},
     }, $class;
 }
 
 sub Do {
     my $me = shift;
     my %args = @_;
-    my $stmt = qq"SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ? or id = ? or id = ?";
-    my $info = $db->MySelect(statement => $stmt, vars => [$me->{pknots_id}, $me->{nupack_id}, $me->{hotknots_id}],);
-
+    my $info = $args{info},
     my $sequence = $info->[0]->[0];
     $slipsite = $info->[0]->[1];
     my (@parsed, @pkout, @algorithm);

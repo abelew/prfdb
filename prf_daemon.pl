@@ -12,6 +12,7 @@ use Bootlace;
 use Overlap;
 use SeqMisc;
 use PRFBlast;
+use Agree;
 $SIG{INT} = 'CLEANUP';
 $SIG{BUS} = 'CLEANUP';
 $SIG{SEGV} = 'CLEANUP';
@@ -332,8 +333,10 @@ sub PRF_Gatherer {
 	  $db->MyExecute($update_string);
       }
       if ($config->{do_agree}) {
-	  my $agree = new Agree(nupack_id => $nupack_mfe_id, pknots_id => $pknots_mfe_id, hotknots_id => $hotknots_mfe_id);
-	  my $agree_datum = agree->Do();
+	  my $stmt = qq"SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ? or id = ? or id = ?";
+	  my $info = $db->MySelect(statement => $stmt, vars => [$pknots_mfe_id, $nupack_mfe_id, $hotknots_mfe_id],);
+	  my $agree = new Agree();
+	  my $agree_datum = $agree->Do(info => $info);
 	  $db->Put_Agree(accession => $state->{accession}, start => $slipsite_start, length => $state->{seqlength}, agree => $agree_datum);
 	  undef $agree;
       }
