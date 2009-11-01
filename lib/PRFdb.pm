@@ -1959,7 +1959,14 @@ sub Check_Defined {
 sub Tablep {
     my $me = shift;
     my $table = shift;
-    my $statement = qq(SHOW TABLES LIKE '$table');
+    if ($table =~ /virus/) {
+	if ($table =~ /^boot_/) {
+	    $table = 'boot_virus';
+	} elsif ($table =~ /^landscape_/) {
+	    $table = 'landscape_virus';
+	}
+    }
+    my $statement = qq"SHOW TABLES LIKE '$table'";
     my $info = $me->MySelect($statement);
     my $answer = scalar(@{$info});
     return (scalar(@{$info}));
