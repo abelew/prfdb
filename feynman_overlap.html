@@ -4,9 +4,9 @@
 % foreach my $id (@{$mfe_ids}) {
 %  push(@ids, $id->[0]);
 % }
-% my $overlap_pic = new PRFGraph({config=>$config, ids => \@ids, mfe_id=> "$start-$seqlength", start => $start, accession => $accession});
-% my $overlap_url = $overlap_pic->Picture_Filename({type => 'ofeynman', url => 'url',});
-% my $overlap_output_filename = $overlap_pic->Picture_Filename({type => 'ofeynman',});
+% my $overlap_pic = new PRFGraph(config=>$config, ids => \@ids, mfe_id=> "$start-$seqlength", start => $start, accession => $accession);
+% my $overlap_url = $overlap_pic->Picture_Filename(type => 'ofeynman', url => 'url',);
+% my $overlap_output_filename = $overlap_pic->Picture_Filename(type => 'ofeynman',);
 % my $ofeynman_dimensions = {};
 % if (!-r $overlap_output_filename) {
 %  $ofeynman_dimensions = $overlap_pic->Make_OFeynman();
@@ -46,7 +46,7 @@ if something goes wrong, darkslategray<br>
      </td></tr>
       <tr>
         <td text-align="right"><span style="whitespace: nowrap">
-	  <embed id="cfeynman" src="<% $overlap_url %>" align="bottom" width="<% $overlap_width %>" height="<% $overlap_height %>" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
+	  <embed id="ofeynman" src="<% $overlap_url %>" align="bottom" width="<% $overlap_width %>" height="<% $overlap_height %>" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
 	  </font>
         </span>
         </td>

@@ -84,3 +84,41 @@ h3.subTitle {
   font-weight : bold;
   color : #939393;
 }
+
+KBD { font-weight: bold}
+
+/*PRE { background: #e0ffe0; color:black;}*/
+PRE { background: #f0fff0; color:black;}
+
+PRE.cmd { background: #fcf; color:black;}
+
+PRE.samp { background: #fff0f0; color:black;}
+
+.screen {background : #fff; color:#600; font-size:smaller;
+border : solid #333 1px;
+ padding : 3px;
+font-family : "Lucida Console", Courier, monospace }
+
+address { font-style: normal; margin-left:0.5em; margin-top:0.6em; } 
+address { text-align:left;}
+.signed { font-family : "Lucida Handwriting",  Western, cursive; }
+
+.langcode  { background: #fff none; color: #030; border: solid 1px #033;
+  padding-left:0.1em;  padding-right:0.1em;
+  font-family: "Courier New", "Lucida Console", Courier, monospace;}
+
+pre, code, samp, kbd, tt
+  { font-family : "Courier New", monospace; 
+  font-style : normal; }
+
+code, samp, kbd, tt {
+  font-size: 100%; }
+
+h1 code, h2 code, h3 code, h4 code
+  { font-weight: bold; }
+
+.numeric, .num
+  { font-family : "Courier New", monospace;
+    text-align : right; }
+
+pre { white-space : pre; }

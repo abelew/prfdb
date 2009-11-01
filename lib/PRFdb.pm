@@ -6,6 +6,8 @@ use SeqMisc;
 use File::Temp qw / tmpnam /;
 use Fcntl ':flock';    # import LOCK_* constants
 use Bio::DB::Universal;
+use Bio::Root::Exception;
+use Error qw(:try);
 our @ISA = qw(Exporter);
 our @EXPORT = qw(AddOpen RemoveFile);    # Symbols to be exported by default
 
@@ -867,6 +869,13 @@ sub Grab_Queue {
     }
 }
 
+sub Get_Import_Queue {
+    my $me = shift;
+    my $stmt = qq"SELECT accession FROM import_queue ORDER BY RAND() LIMIT 1";
+    my $id = $me->MySelect(statement => $stmt, type => 'single');
+    return($id);
+}
+
 sub Get_Queue {
     my $me = shift;
     my $queue_name = shift;
@@ -882,9 +891,13 @@ sub Get_Queue {
 	$me->Reset_Queue($table, 'complete');
     }
     ## This id is the same id which uniquely identifies a sequence in the genome database
-#    my $single_id = qq"SELECT id, genome_id FROM $table WHERE id = '51282'"; #checked_out = '0' LIMIT 1);
-    my $single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' ORDER BY RAND() LIMIT 1";
-    my $ids = $me->MySelect({statement => $single_id, type => 'row'});
+    my $single_id;
+    if (defined($config->{randomize_id})) {
+	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' ORDER BY RAND() LIMIT 1";
+    } else {
+	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' LIMIT 1";
+    }
+    my $ids = $me->MySelect(statement => $single_id, type => 'row');
     my $id = $ids->[0];
     my $genome_id = $ids->[1];
     if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
@@ -1216,7 +1229,17 @@ sub Import_CDS {
     my $startpos = shift;
     my $return = '';
     my $uni = new Bio::DB::Universal;
-    my $seq = $uni->get_Seq_by_id($accession);
+    my $seq;
+    try {
+	$seq = $uni->get_Seq_by_id($accession);
+    }
+    catch Bio::Root::Exception with {
+	my $err = shift;
+	return("Error $err");
+    };
+    if (!defined($seq)) {
+	return(undef);
+    }
     my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
     my ($protein_sequence, $orf_start, $orf_stop);
     my $binomial_species = $seq->species->binomial();
@@ -1429,11 +1452,12 @@ sub Get_Num_RNAfolds {
 
 sub Get_Num_Bootfolds {
     my $me = shift;
-    my $species = shift;
-    my $genome_id = shift;
-    my $start = shift;
-    my $seqlength = shift;
-    my $method = shift;
+    my %args = @_;
+    my $species = $args{species};
+    my $genome_id = $args{genome_id};
+    my $start = $args{start};
+    my $seqlength = $args{seqlength};
+    my $method = $args{method};
     my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
     my $return = {};
     my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? and start = ? and seqlength = ? and mfe_method = ?/;
@@ -1709,6 +1733,8 @@ sub Put_Agree {
     my $me = shift;
     my %args = @_;
     my $agree = $args{agree};
+    my $check = $me->MySelect(statement => "SELECT count(id) FROM agree WHERE accession = ? AND start = ? AND length = ?", vars => [$args{accession}, $args{start}, $args{length}], type => 'single');
+    return(undef) if ($check >= 1);
     my ($cp,$cf,$cl) = caller();
     my $stmt = qq"INSERT INTO agree (accession, start, length, all_agree, no_agree, n_alone, h_alone, p_alone, hplusn, nplusp, hplusp, hnp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
     my $rows = $me->MyExecute(statement => $stmt,
@@ -1940,7 +1966,14 @@ sub Check_Defined {
 sub Tablep {
     my $me = shift;
     my $table = shift;
-    my $statement = qq(SHOW TABLES LIKE '$table');
+    if ($table =~ /virus/) {
+	if ($table =~ /^boot_/) {
+	    $table = 'boot_virus';
+	} elsif ($table =~ /^landscape_/) {
+	    $table = 'landscape_virus';
+	}
+    }
+    my $statement = qq"SHOW TABLES LIKE '$table'";
     my $info = $me->MySelect($statement);
     my $answer = scalar(@{$info});
     return (scalar(@{$info}));
@@ -2092,6 +2125,17 @@ PRIMARY KEY (id)));
     $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl",});
 }
 
+sub Create_Import_Queue {
+    my $me = shift;
+    my $table = 'import_queue';
+    my $stmt = qq"CREATE TABLE $table (
+id $config->{sql_id},
+accession $config->{sql_accession},
+PRIMARY KEY (id))";
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement =>$stmt, caller => "$cp, $cf, $cl");
+}
+
 sub Create_Queue {
     my $me = shift;
     my $table = shift;
@@ -2206,6 +2250,7 @@ PRIMARY KEY(ip))\;
 sub Create_Landscape {
     my $me = shift;
     my $table = shift;
+    $table = 'landscape_virus' if ($table =~ /virus/);
     my $statement = qq\CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,
@@ -2234,6 +2279,7 @@ PRIMARY KEY(id))\;
 sub Create_Boot {
     my $me = shift;
     my $table = shift;
+    $table = 'boot_virus' if ($table =~ /virus/);
     my $statement = qq\CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,

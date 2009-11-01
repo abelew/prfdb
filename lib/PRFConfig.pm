@@ -72,6 +72,7 @@ sub new {
     $me->{database_user} = 'guest' if (!defined($me->{database_user}));
     $me->{debug} = undef if (!defined($me->{debug}));
     $me->{dirvar} = undef if (!defined($me->{dirvar}));
+    $me->{do_agree} = 1 if (!defined($me->{do_agree}));
     $me->{do_comparison} = 1 if (!defined($me->{do_comparison}));
     $me->{do_nupack} = 1 if (!defined($me->{do_nupack}));
     $me->{do_pknots} = 1 if (!defined($me->{do_pknots}));
@@ -101,7 +102,7 @@ sub new {
     $me->{graph_landscape_y_size} = 600 if (!defined($me->{graph_landscape_y_size}));
     $me->{graph_stem_colors} = "black blue red green purple orange brown darkslategray" if (!defined($me->{graph_stem_colors}));
     $me->{has_modperl} = 0 if (!defined($me->{has_modperl}));
-    $me->{index_species} = ['saccharomyces_cerevisiae', 'homo_sapiens', 'bos_taurus', 'danio_rerio', 'mus_musculus', 'rattus_norvegicus', 'xenopus_laevis', 'xenopus_tropicalis', 'saccharomyces_kudriavzevii', 'saccharomyces_castellii', 'saccharomyces_kluyveri', 'saccharomyces_bayanus', 'saccharomyces_paradoxus', 'schizosaccharomyces_pombe', 'saccharomyces_mikatae', 'caenorhabiditis_elegans', 'virus'] if (!defined($me->{index_species}));
+    $me->{index_species} = ['saccharomyces_cerevisiae', 'homo_sapiens', 'bos_taurus', 'danio_rerio', 'mus_musculus', 'rattus_norvegicus', 'xenopus_laevis', 'xenopus_tropicalis', 'saccharomyces_kudriavzevii', 'saccharomyces_castellii', 'saccharomyces_kluyveri', 'saccharomyces_bayanus', 'saccharomyces_paradoxus', 'schizosaccharomyces_pombe', 'saccharomyces_mikatae', 'caenorhabiditis_elegans', 'escherichia_coli', 'virus'] if (!defined($me->{index_species}));
     $me->{INCLUDE_PATH} = 'html/' if (!defined($me->{INCLUDE_PATH}));
     $me->{INTERPOLATE} = 1 if (!defined($me->{INTERPOLATE}));
     $me->{landscape_seqlength} = 105 if (!defined($me->{landscape_seqlength}));
@@ -121,6 +122,7 @@ sub new {
     $me->{pbs_template} = 'pbs_template' if (!defined($me->{pbs_template}));
     $me->{POST_CHOMP} = 1 if (!defined($me->{POST_CHOMP}));
     $me->{queue_table} = 'queue' if (!defined($me->{queue_table}));
+    $me->{randomize_id} = 1 if (!defined($me->{randomize_id}));
     $me->{seqlength} = [100,75,50] if (!defined($me->{seqlength}));
     $me->{slip_site_1} = '^n\{3\}$' if (!defined($me->{slip_site_1}));
     $me->{slip_site_2} = '^w\{3\}$' if (!defined($me->{slip_site_2}));
@@ -153,7 +155,6 @@ sub new {
     $me->{using_pbs} = 0 if (!defined($me->{using_pbs}));
     $me->{window_space} = 15 if (!defined($me->{window_space}));
     $me->{workdir} = 'work' if (!defined($me->{workdir}));
-
     my ($open, %data, $config_option);
     if (-r $me->{config_file}) {
 	$open = $me->{appconfig}->file($me->{config_file});
@@ -201,6 +202,7 @@ sub new {
 				'optimize:s' => \$conf{optimize},
 				'output' => \$conf{output},
 				'pknots:i' => \$conf{do_pknots},
+				'randomize' => \$conf{randomize_id},
 				'resetqueue' => \$conf{resetqueue},
 				'species:s' => \$conf{species},
 				'startmotif:s' => \$conf{startmotif},
@@ -208,6 +210,7 @@ sub new {
 				'stats' => \$conf{stats},
 				'utr:i' => \$conf{do_utr},
 				'workdir:s' => \$conf{workdir},
+				'zscore' => \$conf{zscore},
 				);
     foreach my $name (keys %conf_specification_temp) {
 	$conf_specification{$name} = $conf_specification_temp{$name};

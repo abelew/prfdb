@@ -1,0 +1,41 @@
+% if (defined($height)) {
+<a href="<% $url %>"><img src="<% $url %>" title="<% $title %>" alt="<% $title %>" height="<% $height %>" width="<% $width %>"></a>
+% } else {
+<a href="<% $url %"><img src="<% $url %>" title="<% $title %>" alt="<% $title %>"></a>
+% }
+<%init>
+ my $pic = new PRFGraph(config=>$config, accession => $accession);
+ my $filename = $pic->Picture_Filename(type => 'landscape',);
+ my $picture_status = 1;
+ my $url;
+ my $height;
+ my $width;
+ $picture_status = 1;
+ if (!-r $filename) {
+  $picture_status = $pic->Make_Landscape($species);
+  $height = $picture_status->{height};
+  $width = $picture_status->{width};
+ }
+ if (!defined($picture_status)) {
+  $url = undef;
+ }
+ else {
+  use Image::Size;
+  ($width, $height) = imgsize($filename);
+  $url = $pic->Picture_Filename(type => 'landscape',url=>'url');
+ }
+ if (!defined($width) or $width == 0) {
+	$width = undef;
+	$height = undef;
+ } else {
+   my $factor = 1200 / $width;
+   $width = 1200;
+   $height = sprintf("%.0f",$height * $factor, 1);
+ }
+ my $title = "MFE landscape for $accession from $species";
+</%init>
+
+<%args>
+ $accession => "SGDID:S0004310"
+ $species => "saccharomyces_cerevisiae"
+</%args>
