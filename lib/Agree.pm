@@ -14,7 +14,6 @@ sub Do {
     my $sequence = $info->[0]->[0];
     $slipsite = $info->[0]->[1];
     my (@parsed, @pkout, @algorithm);
-    my @seq = split(//, $sequence);
     foreach my $datum (@{$info}) {
 	push(@parsed, $datum->[2]);
 	push(@pkout, $datum->[3]);
@@ -25,8 +24,13 @@ sub Do {
     my $struct;
     LOOP: for my $c (0 .. 120) {  ## Grossly overshoot the number of basepairs
 	for my $d (0 .. $#pkout) {   ## The 3 or so algorithms available
-	    my @pktmp = split(/\s+/, $pkout[$d]);
-	    my @patmp = split(/\s+/, $parsed[$d]);
+	    my (@pktmp, @patmp);
+	    if (defined($pkout[$d])) {
+		@pktmp = split(/\s+/, $pkout[$d]);
+	    }
+	    if (defined($parsed[$d])) {
+		@patmp = split(/\s+/, $parsed[$d]);
+	    }
 	    next LOOP if (!defined($pktmp[$c]));
 	    $struct->{$c}->{$algorithm[$d]}->{partner} = $pktmp[$c];
 	    $patmp[$c] = '.' if (!defined($patmp[$c]));
