@@ -869,6 +869,13 @@ sub Grab_Queue {
     }
 }
 
+sub Get_Import_Queue {
+    my $me = shift;
+    my $stmt = qq"SELECT accession FROM import_queue ORDER BY RAND() LIMIT 1";
+    my $id = $me->MySelect(statement => $stmt, type => 'single');
+    return($id);
+}
+
 sub Get_Queue {
     my $me = shift;
     my $queue_name = shift;
@@ -890,7 +897,7 @@ sub Get_Queue {
     } else {
 	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' LIMIT 1";
     }
-    my $ids = $me->MySelect({statement => $single_id, type => 'row'});
+    my $ids = $me->MySelect(statement => $single_id, type => 'row');
     my $id = $ids->[0];
     my $genome_id = $ids->[1];
     if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
@@ -2110,6 +2117,17 @@ lastupdate $config->{sql_timestamp},
 PRIMARY KEY (id)));
     my ($cp, $cf, $cl) = caller();
     $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl",});
+}
+
+sub Create_Import_Queue {
+    my $me = shift;
+    my $table = 'import_queue';
+    my $stmt = qq"CREATE TABLE $table (
+id $config->{sql_id},
+accession $config->{sql_accession},
+PRIMARY KEY (id))";
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement =>$stmt, caller => "$cp, $cf, $cl");
 }
 
 sub Create_Queue {

@@ -159,6 +159,13 @@ until (defined($state->{time_to_die})) {
 	$state->{seqlength} = 100;
     }
     my $ids = $db->Grab_Queue();
+    my $import_accession = $db->Get_Import_Queue();
+    if (defined($import_id)) {
+	my $import = $db->Import_CDS($import_id);
+	if (defined($import) and $import !=~ m/Error/) {
+	    $db->MyExecute("DELETE FROM import_queue WHERE accession = '$import_accession'");
+	}
+    }
     $state->{queue_table} = $ids->{queue_table};
     $state->{queue_id}  = $ids->{queue_id};
     $state->{genome_id} = $ids->{genome_id};
@@ -226,6 +233,7 @@ sub Read_Accessions {
 	    }
 	}
     }
+    close(DONE);
     close(AC);
 }
 
