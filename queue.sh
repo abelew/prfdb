@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #set -x
+. ~/.bashrc
 USERID=`id | awk -F'(' '{print $2}' | awk -F ')' '{print $1}'`
 PARTIAL=`grep pbs_partialname prfdb.conf | awk -F= '{print $2}' | sed 's/'\''//g'`
 for arch in lin
