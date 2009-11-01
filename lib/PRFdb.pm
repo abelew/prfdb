@@ -89,8 +89,7 @@ sub MySelect {
     my $rv;
     if (defined($vars)) {
 	$rv = $sth->execute(@{$vars});
-    }
-    else {
+    } else {
 	$rv = $sth->execute();
     }
     
@@ -111,10 +110,8 @@ with: error $DBI::errstr\n";
     if (defined($type) and defined($descriptor)) {
 	$return = $sth->fetchall_hashref($descriptor);
 	$selecttype = 'selectall_hashref';
-    }
-
-    ## If $type is defined, AND if you ask for a row, do a selectrow_arrayref
-    elsif (defined($type) and $type eq 'row') {
+    } elsif (defined($type) and $type eq 'row') {
+	## If $type is defined, AND if you ask for a row, do a selectrow_arrayref
 	$return = $sth->fetchrow_arrayref();
 	$selecttype = 'selectrow_arrayref';
     }
@@ -124,8 +121,7 @@ with: error $DBI::errstr\n";
     elsif (defined($type) and $type eq 'single') {
 	my $tmp = $sth->fetchrow_arrayref();
 	$return = $tmp->[0];
-    }
-    elsif (defined($type) and $type eq 'flat') {
+    } elsif (defined($type) and $type eq 'flat') {
 	my $selecttype = 'flat';
 	my @ret = ();
 	my $data = $sth->fetchall_arrayref();
@@ -136,8 +132,7 @@ with: error $DBI::errstr\n";
 	    foreach my $c (0 .. $#$data) {
 		push(@ret, $data->[$c]->[0]);
 	    }
-	} 
-	else {
+	} else {
 	    foreach my $c (0 .. $#$data) {
 		my @elems = @{$data->[$c]};
 		foreach my $d (0 .. $#elems) {
@@ -146,18 +141,16 @@ with: error $DBI::errstr\n";
 	    }
 	}
 	$return = \@ret;
-    }    ## Endif flat
-    elsif (defined($type) and $type eq 'list_of_hashes') { 
+	## Endif flat
+    } elsif (defined($type) and $type eq 'list_of_hashes') { 
 	$return = $sth->fetchall_arrayref({});
 	$selecttype = 'selectall_arrayref({})';     
-    }
-    ## If only $type is defined, do a selectrow_hashref
-    elsif (defined($type)) {    ## Usually defined as 'hash'
+    } elsif (defined($type)) {    ## Usually defined as 'hash'
+	## If only $type is defined, do a selectrow_hashref
 	$return = $sth->fetchrow_hashref();
 	$selecttype = 'selectrow_hashref';
-    }
+    } else {
     ## The default is to do a selectall_arrayref
-    else {
 	$return = $sth->fetchall_arrayref();
 	$selecttype = 'selectall_arrayref';
     }
@@ -203,8 +196,7 @@ sub MyExecute {
     my $rv;
     if (defined($input->{vars})) {
 	$rv = $sth->execute(@{$input->{vars}});
-    }
-    else {
+    } else {
 	$rv = $sth->execute();
     }
     
@@ -221,8 +213,7 @@ with: error $DBI::errstr\n";
 	    $me->{errors}->{caller} = $input->{caller};
 	}
 	return(undef);
-    }
-    else {
+    } else {
 	$rows = $dbh->rows();
     }
     return($rows);
@@ -271,7 +262,7 @@ sub MyGet {
     }
 
     my $dbh = $me->MyConnect($final_statement);
-    my $stuff = $me->MySelect({ statement => $final_statement,});
+    my $stuff = $me->MySelect(statement => $final_statement,);
 
     print "Column order: @select_columns\n";
     my $c = 1;
@@ -644,11 +635,7 @@ sub Get_Boot {
     else {
 	$statement = qq(SELECT * from $table where accession = ? ORDER BY start);
     }
-    my $info = $me->MySelect({
-	statement =>$statement,
-	vars => [$accession, $start],
-	type => 'hash',
-	descriptor => 1});
+    my $info = $me->MySelect(statement =>$statement, vars => [$accession, $start], type => 'hash', descriptor => 1);
     return ($info);
 }
 
@@ -667,10 +654,7 @@ sub Id_to_AccessionSpecies {
     my $start = shift;
     $config->PRF_Error("Undefined value in Id_to_AccessionSpecies", $id) unless (defined($id));
     my $statement = qq(SELECT accession, species from genome where id = ?);
-    my $data = $me->MySelect({
-	statement => $statement,
-	vars => [$id],
-	type => 'row'});
+    my $data = $me->MySelect(statement => $statement, vars => [$id], type => 'row');
     my $accession = $data->[0];
     my $species = $data->[1];
     my $return = {accession => $accession, species => $species,};
@@ -700,18 +684,18 @@ sub Get_Entire_Queue {
     }
     my $return;
     my $statement = qq(SELECT id FROM $table WHERE checked_out='0');
-    my $ids = $me->MySelect({statement =>$statement});
+    my $ids = $me->MySelect(statement =>$statement);
     return ($ids);
 }
 
 sub Add_Webqueue {
     my $me = shift;
     my $id = shift;
-    my $check = $me->MySelect({statement => qq/SELECT count(id) FROM webqueue WHERE genome_id = '$id'/, type => 'single'});
+    my $check = $me->MySelect(statement => qq/SELECT count(id) FROM webqueue WHERE genome_id = '$id'/, type => 'single');
     return(undef) if ($check > 0);
     my $statement = qq/INSERT INTO webqueue VALUES('','$id','0','','0','')/;
     my ($cp,$cf,$cl) = caller();
-    my $rc = $me->MyExecute({statement => $statement, caller => "$cp,$cf,$cl",});
+    my $rc = $me->MyExecute(statement => $statement, caller => "$cp,$cf,$cl",);
     return(1);
 }
 
@@ -737,10 +721,7 @@ sub Set_Queue {
     }
     else {
 	my $id_existing_stmt = qq(SELECT id FROM $table WHERE genome_id = '$id');
-	my $id_existing = $me->MySelect({
-	    statement => $id_existing_stmt,
-	    type => 'single'
-	    });
+	my $id_existing = $me->MySelect(statement => $id_existing_stmt, type => 'single');
 	return($id_existing);
     }
 }
@@ -751,7 +732,7 @@ sub Clean_Table {
     my $table = $type . '_' . $config->{species};
     my $statement = "DELETE from $table";
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement =>$statement, caller=>"$cp, $cf, $cl"});
+    $me->MyExecute(statement =>$statement, caller=>"$cp, $cf, $cl");
 }
 
 sub Drop_Table {
@@ -759,7 +740,7 @@ sub Drop_Table {
     my $table = shift;
     my $statement = "DROP table $table";
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl"});
+    $me->MyExecute(statement => $statement, caller =>"$cp, $cf, $cl");
 }
 
 sub FillQueue {
@@ -771,7 +752,7 @@ sub FillQueue {
     $me->Create_Queue() unless ($me->Tablep($table));
     my $best_statement = "INSERT into $table (genome_id, checked_out, done) SELECT id, 0, 0 from genome";
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $best_statement, caller =>"$cp, $cf, $cl"});
+    $me->MyExecute(statement => $best_statement, caller =>"$cp, $cf, $cl");
 }
 
 sub Copy_Genome {
@@ -782,7 +763,7 @@ sub Copy_Genome {
 (accession,species,genename,locus,ontology_function,ontology_component,ontology_process,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction,omim_id)
     SELECT accession,species,genename,locus,ontology_function,ontology_component,ontology_process,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction,omim_id from ${old_db}.genome/;
 my ($cp,$cf,$cl) = caller();
-$me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl"});
+$me->MyExecute(statement => $statement, caller =>"$cp, $cf, $cl");
 }
 
 sub Reset_Queue {
@@ -818,9 +799,7 @@ sub Get_Input {
 		   ${genome_table}.species, ${genome_table}.mrna_seq, ${genome_table}.orf_start,
 		   ${genome_table}.direction FROM ${queue_table}, ${genome_table} WHERE ${queue_table}.checked_out = '0'
 		   AND ${queue_table}.done = '0' AND ${queue_table}.genome_id = ${genome_table}.id LIMIT 1);
-    my $ids = $me->MySelect({
-	statement => $query,
-	type => 'row' });
+    my $ids = $me->MySelect(statement => $query,type => 'row');
     my $id = $ids->[0];
     my $genome_id = $ids->[1];
     my $accession = $ids->[2];
@@ -833,7 +812,7 @@ sub Get_Input {
     }
     my $update = qq(UPDATE $queue_table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?);
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $update,  vars => [$id], caller => "$cp, $cf, $cl"});
+    $me->MyExecute(statement => $update,  vars => [$id], caller => "$cp, $cf, $cl");
     my $return = {
 	queue_id => $id,
 	genome_id => $genome_id,
@@ -904,7 +883,7 @@ sub Get_Queue {
 	## This should mean there are no more entries to fold in the queue
 	## Lets check this for truth -- first see if any are not done
 	my $done_id = qq(SELECT id, genome_id FROM $table WHERE done = '0' LIMIT 1);
-	my $ids = $me->MySelect({statement => $done_id, type =>'row'});
+	my $ids = $me->MySelect(statement => $done_id, type =>'row');
 	$id = $ids->[0];
 	$genome_id = $ids->[1];
 	if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
@@ -913,7 +892,7 @@ sub Get_Queue {
     }
     my $update = qq(UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?);
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement => $update, vars=> [$id], caller =>"$cp, $cf, $cl"});
+    $me->MyExecute(statement => $update, vars=> [$id], caller =>"$cp, $cf, $cl");
     my $return = {
 	queue_table => $table,
 	queue_id  => $id,
@@ -928,7 +907,7 @@ sub Copy_Queue {
     my $new_table = shift;
     my $statement = "INSERT INTO $new_table SELECT * FROM $old_table";
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl"});
+    $me->MyExecute(statement => $statement, caller =>"$cp, $cf, $cl");
 }
 
 sub Done_Queue {
@@ -945,7 +924,7 @@ sub Done_Queue {
     }
     my $update = qq/UPDATE $table SET done='1', done_time=current_timestamp() WHERE genome_id=?/;
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $update, vars => [$id], caller =>"$cp, $cf, $cl"});
+    $me->MyExecute(statement => $update, vars => [$id], caller =>"$cp, $cf, $cl");
 }
 
 sub Import_Fasta {
@@ -1193,9 +1172,9 @@ sub Import_Genbank_Flatfile {
 	    # }
 	    # else {
 	    # $return .= "Did not insert anything into the genome table.\n";
-	    # my $gid = $me->MySelect({
+	    # my $gid = $me->MySelect(
 	    # statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",
-	    # type => 'single'});
+	    # type => 'single');
 	    # print "Doing set_Queue with genome_id $gid\n";
 	    # $me->Set_Queue(id => $gid);
 	    # }
@@ -1316,9 +1295,7 @@ sub Import_CDS {
 	}
 	else {
 	    $return .= "Did not insert anything into the genome table.\n";
-	    my $gid = $me->MySelect({
-		statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",
-		type => 'single'});
+	    my $gid = $me->MySelect(statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",	type => 'single');
 	    print "Doing set_Queue with genome_id $gid\n";
 	    $me->Set_Queue(id => $gid);
 	}
@@ -1347,7 +1324,7 @@ sub Get_OMIM {
     my $me = shift;
     my $id = shift;
     my $statement = qq(SELECT omim_id FROM genome WHERE id = ?);
-    my $omim = $me->MySelect({ statement => $statement, vars => [$id], type => 'single' });
+    my $omim = $me->MySelect(statement => $statement, vars => [$id], type => 'single');
     if (!defined($omim) or $omim eq 'none') {
 	return (undef);
     }
@@ -1370,7 +1347,7 @@ sub Get_OMIM {
 	}    ## CDS features
 	$statement = qq(UPDATE genome SET omim_id = ? WHERE id = ?);
 	my ($cp,$cf,$cl) = caller();
-	$me->MyExecute({statement => $statement, vars => [ $omim_id, $id ], caller =>"$cp, $cf, $cl",});
+	$me->MyExecute(statement => $statement, vars => [ $omim_id, $id ], caller =>"$cp, $cf, $cl",);
 	return ($omim_id);
     }
 }
@@ -1379,10 +1356,7 @@ sub Get_Sequence {
     my $me = shift;
     my $accession = shift;
     my $statement = qq(SELECT mrna_seq FROM genome WHERE accession = ?);
-    my $sequence  = $me->MySelect({
-	statement => $statement,
-	vars => [$accession],
-	type => 'single'});
+    my $sequence  = $me->MySelect(statement => $statement, vars => [$accession], type => 'single');
     if ($sequence) {
 	return ($sequence);
     }
@@ -1395,7 +1369,7 @@ sub Get_Sequence_from_id {
     my $me = shift;
     my $id = shift;
     my $statement = qq(SELECT mrna_seq FROM genome WHERE id = ?);
-    my $sequence = $me->MySelect({statement => $statement, vars => [$id], type => 'single'});
+    my $sequence = $me->MySelect(statement => $statement, vars => [$id], type => 'single');
     if ($sequence) {
 	return ($sequence);
     }
@@ -1423,9 +1397,7 @@ sub Get_MFE_ID {
     my $seqlength = shift;
     my $algorithm = shift;
     my $statement = qq(SELECT id FROM mfe WHERE genome_id = ? AND start = ? AND seqlength = ? AND algorithm = ? LIMIT 1);
-    my $mfe = $me->MySelect({statement =>$statement,
-			     vars => [$genome_id, $start, $seqlength, $algorithm],
-			     type => 'single'});
+    my $mfe = $me->MySelect(statement =>$statement, vars => [$genome_id, $start, $seqlength, $algorithm], type => 'single');
     return ($mfe);
 }
 
@@ -1441,9 +1413,7 @@ sub Get_Num_RNAfolds {
     $table = "landscape_virus" if ($table =~ /landscape/ and $table =~ /virus/);
     my $return = {};
     my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? AND algorithm = ? AND start = ? AND seqlength = ?/;
-    my $count = $me->MySelect({statement =>$statement,
-			       vars => [$genome_id, $algo, $slipsite_start, $seqlength],
-			       type => 'single'});
+    my $count = $me->MySelect(statement =>$statement, vars => [$genome_id, $algo, $slipsite_start, $seqlength], type => 'single');
     if (!defined($count) or $count eq '') {
 	$count = 0;
     }
@@ -1461,9 +1431,7 @@ sub Get_Num_Bootfolds {
     my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
     my $return = {};
     my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? and start = ? and seqlength = ? and mfe_method = ?/;
-    my $count = $me->MySelect({statement => $statement,
-			       vars => [$genome_id, $start, $seqlength, $method],
-			       type =>'single'});
+    my $count = $me->MySelect(statement => $statement, vars => [$genome_id, $start, $seqlength, $method], type =>'single');
     return ($count);
 }
 
@@ -1471,10 +1439,7 @@ sub Get_mRNA {
     my $me = shift;
     my $accession = shift;
     my $statement = qq/SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?/;
-    my $info = $me->MySelect({
-	statement => $statement,
-	vars => [$accession],
-	type => 'hash'});
+    my $info = $me->MySelect(statement => $statement, vars => [$accession], type => 'hash');
     my $mrna_seq  = $info->{mrna_seq};
     if ($mrna_seq) {
 	return ($mrna_seq);
@@ -1488,10 +1453,7 @@ sub Get_ORF {
     my $me = shift;
     my $accession = shift;
     my $statement = qq"SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?";
-    my $info = $me->MySelect({
-	statement => $statement,
-	vars => [$accession],
-	type => 'hash'});
+    my $info = $me->MySelect(statement => $statement, vars => [$accession], type => 'hash');
     my $mrna_seq = $info->{mrna_seq};
     ### A PIECE OF CODE TO HANDLE PULLING SUBSEQUENCES FROM CDS                                                         
     my $start = $info->{orf_start} - 1;
@@ -1536,9 +1498,7 @@ sub Insert_Genome_Entry {
     my $datum = shift;
     ## Check to see if the accession is already there
     my $check = qq(SELECT id FROM genome where accession=?);
-    my $already_id = $me->MySelect({statement => $check,
-				    vars => [$datum->{accession}],
-				    type => 'single'});
+    my $already_id = $me->MySelect(statement => $check, vars => [$datum->{accession}], type => 'single');
     ## A check to make sure that the orf_start is not 0.  If it is, set it to 1 so it is consistent with the
     ## crap from the SGD
     $datum->{orf_start} = 1 if (!defined($datum->{orf_start}) or $datum->{orf_start} == 0);
@@ -1574,8 +1534,8 @@ sub Insert_Numslipsite {
 (accession, num_slipsite)
 VALUES('$accession', '$num_slipsite')/;
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement =>$statement, caller => "$cp, $cf, $cl"});
-    my $last_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl");
+    my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
     return ($last_id);
 }
 
@@ -1586,17 +1546,13 @@ sub Get_MFE {
     my $info;
     if (defined($identifier->{genome_id})) {
 	$statement = qq(SELECT id, genome_id, species, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode FROM mfe where genome_id = ?);
-	$info = $me->MySelect({statement =>$statement,
-			       vars => [$identifier->{genome_id}],
-			       type => 'hash',
-			       descriptor => [qq(id genome_id species accession start slipsite seqlength sequence output parsed parens mfe pairs knotp barcode)],});
+	$info = $me->MySelect(statement =>$statement, vars => [$identifier->{genome_id}], type => 'hash',
+			       descriptor => [qq(id genome_id species accession start slipsite seqlength sequence output parsed parens mfe pairs knotp barcode)],);
     } 
     elsif (defined($identifier->{accession} and defined($identifier->{start}))) {
 	$statement = qq(SELECT id, genome_id, species, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode FROM mfe where accession = ? and start = ?);
-	$info = $me->MySelect({statement => $statement,
-			       vars => [$identifier->{accession}, $identifier->{start}],
-			       type => 'hash',
-			       descriptor => [qq(id genome_id species accession start slipsite seqlength sequence output parsed parens mfe pairs knotp barcode)],});
+	$info = $me->MySelect(statement => $statement, vars => [$identifier->{accession}, $identifier->{start}], type => 'hash',
+			       descriptor => [qq(id genome_id species accession start slipsite seqlength sequence output parsed parens mfe pairs knotp barcode)],);
     }
     return ($info);
 }
@@ -1686,11 +1642,9 @@ sub Put_MFE {
     my $statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?));
     
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $statement,
-		    vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{slipsite}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],
-		    caller => "$cp, $cf, $cl",});
+    $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{slipsite}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}], caller => "$cp, $cf, $cl",);
     
-    my $put_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
+    my $put_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
     return ($put_id);
 }    ## End of Put_MFE
 
@@ -1721,9 +1675,7 @@ sub Put_MFE_Landscape {
     }
     my $statement = qq"INSERT INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $statement,
-		    vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],
-		    caller =>"$cp,$cf,$cl",});
+    $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}], caller =>"$cp,$cf,$cl",);
     my $get_inserted_id = qq"SELECT LAST_INSERT_ID()";
     my $id = $me->MySelect(statement => $get_inserted_id, type => 'single');
     return ($id);
@@ -1778,8 +1730,7 @@ sub Put_Stats {
 (SELECT stddev(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength')
     )";
 my ($cp,$cf,$cl) = caller();
-$me->MyExecute({statement => $statement,
-		caller => "$cp, $cf, $cl",});
+$me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
                 }
             }
         }
@@ -1831,11 +1782,9 @@ sub Put_Boot {
               print "$errorstring, $species, $accession\n";
             }
             my ($cp, $cf, $cl) = caller();
-            $me->MyExecute({statement => $statement,
-		vars => [ $data->{genome_id}, $mfe_id, $species, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ], 
-		caller => "$cp, $cf, $cl",});
+            $me->MyExecute(statement => $statement, vars => [ $data->{genome_id}, $mfe_id, $species, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ], caller => "$cp, $cf, $cl",);
 
-            my $boot_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
+            my $boot_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
             push(@boot_ids, $boot_id);
           }    ### Foreach random method
     }    ## Foreach mfe method
@@ -1885,10 +1834,9 @@ sub Put_Single_Boot {
         print "$errorstring, $species, $accession\n";
     }
     my ($cp, $cf, $cl) = caller();
-    my $rows = $me->MyExecute({statement => $statement,
-			   caller => "$cp, $cf, $cl",});
+    my $rows = $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
 
-    my $boot_id = $me->MySelect({statement => 'SELECT LAST_INSERT_ID()', type => 'single'});
+    my $boot_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
     print "Inserted $boot_id\n";
     return($boot_id);
 }
@@ -1900,9 +1848,7 @@ sub Put_Overlap {
 (genome_id, species, accession, start, plus_length, plus_orf, minus_length, minus_orf) VALUES
 (?,?,?,?,?,?,?,?));
 my ($cp,$cf,$cl) = caller();
-$me->MyExecute({statement => $statement,
-		vars => [$data->{genome_id}, $data->{species}, $data->{accession}, $data->{start}, $data->{plus_length}, $data->{plus_orf}, $data->{minus_length}, $data->{minus_orf}], 
-		caller =>"$cp,$cf,$cl",});
+$me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $data->{species}, $data->{accession}, $data->{start}, $data->{plus_length}, $data->{plus_orf}, $data->{minus_length}, $data->{minus_orf}], caller =>"$cp,$cf,$cl",);
 my $id = $data->{overlap_id};
 return ($id);
 }    ## End of Put_Overlap
@@ -1912,8 +1858,7 @@ sub Update_Nosy {
     my $ip = shift;
     my $stmt = qq"REPLACE INTO nosy SET ip = '$ip'";
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute({statement => $stmt,
-                    caller => "$cp,$cf,$cl",});
+    $me->MyExecute(statement => $stmt, caller => "$cp,$cf,$cl",);
 }
 
 sub Fill_Globals {
@@ -2008,8 +1953,7 @@ INDEX(accession),
 INDEX(genename),
 PRIMARY KEY (id))/;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement =>$statement, 
-		    caller => "$cp, $cf, $cl",});
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
 }
 
 sub Create_Agree {
@@ -2043,8 +1987,7 @@ num_mfe_entries int,
 num_mfe_knotted int,
 PRIMARY KEY (id))/;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement =>$statement, 
-		    caller => "$cp, $cf, $cl",});
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
 }
 
 sub Create_NumSlipsite {
@@ -2056,8 +1999,7 @@ num_slipsite int,
 lastupdate $config->{sql_timestamp},
 PRIMARY KEY (id))/;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement => $statement,
-		    caller => "$cp, $cf, $cl",});
+    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
 }
 
 sub Create_Evaluate {
@@ -2072,8 +2014,7 @@ pseudoknot bool,
 min_mfe float,
 PRIMARY KEY (id)));
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement => $statement,
-		    caller => "$cp, $cf, $cl",})
+    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",)
     }
 
 sub Create_Stats {
@@ -2103,8 +2044,7 @@ avg_zscore float,
 stddev_zscore float,
 PRIMARY KEY (id)));
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement => $statement,
-		    caller => "$cp, $cf, $cl",});
+    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
 }
 
 sub Create_Overlap {
@@ -2122,7 +2062,7 @@ minus_orf text,
 lastupdate $config->{sql_timestamp},
 PRIMARY KEY (id)));
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl",});
+    $me->MyExecute(statement => $statement, caller =>"$cp, $cf, $cl",);
 }
 
 sub Create_Import_Queue {
@@ -2156,7 +2096,7 @@ done bool,
 done_time timestamp default 0,
 PRIMARY KEY (id))\;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement =>$statement,  caller =>"$cp, $cf, $cl",});
+    $me->MyExecute(statement =>$statement,  caller =>"$cp, $cf, $cl",);
 }
 
 sub Create_MFE {
@@ -2186,7 +2126,7 @@ INDEX(genome_id),
 INDEX(accession),
 PRIMARY KEY(id))\;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement => $statement,  caller =>"$cp, $cf, $cl",});
+    $me->MyExecute(statement => $statement,  caller =>"$cp, $cf, $cl",);
 }
 
 sub Create_MFE_Utr {
@@ -2213,7 +2153,7 @@ INDEX(genome_id),
 INDEX(accession),
 PRIMARY KEY(id))\;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement => $statement,  caller =>"$cp, $cf, $cl",});
+    $me->MyExecute(statement => $statement,  caller =>"$cp, $cf, $cl",);
 }
 
 sub Create_Variations {
@@ -2232,7 +2172,7 @@ INDEX(dbSNP),
 INDEX(accession),
 PRIMARY KEY(id))\;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement => $statement,caller=>"$cp, $cf, $cl",});
+    $me->MyExecute(statement => $statement,caller=>"$cp, $cf, $cl",);
 }
 
 sub Create_Nosy {
@@ -2242,7 +2182,7 @@ ip char(15),
 visited $config->{sql_timestamp},
 PRIMARY KEY(ip))\;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement =>$statement, caller => "$cp, $cf, $cl",});
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
     print "Created nosy\n" if (defined($config->{debug}));
 }
 
@@ -2272,7 +2212,7 @@ INDEX(genome_id),
 INDEX(accession),
 PRIMARY KEY(id))\;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement =>$statement, caller => "$cp, $cf, $cl",});
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
     print "Created $table\n" if (defined($config->{debug}));
 }
 
@@ -2305,7 +2245,7 @@ INDEX(mfe_id),
 INDEX(accession),
 PRIMARY KEY(id))\;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement => $statement, caller =>"$cp, $cf, $cl",});
+    $me->MyExecute(statement => $statement, caller =>"$cp, $cf, $cl",);
     print "Created $table\n" if (defined($config->{debug}));
 }
 
@@ -2318,7 +2258,7 @@ sub Create_Errors {
 					    accession $config->{sql_accession},
 					    PRIMARY KEY(id))\;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute({statement => $statement, caller => "$cp, $cf, $cl"});
+    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl");
 }
 
 
