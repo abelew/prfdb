@@ -10,9 +10,11 @@ use Log::Log4perl;
 use Log::Log4perl::Level;
 use Bio::Root::Exception;
 use Error qw(:try);
+use vars qw($VERSION);
 our @ISA = qw(Exporter);
 our @EXPORT = qw(AddOpen RemoveFile callstack);    # Symbols to be exported by default
 
+$VERSION = '20091101';
 Log::Log4perl->easy_init($WARN);
 our $log = Log::Log4perl->get_logger('stack'),
 ### Holy crap global variables!
