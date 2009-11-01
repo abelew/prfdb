@@ -160,9 +160,10 @@ until (defined($state->{time_to_die})) {
     }
     my $ids = $db->Grab_Queue();
     my $import_accession = $db->Get_Import_Queue();
-    if (defined($import_id)) {
-	my $import = $db->Import_CDS($import_id);
+    if (defined($import_accession)) {
+	my $import = $db->Import_CDS($import_accession);
 	if (defined($import) and $import !=~ m/Error/) {
+	    print "Imported $import_accession\n" if (defined($config->{debug}));
 	    $db->MyExecute("DELETE FROM import_queue WHERE accession = '$import_accession'");
 	}
     }

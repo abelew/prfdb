@@ -1225,7 +1225,7 @@ sub Import_CDS {
     my $me = shift;
     my $accession = shift;
     my $startpos = shift;
-    my $return = '';
+    my $return = undef;
     my $uni = new Bio::DB::Universal;
     my $seq;
     try {
@@ -1264,11 +1264,9 @@ sub Import_CDS {
 	my $direction;
 	if (!defined($feature->{_location}{_strand})) {
 	    $direction = 'forward';
-	}
-	elsif ($feature->{_location}{_strand} == 1) {
+	} elsif ($feature->{_location}{_strand} == 1) {
 	    $direction = 'forward';
-	}
-	elsif ($feature->{_location}{_strand} == -1) {
+	} elsif ($feature->{_location}{_strand} == -1) {
 	    $direction = 'reverse';
 	    my $tmp_start = $orf_start;
 	    $orf_start = $orf_stop - 1;
@@ -1309,16 +1307,13 @@ sub Import_CDS {
 		     defline => $defline,);
 	my $genome_id = $me->Insert_Genome_Entry(\%datum);
 	if (defined($genome_id)) {
-	    $return .= "Inserting $mrna_seqlength bases into the genome table with id: $genome_id\n";
+	    $return = $mrna_seqlength;
 	    $me->Set_Queue(id => $genome_id);
-	}
-	else {
-	    $return .= "Did not insert anything into the genome table.\n";
+	} else {
+	    $return = 0;
 	    my $gid = $me->MySelect(statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",	type => 'single');
-	    print "Doing set_Queue with genome_id $gid\n";
 	    $me->Set_Queue(id => $gid);
 	}
-	print $return;
     }
     return ($return);
 }
