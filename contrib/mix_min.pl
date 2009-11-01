@@ -2,12 +2,15 @@
 use strict;
 use lib '../lib';
 use SeqMisc;
-use PRFdb;
+use PRFdb qw/ AddOpen callstack /;
 use PRFConfig;
 my $config = new PRFConfig(config_file => '/usr/local/prfdb/prfdb_test/prfdb.conf');
 my $db = new PRFdb(config => $config);
 my $stmt = qq"SELECT sequence FROM mfe limit 1";
 #my $stmt = qq"SELECT sequence FROM mfe ORDER BY RAND() limit 1";
+{
+callstack();
+}
 my $info = $db->MySelect($stmt);
 my $fun = $info->[0]->[0];
 print "Original Sequence: $fun\n";
@@ -47,8 +50,10 @@ print "Remaining A:$num->{A} T:$num->{T} C: $num->{C} G: $num->{G}\n";
 
 
 sub Add {
+callstack();
 #    print "MIN: $min\n";
     my $c = 0;
+    stacktrace();
 #    print "NUM: $num->{$min}\n";
     while ($num->{$min} > $c) {
 #	print "TESTME: $num->{$min} and $c\n";

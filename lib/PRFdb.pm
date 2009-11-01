@@ -6,11 +6,15 @@ use SeqMisc;
 use File::Temp qw / tmpnam /;
 use Fcntl ':flock';    # import LOCK_* constants
 use Bio::DB::Universal;
+use Log::Log4perl;
+use Log::Log4perl::Level;
 use Bio::Root::Exception;
 use Error qw(:try);
 our @ISA = qw(Exporter);
-our @EXPORT = qw(AddOpen RemoveFile);    # Symbols to be exported by default
+our @EXPORT = qw(AddOpen RemoveFile callstack);    # Symbols to be exported by default
 
+Log::Log4perl->easy_init($WARN);
+our $log = Log::Log4perl->get_logger('stack'),
 ### Holy crap global variables!
 my $config;
 my $dbh;
@@ -49,6 +53,19 @@ sub new {
     }
     $me->{errors} = undef;
     return ($me);
+}
+
+sub callstack {
+  my ($path, $line, $subr);
+  my $max_depth = 30;
+  my $i = 1;
+  if ($log->is_warn()) {
+    $log->warn("--- Begin stack trace ---");
+    while ((my @call_details = (caller($i++))) && ($i<$max_depth)) {
+      $log->warn("$call_details[1] line $call_details[2] in function $call_details[3]");
+    }
+    $log->warn("--- End stack trace ---");
+  }
 }
 
 sub Disconnect {
@@ -94,6 +111,7 @@ sub MySelect {
     }
     
     if (!defined($rv)) {
+	callstack();
 	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
 	print STDERR "$hour:$min:$sec $mon-$mday Execute failed for: $statement
 from: $input->{caller}
@@ -195,9 +213,9 @@ sub MyExecute {
     my $sth = $dbh->prepare($statement);
     my $rv;
     if (defined($input->{vars})) {
-	$rv = $sth->execute(@{$input->{vars}});
+	$rv = $sth->execute(@{$input->{vars}}) or callstack();
     } else {
-	$rv = $sth->execute();
+	$rv = $sth->execute() or callstack();
     }
     
     my $rows = 0;
@@ -279,11 +297,10 @@ sub MyGet {
 sub MyConnect {
     my $me = shift;
     my $statement = shift;
-    $dbh = DBI->connect_cached(
-			       "dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}",
+    $dbh = DBI->connect_cached("dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}",
 			       $config->{database_user},
 			       $config->{database_pass},
-			       { AutoCommit => 1},);
+			       { AutoCommit => 1},) or callstack();
     
     my $retry_count = 0;
     if (!defined($dbh) or
