@@ -62,6 +62,10 @@ if (defined($config->{makeblast})) {
     Make_Blast();
     exit(0);
 }
+if (defined($config->{zscore})) {
+    Zscore();
+    exit(0);
+}
 if (defined($config->{clear_queue})) {
     $db->Reset_Queue(complete => 1);
     exit(0);
@@ -217,6 +221,7 @@ sub Read_Accessions {
 		sleep(30);
 		$attempts++;
 	    } else {
+		print DONE "$accession\n";
 		next OUTER;
 	    }
 	}
@@ -813,6 +818,31 @@ sub Make_Jobs {
     }
 }
 
+sub Zscore {
+    my $tables = $db->MySelect("show tables");
+    foreach my $t (@{$tables}) {
+	my $table = $t->[0];
+	next unless ($table =~ /^boot_/);
+	my $all_boot_stmt = qq"SELECT id, mfe_id, mfe_mean, mfe_sd FROM $table WHERE zscore is NULL";
+	my $all_boot = $db->MySelect($all_boot_stmt);
+	foreach my $boot (@{$all_boot}) {
+	    my $id = $boot->[0];
+	    my $mfe_id = $boot->[1];
+	    my $mfe_mean = $boot->[2];
+	    my $mfe_sd = $boot->[3];
+	    my $mfe_stmt = qq"SELECT mfe FROM mfe WHERE id = '$mfe_id'";
+	    my $mfe = $db->MySelect(statement => $mfe_stmt, type =>'single');
+	    $mfe_sd = 1 if (!defined($mfe_sd) or $mfe_sd == 0);
+	    $mfe = 0 if (!defined($mfe));
+	    $mfe_mean = 0 if (!defined($mfe_mean));
+	    my $zscore = sprintf("%.3f", ($mfe - $mfe_mean) / $mfe_sd);
+	    my $update_stmt = qq(UPDATE $table SET zscore = '$zscore' WHERE id = '$id');
+	    $db->MyExecute($update_stmt);
+	}
+    }
+    my $cleaning = qq(DELETE FROM mfe WHERE mfe > '10');
+    $db->MyExecute($cleaning);
+}
 
 sub Maintenance {
     ## The stats table
@@ -825,28 +855,7 @@ sub Maintenance {
     };
     $db->Put_Stats($data);
     ## End the stats table
-
-    ## Zscore crapola
-    my $all_boot_stmt = qq"SELECT id, mfe_id, mfe_mean, mfe_sd FROM boot WHERE zscore is NULL";
-    my $all_boot = $db->MySelect($all_boot_stmt);
-    foreach my $boot (@{$all_boot}) {
-	my $id = $boot->[0];
-	my $mfe_id = $boot->[1];
-	my $mfe_mean = $boot->[2];
-	my $mfe_sd = $boot->[3];
-	my $mfe_stmt = qq"SELECT mfe FROM mfe WHERE id = '$mfe_id'";
-	my $mfe = $db->MySelect(statement => $mfe_stmt, type =>'single');
-	$mfe_sd = 1 if (!defined($mfe_sd) or $mfe_sd == 0);
-	$mfe = 0 if (!defined($mfe));
-	$mfe_mean = 0 if (!defined($mfe_mean));
-	my $zscore = sprintf("%.3f", ($mfe - $mfe_mean) / $mfe_sd);
-	my $update_stmt = qq(UPDATE boot SET zscore = '$zscore' WHERE id = '$id');
-	print "$update_stmt\n";
-	$db->MyExecute($update_stmt);
-    }
-    my $cleaning = qq(DELETE FROM mfe WHERE mfe > '10');
-    $db->MyExecute($cleaning);
-
+    Zscore();
     my $test = $db->Tablep('index_stats');
     $db->Create_Index_Stats() unless($test);
     my $species_list = $db->MySelect("SELECT distinct(species) FROM genome");
