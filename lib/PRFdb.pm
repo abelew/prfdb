@@ -1734,7 +1734,6 @@ sub Put_Agree {
     my %args = @_;
     my $agree = $args{agree};
     my $check = $me->MySelect(statement => "SELECT count(id) FROM agree WHERE accession = ? AND start = ? AND length = ?", vars => [$args{accession}, $args{start}, $args{length}], type => 'single');
-    print "TESTME: THERE ARE $check entries\n";
     return(undef) if ($check >= 1);
     my ($cp,$cf,$cl) = caller();
     my $stmt = qq"INSERT INTO agree (accession, start, length, all_agree, no_agree, n_alone, h_alone, p_alone, hplusn, nplusp, hplusp, hnp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -1967,7 +1966,14 @@ sub Check_Defined {
 sub Tablep {
     my $me = shift;
     my $table = shift;
-    my $statement = qq(SHOW TABLES LIKE '$table');
+    if ($table =~ /virus/) {
+	if ($table =~ /^boot_/) {
+	    $table = 'boot_virus';
+	} elsif ($table =~ /^landscape_/) {
+	    $table = 'landscape_virus';
+	}
+    }
+    my $statement = qq"SHOW TABLES LIKE '$table'";
     my $info = $me->MySelect($statement);
     my $answer = scalar(@{$info});
     return (scalar(@{$info}));
