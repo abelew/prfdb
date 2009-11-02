@@ -362,7 +362,7 @@ sub PRF_Gatherer {
       }
       if ($config->{do_comparison}) {
 	  my $pknots_mfe_info = $fold_search->Pknots('nopseudo');
-	  my $nupack_mfe_info = $fold_search->Nupack('nopseudo');
+	  my $nupack_mfe_info = $fold_search->Nupack_NOPAIRS('nopseudo');
 	  my $vienna_mfe_info = $fold_search->Vienna();
 	  my $pk = $pknots_mfe_info->{mfe};
 	  my $nu = $nupack_mfe_info->{mfe};
