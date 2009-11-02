@@ -855,7 +855,6 @@ sub Zscore {
 
 sub Maintenance {
     ## The stats table
-    my $fun = $db->MyExecute("DELETE FROM stats");
     my $data = {
 	species => $config->{index_species},
 	seqlength => $config->{seqlength},

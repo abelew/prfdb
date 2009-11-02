@@ -1714,6 +1714,7 @@ sub Put_Stats {
     my $data = shift;
     foreach my $species (@{$data->{species}}) {
 	my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
+	$me->MyExecute(statement => qq"DELETE FROM stats WHERE species = '$species'");
 	foreach my $seqlength (@{$data->{seqlength}}) {
 	    foreach my $max_mfe (@{$data->{max_mfe}}) {
 		foreach my $algorithm (@{$data->{algorithm}}) {
@@ -1745,6 +1746,7 @@ sub Put_Stats {
     )";
 my ($cp,$cf,$cl) = caller();
 $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
+sleep(60);
                 }
             }
         }
