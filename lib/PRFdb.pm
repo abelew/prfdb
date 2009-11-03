@@ -869,7 +869,7 @@ sub Grab_Queue {
 
 sub Get_Import_Queue {
     my $me = shift;
-    my $stmt = qq"SELECT accession FROM import_queue ORDER BY RAND() LIMIT 1";
+    my $stmt = qq"SELECT accession FROM import_queue LIMIT 1";
     my $id = $me->MySelect(statement => $stmt, type => 'single');
     return($id);
 }
