@@ -238,6 +238,10 @@ command: $command\n" if (defined($config->{debug}));
     close(NU);
     ## CLOSE NU in Nupack_NOPAIRS
     my $nupack_return = $?;
+    if ($nupack_return eq '35584') {
+	$config->PRF_Error("Nupack error $command $! 35584");
+	system("/bin/cat $inputfile");
+    }
     if ($nupack_return eq '139') {
 	$config->PRF_Error("Nupack file permission error on out.pair/out.ene", $accession);
 	die("Nupack file permission error.");
