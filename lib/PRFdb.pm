@@ -2265,6 +2265,12 @@ PRIMARY KEY(id))\;
     print "Created $table\n" if (defined($config->{debug}));
 }
 
+sub Create_Wait {
+    my $me = shift;
+    my $stmt = qq"CREATE table wait (wait int, primary key(wait))";
+    $me->MyExecute(statement => $stmt);
+}
+
 sub Create_Errors {
     my $me = shift;
     my $statement = qq\CREATE table errors (

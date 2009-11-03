@@ -150,6 +150,9 @@ if ($config->{checks}) {
 }
 
 until (defined($state->{time_to_die})) {
+    while ($db->MySelect(statement => "SELECT wait from wait", type => 'single')) {
+	sleep(300);
+    }
     ### You can set a configuration variable 'master' so that it will not die
     if ($state->{done_count} > 60 and !defined($config->{master})) {$state->{time_to_die} = 1}
     if (defined($config->{seqlength})) {
@@ -854,6 +857,8 @@ sub Zscore {
 }
 
 sub Maintenance {
+    $db->MyExecute("UPDATE wait SET wait = '1'");
+    sleep(120);
     ## The stats table
     my $data = {
 	species => $config->{index_species},
@@ -980,8 +985,8 @@ sub Maintenance {
 	    } ## foreach species
 	}  ## if pknotted
     } ## seqlengths
-
     ## End generating all clouds
+    $db->MyExecute("UPDATE wait set wait = '0'");
 }
 
 sub CLEANUP {
