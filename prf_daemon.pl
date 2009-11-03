@@ -249,8 +249,9 @@ sub Gather {
     $state->{accession} = $ref->{accession};
     $state->{species} = $ref->{species};
     $db->Create_Landscape("landscape_$state->{species}") unless($db->Tablep("landscape_$state->{species}"));
-    $db->Create_Boot("boot_$state->{species}") unless($db->Tablep("boot_$state->{species}"));    
-    my $message = "qid:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
+    $db->Create_Boot("boot_$state->{species}") unless($db->Tablep("boot_$state->{species}")); 
+    my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
+    my $message = "${hour}:${min}.${sec} $mon/$mday id:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
     print "Working with: $message";
     
     my %pre_landscape_state = %{$state};
