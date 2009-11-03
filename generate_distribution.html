@@ -26,8 +26,8 @@ sub tmp_cloud {
   my $cloud_output_filename = $cloud->Picture_Filename(type => 'cloud', species => $species, suffix => $suffix,);
   my $cloud_url = $cloud->Picture_Filename(type => 'cloud', species => $species, url => 'url', suffix => $suffix,);
   my $boot_table = "boot_$species";
-  my $points_stmt = qq"SELECT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
-  my $averages_stmt = qq"SELECT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
+  my $points_stmt = qq"SELECT SQL_BUFFER_RESULT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
+  my $averages_stmt = qq"SELECT SQL_BUFFER_RESULT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
   foreach my $filter (@${filters}) {
    if ($filter eq 'pseudoknots only') {
     $points_stmt .= "mfe.knotp = '1' AND ";

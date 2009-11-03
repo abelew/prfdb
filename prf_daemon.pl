@@ -373,7 +373,11 @@ sub PRF_Gatherer {
 	  $db->MyExecute($update_string);
       }
       if ($config->{do_agree}) {
-	  my $stmt = qq"SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ? or id = ? or id = ?";
+	  my $stmt = qq"(SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ?)
+UNION
+(SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ?)
+UNION
+(SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ?)";
 	  my $info = $db->MySelect(statement => $stmt, vars => [$pknots_mfe_id, $nupack_mfe_id, $hotknots_mfe_id],);
 	  my $agree = new Agree();
 	  my $agree_datum = $agree->Do(info => $info);
@@ -413,8 +417,7 @@ sub PRF_Gatherer {
               print "$current has $boot_folds randomizations for method: $method\n" if (defined($config->{debug}));
               if (!defined($boot_folds) or $boot_folds == 0) {
                   my $bootlaces = $boot->Go($method);
-                  my $inserted_ids = $db->Put_Boot($bootlaces);
-                  my @fun = @{$inserted_ids};
+                  my $rows = $db->Put_Boot($bootlaces);
               }
           }
           Check_Boot_Connectivity($state, $slipsite_start);
@@ -854,6 +857,14 @@ sub Zscore {
 }
 
 sub Maintenance {
+    ## Optimize the tables
+    my $tables = $db->MySelect("show tables");
+    foreach my $t (@{$tables}) {
+	$db->MyExecute("OPTIMIZE TABLE $t->[0]");
+	$db->MyExecute("ANALYZE TABLE $t->[0]");
+    }
+    ## Fill in missing zscores
+    Zscore();
     ## The stats table
     my $data = {
 	species => $config->{index_species},
@@ -863,13 +874,11 @@ sub Maintenance {
     };
     $db->Put_Stats($data);
     ## End the stats table
-    Zscore();
     my $test = $db->Tablep('index_stats');
     $db->Create_Index_Stats() unless($test);
-    my $species_list = $db->MySelect("SELECT distinct(species) FROM genome");
     my ($num_genome, $num_mfe_entries, $num_mfe_knotted);
-    foreach my $species (@{$species_list}) {
-	print "Working on $species->[0]\n";
+    foreach my $species (@{$config->{index_species}}) {
+	print "Filling index_stats for $species->[0]\n";
 	next if ($species->[0] =~ /^virus-/);
 	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species->[0],]);
 	$num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species = ?",type=>'single', vars => [$species->[0],]);
@@ -884,13 +893,6 @@ sub Maintenance {
     $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species like 'virus-%'",type=>'single');
     $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('', 'virus',?,?,?)", vars => [$num_genome, $num_mfe_entries, $num_mfe_knotted],);
     ## End zscore crapola
-
-    ## Optimize the tables
-    my $tables = $db->MySelect("show tables");
-    foreach my $t (@{$tables}) {
-	$db->MyExecute("OPTIMIZE TABLE $t->[0]");
-    }
-    ## End that sillyness
 
     ## Generate all clouds
     my @slipsites = ('AAAUUUA', 'UUUAAAU', 'AAAAAAA', 'UUUAAAA', 'UUUUUUA', 'AAAUUUU', 'UUUUUUU', 'UUUAAAC', 'AAAAAAU', 'AAAUUUC', 'AAAAAAC', 'GGGUUUA', 'UUUUUUC', 'GGGAAAA', 'CCCUUUA', 'CCCAAAC', 'CCCAAAA', 'GGGAAAU', 'GGGUUUU', 'GGGAAAC', 'CCCUUUC', 'CCCUUUU', 'GGGAAAG', 'GGGUUUC', 'all');
@@ -924,8 +926,8 @@ sub Maintenance {
 		    $cloud_url = $config->{base} . '/' . $cloud_url;
 		    my ($points_stmt, $averages_stmt, $points, $averages);
 		    if (!-f $cloud_output_filename) {
-			$points_stmt = qq"SELECT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
-			$averages_stmt = qq"SELECT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
+			$points_stmt = qq"SELECT SQL_BUFFER_RESULT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
+			$averages_stmt = qq"SELECT SQL_BUFFER_RESULT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
 	    
 			if ($pk eq 'yes') {
 			    $points_stmt .= "mfe.knotp = '1' AND ";

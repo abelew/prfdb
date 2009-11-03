@@ -1525,7 +1525,7 @@ sub Insert_Genome_Entry {
 #    my $statement = qq(INSERT INTO genome
 #(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
 #    VALUES('$datum->{accession}', '$datum->{species}', '$datum->{genename}', '$datum->{version}', '$datum->{comment}', '$datum->{mrna_seq}', '$datum->{protein_seq}', '$datum->{orf_start}', '$datum->{orf_stop}', '$datum->{direction}'));
-    my $statement = qq"INSERT INTO genome
+    my $statement = qq"INSERT DELAYED INTO genome
 (accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
 VALUES(?,?,?,?,?,?,?,?,?,?)";
 my ($cp,$cf,$cl) = caller();
@@ -1685,14 +1685,14 @@ sub Put_MFE_Landscape {
     if (defined($data->{sequence})) {
 	$data->{sequence} =~ tr/actgu/ACTGU/;
     } else {
+	callstack();
 	print STDERR "Sequence is not defined for Species:$data->{species}, Accession:$data->{accession}, Start:$data->{start}, Seqlength:$data->{seqlength}\n";
+	return(undef);
     }
-    my $statement = qq"INSERT INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    my $statement = qq"INSERT DELAYED INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     my ($cp,$cf,$cl) = caller();
-    $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}], caller =>"$cp,$cf,$cl",);
-    my $get_inserted_id = qq"SELECT LAST_INSERT_ID()";
-    my $id = $me->MySelect(statement => $get_inserted_id, type => 'single');
-    return ($id);
+    my $rows = $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}], caller =>"$cp,$cf,$cl",);
+    return ($rows);
 }    ## End put_mfe_landscape
 
 sub Put_Agree {
@@ -1702,7 +1702,7 @@ sub Put_Agree {
     my $check = $me->MySelect(statement => "SELECT count(id) FROM agree WHERE accession = ? AND start = ? AND length = ?", vars => [$args{accession}, $args{start}, $args{length}], type => 'single');
     return(undef) if ($check >= 1);
     my ($cp,$cf,$cl) = caller();
-    my $stmt = qq"INSERT INTO agree (accession, start, length, all_agree, no_agree, n_alone, h_alone, p_alone, hplusn, nplusp, hplusp, hnp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+    my $stmt = qq"INSERT DELAYED INTO agree (accession, start, length, all_agree, no_agree, n_alone, h_alone, p_alone, hplusn, nplusp, hplusp, hnp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
     my $rows = $me->MyExecute(statement => $stmt,
 		   vars => [$args{accession}, $args{start}, $args{length}, $agree->{all}, $agree->{none}, $agree->{n}, $agree->{h}, $agree->{p}, $agree->{hn}, $agree->{np}, $agree->{hp}, $agree->{hnp}],
 		   caller =>"$cp,$cf,$cl");
@@ -1712,45 +1712,51 @@ sub Put_Agree {
 sub Put_Stats {
     my $me = shift;
     my $data = shift;
+    my $inserted_rows = 0;
     foreach my $species (@{$data->{species}}) {
 	my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
 	$me->MyExecute(statement => qq"DELETE FROM stats WHERE species = '$species'");
 	foreach my $seqlength (@{$data->{seqlength}}) {
 	    foreach my $max_mfe (@{$data->{max_mfe}}) {
 		foreach my $algorithm (@{$data->{algorithm}}) {
-		    print "Now doing $species $seqlength $max_mfe $algorithm\n";
+		    #  0    1    2     3     4    5     6     7     8
+		    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+		    my $timestring = "$mon $mday, $hour:$min.$sec";
+		    print "$timestring  Now doing $species $seqlength $max_mfe $algorithm\n";
 		    my $statement = qq"INSERT DELAYED INTO stats
 (species, seqlength, max_mfe, min_mfe, algorithm, num_sequences, avg_mfe, stddev_mfe, avg_pairs, stddev_pairs, num_sequences_noknot, avg_mfe_noknot, stddev_mfe_noknot, avg_pairs_noknot, stddev_pairs_noknot, num_sequences_knotted, avg_mfe_knotted, stddev_mfe_knotted, avg_pairs_knotted, stddev_pairs_knotted, avg_zscore, stddev_zscore)
     VALUES
 ('$species', '$seqlength', 
-(SELECT max(mfe) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'),
-(SELECT min(mfe) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'),
+(SELECT SQL_BUFFER_RESULT max(mfe) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'),
+(SELECT SQL_BUFFER_RESULT min(mfe) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'),
     '$algorithm',
-(SELECT count(id) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT avg(mfe) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT stddev(mfe) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT avg(pairs) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT stddev(pairs) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT count(id) FROM mfe WHERE knotp = '0' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT avg(mfe) FROM mfe WHERE knotp = '0' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT stddev(mfe) FROM mfe WHERE knotp = '0' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT avg(pairs) FROM mfe WHERE knotp = '0' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT stddev(pairs) FROM mfe WHERE knotp = '0' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT count(id) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT avg(mfe) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT stddev(mfe) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT avg(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT stddev(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
-(SELECT avg(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'),
-(SELECT stddev(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength')
+(SELECT SQL_BUFFER_RESULT count(id) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT avg(mfe) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT stddev(mfe) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT avg(pairs) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT stddev(pairs) FROM mfe WHERE algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT count(id) FROM mfe WHERE knotp = '0' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT avg(mfe) FROM mfe WHERE knotp = '0' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT stddev(mfe) FROM mfe WHERE knotp = '0' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT avg(pairs) FROM mfe WHERE knotp = '0' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT stddev(pairs) FROM mfe WHERE knotp = '0' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT count(id) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT avg(mfe) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT stddev(mfe) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT avg(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT stddev(pairs) FROM mfe WHERE knotp = '1' AND algorithm = '$algorithm' AND species = '$species' AND seqlength = '$seqlength' AND mfe <= '$max_mfe'),
+(SELECT SQL_BUFFER_RESULT avg(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'),
+(SELECT SQL_BUFFER_RESULT stddev(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength')
     )";
 my ($cp,$cf,$cl) = caller();
-$me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
+my $rows = $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
+$inserted_rows = $inserted_row + $rows;
 sleep(60);
                 }
             }
         }
     }
+  return($inserted_rows);
 }
 
 sub Put_Boot {
@@ -1787,7 +1793,8 @@ sub Put_Boot {
 		$config->PRF_Error($errorstring, $species, $accession);
 	    }
 	    my $boot_table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
-	    my $statement = qq"INSERT INTO $boot_table
+#	    my $statement = qq"INSERT INTO $boot_table
+	    my $statement = qq"INSERT DELAYED INTO $boot_table
 (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
     VALUES
 (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -1798,13 +1805,14 @@ sub Put_Boot {
               print "$errorstring, $species, $accession\n";
             }
             my ($cp, $cf, $cl) = caller();
-            $me->MyExecute(statement => $statement, vars => [ $data->{genome_id}, $mfe_id, $species, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ], caller => "$cp, $cf, $cl",);
+            my $rows = $me->MyExecute(statement => $statement, vars => [ $data->{genome_id}, $mfe_id, $species, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ], caller => "$cp, $cf, $cl",);
 
-            my $boot_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
-            push(@boot_ids, $boot_id);
+#            my $boot_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
+#            push(@boot_ids, $boot_id);
           }    ### Foreach random method
     }    ## Foreach mfe method
-    return(\@boot_ids);
+#    return(\@boot_ids);
+     return($rows);
 }    ## End of Put_Boot
 
 
@@ -1837,7 +1845,8 @@ sub Put_Single_Boot {
 	$config->PRF_Error($errorstring, $species, $accession);
     }
     my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
-    my $statement = qq"INSERT INTO $table
+#    my $statement = qq"INSERT INTO $table
+    my $statement = qq"INSERT DELAYED INTO $table
 (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
     VALUES
 ('$data->{genome_id}','$mfe_id','$species','$accession','$start','$seqlength','$iterations','$rand_method','$mfe_method','$mfe_mean','$mfe_sd','$mfe_sd','$pairs_mean','$pairs_sd','$pairs_se','$mfe_values')";
@@ -1852,9 +1861,10 @@ sub Put_Single_Boot {
     my ($cp, $cf, $cl) = caller();
     my $rows = $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
 
-    my $boot_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
-    print "Inserted $boot_id\n";
-    return($boot_id);
+#    my $boot_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
+#    print "Inserted $boot_id\n";
+#    return($boot_id);
+     return($rows);
 }
 
 sub Put_Overlap {
