@@ -58,17 +58,15 @@ sub Do {
 	my $h = $struct->{$c}->{hotknots}->{partner};
 	my $p = $struct->{$c}->{pknots}->{partner};
 	if (!defined($n)) {
-	    print "n not defined\n";
+#	    print "n not defined\n";
 	    next;
 	} elsif (!defined($h)) {
-	    print "h not defined\n";
+#	    print "h not defined\n";
 	    next;
 	} elsif (!defined($p)) {
-	    print "$p not defined\n";
+#	    print "p not defined\n";
 	    next;
 	}
-
-#	sleep(1);
 	if ($struct->{$c}->{hotknots}->{partner} eq '.' and $struct->{$c}->{pknots}->{partner} eq '.' and $struct->{$c}->{nupack}->{partner} eq '.') {
 	    $agree->{none}++;
 	    ## Nothing is 0
