@@ -1748,10 +1748,10 @@ sub Put_Stats {
 (SELECT SQL_BUFFER_RESULT avg(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'),
 (SELECT SQL_BUFFER_RESULT stddev(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength')
     )";
-my ($cp,$cf,$cl) = caller();
-my $rows = $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
-$inserted_rows = $inserted_row + $rows;
-sleep(60);
+                  my ($cp,$cf,$cl) = caller();
+                  my $rows = $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
+                  $inserted_rows = $inserted_rows + $rows;
+                  sleep(60);
                 }
             }
         }
@@ -1764,6 +1764,7 @@ sub Put_Boot {
     my $data = shift;
     my $id = $data->{genome_id};
     my @boot_ids = ();
+    my $rows = 0;
     ## What fields are required?
     foreach my $mfe_method (keys %{$config->{boot_mfe_algorithms}}) {
 #  foreach my $mfe_method ( keys %{$data}) {
@@ -1805,7 +1806,8 @@ sub Put_Boot {
               print "$errorstring, $species, $accession\n";
             }
             my ($cp, $cf, $cl) = caller();
-            my $rows = $me->MyExecute(statement => $statement, vars => [ $data->{genome_id}, $mfe_id, $species, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ], caller => "$cp, $cf, $cl",);
+            my $inserted_rows = $me->MyExecute(statement => $statement, vars => [ $data->{genome_id}, $mfe_id, $species, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ], caller => "$cp, $cf, $cl",);
+            $rows = $rows + $inserted_rows;
 
 #            my $boot_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
 #            push(@boot_ids, $boot_id);
