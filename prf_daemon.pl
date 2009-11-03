@@ -714,8 +714,7 @@ sub Check_Sequence_Length {
 	chomp $line;
 	if ($line =~ /^\>/) {
 	    $output .= $line;
-	}
-	else {
+	} else {
 	    my @tmp = split(//, $line);
 	    push(@out, @tmp);
 	}
@@ -729,47 +728,27 @@ sub Check_Sequence_Length {
     }
     if ($sequence =~ /^A+$/) {
 	return ('polya');
-    }
-    elsif ($sequence =~ /^A+C+UCG+$/) {
+    } elsif ($sequence =~ /^A+C+UCG+$/) {
 	return('polya');
-    }
-    elsif ($sequence =~ /^A+U+$/) {
+    } elsif ($sequence =~ /^A+U+$/) {
 	return('polya');
-    }
-    elsif ($sequence =~ /^A+C+UGAG$/) {
+    } elsif ($sequence =~ /^A+C+UGAG$/) {
 	return('polya');
-    }
-    elsif ($sequence =~ /^A+U+A+$/) {
+    } elsif ($sequence =~ /^A+U+A+$/) {
 	return('polya');
-    }
-    elsif ($sequence =~ /^A+C{3,}G+$/) {
+    } elsif ($sequence =~ /^A+C{3,}G+$/) {
 	return('polya');
-    }
-    elsif ($sequence =~ /^A+CCCUCG+$/) {
+    } elsif ($sequence =~ /^A+CCCUCG+$/) {
 	return('polya');
-    }
-    elsif ($sequence =~ /AAAAAAAA$/ and $sequence_length < $wanted_sequence_length) {
+    } elsif ($sequence =~ /AAAAAAAA$/ and $sequence_length < $wanted_sequence_length) {
 	return ('polya');
-    }
-    elsif ($sequence_length > $wanted_sequence_length) {
-#    open( OUT, ">$filename" ) or die("Could not open $filename $!");
-#    ## OPEN OUT in Check_Sequence_Length
-#    print OUT "$output\n";
-#    foreach my $char ( 0 .. $sequence_length ) {
-#      print OUT $out[$char];
-#    }
-#    print OUT "\n";
-#    close(OUT);
-#    ## CLOSE OUT in Check_Sequence_Length
+    } elsif ($sequence_length > $wanted_sequence_length) {
 	return ('longer than wanted');
-    }
-    elsif ($sequence_length == $wanted_sequence_length) {
+    } elsif ($sequence_length == $wanted_sequence_length) {
 	return ('equal');
-    }
-    elsif ($sequence_length < $wanted_sequence_length) {
+    } elsif ($sequence_length < $wanted_sequence_length) {
 	return ('shorter than wanted');
-    }
-    else {
+    } else {
 	return ('unknown');
     }
 }
@@ -861,6 +840,8 @@ sub Zscore {
 }
 
 sub Maintenance {
+    my $finished_species = $db->MySelect(statement => "SELECT species FROM finished", type => 'flat');
+    $finished_species = [] if (!defined($finished_species));
     $db->MyExecute("UPDATE wait SET wait = '1'");
     sleep(120);
     ## Optimize the tables
@@ -878,12 +859,17 @@ sub Maintenance {
 	max_mfe => [$config->{max_mfe}],
 	algorithm => ['pknots','nupack','hotknots'],
     };
-    $db->Put_Stats($data);
+    $db->Put_Stats($data, $finished_species);
     ## End the stats table
+
+    ## The index stats table
     my $test = $db->Tablep('index_stats');
     $db->Create_Index_Stats() unless($test);
     my ($num_genome, $num_mfe_entries, $num_mfe_knotted);
-    foreach my $species (@{$config->{index_species}}) {
+    OUT: foreach my $species (@{$config->{index_species}}) {
+	foreach my $sp (@{$finished_species}) {
+	    next OUT if ($sp eq $species);
+	}
 	print "Filling index_stats for $species->[0]\n";
 	next if ($species->[0] =~ /^virus-/);
 	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species->[0],]);
@@ -898,14 +884,17 @@ sub Maintenance {
     $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species like 'virus-%'",type=>'single');
     $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species like 'virus-%'",type=>'single');
     $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('', 'virus',?,?,?)", vars => [$num_genome, $num_mfe_entries, $num_mfe_knotted],);
-    ## End zscore crapola
+    ## End index_stats
 
     ## Generate all clouds
     my @slipsites = ('AAAUUUA', 'UUUAAAU', 'AAAAAAA', 'UUUAAAA', 'UUUUUUA', 'AAAUUUU', 'UUUUUUU', 'UUUAAAC', 'AAAAAAU', 'AAAUUUC', 'AAAAAAC', 'GGGUUUA', 'UUUUUUC', 'GGGAAAA', 'CCCUUUA', 'CCCAAAC', 'CCCAAAA', 'GGGAAAU', 'GGGUUUU', 'GGGAAAC', 'CCCUUUC', 'CCCUUUU', 'GGGAAAG', 'GGGUUUC', 'all');
     my @pknot = ('yes','no');
     foreach my $seqlength (@{$config->{seqlength}}) {
 	foreach my $pk (@pknot) {
-	    foreach my $species (@{$config->{index_species}}) {
+	    SP: foreach my $species (@{$config->{index_species}}) {
+		foreach my $sp (@{$finished_species}) {
+		    next SP if ($sp eq $species);
+		}
 		foreach my $slip (@slipsites) {
 		    print "Generating picture for $species slipsite: $slip knotted: $pk seqlength: $seqlength\n";
 		    my $cloud = new PRFGraph(config => $config);
