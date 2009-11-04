@@ -12,7 +12,6 @@ use Bootlace;
 use Overlap;
 use SeqMisc;
 use PRFBlast;
-use PRFGraph;
 use Agree;
 $SIG{INT} = 'CLEANUP';
 $SIG{BUS} = 'CLEANUP';
@@ -253,7 +252,7 @@ sub Gather {
     $db->Create_Boot("boot_$state->{species}") unless($db->Tablep("boot_$state->{species}")); 
     my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
     my $message = "${hour}:${min}.${sec} $mon/$mday id:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
-    print "Working with: $message";
+    print $message;
     
     my %pre_landscape_state = %{$state};
     my $landscape_state = \%pre_landscape_state;
