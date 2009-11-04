@@ -890,7 +890,7 @@ sub Get_Queue {
     }
     ## This id is the same id which uniquely identifies a sequence in the genome database
     my $single_id;
-    if (defined($config->{randomize_id})) {
+    if ($config->{randomize_id}) {
 	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' ORDER BY RAND() LIMIT 1";
     } else {
 	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' LIMIT 1";

@@ -127,7 +127,7 @@ sub new {
     $me->{pbs_template} = 'pbs_template' if (!defined($me->{pbs_template}));
     $me->{POST_CHOMP} = 1 if (!defined($me->{POST_CHOMP}));
     $me->{queue_table} = 'queue' if (!defined($me->{queue_table}));
-    $me->{randomize_id} = 1 if (!defined($me->{randomize_id}));
+    $me->{randomize_id} = 0 if (!defined($me->{randomize_id}));
     $me->{seqlength} = [100,75,50] if (!defined($me->{seqlength}));
     $me->{slip_site_1} = '^n\{3\}$' if (!defined($me->{slip_site_1}));
     $me->{slip_site_2} = '^w\{3\}$' if (!defined($me->{slip_site_2}));
