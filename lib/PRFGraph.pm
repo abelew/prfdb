@@ -33,6 +33,7 @@ sub Make_Extension {
     my $url_base = shift;
     $species = 'saccharomyces_cerevisiae' unless (defined($species));
     my $db = new PRFdb(config => $config);
+    ## UNDEF VALUES this statement is pulling up undefined values...
     my $averages = qq"SELECT avg_mfe, avg_zscore, stddev_mfe, stddev_zscore FROM stats WHERE species = '$species' AND seqlength = '100' AND algorithm = 'nupack'";
     my $averages_fun = $db->MySelect($averages);
     my $avg_mfe = $averages_fun->[0]->[0];
@@ -45,12 +46,10 @@ sub Make_Extension {
     if ($type eq 'percent') {
 	$graph->set(y_max_value=>150);
 	$graph->set(y_label=>'-1 frame extension in percent');
-    }
-    elsif ($type eq 'codons') {
+    } elsif ($type eq 'codons') {
 	$graph->set(y_max_value=>150);
 	$graph->set(y_label=> '-1 frame extension in codons');
-    }
-    else {
+    } else {
 	$graph->set(y_max_value=>200);
 	$graph->set(y_label=>'testme');
     }
@@ -98,11 +97,9 @@ sub Make_Extension {
     my $map_string = '';
     if ($type eq 'percent') {
 	$map_string = qq/<map name="percent_extension" id="percent_extension">\n/;
-    }
-    elsif ($type eq 'codons') {
+    } elsif ($type eq 'codons') {
 	$map_string = qq/<map name="codons_extension" id="codons_extension">\n/;
-    }
-    else {
+    } else {
 	$map_string = "uhh what?\n";
     }
     print MAP $map_string;
@@ -123,14 +120,11 @@ sub Make_Extension {
 	my $stop_count = 0;
 	if (($orf_start % 3) == 0) {
 	    $stop_count = 1;
-	}
-	elsif (($orf_start % 3) == 1) {
+	} elsif (($orf_start % 3) == 1) {
 	    $stop_count = 2;
-	}
-	elsif (($orf_start % 3) == 2) {
+	} elsif (($orf_start % 3) == 2) {
 	    $stop_count = 0;
-	}
-	else {
+	} else {
 	    die "WTF?";
 	}
 	my $minus_start = $start + 4;
@@ -143,13 +137,12 @@ sub Make_Extension {
 		  $codon eq 'uag' or $codon eq 'uaa' or $codon eq 'uga') {
 		  $minus_string .= $codon;
 		  last LOOP;
-	      }
-	      else {
+	      } else {
 		  $minus_string .= $codon;
 	      }
 	      $codon = $seq[$c];
-	  }  ## if on a third base of the -1 frame
-	  else {
+	      ## if on a third base of the -1 frame
+	  } else {
 	      $codon .= $seq[$c];
 	  }
       } ## End foreach character of the sequence
@@ -163,16 +156,14 @@ sub Make_Extension {
 	my $x_percentage = sprintf("%.2f", 100.0 *($start - $orf_start) / ($orf_stop - $orf_start));
 	my $y_percentage = sprintf("%.2f", 100.0 * (($extension_length + $start) - $orf_start) / ($orf_stop - $orf_start));
 	my $color;
+	## UNDEF VALUES HERE
 	if (($zscore < $avg_zscore) and ($mfe < $avg_mfe)) {
 	    $color = $gd->colorResolve(191,0,0);  ## Red
-	}
-	elsif (($zscore >= $avg_zscore) and ($mfe < $avg_mfe)) {
+	} elsif (($zscore >= $avg_zscore) and ($mfe < $avg_mfe)) {
 	    $color = $gd->colorResolve(0,191,0);  ## Green, I think
-	}
-	elsif (($zscore < $avg_zscore) and ($mfe >= $avg_mfe)) {
+	} elsif (($zscore < $avg_zscore) and ($mfe >= $avg_mfe)) {
 	    $color = $gd->colorResolve(0,0,191);
-	}
-	else {
+	} else {
 	    $color = $gd->colorResolve(165,165,165);
 	}
 	my $x_coord = sprintf("%.2f", (($x_range / 100) * $x_percentage + $left_x_coord));
@@ -182,12 +173,10 @@ sub Make_Extension {
 	if ($type eq 'percent') {
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession, mfe: $avg_mfe z: $avg_zscore">\n/;
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);
-	}
-	elsif ($type eq 'codons') {
+	} elsif ($type eq 'codons') {
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${codons_y_coord},$radius" href="${url}" title="$accession">\n/;
 	    $gd->filledArc($x_coord, $codons_y_coord, 4,4,0,360,$color,4);
-	}
-	else {
+	} else {
 	    die("Type is non-specified");
 	}
 	print MAP $map_string;
@@ -214,8 +203,7 @@ sub Make_Cloud {
     my $seqlength;
     if (defined($args{seqlength})) {
 	$seqlength = $args{seqlength};
-    }
-    else {
+    } else {
 	$seqlength = 100;
     }
     my $pknot = undef;
@@ -229,8 +217,7 @@ sub Make_Cloud {
     if ($species eq 'all') {
 	$mfe_min_value = $db->MySelect(statement => qq/SELECT min(mfe) FROM mfe/, type => 'single');
 	$mfe_max_value = $db->MySelect(statement => qq/SELECT max(mfe) FROM mfe/, type => 'single');
-    }
-    else {
+    } else {
 	$mfe_min_value = $db->MySelect(statement => qq/SELECT min(mfe) FROM mfe WHERE species = '$species'/, type => 'single');
 	$mfe_max_value = $db->MySelect(statement => qq/SELECT max(mfe) FROM mfe WHERE species = '$species'/, type => 'single');
     }
@@ -295,8 +282,7 @@ sub Make_Cloud {
 	    if ($max_counter < $points->{$x_point}->{$y_point}->{count}) {
 		$max_counter = $points->{$x_point}->{$y_point}->{count};
 	    }
-	}
-	else {
+	} else {
 	    $points->{$x_point}->{$y_point}->{count} = 1;
 	    $points->{$x_point}->{$y_point}->{accessions} = $point->[2];
 	    $points->{$x_point}->{$y_point}->{genenames} = $point->[6];
@@ -324,20 +310,16 @@ sub Make_Cloud {
 	    if (($x_coord < $average_mfe_coord) and ($y_coord > $average_z_coord)) {
 		$color = $gd->colorResolve($color_value,0,0);
 		# print " C: red<br>\n";
-	    } 
-	    elsif ($x_coord < $average_mfe_coord) {
+	    } elsif ($x_coord < $average_mfe_coord) {
 		$color = $gd->colorResolve(0,$color_value,0);
 		# print " C: green<br>\n";
-	    }
-	    elsif ($y_coord > $average_z_coord) {
+	    } elsif ($y_coord > $average_z_coord) {
 		$color = $gd->colorResolve(0,0,$color_value);
 		# print " C: blue<br>\n";
-	    }
-	    elsif (($x_coord > $average_mfe_coord) and ($y_coord < $average_z_coord)) {
+	    } elsif (($x_coord > $average_mfe_coord) and ($y_coord < $average_z_coord)) {
 		$color = $gd->colorResolve($color_value,$color_value,$color_value);
 		# print " C: grey<br>\n";
-	    } 
-	    else {
+	    } else {
 		$color = $gd->colorResolve(254,191,191);
 		# print " C: pink<br>\n";
 	    }
@@ -369,20 +351,17 @@ sub Make_Cloud {
 		$y_coord = sprintf('%.0f', $y_coord);
 		if ($points->{$x_point}->{$y_point}->{count} == 1) {
 		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accessions&slipstart=$start" title="$genenames">\n);
-		}
-		else {
+		} else {
 		    if (defined($pknot)) {
 			$image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/cloud_mfe_z.html?pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point}" title="$genenames">\n);
-		    } 
-		    else {
+		    } else {
 			$image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/cloud_mfe_z.html?seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point}" title="$genenames">\n);
 		    }
 		}
 		print MAP $image_map_string;
 	    }
 	}
-    }
-    else {
+    } else {
 	foreach my $point (@{$data}) {
 	    my $x_point = sprintf("%.1f",$point->[0]);
 	    my $y_point = sprintf("%.1f",$point->[1]);
@@ -398,22 +377,17 @@ sub Make_Cloud {
 		    $slips_significant{$slipsite}{num} = 1;
 		    if ($slipsite =~ /^AAA....$/) {
 			$slips_significant{$slipsite}{color} = 'red';
-		    }
-		    elsif ($slipsite =~ /^UUU....$/) {
+		    } elsif ($slipsite =~ /^UUU....$/) {
 			$slips_significant{$slipsite}{color} = 'green';
-		    }
-		    elsif ($slipsite =~ /^GGG....$/) {
+		    } elsif ($slipsite =~ /^GGG....$/) {
 			$slips_significant{$slipsite}{color} = 'blue';
-		    }
-		    elsif ($slipsite =~ /^CCC....$/) {
+		    } elsif ($slipsite =~ /^CCC....$/) {
 			$slips_significant{$slipsite}{color} = 'black';
-		    }
-		    else {
+		    } else {
 			#warn("This sucks. $slipsite doesn't match");
 			next;
 		    }
-		}
-		else {
+		} else {
 		    $slips_significant{$slipsite}{num}++;
 		}
 	    }
@@ -422,22 +396,17 @@ sub Make_Cloud {
 		$slipsites_numbers{$slipsite}{num} = 1;
 		if ($slipsite =~ /^AAA....$/) {
 		    $slipsites_numbers{$slipsite}{color} = 'red';
-		}
-		elsif ($slipsite =~ /^UUU....$/) {
+		} elsif ($slipsite =~ /^UUU....$/) {
 		    $slipsites_numbers{$slipsite}{color} = 'green';
-		}
-		elsif ($slipsite =~ /^GGG....$/) {
+		} elsif ($slipsite =~ /^GGG....$/) {
 		    $slipsites_numbers{$slipsite}{color} = 'blue';
-		}
-		elsif ($slipsite =~ /^CCC....$/) {
+		} elsif ($slipsite =~ /^CCC....$/) {
 		    $slipsites_numbers{$slipsite}{color} = 'black';
-		}
-		else {
+		} else {
 		    #warn("This sucks. $slipsite doesn't match the expected");
 		    next;
 		}
-	    }
-	    else {
+	    } else {
 		$slipsites_numbers{$slipsite}{num}++;
 	    }
 	    
@@ -451,12 +420,10 @@ sub Make_Cloud {
 		
 		if ($slipsites_numbers{$slipsite}{num} > 1) {
 		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accessions&slipstart=$start" title="$genenames">\n);
-		}
-		else {
+		} else {
 		    if (defined($pknot)) {
 			$image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/cloud_mfe_z.html?seqlength=${seqlength}&slipsite=$args_slipsites&pknot=1&species=${species}&mfe=${x_point}&z=${y_point}" title="$genenames">\n;);
-		    }
-		    else {
+		    } else {
 			$image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/cloud_mfe_z.html?seqlength=${seqlength}&slipsite=$args_slipsites&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point}" title="$genenames">\n);
 		    } ## Foreach x point
 		}
@@ -488,6 +455,10 @@ sub Make_Cloud {
     $percent_sig_filename =~ s/\.png$/-percentsig\.png/g;
     my %percent_sig;
     foreach my $slip (keys %slipsites_numbers) {
+	## UNDEF VALUES HERE, DIVISION BY ZERO
+	if (!defined($slipsites_numbers{$slip}{num})) {
+	    $percent_sig{$slip}{num} = 0;
+	}
 	$percent_sig{$slip}{num} = (($slips_significant{$slip}{num} / $slipsites_numbers{$slip}{num}) * 100.0);
 	$percent_sig{$slip}{num} = sprintf("%.1f", $percent_sig{$slip}{num});
 	$percent_sig{$slip}{color} = $slips_significant{$slip}{color};
@@ -583,6 +554,7 @@ sub Make_SlipBars {
     my (@keys, @values);
     my @colors;
     my $color_string = '';
+    ## UNDEF VALUES HERE
     foreach my $k (sort { $numbers->{$b}{num} <=> $numbers->{$a}{num} } keys %{$numbers}) {
 #    foreach my $k (sort  keys %{$numbers}) {
 	$color_string .= "$numbers->{$k}{color} ";
@@ -633,12 +605,10 @@ sub Make_Landscape {
 	if ($datum->[1] eq 'pknots') {
 	    $info->{$place}->{pknots} = $datum->[3];
 	    $mean_pknots = $mean_pknots + $datum->[3];
-	}
-	elsif ($datum->[1] eq 'nupack') {
+	} elsif ($datum->[1] eq 'nupack') {
 	    $info->{$place}->{nupack} = $datum->[3];
 	    $mean_nupack = $mean_nupack + $datum->[3];
-	}
-	elsif ($datum->[1] eq 'vienna') {
+	} elsif ($datum->[1] eq 'vienna') {
 	    $info->{$place}->{vienna} = $datum->[3];
 	    $mean_vienna = $mean_vienna + $datum->[3];
 	}
@@ -660,8 +630,7 @@ sub Make_Landscape {
 	    push(@nupack_y, $info->{$current}->{nupack});
 	    push(@pknots_y, $info->{$current}->{pknots});
 	    push(@vienna_y, $info->{$current}->{vienna});
-	}
-	else {
+	} else {
 	    push(@nupack_y,undef);
 	    push(@pknots_y,undef);
 	    push(@vienna_y,undef);
@@ -786,8 +755,7 @@ sub Make_Distribution {
 	my $zscore;
 	if ($xstddev == 0) {
 	    $zscore = 0;
-	}
-	else {
+	} else {
 	    $zscore = ($x - $xbar) / $xstddev;
 	}
 	my $prob = (1 - Statistics::Distributions::uprob($zscore));
@@ -855,8 +823,7 @@ sub Make_Feynman {
 	$sequence = $me->{sequence};
 	$parsed = $me->{parsed};
 	$pkout = $me->{output};
-    }
-    else {
+    } else {
 	$id = $me->{mfe_id};
 	my $db = new PRFdb(config=>$config);
 	my $stmt = qq(SELECT sequence, slipsite, parsed, output FROM mfe WHERE id = ?);
@@ -943,12 +910,10 @@ sub Make_Feynman {
 	if ($paired[$c] eq '.') {
 	    if ($stems[$c] =~ /\d+/) {
 		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
-	    }
-	    elsif ($stems[$c] eq '.') {
+	    } elsif ($stems[$c] eq '.') {
 		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
 	    }
-	}
-	elsif ($paired[$c] =~ /\d+/) {
+	} elsif ($paired[$c] =~ /\d+/) {
 	    my $current_stem = $stems[$c];
 	    my $bases_in_stem = $bp_per_stem->{$current_stem};
 	    my $center_characters = ($paired[$c] - $c) / 2;
@@ -965,9 +930,8 @@ sub Make_Feynman {
 	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$stems[$c]]);
 	    $paired[$paired[$c]] = '.';
 	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
-	}
+	} else {
 ### Why are there spaces?
-	else {
 #	    print "Crap in a hat the character is $paired[$c]\n";
 	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
 	}
@@ -976,8 +940,7 @@ sub Make_Feynman {
     my $output;
     if(defined($out_filename)) {
 	$output = $out_filename;
-    }
-    else {
+    } else {
 	$output = $me->Picture_Filename(type => 'feynman');
     }
     open(OUT, ">$output");
@@ -1555,8 +1518,7 @@ sub Get_PPCC {
 	next if (!defined($x));
 	if ($xstddev == 0) {
 	    push(@PofX, 0);
-	}
-	else { 
+	} else { 
 	    push(@PofX, (1 - Statistics::Distributions::uprob($x - $xbar) / $xstddev));
 	}
     }
@@ -1670,8 +1632,7 @@ sub Make_Directory {
     my $directory;
     if (defined($species)) {
 	$directory = qq($config->{base}/images/$type/$species);
-    }
-    else {
+    } else {
 	$directory = qq"$config->{base}/images/$type/";
 	my @cheat_again = split(//, $nums);
 	while (my $num = shift(@cheat_again)) {
@@ -1711,8 +1672,7 @@ sub Get_Stems {
 	next if ($char eq '.');
 	if (!defined($dat->{$char})) {
 	    $dat->{$char} = 0.5;
-	}
-	else {
+	} else {
 	    $dat->{$char} = $dat->{$char} + 0.5;
 	}
     }

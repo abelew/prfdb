@@ -108,6 +108,11 @@ sub new {
     $me->{landscape_seqlength} = 105 if (!defined($me->{landscape_seqlength}));
     $me->{log} = 'prfdb.log' if (!defined($me->{log}));
     $me->{log_error} = 'prfdb.errors' if (!defined($me->{log_error}));
+    $me->{maintenance_skip_sleep} = 0 if (!defined($me->{maintenance_skip_sleep}));
+    $me->{maintenance_skip_optimize} = 0 if (!defined($me->{maintenance_skip_optimize}));
+    $me->{maintenance_skip_stats} = 0 if (!defined($me->{maintenance_skip_stats}));
+    $me->{maintenance_skip_index} = 0 if (!defined($me->{maintenance_skip_index}));
+    $me->{maintenance_skip_clouds} = 0 if (!defined($me->{maintenance_skip_clouds}));
     $me->{max_mfe} = 10.0 if (!defined($me->{max_mfe}));
     $me->{niceness} = 20 if (!defined($me->{niceness}));
     $me->{num_daemons} = '60' if (!defined($me->{num_daemons}));
@@ -289,34 +294,27 @@ sub new {
 	chomp $arch;
 	if ($arch =~ /IRIX/) {
 	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/irix';
-	}
-	elsif ($arch =~ /Linux/) {
+	} elsif ($arch =~ /Linux/) {
 	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/linux';
-	}
-	elsif ($arch =~ /Darwin/) {
+	} elsif ($arch =~ /Darwin/) {
 	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/osx';
-	} 
-	elsif ($arch =~ /AIX/) {
+	} elsif ($arch =~ /AIX/) {
 	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/aix';
 	}
 	foreach my $exe (@modified_exes) {
 	    if ($arch =~ /IRIX/) {
 		my $exe_path = join('', $me->{workdir} , '/irix/', $me->{$exe});
 		$me->{$exe} = $exe_path;
-	    }
-	    elsif ($arch =~ /AIX/) {
+	    } elsif ($arch =~ /AIX/) {
 		my $exe_path = join('', $me->{workdir} , '/aix/', $me->{$exe});
 		$me->{$exe} = $exe_path;
-	    }
-	    elsif ($arch =~ /Darwin/) {
+	    } elsif ($arch =~ /Darwin/) {
 		my $exe_path = join('', $me->{workdir} , '/osx/', $me->{$exe});
 		$me->{$exe} = $exe_path;
-	    }
-	    elsif ($arch =~ /Linux/) {
+	    } elsif ($arch =~ /Linux/) {
 		my $exe_path = join('', $me->{workdir} , '/linux/', $me->{$exe});
 		$me->{$exe} = $exe_path;
-	    }
-	    else {
+	    } else {
 		die("Architecture $arch not available.");
 	    }
 	}    ## For every modified executable
@@ -324,16 +322,13 @@ sub new {
 	if ($arch =~ /IRIX/) {
 	    $me->{nupack} .= ".irix";
 	    $me->{nupack_boot} .= ".irix";
-	}
-	elsif ($arch =~ /AIX/) {
+	} elsif ($arch =~ /AIX/) {
 	    $me->{nupack} .= ".aix";
 	    $me->{nupack_boot} .= ".aix";
-	}
-	elsif ($arch =~ /Linux/) {
+	} elsif ($arch =~ /Linux/) {
 	    $me->{nupack} .= ".linux";
 	    $me->{nupack_boot} .= ".linux";
-	} 
-	elsif ($arch =~ /Darwin/) {
+	} elsif ($arch =~ /Darwin/) {
 	    $me->{nupack} .= ".osx";
 	    $me->{nupack_boot} .= ".osx";
 	}
@@ -387,8 +382,7 @@ sub AddOpen {
 	foreach my $f (@{$file}) {
 	    push(@open_files, $f);
 	}
-    }
-    else {
+    } else {
 	push(@open_files, $file);
     }
     $me->{open_files} = \@open_files;
@@ -412,12 +406,9 @@ sub RemoveFile {
 	}
 	$me->{open_files} = \@new_open_files;
 	return($num_deleted);
-    }
-
-    elsif (ref($file) eq 'ARRAY') {
+    } elsif (ref($file) eq 'ARRAY') {
 	@comp = @{$file};
-    }
-    else {
+    } else {
 	push(@comp, $file);
     }
 
@@ -473,8 +464,7 @@ sub AUTOLOAD {
     $name =~ s/.*://;   # strip fully-qualified portion
     if (@_) {
 	return $me->{$name} = shift;
-    }
-    else {
+    } else {
 	return $me->{$name};
     }
 }

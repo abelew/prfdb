@@ -12,9 +12,17 @@
 % my $long_species = HTMLMisc::Make_Species($species);
 <p>This is the <i><% $long_species %></i> distribution for <% $slipsites %> slipsites.
 <br>
-% my $filename = qq"$config->{base}/images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
-% if (-f $filename) {
+% my $filename = '';
+% if ($cloud_filters =~ /pseudo/) {
+%  $filename = qq"$config->{base}/images/cloud/${species}/cloud-pknot-${slipsites}-${seqlength}.png";
+<img src="images/cloud/<% $species %>/cloud-pknot-<% $slipsites %>-<% $seqlength %>.png" usemap="#map">
+% } else {
+%  $filename = qq"$config->{base}/images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
 <img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $seqlength %>.png" usemap="#map">
+% }
+% print "TESTME $filename<br>\n";
+% if (-f $filename) {
+
 </center>
 
 <br>
@@ -126,5 +134,6 @@ graph in one minute.</p>
  $species => undef
  $seqlength => undef
  $slipsites => undef
+ $cloud_filters => undef
  $overlayquery => undef
 </%args>
