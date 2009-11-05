@@ -15,141 +15,14 @@ sub new {
 	accession => $arg{accession},
 	start => $arg{start},
 	slippery => $arg{slippery},
+	sequence => $arg{sequence},
     }, $class;
     return ($me);
 }
 
 sub Nupack {
     my $me = shift;
-    my $pseudo = shift;
-    my $config = $me->{config};
-    my $inputfile = $me->{file};
-    my $accession = $me->{accession};
-    my $start = $me->{start};
-    my $errorfile = qq(${inputfile}_nupack.err);
-    AddOpen($errorfile);
-    my $slipsite = Get_Slipsite_From_Input($inputfile);
-    my $nupack = qq($config->{workdir}/$config->{exe_nupack});
-    my $nupack_boot = qq($config->{workdir}/$config->{exe_nupack_boot});
-    my $return = {
-	start => $start,
-	slipsite => $slipsite,
-	knotp => 0,
-	genome_id => $me->{genome_id},
-	species => $me->{species},
-	accession => $me->{accession},
-    };
-    chdir($config->{workdir});
-    my $command;
-    die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
-    die("$config->{workdir}/dataS_G.rna is missing.") unless (-r "$config->{workdir}/dataS_G.rna");
-    
-    if (defined($pseudo) and $pseudo eq 'nopseudo') {
-	die("$nupack_boot is missing.") unless (-r $nupack_boot);
-	$command = qq($nupack_boot $inputfile 2>$errorfile);
-    } else {
-	die("$nupack is missing.") unless (-r $nupack);
-	$command = qq($nupack $inputfile 2>$errorfile);
-    }
-    print "NUPACK: infile: $inputfile accession: $accession start: $start
-command: $command\n" if (defined($config->{debug}));
-    my $nupack_pid = open(NU, "$command |") or $config->PRF_Error("RNAFolders::Nupack, Could not run nupack: $command $!", $accession);
-    ## OPEN NU in Nupack
-    my $count = 0;
-    while (my $line = <NU>) {
-	$count++;
-	## The first 15 lines of nupack output are worthless.
-	next unless ($count > 14);
-	chomp $line;
-	if ($count == 15) {
-	    my ($crap, $len) = split(/\ \=\ /, $line);
-	    $return->{seqlength} = $len;
-	}
-	elsif ($count == 17) {    ## Line 17 returns the input sequence
-	    $return->{sequence} = $line;
-	}
-	elsif ($count == 18) {    ## Line 18 returns paren output
-	    #	  $return->{output} = $line;
-	    $return->{parens} = $line;
-	    #	  $return->{parens} = $line;
-	}
-	elsif ($count == 19) {    ## Get the MFE here
-	    my $tmp = $line;
-	    $tmp =~ s/^mfe\ \=\ //g;
-	    $tmp =~ s/\ kcal\/mol//g;
-	    $return->{mfe} = $tmp;
-	}
-	elsif ($count == 20) {    ## Is it a pseudoknot?
-	    if ($line eq 'pseudoknotted!') {
-		$return->{knotp} = 1;
-	    } 
-	    else {
-		$return->{knotp} = 0;
-	    }
-	}
-    }    ## End of the line reading the nupack output.
-    close(NU);
-    ## CLOSE NU in Nupack
-    my $nupack_return = $?;
-    if ($nupack_return eq '139') {
-	$config->PRF_Error("Nupack file permission error on out.pair/out.ene", $accession);
-	die("Nupack file permission error.");
-    }
-    unless ($nupack_return eq '0' or $nupack_return eq '256') {
-        $config->PRF_Error("Nupack Error running $nupack: $command $!", $accession);
-	die("Nupack Error running $nupack: $command $!");
-      }
-    RemoveFile($errorfile);
-    my $out_pair = qq($config->{workdir}/out.pair);
-    AddOpen($out_pair);
-    open(PAIRS, "<$out_pair") or $config->PRF_Error("Could not open the nupack pairs file: $!", $accession);
-    ## OPEN PAIRS in Nupack
-    my $pairs = 0;
-    my @nupack_output = ();
-    while (my $line = <PAIRS>) {
-	chomp $line;
-	$pairs++;
-	my ($fiveprime, $threeprime) = split(/\s+/, $line);
-	my $five = $fiveprime - 1;
-	my $three = $threeprime - 1;
-	$nupack_output[$three] = $five;
-	$nupack_output[$five] = $three;
-    }
-    for my $c (0 .. $#nupack_output) {
-	$nupack_output[$c] = '.' unless (defined $nupack_output[$c]);
-    }
-    close(PAIRS);
-    ## CLOSE PAIRS in Nupack
-    RemoveFile($out_pair);
-    my $nupack_output_string = '';
-    foreach my $char (@nupack_output) { $nupack_output_string .= "$char "; }
-    $return->{output} = $nupack_output_string;
-    $return->{pairs} = $pairs;
-    my $parser;
-    if (defined($config->{max_spaces})) {
-	my $max_spaces = $config->{max_spaces};
-	$parser = new PkParse(debug => 0, max_spaces => $max_spaces);
-    } 
-    else {
-	$parser = new PkParse(debug => 0);
-    }
-    my $out = $parser->Unzip(\@nupack_output);
-    my $new_struc = PkParse::ReBarcoder($out);
-    my $barcode = PkParse::Condense($new_struc);
-    my $parsed = '';
-    foreach my $char (@{$out}) {
-	$parsed .= $char . ' ';
-    }
-    $parsed = PkParse::ReOrder_Stems($parsed);
-    $return->{parsed} = $parsed;
-    $return->{barcode} = $barcode;
-    chdir($config->{base});
-    if (!defined($return->{sequence})) {
-	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
-	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
-    }
-    $return->{sequence} = Sequence_T_U($return->{sequence});
-    return ($return);
+    $me->Nupack_NOPAIRS(@_);
 }
 
 sub Nupack_NOPAIRS {
@@ -260,6 +133,15 @@ Return: $nupack_return\n");
     foreach my $char (@nupack_output) { $nupack_output_string .= "$char "; }
     $return->{output} = $nupack_output_string;
     $return->{pairs}  = $pairs;
+    if (!defined($return->{output})) {
+	print STDERR "Output is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Output is not defined in RNAFolders", $me->{species}, $accession);
+    }
+    if (!defined($return->{pairs})) {
+	print STDERR "Pairs is not defined for accession: $accession start: $start\n";
+	$config->PRF_Error("Pairs is not defined in RNAFolders", $me->{species}, $accession);
+    }
+
     my $parser;
     if (defined($config->{max_spaces})) {
 	my $max_spaces = $config->{max_spaces};
@@ -282,6 +164,7 @@ Return: $nupack_return\n");
     if (!defined($return->{sequence})) {
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
+	$return->{sequence} = $me->{sequence};
     }
     $return->{sequence} = Sequence_T_U($return->{sequence});
     return ($return);

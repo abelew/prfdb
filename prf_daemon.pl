@@ -457,18 +457,22 @@ sub Landscape_Gatherer {
 	print "Landscape Gatherer, position $start_point\n" if (defined($config->{debug}));
 	my $individual_sequence = ">$message";
 	my $end_point = $start_point + $config->{landscape_seqlength};
+	my $sequence_string = '';
 	foreach my $character ($start_point .. $end_point) {
 	    if (defined($seq_array[$character])) {
-		$individual_sequence = $individual_sequence . $seq_array[$character];
+		$sequence_string .= $seq_array[$character];
 	    }
 	}
-	$individual_sequence = $individual_sequence . "\n";
+	$individual_sequence = qq"$individual_sequence
+$sequence_string
+";
 	$state->{fasta_file} = $db->Sequence_to_Fasta($individual_sequence);
 	if (!defined($state->{accession})) {die("The accession is no longer defined. This cannot be allowed.")};
 	my $landscape_table = qq/landscape_$state->{species}/;
 	my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
 					 species => $state->{species}, accession => $state->{accession},
-					 start => $start_point,);
+					 start => $start_point,
+					 sequence => $sequence_string,);
 	my $nupack_foldedp = $db->Get_Num_RNAfolds('nupack', $state->{genome_id}, $start_point,
 						   $config->{landscape_seqlength}, $landscape_table);
 	my $pknots_foldedp = $db->Get_Num_RNAfolds('pknots', $state->{genome_id}, $start_point,
@@ -477,13 +481,15 @@ sub Landscape_Gatherer {
 						   $config->{landscape_seqlength}, $landscape_table);
 	my ($nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id, $vienna_info, $vienna_mfe_id);
 	if ($nupack_foldedp == 0) {
-	    if ($config->{nupack_nopairs_hack}) {
-		$nupack_info = $fold_search->Nupack_NOPAIRS('nopseudo');
-	    } 
-	    else {
-		$nupack_info = $fold_search->Nupack('nopseudo');
-	    }
+	    $nupack_info = $fold_search->Nupack_NOPAIRS('nopseudo');
 	    $nupack_mfe_id = $db->Put_Nupack($nupack_info, $landscape_table);
+	    ## Try to stop these random seeming errors with nupack
+	    if (!defined($nupack_mfe_id)) {
+		sleep(5);
+		print STDERR "Trying again for nupack landscape fold.\n";
+		$nupack_info = $fold_search->Nupack_NOPAIRS('nopseudo');
+		$nupack_mfe_id = $db->Put_Nupack($nupack_info, $landscape_table);
+	    }
 	    $state->{nupack_mfe_id} = $nupack_mfe_id;
 	}
 	if ($pknots_foldedp == 0) {
@@ -879,14 +885,14 @@ sub Maintenance {
 	  foreach my $sp (@{$finished_species}) {
 	      next OUT if ($sp eq $species);
 	  }
-	  print "Filling index_stats for $species->[0]\n";
-	  next if ($species->[0] =~ /^virus-/);
-	  $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species->[0],]);
-	  $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species = ?",type=>'single', vars => [$species->[0],]);
-	  $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = ?",type=>'single', vars => [$species->[0]],);
+	  print "Filling index_stats for $species\n";
+	  next if ($species =~ /^virus-/);
+	  $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species,]);
+	  $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species = ?",type=>'single', vars => [$species,]);
+	  $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = ?",type=>'single', vars => [$species],);
 	  my ($cp,$cf,$cl) = caller();
-	  my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = ?", caller => "$cp,$cf,$cl", vars => [$species->[0]],);
-	  $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('',?,?,?,?)", vars => [$species->[0], $num_genome, $num_mfe_entries, $num_mfe_knotted],);
+	  my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = ?", caller => "$cp,$cf,$cl", vars => [$species],);
+	  $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('',?,?,?,?)", vars => [$species, $num_genome, $num_mfe_entries, $num_mfe_knotted],);
       }
 	my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = 'virus'");
 	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species like 'virus-%'", type=>'single');

@@ -1544,7 +1544,7 @@ sub Insert_Numslipsite {
     my $me = shift;
     my $accession = shift;
     my $num_slipsite = shift;
-    my $statement = qq/INSERT INTO numslipsite
+    my $statement = qq/INSERT IGNORE INTO numslipsite
 (accession, num_slipsite)
 VALUES('$accession', '$num_slipsite')/;
     my ($cp,$cf,$cl) = caller();
