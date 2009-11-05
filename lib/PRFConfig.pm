@@ -191,6 +191,7 @@ sub new {
 				'help|version' => \$conf{help},
 				'hotknots:i' => \$conf{do_hotknots},
 				'import:s' => \$conf{import_accession},
+				'import_genbank:s' => \$conf{import_genbank},
 				'index_stats' => \$conf{index_stats},
 				'input' => \$conf{input},
 				'input_fasta:s' => \$conf{input_fasta},
