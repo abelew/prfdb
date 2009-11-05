@@ -166,7 +166,11 @@ until (defined($state->{time_to_die})) {
     if (defined($import_accession)) {
 	my $import = $db->Import_CDS($import_accession);
 	if (defined($import) and $import !=~ m/Error/) {
-	    print "Imported $import_accession\n" if (defined($config->{debug}));
+	    if ($import == 0) {
+		print "Did not import $import_accession, it has no coding sequence defined.\n";
+	    } else {
+		print "Imported $import_accession\n";
+	    }
 	    $db->MyExecute("DELETE FROM import_queue WHERE accession = '$import_accession'");
 	}
     }

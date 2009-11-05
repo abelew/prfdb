@@ -1236,6 +1236,7 @@ sub Import_CDS {
 	return("Error $err");
     };
     if (!defined($seq)) {
+	print "seq is not defined\n";
 	return(undef);
     }
     my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
@@ -1251,7 +1252,7 @@ sub Import_CDS {
     my $mrna_sequence = $seq->seq();
     my $counter = 0;
     my $num_cds = scalar(@cds);
-
+    return(0) if ($num_cds == 0); ## This return 0 is important, don't undef it.
     foreach my $feature (@cds) {
 	my $tmp_mrna_sequence = $mrna_sequence;
 	$counter++;

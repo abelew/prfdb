@@ -3,7 +3,7 @@ use strict;
 use IO::Handle;
 use lib 'lib';
 use PkParse;
-use PRFdb qw / AddOpen RemoveFile /;
+use PRFdb qw / callstack AddOpen RemoveFile /;
 
 sub new {
     my ($class, %arg) = @_;
@@ -176,12 +176,25 @@ sub Vienna {
     my $accession = $me->{accession};
     my $start = $me->{start};
     my $config = $me->{config};
+    if (!-r $inputfile) {
+	print "Missing the inputfile.\n";
+	callstack();
+	open(NEWIN, ">$inputfile");
+	my $db = new PRFdb(config => $config);
+	my $seq = $db->MySelect("SELECT slipsite, sequence FROM mfe where accession = ?", vars => [$accession]);
+	my $missing_slipsite = $seq->[0]->[0];
+	my $missing_sequence = $seq->[0]->[1];
+	print NEWIN ">$accession
+${missing_slipsite}${missing_sequence}
+";
+	undef($db);
+
+    }
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
-    $seq = '' if (!defined($seq));
-    if (!-r $inputfile) {
-        print "Cannot find $inputfile\n";
-        exit(0);
+    if (!defined($seq)) {
+	print STDERR "Sequence is not defined in Vienna.\n";
+	callstack();
     }
     my $errorfile = qq(${inputfile}_vienna.err);
     AddOpen($errorfile);
@@ -208,6 +221,9 @@ command: $command\n" if (defined($config->{debug}));
         $return->{sequence} = $line if ($counter == 2);
         if ($counter == 3) {
             my ($struct, $num) = split(/\s+\(\s*/, $line);
+            if (!defined($num)) {
+              print STDERR "Problem running vienna, $line\n";
+            }
             $num =~ s/\)//g;
             $return->{parens} = $struct;
             $return->{mfe} = $num;
@@ -435,65 +451,7 @@ sub Pknots_Boot {
 sub Nupack_Boot {
     ## The caller of this function is in Bootlace.pm and does not expect it to be
     ## In an OO fashion.
-    my $inputfile = shift;
-    my $accession = shift;
-    my $start = shift;
-    my $config = shift;
-    my $nupack = qq($config->{workdir}/$config->{exe_nupack});
-    my $nupack_boot = qq($config->{workdir}/$config->{exe_nupack_boot});
-    my $errorfile = qq(${inputfile}_nupack.err);
-    AddOpen($errorfile);
-    my $return = {
-	accession => $accession,
-	start => $start,
-    };
-    chdir($config->{workdir});
-    die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
-    die("$config->{workdir}/dataS_G.rna is missing.") unless (-r "$config->{workdir}/dataS_G.rna");
-    my $command = qq($nupack_boot $inputfile 2>$errorfile);
-    open(NU, "$command |") or $config->PRF_Error("RNAFolders::Nupack_Boot, Failed to run nupack: $command $!", $accession);
-    ## OPEN NU in Nupack_Boot
-    my $count = 0;
-    while (my $line = <NU>) {
-	chomp $line;
-	$count++;
-	if ($count == 19) {
-	    my $tmp = $line;
-	    $tmp =~ s/^mfe\ \=\ //g;
-	    $tmp =~ s/\ kcal\/mol//g;
-	    $return->{mfe} = $tmp;
-	}
-	else {
-	    next;
-	}
-    }    ## End of the output from nupack_boot
-    close(NU);
-    ## CLOSE NU in Nupack_Boot
-    my $nupack_return = $?;
-    if ($nupack_return eq '139') {
-	$config->PRF_Error("Nupack file permission error on out.pair/out.ene", $accession);
-	die("Nupack file permission error.");
-    }
-    unless ($nupack_return eq '0' or $nupack_return eq '256') {
-	$config->PRF_Error("Nupack Error running $command: $!", $accession);
-	die("Nupack Error running $command $!");
-    }
-    RemoveFile($errorfile);
-    my $out_pair = qq($config->{workdir}/out.pair);
-    AddOpen($out_pair);
-    open(PAIRS, "<$out_pair") or $config->PRF_Error("Could not open the nupack pairs file: $!", $accession);
-    ## OPEN PAIRS in Nupack_Boot
-    my $pairs = 0;
-    my @nupack_output = ();
-    while (my $line = <PAIRS>) {
-	chomp $line;
-	$pairs++;
-    }    ## End of the pairs file
-    close(PAIRS);
-    ## CLOSE PAIRS in Nupack_Boot
-    PRFdb::RemoveFile($out_pair);
-    $return->{pairs} = $pairs;
-    return ($return);
+    Nupack_Boot_NOPAIRS(@_);
 }
 
 sub Nupack_Boot_NOPAIRS {
