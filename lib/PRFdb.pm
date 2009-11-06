@@ -906,7 +906,11 @@ sub Get_Queue {
 	$id = $ids->[0];
 	$genome_id = $ids->[1];
 	if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
-	    return (undef);
+	    callstack();
+	    print STDERR "ID or genome id is undefined.\n";
+	    my $up = qq"UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?";
+	    my ($cp, $cf, $cl) = caller();
+	    $me->MyExecute(statement => $up, vars=> [$id], caller =>"$cp, $cf, $cl");
 	}
     }
     my $update = qq(UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?);

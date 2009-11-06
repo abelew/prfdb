@@ -163,7 +163,6 @@ until (defined($state->{time_to_die})) {
     else {
 	$state->{seqlength} = 100;
     }
-    my $ids = $db->Grab_Queue();
     my $import_accession = $db->Get_Import_Queue();
     if (defined($import_accession)) {
 	my $import = $db->Import_CDS($import_accession);
@@ -176,13 +175,15 @@ until (defined($state->{time_to_die})) {
 	    $db->MyExecute("DELETE FROM import_queue WHERE accession = '$import_accession'");
 	}
     }
+
+    my $ids = $db->Grab_Queue();
     $state->{queue_table} = $ids->{queue_table};
-    $state->{queue_id}  = $ids->{queue_id};
+    $state->{queue_id} = $ids->{queue_id};
     $state->{genome_id} = $ids->{genome_id};
     if (defined($state->{genome_id})) {
 	Gather($state);
-    } ## End if have an entry in the queue
-    else {
+	## End if have an entry in the queue
+    } else {
 	sleep(60);
 	$state->{done_count}++;
     } ## no longer have $state->{genome_id}
