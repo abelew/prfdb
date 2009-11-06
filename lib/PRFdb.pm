@@ -852,13 +852,12 @@ sub Grab_Queue {
 	$queue = $me->Get_Queue('webqueue');
 	if (defined($queue)) {
 	    return ($queue);
-	}
-	else {
+	} else {
 	    $queue = $me->Get_Queue();
 	    return ($queue);
 	}
-    } ## End check webqueue
-    else {
+	## End check webqueue
+    } else {
 	$queue = $me->Get_Queue();
 	if (!defined($queue)) {
 	    print "There are no more entries in the queue.\n";
@@ -880,8 +879,7 @@ sub Get_Queue {
     my $table = 'queue';
     if (defined($queue_name)) {
 	$table = $queue_name;
-    }
-    elsif (defined($config->{queue_table})) {
+    } elsif (defined($config->{queue_table})) {
 	$table = $config->{queue_table};
     }
     unless ($me->Tablep($table)) {
@@ -901,19 +899,16 @@ sub Get_Queue {
     if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
 	## This should mean there are no more entries to fold in the queue
 	## Lets check this for truth -- first see if any are not done
+	## This should come true if the webqueue is empty for example.
 	my $done_id = qq(SELECT id, genome_id FROM $table WHERE done = '0' LIMIT 1);
 	my $ids = $me->MySelect(statement => $done_id, type =>'row');
 	$id = $ids->[0];
 	$genome_id = $ids->[1];
 	if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
-	    callstack();
-	    print STDERR "ID or genome id is undefined.\n";
-	    my $up = qq"UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?";
-	    my ($cp, $cf, $cl) = caller();
-	    $me->MyExecute(statement => $up, vars=> [$id], caller =>"$cp, $cf, $cl");
+	    return(undef);
 	}
     }
-    my $update = qq(UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?);
+    my $update = qq"UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?";
     my ($cp, $cf, $cl) = caller();
     $me->MyExecute(statement => $update, vars=> [$id], caller =>"$cp, $cf, $cl");
     my $return = {
