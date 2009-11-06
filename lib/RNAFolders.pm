@@ -214,15 +214,20 @@ ${missing_slipsite}${missing_sequence}
 command: $command\n" if (defined($config->{debug}));
     open(VI, "$command |") or $config->PRF_Error("RNAFolders::Vienna, Could not run RNAfold: $command $!", $accession);
     my $counter = 0;
-    while (my $line = <VI>) {
+    WH: while (my $line = <VI>) {
+	if ($line =~ /^\>/) {
+	    next WH;
+	}
+	if ($line =~ /^$/) {
+	    next WH;
+	}
         $counter++;
-        next if ($counter == 1);
-        chomp $line;
-        $return->{sequence} = $line if ($counter == 2);
-        if ($counter == 3) {
+	chomp $line;
+	if ($counter == 1) {
+	    $return->{sequence} = $line;
+	} elsif ($counter == 2) {
             my ($struct, $num) = split(/\s+\(\s*/, $line);
             if (!defined($num)) {
-              print STDERR "Problem running vienna, $line\n";
             }
             $num =~ s/\)//g;
             $return->{parens} = $struct;
