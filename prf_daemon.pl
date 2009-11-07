@@ -172,7 +172,6 @@ until (defined($state->{time_to_die})) {
 	    } else {
 		print "Imported $import_accession\n";
 	    }
-	    $db->MyExecute("DELETE FROM import_queue WHERE accession = '$import_accession'");
 	}
     }
 

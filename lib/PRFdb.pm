@@ -214,7 +214,11 @@ sub MyExecute {
     my $dbh = $me->MyConnect($statement);
     my $sth = $dbh->prepare($statement);
     my $rv;
+    my @vars;
     if (defined($input->{vars})) {
+	@vars = @{$input->{vars}};
+    }
+    if (scalar(@vars) > 0) {
 	$rv = $sth->execute(@{$input->{vars}}) or callstack();
     } else {
 	$rv = $sth->execute() or callstack();
@@ -868,9 +872,15 @@ sub Grab_Queue {
 
 sub Get_Import_Queue {
     my $me = shift;
-    my $stmt = qq"SELECT accession FROM import_queue LIMIT 1";
-    my $id = $me->MySelect(statement => $stmt, type => 'single');
-    return($id);
+    my $first = $me->MyExecute(statement => "LOCK TABLES import_queue WRITE");
+    my $stmt = qq"SELECT id, accession FROM import_queue WHERE checked_out = '0' LIMIT 1";
+    my $datum = $me->MySelect(statement => $stmt);
+    my $id = $datum->[0]->[0];
+    my $accession = $datum->[0]->[1];
+    my $stmt2 = qq"UPDATE import_queue SET checked_out = '1' WHERE id = ?";
+    $me->MyExecute(statement => $stmt2, vars => [$id]);
+    $me->MyExecute(statement => "UNLOCK TABLES");
+    return($accession);
 }
 
 sub Get_Queue {
@@ -1517,7 +1527,7 @@ sub Insert_Genome_Entry {
     ## crap from the SGD
     $datum->{orf_start} = 1 if (!defined($datum->{orf_start}) or $datum->{orf_start} == 0);
     if (defined($already_id)) {
-	print "The accession $datum->{accession} is already in the database with id: $already_id\n";
+#	print "The accession $datum->{accession} is already in the database with id: $already_id\n";
 	return ($already_id);
     }
     $datum->{version} = 0 if (!defined($datum->{version}));
