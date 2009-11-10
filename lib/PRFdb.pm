@@ -214,7 +214,11 @@ sub MyExecute {
     my $dbh = $me->MyConnect($statement);
     my $sth = $dbh->prepare($statement);
     my $rv;
+    my @vars;
     if (defined($input->{vars})) {
+	@vars = @{$input->{vars}};
+    }
+    if (scalar(@vars) > 0) {
 	$rv = $sth->execute(@{$input->{vars}}) or callstack();
     } else {
 	$rv = $sth->execute() or callstack();
@@ -852,13 +856,12 @@ sub Grab_Queue {
 	$queue = $me->Get_Queue('webqueue');
 	if (defined($queue)) {
 	    return ($queue);
-	}
-	else {
+	} else {
 	    $queue = $me->Get_Queue();
 	    return ($queue);
 	}
-    } ## End check webqueue
-    else {
+	## End check webqueue
+    } else {
 	$queue = $me->Get_Queue();
 	if (!defined($queue)) {
 	    print "There are no more entries in the queue.\n";
@@ -869,9 +872,15 @@ sub Grab_Queue {
 
 sub Get_Import_Queue {
     my $me = shift;
-    my $stmt = qq"SELECT accession FROM import_queue LIMIT 1";
-    my $id = $me->MySelect(statement => $stmt, type => 'single');
-    return($id);
+    my $first = $me->MyExecute(statement => "LOCK TABLES import_queue WRITE");
+    my $stmt = qq"SELECT id, accession FROM import_queue WHERE checked_out = '0' LIMIT 1";
+    my $datum = $me->MySelect(statement => $stmt);
+    my $id = $datum->[0]->[0];
+    my $accession = $datum->[0]->[1];
+    my $stmt2 = qq"UPDATE import_queue SET checked_out = '1' WHERE id = ?";
+    $me->MyExecute(statement => $stmt2, vars => [$id]);
+    $me->MyExecute(statement => "UNLOCK TABLES");
+    return($accession);
 }
 
 sub Get_Queue {
@@ -880,8 +889,7 @@ sub Get_Queue {
     my $table = 'queue';
     if (defined($queue_name)) {
 	$table = $queue_name;
-    }
-    elsif (defined($config->{queue_table})) {
+    } elsif (defined($config->{queue_table})) {
 	$table = $config->{queue_table};
     }
     unless ($me->Tablep($table)) {
@@ -890,7 +898,7 @@ sub Get_Queue {
     }
     ## This id is the same id which uniquely identifies a sequence in the genome database
     my $single_id;
-    if (defined($config->{randomize_id})) {
+    if ($config->{randomize_id}) {
 	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' ORDER BY RAND() LIMIT 1";
     } else {
 	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' LIMIT 1";
@@ -901,15 +909,16 @@ sub Get_Queue {
     if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
 	## This should mean there are no more entries to fold in the queue
 	## Lets check this for truth -- first see if any are not done
+	## This should come true if the webqueue is empty for example.
 	my $done_id = qq(SELECT id, genome_id FROM $table WHERE done = '0' LIMIT 1);
 	my $ids = $me->MySelect(statement => $done_id, type =>'row');
 	$id = $ids->[0];
 	$genome_id = $ids->[1];
 	if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
-	    return (undef);
+	    return(undef);
 	}
     }
-    my $update = qq(UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?);
+    my $update = qq"UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?";
     my ($cp, $cf, $cl) = caller();
     $me->MyExecute(statement => $update, vars=> [$id], caller =>"$cp, $cf, $cl");
     my $return = {
@@ -1236,6 +1245,7 @@ sub Import_CDS {
 	return("Error $err");
     };
     if (!defined($seq)) {
+	print "seq is not defined\n";
 	return(undef);
     }
     my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
@@ -1251,7 +1261,7 @@ sub Import_CDS {
     my $mrna_sequence = $seq->seq();
     my $counter = 0;
     my $num_cds = scalar(@cds);
-
+    return(0) if ($num_cds == 0); ## This return 0 is important, don't undef it.
     foreach my $feature (@cds) {
 	my $tmp_mrna_sequence = $mrna_sequence;
 	$counter++;
@@ -1517,7 +1527,7 @@ sub Insert_Genome_Entry {
     ## crap from the SGD
     $datum->{orf_start} = 1 if (!defined($datum->{orf_start}) or $datum->{orf_start} == 0);
     if (defined($already_id)) {
-	print "The accession $datum->{accession} is already in the database with id: $already_id\n";
+#	print "The accession $datum->{accession} is already in the database with id: $already_id\n";
 	return ($already_id);
     }
     $datum->{version} = 0 if (!defined($datum->{version}));
@@ -1544,7 +1554,7 @@ sub Insert_Numslipsite {
     my $me = shift;
     my $accession = shift;
     my $num_slipsite = shift;
-    my $statement = qq/INSERT INTO numslipsite
+    my $statement = qq/INSERT IGNORE INTO numslipsite
 (accession, num_slipsite)
 VALUES('$accession', '$num_slipsite')/;
     my ($cp,$cf,$cl) = caller();

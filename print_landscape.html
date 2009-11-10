@@ -1,8 +1,9 @@
 % if (defined($height)) {
 <a href="<% $url %>"><img src="<% $url %>" title="<% $title %>" alt="<% $title %>" height="<% $height %>" width="<% $width %>"></a>
-% } else {
-<a href="<% $url %"><img src="<% $url %>" title="<% $title %>" alt="<% $title %>"></a>
 % }
+%# } else {
+%#<a href="<% $url %"><img src="<% $url %>" title="<% $title %>" alt="<% $title %>"></a>
+%# }
 <%init>
  my $pic = new PRFGraph(config=>$config, accession => $accession);
  my $filename = $pic->Picture_Filename(type => 'landscape',);

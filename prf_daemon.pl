@@ -13,7 +13,6 @@ use Bootlace;
 use Overlap;
 use SeqMisc;
 use PRFBlast;
-use PRFGraph;
 use Agree;
 $SIG{INT} = 'CLEANUP';
 $SIG{BUS} = 'CLEANUP';
@@ -59,6 +58,13 @@ if ($config->{create_boot}) {
     die("Need species unless") unless (defined($config->{species}));
     my $table = "boot_$config->{species}";
     $db->Create_Boot($table);
+}
+if (defined($config->{import_genbank})) {
+    if (!defined($config->{accession})) {
+	die("This operation also requires an accession.");
+    }
+    Import_Genbank($config->{import_genbank}, $config->{accession});
+    exit(0);
 }
 if (defined($config->{makeblast})) {
     Make_Blast();
@@ -128,11 +134,6 @@ if (defined($config->{accession})) {
     }
     exit(0);
 }
-if (defined($config->{import_accession})) {
-    my $accession = $config->{import_accession};
-    $db->Import_CDS($accession);
-    exit(0);
-}  ## Endif used the import_accession arg
 if (defined($config->{input_fasta})) {
     my $queue_ids;
     if (defined($config->{startpos})) {
@@ -163,22 +164,26 @@ until (defined($state->{time_to_die})) {
     else {
 	$state->{seqlength} = 100;
     }
-    my $ids = $db->Grab_Queue();
     my $import_accession = $db->Get_Import_Queue();
     if (defined($import_accession)) {
 	my $import = $db->Import_CDS($import_accession);
 	if (defined($import) and $import !=~ m/Error/) {
-	    print "Imported $import_accession\n" if (defined($config->{debug}));
-	    $db->MyExecute("DELETE FROM import_queue WHERE accession = '$import_accession'");
+	    if ($import == 0) {
+		print "Did not import $import_accession, it has no coding sequence defined.\n";
+	    } else {
+		print "Imported $import_accession\n";
+	    }
 	}
     }
+
+    my $ids = $db->Grab_Queue();
     $state->{queue_table} = $ids->{queue_table};
-    $state->{queue_id}  = $ids->{queue_id};
+    $state->{queue_id} = $ids->{queue_id};
     $state->{genome_id} = $ids->{genome_id};
     if (defined($state->{genome_id})) {
 	Gather($state);
-    } ## End if have an entry in the queue
-    else {
+	## End if have an entry in the queue
+    } else {
 	sleep(60);
 	$state->{done_count}++;
     } ## no longer have $state->{genome_id}
@@ -254,7 +259,7 @@ sub Gather {
     $db->Create_Boot("boot_$state->{species}") unless($db->Tablep("boot_$state->{species}")); 
     my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
     my $message = "${hour}:${min}.${sec} $mon/$mday id:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
-    print "Working with: $message";
+    print $message;
     
     my %pre_landscape_state = %{$state};
     my $landscape_state = \%pre_landscape_state;
@@ -459,18 +464,22 @@ sub Landscape_Gatherer {
 	print "Landscape Gatherer, position $start_point\n" if (defined($config->{debug}));
 	my $individual_sequence = ">$message";
 	my $end_point = $start_point + $config->{landscape_seqlength};
+	my $sequence_string = '';
 	foreach my $character ($start_point .. $end_point) {
 	    if (defined($seq_array[$character])) {
-		$individual_sequence = $individual_sequence . $seq_array[$character];
+		$sequence_string .= $seq_array[$character];
 	    }
 	}
-	$individual_sequence = $individual_sequence . "\n";
+	$individual_sequence = qq"$individual_sequence
+$sequence_string
+";
 	$state->{fasta_file} = $db->Sequence_to_Fasta($individual_sequence);
 	if (!defined($state->{accession})) {die("The accession is no longer defined. This cannot be allowed.")};
 	my $landscape_table = qq/landscape_$state->{species}/;
 	my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
 					 species => $state->{species}, accession => $state->{accession},
-					 start => $start_point,);
+					 start => $start_point,
+					 sequence => $sequence_string,);
 	my $nupack_foldedp = $db->Get_Num_RNAfolds('nupack', $state->{genome_id}, $start_point,
 						   $config->{landscape_seqlength}, $landscape_table);
 	my $pknots_foldedp = $db->Get_Num_RNAfolds('pknots', $state->{genome_id}, $start_point,
@@ -479,13 +488,15 @@ sub Landscape_Gatherer {
 						   $config->{landscape_seqlength}, $landscape_table);
 	my ($nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id, $vienna_info, $vienna_mfe_id);
 	if ($nupack_foldedp == 0) {
-	    if ($config->{nupack_nopairs_hack}) {
-		$nupack_info = $fold_search->Nupack_NOPAIRS('nopseudo');
-	    } 
-	    else {
-		$nupack_info = $fold_search->Nupack('nopseudo');
-	    }
+	    $nupack_info = $fold_search->Nupack_NOPAIRS('nopseudo');
 	    $nupack_mfe_id = $db->Put_Nupack($nupack_info, $landscape_table);
+	    ## Try to stop these random seeming errors with nupack
+	    if (!defined($nupack_mfe_id)) {
+		sleep(5);
+		print STDERR "Trying again for nupack landscape fold.\n";
+		$nupack_info = $fold_search->Nupack_NOPAIRS('nopseudo');
+		$nupack_mfe_id = $db->Put_Nupack($nupack_info, $landscape_table);
+	    }
 	    $state->{nupack_mfe_id} = $nupack_mfe_id;
 	}
 	if ($pknots_foldedp == 0) {
@@ -881,14 +892,14 @@ sub Maintenance {
 	  foreach my $sp (@{$finished_species}) {
 	      next OUT if ($sp eq $species);
 	  }
-	  print "Filling index_stats for $species->[0]\n";
-	  next if ($species->[0] =~ /^virus-/);
-	  $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species->[0],]);
-	  $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species = ?",type=>'single', vars => [$species->[0],]);
-	  $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = ?",type=>'single', vars => [$species->[0]],);
+	  print "Filling index_stats for $species\n";
+	  next if ($species =~ /^virus-/);
+	  $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species,]);
+	  $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species = ?",type=>'single', vars => [$species,]);
+	  $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = ?",type=>'single', vars => [$species],);
 	  my ($cp,$cf,$cl) = caller();
-	  my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = ?", caller => "$cp,$cf,$cl", vars => [$species->[0]],);
-	  $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('',?,?,?,?)", vars => [$species->[0], $num_genome, $num_mfe_entries, $num_mfe_knotted],);
+	  my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = ?", caller => "$cp,$cf,$cl", vars => [$species],);
+	  $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('',?,?,?,?)", vars => [$species, $num_genome, $num_mfe_entries, $num_mfe_knotted],);
       }
 	my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = 'virus'");
 	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species like 'virus-%'", type=>'single');
@@ -992,6 +1003,101 @@ sub Maintenance {
     }
     ## End generating all clouds
     $db->MyExecute("UPDATE wait set wait = '0'");
+}
+
+sub Import_Genbank {
+    my $import_genbank = shift;
+    my $accession = shift;
+    use Bio::DB::Universal;
+    use Bio::Index::GenBank;
+    my $uni = new Bio::DB::Universal();
+    my $in  = Bio::SeqIO->new(-file => $import_genbank,
+			      -format => 'genbank');
+    while (my $seq = $in->next_seq()) {
+	#my $seq = $uni->get_Seq_by_id($accession);
+	my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
+	
+	my ($protein_sequence, $orf_start, $orf_stop);
+	my $binomial_species = $seq->species->binomial();
+	my ($genus, $species) = split(/ /, $binomial_species);
+	my $full_species = qq(${genus}_${species});
+	$full_species =~ tr/[A-Z]/[a-z]/;
+	$config->{species} = $full_species;
+	$db->Create_Landscape(qq/landscape_$full_species/);
+	$db->Create_Boot(qq/boot_$full_species/);
+	my $full_comment = $seq->desc();
+	my $defline = "lcl||gb|$accession|species|$full_comment\n";
+	my ($genename, $desc) = split(/\,/, $full_comment);
+	my $mrna_sequence = $seq->seq();
+	my @mrna_seq = split(//, $mrna_sequence);
+	my $counter = 0;
+	my $num_cds = scalar(@cds);
+	
+	my %datum_orig = (
+			  accession => $accession,
+			  species => $full_species,
+			  defline => $defline,
+			  );
+	
+	foreach my $feature (@cds) {
+	    $counter++;
+	    my $primary_tag = $feature->primary_tag();
+	    $protein_sequence = $feature->seq->translate->seq();
+	    $orf_start = $feature->start();
+	    $orf_stop = $feature->end();
+	    my ($direction, $start, $stop);
+	    if (!defined($feature->{_location}{_strand})) {
+		$direction = 'undefined';
+		$start = $orf_start;
+		$stop = $orf_stop;
+	    } elsif ($feature->{_location}{_strand} == 1) {
+		$direction = 'forward';
+		$start = $orf_start;
+		$stop = $orf_stop;
+	    } elsif ($feature->{_location}{_strand} == -1) {
+		$direction = 'reverse';
+		$start = $orf_stop;
+		$stop = $orf_start;
+	    }
+	    my $padding = 300;
+	    my $tmp_mrna_sequence = '';
+	    my $mrna_seqlength = $orf_stop - $orf_start;
+	    my $orf_start_pad = $orf_start - $padding;
+	    my $orf_stop_pad = $orf_stop + $padding;
+	    foreach my $c (($orf_start_pad - 1) .. ($orf_stop_pad - 1)) {
+		next if (!defined($mrna_seq[$c]));
+		$tmp_mrna_sequence .= $mrna_seq[$c];
+	    }
+	    if ($direction eq 'reverse') {
+		$tmp_mrna_sequence =~ tr/ATGCatgcuU/TACGtacgaA/;
+		$tmp_mrna_sequence = reverse($tmp_mrna_sequence);
+	    }
+	    #	print "The sequences for this guy is $tmp_mrna_sequence\n";
+	    ### Don't change me, this is provided by genbank
+	    ### FINAL TEST IF $startpos is DEFINED THEN OVERRIDE WHATEVER YOU FOUND
+	    my $genename = '';
+	    if (defined($feature->{_gsf_tag_hash}->{gene}->[0])) {
+		$genename .= $feature->{_gsf_tag_hash}->{gene}->[0];
+	    }
+	    if (defined($feature->{_gsf_tag_hash}->{product}->[0])) {
+		$genename .= ", $feature->{_gsf_tag_hash}->{product}->[0]";
+	    }
+	    my %datum = (### FIXME
+			 accession => qq/$accession-$orf_start/,
+			 mrna_seq => $tmp_mrna_sequence,
+			 protein_seq => $protein_sequence,
+			 orf_start => 301,
+			 orf_stop => (301 + $mrna_seqlength),
+			 direction => $direction,
+			 species => $full_species,
+			 genename => $genename,
+			 version => $seq->{_seq_version},
+			 comment => $feature->{_gsf_tag_hash}->{note}->[0],
+			 defline => qq/$defline, $feature->{_gsf_tag_hash}->{gene}->[0], $feature->{_gsf_tag_hash}->{product}->[0]/);
+	    $db->Insert_Genome_Entry(\%datum);
+	    print "Done this CDS\n\n\n";
+	} ## End of foreach @cds
+    }
 }
 
 sub CLEANUP {
