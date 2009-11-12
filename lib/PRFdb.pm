@@ -324,7 +324,7 @@ sub MyConnect {
     alarm(0);
     if (!defined($dbh) or
 	(defined($DBI::errstr) and
-	 $DBI::errstr =~ m/(?:lost connection|Unknown MySQL server host|mysql server has gone away)/ix)) {
+	 $DBI::errstr =~ m/(?:lost connection|Can't connect|Unknown MySQL server host|mysql server has gone away)/ix)) {
 	my $success = 0;
 	while ($config->{database_retries} < $me->{num_retries} and $success == 0) {
 	    $config->{database_retries}++;
@@ -342,7 +342,7 @@ sub MyConnect {
 		(!defined($dbh->errstr) or $dbh->errstr eq '')) {
 		$success++;
 	    }
-	}
+	} ## End of while
     }
 
     if (!defined($dbh)) {
