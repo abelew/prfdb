@@ -1,4 +1,5 @@
 #!/usr/local/bin/perl -w 
+## TESTME
 use strict;
 use vars qw"$db $config";
 use DBI;
