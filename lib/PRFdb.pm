@@ -303,28 +303,46 @@ sub MyGet {
 sub MyConnect {
     my $me = shift;
     my $statement = shift;
-    $dbh = DBI->connect_cached("dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}",
-			       $config->{database_user},
-			       $config->{database_pass},
-			       { AutoCommit => 1},) or callstack();
-    
-    my $retry_count = 0;
+    my @hosts = @{$config->{database_host}};
+    my $host = sub {
+	my $value = shift;
+	my $range = scalar(@hosts);
+	my $index = $value % $range;
+	return($hosts[$index]);
+    };
+    my $hostname = $host->($config->{database_retries});
+    my $dbd = qq"dbi:$config->{database_type}:database=$config->{database_name};host=$hostname";
+    my $dbh;
+    use Sys::SigAction qw( set_sig_handler );
+    eval {
+	my $h = set_sig_handler( 'ALRM' ,sub { return("timeout") ; } );
+	#implement 2 second time out
+	alarm($config->{database_timeout});  ## The timeout in seconds as defined by PRFConfig
+	$dbh = DBI->connect_cached($dbd, $config->{database_user}, $config->{database_pass}, $config->{database_args},) or callstack();
+	alarm(0);
+    }; #original signal handler restored here when $h goes out of scope
+    alarm(0);
     if (!defined($dbh) or
 	(defined($DBI::errstr) and
-	 $DBI::errstr =~ m/(?:lost connection|Unknown MySQL server host|mysql server has gone away)/ix)) {
+	 $DBI::errstr =~ m/(?:lost connection|Can't connect|Unknown MySQL server host|mysql server has gone away)/ix)) {
 	my $success = 0;
-	while ($retry_count < $me->{num_retries} and $success == 0) {
-	    $retry_count++;
-	    sleep $me->{retry_time};
-	    $dbh = DBI->connect_cached(
-				       "dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}",
-				       $config->{database_user},
-				       $config->{database_pass},);
+	while ($config->{database_retries} < $me->{num_retries} and $success == 0) {
+	    $config->{database_retries}++;
+	    $hostname = $host->($config->{database_retries});
+	    $dbd = qq"dbi:$config->{database_type}:database=$config->{database_name};host=$hostname";
+	    print STDERR "Doing a retry, attempting to connect to $dbd\n";
+	    eval {
+		my $h = set_sig_handler( 'ALRM' ,sub { return("timeout") ; } );
+		alarm($config->{database_timeout});  ## The timeout in seconds as defined by PRFConfig
+		$dbh = DBI->connect_cached($dbd, $config->{database_user}, $config->{database_pass}, $config->{database_args},) or callstack();
+		alarm(0);
+	    }; #original signal handler restored here when $h goes out of scope
+	    alarm(0);
 	    if (defined($dbh) and
 		(!defined($dbh->errstr) or $dbh->errstr eq '')) {
 		$success++;
 	    }
-	}
+	} ## End of while
     }
 
     if (!defined($dbh)) {
@@ -898,6 +916,7 @@ sub Get_Queue {
     }
     ## This id is the same id which uniquely identifies a sequence in the genome database
     my $single_id;
+    my $first = $me->MyExecute(statement => "LOCK TABLES $table WRITE");
     if ($config->{randomize_id}) {
 	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out IS NULL OR checked_out = '0' ORDER BY RAND() LIMIT 1";
     } else {
@@ -910,7 +929,7 @@ sub Get_Queue {
 	## This should mean there are no more entries to fold in the queue
 	## Lets check this for truth -- first see if any are not done
 	## This should come true if the webqueue is empty for example.
-	my $done_id = qq(SELECT id, genome_id FROM $table WHERE done = '0' LIMIT 1);
+	my $done_id = qq"SELECT id, genome_id FROM $table WHERE done = '0' LIMIT 1";
 	my $ids = $me->MySelect(statement => $done_id, type =>'row');
 	$id = $ids->[0];
 	$genome_id = $ids->[1];
@@ -921,6 +940,7 @@ sub Get_Queue {
     my $update = qq"UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?";
     my ($cp, $cf, $cl) = caller();
     $me->MyExecute(statement => $update, vars=> [$id], caller =>"$cp, $cf, $cl");
+    $me->MyExecute(statement => "UNLOCK TABLES");
     my $return = {
 	queue_table => $table,
 	queue_id  => $id,

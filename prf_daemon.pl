@@ -1,5 +1,4 @@
 #!/usr/local/bin/perl -w 
-## TESTME
 use strict;
 use vars qw"$db $config";
 use DBI;
@@ -171,7 +170,7 @@ until (defined($state->{time_to_die})) {
 	    if ($import == 0) {
 		print "Did not import $import_accession, it has no coding sequence defined.\n";
 	    } else {
-		print "Imported $import_accession\n";
+		print "Imported $import_accession added $import bases.\n";
 	    }
 	}
     }
