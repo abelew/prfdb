@@ -14,11 +14,11 @@ use SeqMisc;
 use PRFBlast;
 use HTMLMisc;
 
-Apache::DBI->connect_on_init('DBI:mysql:prfdb_test:localhost', 'prfdb', 'drevil') or die "Can't connect to database: $DBI::errstr";
+Apache::DBI->connect_on_init('DBI:mysql:prfdb_test:localhost', 'prfdb', 'drevil') or print "Can't connect to database: $DBI::errstr $!";
 #Apache::DBI->connect_on_init('DBI:mysql:sessions:localhost', 'sessions', 'cbmg_sessions') or die "Can't connect to database: $DBI::errstr";
 Apache::DBI->setPingTimeOut('DBI:mysql:forms:localhost', 0);
 #Apache::DBI->setPingTimeOut('DBI:mysql:sessions:localhost', 0);
-$config = new PRFConfig(config_file => '/usr/local/prfdb/prfdb_test/prfdb.conf');
+$config = new PRFConfig(config_file => "/usr/local/prfdb/prfdb_test/prfdb.conf");
 $db = new PRFdb(config=>$config);
 
 package PRFdb::Handler;

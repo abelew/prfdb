@@ -918,9 +918,9 @@ sub Get_Queue {
     my $single_id;
     my $first = $me->MyExecute(statement => "LOCK TABLES $table WRITE");
     if ($config->{randomize_id}) {
-	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' ORDER BY RAND() LIMIT 1";
+	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out IS NULL OR checked_out = '0' ORDER BY RAND() LIMIT 1";
     } else {
-	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' LIMIT 1";
+	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out IS NULL OR checked_out = '0' LIMIT 1";
     }
     my $ids = $me->MySelect(statement => $single_id, type => 'row');
     my $id = $ids->[0];

@@ -1,29 +1,26 @@
-checks = 1                               ## Perform checks on the prfdb
-base = "${HOME}/browser"                      ## The base directory of this crap
+base = "/usr/local/prfdb"
+add_to_path = "/usr/bin:/usr/local/prfdb/work:/usr/local/bin"
+LD_LIBRARY_PATH="/a/f20-fs1/export/home/deepthought/abelew/usr/lib"
+prefix = "$(base)"
+basedir = $(prefix)
+blastdb = "$(prefix)/blast"
+queue_table = "queue"
+checks = 0
 check_webqueue = 1
-seqlength = 100    ## The maximum structure size to be examined
-do_nupack = 1             ## Run nupack on sequences?
-do_pknots = 0             ## Run pknots on sequence?
-do_hotknots = 0
-do_boot = 2               ## Perform our faux bootstrap
-## If do_boot is set to 2, then unfinished items will get added to the
-## queue table
-do_landscape = 0
-nupack_nopairs_hack = 0   ## For the NCI systems I had to hack nupack
-arch_specific_exe = 1     ## Architecture specific executables (used for a pbs environment)
+seqlength = ['50','75','100']
+nupack_nopairs_hack = 1   ## For the NCI systems I hacked nupack
+arch_specific_exe = 0     ## Architecture specific executables (used for a pbs environment with linux/aix/irix)
 boot_iterations = 100
-boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot_NOPAIRS, }
-#boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, }
-boot_randomizers = { array => \&MoreRandom::ArrayShuffle, dinuc => \&MoreRandom::Squid_Dinuc, }
-nupack_dir = "$(prefix)/work"             ## Where does nupack live?
-nupack = "Fold.out"
-nupack_boot = "Fold.out.boot"
-db = 'DATABASENAME'         ## Name of mysql database
-host = 'DATABASEHOST' ## Mysql database hostname
-user = 'DATABASEUSER'           ## Mysql username
-pass = 'DATABASEPASSWORD'       ## Mysql password
-pbs_arches = 'aix4 irix6 linux'
-pbs_shell = '/bin/bash'
-pbs_memory = '1600'
-pbs_cpu = '1'
-pbs_partialname = 'fold'
+boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot_NOPAIRS, hotknots => \&RNAFolders::Hotknots_Boot, }
+boot_randomizers = { array => \&SeqMisc::ArrayShuffle, }
+errorfile = "$(prefix)/prfdb.err"            ## Error file
+logfile = "$(prefix)/prfdb.log"           ## Location of output file
+exe_nupack = "Fold.out.nopairs"
+exe_nupack_boot = "Fold.out.boot.nopairs"
+database_name = 'prfdb_test'
+database_host = ['cbmgintra.umd.edu','cbmgapps.umd.edu']
+database_user = 'prfdb'
+database_pass = 'drevil'
+
+index_species = ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus', 'danio_rerio', 'bos_taurus','rattus_norvegicus','xenopus_tropicalis', 'xenopus_laevis', 'virus'] ## arabidopsis_thaliana
+pbs_partialname='deepthought'
