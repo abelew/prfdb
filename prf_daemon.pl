@@ -152,7 +152,11 @@ if ($config->{checks}) {
 }
 
 until (defined($state->{time_to_die})) {
-    while ($db->MySelect(statement => "SELECT wait from wait", type => 'single')) {
+    my $wait = $db->MySelect(statement => "SELECT wait from wait", type => 'single');
+    if ($wait == 2) {
+	exit(0);
+    }
+    while ($wait == 1) {
 	sleep(300);
     }
     ### You can set a configuration variable 'master' so that it will not die
