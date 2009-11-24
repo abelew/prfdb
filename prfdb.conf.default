@@ -1,9 +1,6 @@
-base = "/usr/local/prfdb"
 add_to_path = "/usr/bin:/usr/local/prfdb/work:/usr/local/bin"
 LD_LIBRARY_PATH="/a/f20-fs1/export/home/deepthought/abelew/usr/lib"
 prefix = "$(base)"
-basedir = $(prefix)
-blastdb = "$(prefix)/blast"
 queue_table = "queue"
 checks = 0
 check_webqueue = 1
@@ -13,8 +10,6 @@ arch_specific_exe = 0     ## Architecture specific executables (used for a pbs e
 boot_iterations = 100
 boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot_NOPAIRS, hotknots => \&RNAFolders::Hotknots_Boot, }
 boot_randomizers = { array => \&SeqMisc::ArrayShuffle, }
-errorfile = "$(prefix)/prfdb.err"            ## Error file
-logfile = "$(prefix)/prfdb.log"           ## Location of output file
 exe_nupack = "Fold.out.nopairs"
 exe_nupack_boot = "Fold.out.boot.nopairs"
 database_name = 'prfdb_test'
