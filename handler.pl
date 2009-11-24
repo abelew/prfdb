@@ -14,8 +14,9 @@ use SeqMisc;
 use PRFBlast;
 use HTMLMisc;
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
-Apache::DBI->connect_on_init("DBI:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}", $config->{database_user}, $config->{database_pass}, $config->{database_args}) or print "Can't connect to database: $DBI::errstr $!";
-Apache::DBI->setPingTimeOut("DBI:$config->{database_type}:$config->{database_name}:$config->{database_host}", 0);
+my $database_hosts = $config->{database_host};
+Apache::DBI->connect_on_init("DBI:$config->{database_type}:database=$config->{database_name};host=$database_host->[0]", $config->{database_user}, $config->{database_pass}, $config->{database_args}) or print "Can't connect to database: $DBI::errstr $!";
+Apache::DBI->setPingTimeOut("DBI:$config->{database_type}:$config->{database_name}:$database_host->[0]", 0);
 $db = new PRFdb(config=>$config);
 
 package PRFdb::Handler;
