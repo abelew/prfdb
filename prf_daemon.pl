@@ -69,6 +69,10 @@ if (defined($config->{makeblast})) {
     Make_Blast();
     exit(0);
 }
+if (defined($config->{resync})) {
+    ReSync();
+    exit(0);
+}
 if (defined($config->{zscore})) {
     Zscore();
     exit(0);
@@ -849,6 +853,10 @@ sub Zscore {
     }
     my $cleaning = qq(DELETE FROM mfe WHERE mfe > '10');
     $db->MyExecute($cleaning);
+}
+
+sub ReSync {
+
 }
 
 sub Maintenance {

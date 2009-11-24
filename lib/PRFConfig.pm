@@ -219,6 +219,7 @@ sub new {
 				'utr:i' => \$conf{do_utr},
 				'workdir:s' => \$conf{workdir},
 				'zscore' => \$conf{zscore},
+				'resync' => \$conf{resync},
 				);
     foreach my $name (keys %conf_specification_temp) {
 	$conf_specification{$name} = $conf_specification_temp{$name};
