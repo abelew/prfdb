@@ -5,7 +5,7 @@ use Apache2::Upload;
 use Data::Dumper;
 use Apache::DBI;
 use File::Temp qw/ tmpnam /;
-use lib '/usr/local/prfdb/prfdb_test/lib';
+use lib qq"$ENV{PRFDB_HOME}/lib";
 use PRFConfig;
 use PRFdb qw/ AddOpen RemoveFile /;
 use RNAFolders;
@@ -13,17 +13,13 @@ use PRFGraph;
 use SeqMisc;
 use PRFBlast;
 use HTMLMisc;
-
-Apache::DBI->connect_on_init('DBI:mysql:prfdb_test:localhost', 'prfdb', 'drevil') or print "Can't connect to database: $DBI::errstr $!";
-#Apache::DBI->connect_on_init('DBI:mysql:sessions:localhost', 'sessions', 'cbmg_sessions') or die "Can't connect to database: $DBI::errstr";
-Apache::DBI->setPingTimeOut('DBI:mysql:forms:localhost', 0);
-#Apache::DBI->setPingTimeOut('DBI:mysql:sessions:localhost', 0);
-$config = new PRFConfig(config_file => "/usr/local/prfdb/prfdb_test/prfdb.conf");
+$config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
+Apache::DBI->connect_on_init("DBI:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}", $config->{database_user}, $config->{database_pass}, $config->{database_args}) or print "Can't connect to database: $DBI::errstr $!";
+Apache::DBI->setPingTimeOut("DBI:$config->{database_type}:$config->{database_name}:$config->{database_host}", 0);
 $db = new PRFdb(config=>$config);
 
 package PRFdb::Handler;
 use strict;
-#use HTML::Mason::ApacheHandler(args_method=>'mod_perl');
 use HTML::Mason::ApacheHandler;
 BEGIN {
     use Exporter ();
@@ -33,12 +29,12 @@ BEGIN {
 }
 my $req;
 my $ah = new HTML::Mason::ApacheHandler(
-					comp_root => '/usr/local/prfdb/prfdb_test',
-					data_dir  => '/usr/local/prfdb/prfdb_test',
+					comp_root => $ENV{PRFDB_HOME},
+					data_dir  => $ENV{PRFDB_HOME},
 					args_method   => "mod_perl",
 					request_class => 'MasonX::Request::WithApacheSession',
 					session_class => 'Apache::Session::File',
-					session_cookie_domain => 'prfdb.umd.edu',
+					session_cookie_domain => 'umd.edu',
 					session_directory => '/tmp/sessions/data',
 					session_lock_directory => '/tmp/sessions/locks',
 					session_use_cookie => 1,
