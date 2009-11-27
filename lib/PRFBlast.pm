@@ -20,7 +20,7 @@ sub new {
 sub Format_Db {
     my $me = shift;
     my $input = shift;                                                       ## Fasta file to format.
-    my $command = qq"cd $config->{blastdir} && formatdb  -i $input -p F -o T -n nr -s";
+    my $command = qq"cd $config->{blastdir} && /usr/bin/zcat $input | formatdb -p F -o T -n nr -s";
     print "TESTME: $command\n";
     system($command);
 }

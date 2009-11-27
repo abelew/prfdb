@@ -54,7 +54,7 @@ sub new {
     $me->{ABSOLUTE} = 1 if (!defined($me->{ABSOLUTE}));
     $me->{add_to_path} = "/usr/bin:/usr/local/bin" if (!defined($me->{add_to_path}));
     $me->{arch_specific_exe} = 0 if (!defined($me->{arch_specific_exe}));
-    $me->{base} = '.' if (!defined($me->{base}));
+    $me->{base} = $ENV{PRFDB_HOME} if (!defined($me->{base}));
     $me->{blastdir} = 'blast' if (!defined($me->{blastdir}));
     $me->{boot_iterations} = 100 if (!defined($me->{boot_iterations}));
     $me->{boot_mfe_algorithms} = {pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, hotknots => \&RNAFolders::Hotknots_Boot,} if (!defined($me->{boot_mfe_algorithms}));
@@ -219,6 +219,7 @@ sub new {
 				'utr:i' => \$conf{do_utr},
 				'workdir:s' => \$conf{workdir},
 				'zscore' => \$conf{zscore},
+				'resync' => \$conf{resync},
 				);
     foreach my $name (keys %conf_specification_temp) {
 	$conf_specification{$name} = $conf_specification_temp{$name};

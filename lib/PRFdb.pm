@@ -482,6 +482,7 @@ $sequence
 	}
     }
     close(OUTPUT);
+    system("/usr/bin/gzip $config->{base}/blast/$output");
 }
 
 sub Sequence_to_Fasta {
