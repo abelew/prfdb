@@ -48,7 +48,6 @@ our $state = { time_to_die => undef,
 chdir($config->{base});
 if ($config->{checks}) {
     Check_Environment();
-#    Check_Tables();  ## This is taken by the constructor of PRFdb
     Check_Blast();
 }
 ## Some Arguments should be checked before others...
