@@ -20,7 +20,7 @@ $SIG{PIPE} = 'CLEANUP';
 $SIG{ABRT} = 'CLEANUP';
 $SIG{QUIT} = 'CLEANUP';
 
-$config = new PRFConfig(config_file => "$ENV{HOME}/prfdb.conf");
+$config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
 $db = new PRFdb(config => $config);
 setpriority(0,0,$config->{niceness});
 $ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}" if(defined($config->{ENV_LIBRARY_PATH}));
@@ -173,7 +173,7 @@ until (defined($state->{time_to_die})) {
     my $import_accession = $db->Get_Import_Queue();
     if (defined($import_accession)) {
 	my $import = $db->Import_CDS($import_accession);
-	if (defined($import) and $import !=~ m/Error/) {
+	if (defined($import) and $import !~ m/Error/) {
 	    if ($import == 0) {
 		print "Did not import $import_accession, it has no coding sequence defined.\n";
 	    } else {
