@@ -315,7 +315,7 @@ sub MyConnect {
     my $dbh;
     use Sys::SigAction qw( set_sig_handler );
     eval {
-	my $h = set_sig_handler( 'ALRM' ,sub { return("timeout") ; } );
+	my $h = set_sig_handler('ALRM', sub {return("timeout");});
 	#implement 2 second time out
 	alarm($config->{database_timeout});  ## The timeout in seconds as defined by PRFConfig
 	$dbh = DBI->connect_cached($dbd, $config->{database_user}, $config->{database_pass}, $config->{database_args},) or callstack();
@@ -324,7 +324,7 @@ sub MyConnect {
     alarm(0);
     if (!defined($dbh) or
 	(defined($DBI::errstr) and
-	 $DBI::errstr =~ m/(?:lost connection|Can't connect|Unknown MySQL server host|mysql server has gone away)/ix)) {
+	 $DBI::errstr =~ m/(?:lost connection|Server shutdown|Can't connect|Unknown MySQL server host|mysql server has gone away)/ix)) {  ##'
 	my $success = 0;
 	while ($config->{database_retries} < $me->{num_retries} and $success == 0) {
 	    $config->{database_retries}++;
