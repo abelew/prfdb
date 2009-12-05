@@ -6,7 +6,7 @@ USERID=`id | awk -F'(' '{print $2}' | awk -F ')' '{print $1}'`
 PARTIAL=`grep pbs_partialname prfdb.conf | awk -F= '{print $2}' | sed 's/'\''//g'`
 for arch in lin
   do
-  for num in {1..70}
+  for num in {1..90}
 
     do
     EXIST=`$QSTAT | grep $USERID | grep $PARTIAL | awk '{print $2}' | grep $arch | awk -F'_' '{print $3}' | grep $num`
