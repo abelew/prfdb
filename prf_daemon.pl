@@ -866,7 +866,7 @@ sub ReSync {
 sub Maintenance {
     my $finished_species = $db->MySelect(statement => "SELECT species FROM finished", type => 'flat');
     $finished_species = [] if (!defined($finished_species));
-    $db->MyExecute("UPDATE wait SET wait = '1'");
+#    $db->MyExecute("UPDATE wait SET wait = '1'");
     unless ($config->{maintenance_skip_sleep}) {
 	sleep(120);
     }
