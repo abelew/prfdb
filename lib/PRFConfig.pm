@@ -240,22 +240,12 @@ sub new {
 	$ENV{BLASTDB} = qq"$me->{blast_db}/blast";
     }
 
-    if (defined($me->{use_database}) and $me->{use_database} > 0) {
-	use DBI;
-	$me->{dbh} = DBI->connect_cached(
-					 "dbi:$me->{database_type}:database=$me->{database_name};host=$me->{database_host}",
-					 $me->{database_user},
-					 $me->{database_pass},
-					 $me->{database_args},);
-    }
-
     if (defined($me->{checks}) and $me->{checks} == 1) {
 	$me->{debug} = 0;
     }
     if (defined($me->{debug})) {
 	$me->{checks} = 1;
     }
-
     if (ref($me->{database_host}) eq '') {
 	$me->{database_host} = eval($me->{database_host});
     }
