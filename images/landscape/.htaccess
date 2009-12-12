@@ -1,1 +1,1 @@
-Options -ExecCGI +Indexes
+Options -ExecCGI Indexes MultiViews

@@ -20,7 +20,7 @@ $SIG{PIPE} = 'CLEANUP';
 $SIG{ABRT} = 'CLEANUP';
 $SIG{QUIT} = 'CLEANUP';
 
-$config = new PRFConfig(config_file => "$ENV{HOME}/prfdb.conf");
+$config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
 $db = new PRFdb(config => $config);
 setpriority(0,0,$config->{niceness});
 $ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}" if(defined($config->{ENV_LIBRARY_PATH}));
@@ -48,7 +48,6 @@ our $state = { time_to_die => undef,
 chdir($config->{base});
 if ($config->{checks}) {
     Check_Environment();
-#    Check_Tables();  ## This is taken by the constructor of PRFdb
     Check_Blast();
 }
 ## Some Arguments should be checked before others...
@@ -155,13 +154,14 @@ if ($config->{checks}) {
     Print_Config();
 }
 
-until (defined($state->{time_to_die})) {
+MAINLOOP: until (defined($state->{time_to_die})) {
     my $wait = $db->MySelect(statement => "SELECT wait from wait", type => 'single');
     if ($wait == 2) {
 	exit(0);
     }
     while ($wait == 1) {
 	sleep(300);
+	next MAINLOOP;
     }
     ### You can set a configuration variable 'master' so that it will not die
     if ($state->{done_count} > 60 and !defined($config->{master})) {$state->{time_to_die} = 1}
@@ -174,7 +174,7 @@ until (defined($state->{time_to_die})) {
     my $import_accession = $db->Get_Import_Queue();
     if (defined($import_accession)) {
 	my $import = $db->Import_CDS($import_accession);
-	if (defined($import) and $import !=~ m/Error/) {
+	if (defined($import) and $import !~ m/Error/) {
 	    if ($import == 0) {
 		print "Did not import $import_accession, it has no coding sequence defined.\n";
 	    } else {
@@ -866,7 +866,7 @@ sub ReSync {
 sub Maintenance {
     my $finished_species = $db->MySelect(statement => "SELECT species FROM finished", type => 'flat');
     $finished_species = [] if (!defined($finished_species));
-    $db->MyExecute("UPDATE wait SET wait = '1'");
+#    $db->MyExecute("UPDATE wait SET wait = '1'");
     unless ($config->{maintenance_skip_sleep}) {
 	sleep(120);
     }

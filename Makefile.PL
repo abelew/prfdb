@@ -18,6 +18,9 @@ WriteMakefile(
 		   HTML::Mason => 0,
 		   AppConfig => 0,
 		   Getopt::Long => 0,
+		   Image::Size => 0,
+		   Sys::SigAction => 0,
+		   Proc::Forkfunc => 0,
                    },
 #    ABSTRACT_FROM => 'lib/PRFdb.pm',
     AUTHOR => 'Ashton Trey Belew <abelew@gmail.com>'
