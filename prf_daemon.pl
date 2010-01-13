@@ -860,6 +860,18 @@ sub Zscore {
 }
 
 sub ReSync {
+    my $other_dbd = qq"dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_otherhost}";
+    my $local_dbd = qq"dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}";
+    my $statement = "SHOW MASTER STATUS";
+    my $other_dbh = $db->MyConnect($statement, $other_dbd, 'root', 'rsoqolt');
+    my $local_dbh = $db->MyConnect($statement, $local_dbd, 'root', 'rsoqolt');
+    my $o_sth = $other_dbh->prepare($statement);
+    my $l_sth = $local_dbh->prepare($statement);
+    my $o_rv = $o_sth->execute();
+    my $l_rv = $l_sth->execute();
+    my $o_return = $o_sth->fetchrow_arrayref();
+    my $l_return = $l_sth->fetchrow_arrayref();
+    print "TESTME $o_return $l_return\n";
 
 }
 
@@ -1013,7 +1025,7 @@ sub Maintenance {
     } ## seqlengths
     }
     ## End generating all clouds
-    $db->MyExecute("UPDATE wait set wait = '0'");
+#    $db->MyExecute("UPDATE wait set wait = '0'");
 }
 
 sub Import_Genbank {

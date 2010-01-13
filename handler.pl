@@ -36,8 +36,8 @@ my $ah = new HTML::Mason::ApacheHandler(
 					request_class => 'MasonX::Request::WithApacheSession',
 					session_class => 'Apache::Session::File',
 					session_cookie_domain => 'umd.edu',
-					session_directory => '/tmp/sessions/data',
-					session_lock_directory => '/tmp/sessions/locks',
+					session_directory => "$ENV{PRFDB_HOME}/sessions/data",
+					session_lock_directory => "$ENV{PRFDB_HOME}/sessions/locks",
 					session_use_cookie => 1,
 					);
 sub handler {

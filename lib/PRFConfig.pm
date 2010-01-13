@@ -248,6 +248,7 @@ sub new {
     }
     if (ref($me->{database_host}) eq '') {
 	$me->{database_host} = eval($me->{database_host});
+	$me->{database_otherhost} = $me->{database_host}->[1];
     }
     if (ref($me->{boot_mfe_algorithms}) eq '') {
 	$me->{boot_mfe_algorithms} = eval($me->{boot_mfe_algorithms});
