@@ -1987,6 +1987,51 @@ sub Tablep {
     my $answer = scalar(@{$info});
     return (scalar(@{$info}));
 }
+sub Create_Gene_Info {
+    my $me = shift;
+    my $statement = qq/CREATE table gene_info (
+id $config->{sql_id},
+accession $config->{sql_accession},
+gi_number $config->{gi_number},
+species $config->{sql_species},
+genename $config->{sql_genename},
+locus text,
+ontology_function varchar(80),
+ontology_component varchar(80),
+ontology_process varchar(80),
+version int,
+comment $config->{sql_comment},
+defline text not null,
+omim_id varchar(30),
+found_snp bool,
+average_mfe text,
+snp_lastupdate TIMESTAMP DEFAULT '00:00:00',
+lastupdate $config->{sql_timestamp},
+INDEX(accession),
+FULLTEXT(locus),
+FULLTEXT(comment),
+FULLTEXT(defline),
+FULLTEXT(genename),
+PRIMARY KEY (id))/;
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
+}
+
+sub Create_Gene_Seq {
+    my $me = shift;
+    my $statement = qq/CREATE table gene_seq (
+id $config->{sql_id},
+info_id int,
+mrna_seq longblob not null,
+protein_seq text,
+orf_start int,
+orf_stop int,
+direction char(7) DEFAULT 'forward',
+INDEX(info_id),
+PRIMARY KEY (id))/;
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
+}
 
 sub Create_Genome {
     my $me = shift;
