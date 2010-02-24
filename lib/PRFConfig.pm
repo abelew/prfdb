@@ -69,7 +69,7 @@ sub new {
     $me->{database_name} = 'test' if (!defined($me->{database_name}));
     $me->{database_pass} = 'guest' if (!defined($me->{database_pass}));
     $me->{database_retries} = 0 if (!defined($me->{database_retries}));
-    $me->{database_timeout} = 5 if (!defined($me->{database_timeout}));
+    $me->{database_timeout} = 30 if (!defined($me->{database_timeout}));
     $me->{database_type} = 'mysql' if (!defined($me->{database_type}));
     $me->{database_user} = 'guest' if (!defined($me->{database_user}));
     $me->{debug} = undef if (!defined($me->{debug}));
