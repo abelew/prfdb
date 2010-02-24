@@ -860,7 +860,32 @@ sub Zscore {
 }
 
 sub ReSync {
-
+    print "TESTME $config->{database_otherhost}\n";
+    my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
+    my $local_dbd = qq"dbi:$config->{database_type}:database=mysql;host=localhost";
+    my $statement = "SHOW MASTER STATUS";
+    my $other_dbh = $db->MyConnect($statement, $other_dbd, 'root', 'rsoqolt');
+    my $local_dbh = $db->MyConnect($statement, $local_dbd, 'root', 'rsoqolt');
+    my $o_sth = $other_dbh->prepare($statement);
+    my $l_sth = $local_dbh->prepare($statement);
+    my $o_rv = $o_sth->execute();
+    my $l_rv = $l_sth->execute();
+    my $o_return = $o_sth->fetchrow_arrayref();
+    my $l_return = $l_sth->fetchrow_arrayref();
+    my $o_file = $o_return->[0];
+    my $l_file = $l_return->[0];
+    my $o_pos = $o_return->[1];
+    my $l_pos = $l_return->[1];
+    my $l_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$o_file', MASTER_LOG_POS=$o_pos";
+    my $o_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$l_file', MASTER_LOG_POS=$l_pos";
+    print "Local log file and position is: $l_file $l_pos\n";
+    print "Changing remote master with: $o_reset\n";
+    print "Remote log file and position is: $o_file $o_pos\n";
+    print "Changing local master with: $l_reset\n";
+    $o_sth = $other_dbh->prepare($o_reset);
+    $l_sth = $local_dbh->prepare($l_reset);
+    $o_rv = $o_sth->execute();
+    $l_rv = $l_sth->execute();
 }
 
 sub Maintenance {
@@ -1013,7 +1038,7 @@ sub Maintenance {
     } ## seqlengths
     }
     ## End generating all clouds
-    $db->MyExecute("UPDATE wait set wait = '0'");
+#    $db->MyExecute("UPDATE wait set wait = '0'");
 }
 
 sub Import_Genbank {
