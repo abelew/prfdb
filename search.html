@@ -6,7 +6,8 @@ if ($short) {
   $query_statement = qq"SELECT * FROM genome WHERE accession = ?";
   $entries = $db->MySelect(statement => $query_statement, type => 'hash', descriptor => 1, vars =>[$accession]);
 } else {
-  $query_statement = qq"SELECT * FROM genome WHERE ";
+#  $query_statement = qq"SELECT * FROM genome WHERE ";
+  $query_statement = qq"SELECT * FROM gene_info WHERE ";
   if ($search_species_limit ne 'all') {
     $query_statement .= qq"species = '$search_species_limit' AND ";
 #  } elsif ($search_species_limit ne 'all') {
@@ -16,7 +17,8 @@ if ($short) {
   if (defined($mode)) {   ## SOME SNP STUFF
     $query_statement .= qq"";
   } else {
-    $query_statement .= qq"(species regexp '$query' OR genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')";
+#    $query_statement .= qq"(species regexp '$query' OR genename regexp '$query' OR accession regexp '$query' OR locus regexp '$query' OR comment regexp '$query')";
+     $query_statement .= qq"match(comment) against('$query' in boolean mode)";
   }
   $entries = $db->MySelect(statement => $query_statement, type => 'hash', descriptor => 1,);
 }
@@ -70,7 +72,7 @@ my $long_species;
   </tr>
 % foreach my $entry (sort keys %{$entries}) {
 % my $species = $entries->{$entry}->{species};
-% $long_species = HTMLMisc::Make_Species($entries->{$entry}->{species});
+% $long_species = HTMLMisc::Make_Species($species);
 % $entries->{$entry}->{long_species} = $long_species;
 % my $slip_stmt = qq"SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?";
 % my $slipsite_structure_count = $db->MySelect(statement => $slip_stmt, vars => [$entries->{$entry}->{accession}], type => 'row');
@@ -79,6 +81,7 @@ my $long_species;
 % foreach my $id (sort { $entries->{$b}->{slipsite_count} <=> $entries->{$a}->{slipsite_count} } keys %{$entries}) {
 % my $genename = $entries->{$id}->{genename};
 % my $accession = $entries->{$id}->{accession};
+% my $species = $entries->{$id}->{species};
 % my $comment = $entries->{$id}->{comment};
 % my $omim_id = $entries->{$id}->{omim_id};
 % my $slipsite_count = $entries->{$id}->{slipsite_count};
