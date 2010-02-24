@@ -303,6 +303,9 @@ sub MyGet {
 sub MyConnect {
     my $me = shift;
     my $statement = shift;
+    my $alt_dbd = shift;
+    my $alt_user = shift;
+    my $alt_pass = shift;
     my @hosts = @{$config->{database_host}};
     my $host = sub {
 	my $value = shift;
@@ -311,14 +314,29 @@ sub MyConnect {
 	return($hosts[$index]);
     };
     my $hostname = $host->($config->{database_retries});
-    my $dbd = qq"dbi:$config->{database_type}:database=$config->{database_name};host=$hostname";
+    my $dbd;
+    if (defined($alt_dbd)) {
+	$dbd = $alt_dbd;
+    } else {
+	$dbd = qq"dbi:$config->{database_type}:database=$config->{database_name};host=$hostname";
+    }
     my $dbh;
     use Sys::SigAction qw( set_sig_handler );
     eval {
 	my $h = set_sig_handler('ALRM', sub {return("timeout");});
 	#implement 2 second time out
 	alarm($config->{database_timeout});  ## The timeout in seconds as defined by PRFConfig
-	$dbh = DBI->connect_cached($dbd, $config->{database_user}, $config->{database_pass}, $config->{database_args},) or callstack();
+	my $user;
+	my $pass;
+	if (defined($alt_user)) {
+	    $user = $alt_user;
+	    $pass = $alt_pass;
+	} else {
+	    $user = $config->{database_user};
+	    $pass = $config->{database_pass};
+	}
+	print "TESTME: $user $pass\n";
+	$dbh = DBI->connect_cached($dbd, $user, $pass, $config->{database_args},) or callstack();
 	alarm(0);
     }; #original signal handler restored here when $h goes out of scope
     alarm(0);
