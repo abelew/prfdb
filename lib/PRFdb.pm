@@ -1574,18 +1574,28 @@ sub Insert_Genome_Entry {
 #    my $statement = qq(INSERT INTO genome
 #(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
 #    VALUES('$datum->{accession}', '$datum->{species}', '$datum->{genename}', '$datum->{version}', '$datum->{comment}', '$datum->{mrna_seq}', '$datum->{protein_seq}', '$datum->{orf_start}', '$datum->{orf_stop}', '$datum->{direction}'));
-    my $statement = qq"INSERT DELAYED INTO genome
-(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
-VALUES(?,?,?,?,?,?,?,?,?,?)";
-my ($cp,$cf,$cl) = caller();
-$me->MyExecute(statement => $statement,
+#    my $statement = qq"INSERT DELAYED INTO genome
+#(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
+#VALUES(?,?,?,?,?,?,?,?,?,?)";
+    my $statement = qq"INSERT DELAYED INTO gene_info
+(accession, species, genename, version, comment, orf_start, orf_stop, direction)
+VALUES(?,?,?,?,?,?,?,?)";
+    my ($cp,$cf,$cl) = caller();
+    $me->MyExecute(statement => $statement,
                caller => "$cp, $cf, $cl",
-               vars => [$datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{protein_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
+#               vars => [$datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{protein_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
+               vars => [$datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
+    my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
+    my $stmt_seq = qq"INSERT DELAYED INTO gene_seq
+(info_id, mrna_seq, protein_seq)
+VALUES(?,?,?)";
+    my ($cp,$cf,$cl) = caller();
+    $me->MyExecute(statement => $stmt_seq, vars => [$last_id, $datum->{mrna_seq}, $datum->{protein_seq},]);
+
 ## The following line is very important to ensure that multiple
 ## calls to this don't end up with
 ## Increasingly long sequences
 foreach my $k (keys %{$datum}) {$datum->{$k} = undef;}
-my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
 return ($last_id);
 }
 
@@ -2005,13 +2015,58 @@ sub Tablep {
     my $answer = scalar(@{$info});
     return (scalar(@{$info}));
 }
+sub Create_Gene_Info {
+    my $me = shift;
+    my $statement = qq/CREATE table gene_info (
+id $config->{sql_id},
+accession $config->{sql_accession},
+gi_number $config->{sql_gi_number},
+species $config->{sql_species},
+genename $config->{sql_genename},
+locus text,
+ontology_function varchar(80),
+ontology_component varchar(80),
+ontology_process varchar(80),
+version int,
+comment $config->{sql_comment},
+defline text not null,
+omim_id varchar(30),
+found_snp bool,
+orf_start int,
+orf_stop int,
+direction char(7) DEFAULT 'forward',
+average_mfe text,
+snp_lastupdate TIMESTAMP DEFAULT '00:00:00',
+lastupdate $config->{sql_timestamp},
+INDEX(accession),
+FULLTEXT(locus),
+FULLTEXT(comment),
+FULLTEXT(defline),
+FULLTEXT(genename),
+PRIMARY KEY (id))/;
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
+}
+
+sub Create_Gene_Seq {
+    my $me = shift;
+    my $statement = qq/CREATE table gene_seq (
+id $config->{sql_id},
+info_id int,
+mrna_seq longblob not null,
+protein_seq text,
+INDEX(info_id),
+PRIMARY KEY (id))/;
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
+}
 
 sub Create_Genome {
     my $me = shift;
     my $statement = qq/CREATE table genome (
 id $config->{sql_id},
 accession $config->{sql_accession},
-gi_number $config->{gi_number},
+gi_number $config->{sql_gi_number},
 species $config->{sql_species},
 genename $config->{sql_genename},
 locus text,
