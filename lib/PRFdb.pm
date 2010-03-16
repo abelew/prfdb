@@ -326,8 +326,7 @@ sub MyConnect {
 	my $h = set_sig_handler('ALRM', sub {return("timeout");});
 	#implement 2 second time out
 	alarm($config->{database_timeout});  ## The timeout in seconds as defined by PRFConfig
-	my $user;
-	my $pass;
+	my ($user, $pass)
 	if (defined($alt_user)) {
 	    $user = $alt_user;
 	    $pass = $alt_pass;
@@ -335,7 +334,6 @@ sub MyConnect {
 	    $user = $config->{database_user};
 	    $pass = $config->{database_pass};
 	}
-	print "TESTME: $user $pass\n";
 	$dbh = DBI->connect_cached($dbd, $user, $pass, $config->{database_args},) or callstack();
 	alarm(0);
     }; #original signal handler restored here when $h goes out of scope
@@ -378,7 +376,7 @@ sub MyConnect {
 sub Get_GenomeId_From_Accession {
     my $me = shift;
     my $accession = shift;
-    my $info = $me->MySelect(statement => qq"SELECT id FROM genome WHERE accession = ?", vars => [$accession], type => 'single');
+    my $info = $me->MySelect(statement => qq"SELECT id FROM gene_info WHERE accession = ?", vars => [$accession], type => 'single');
     return ($info);
 }
 
@@ -399,7 +397,7 @@ sub Keyword_Search {
     my $me = shift;
     my $species = shift;
     my $keyword = shift;
-    my $statement = qq"SELECT accession, comment FROM genome WHERE comment like ? ORDER BY accession";
+    my $statement = qq"SELECT accession, comment FROM gene_info WHERE comment like ? ORDER BY accession";
     my $info = $me->MySelect(statement => $statement, vars => ['%$keyword%']);
     my $return = {};
     foreach my $accession (@{$info}) {
@@ -473,7 +471,7 @@ sub Genome_to_Fasta {
     my $me = shift;
     my $output = shift;
     my $species = shift;
-    my $statement = qq"SELECT DISTINCT accession, species, comment, mrna_seq FROM genome";
+    my $statement = qq"SELECT DISTINCT accession, species, comment, mrna_seq FROM gene_info, gene_seq";
     my $info;
     system("mkdir $config->{base}/blast") if (!-r  "$config->{base}/blast");
     open(OUTPUT, ">$config->{base}/blast/$output") or die("Could not open the fasta output file. $!");
@@ -713,7 +711,7 @@ sub Id_to_AccessionSpecies {
     my $id = shift;
     my $start = shift;
     $config->PRF_Error("Undefined value in Id_to_AccessionSpecies", $id) unless (defined($id));
-    my $statement = qq(SELECT accession, species from genome where id = ?);
+    my $statement = qq(SELECT accession, species from gene_info where id = ?);
     my $data = $me->MySelect(statement => $statement, vars => [$id], type => 'row');
     my $accession = $data->[0];
     my $species = $data->[1];
@@ -810,7 +808,7 @@ sub FillQueue {
 	$table = $config->{queue_table};
     }
     $me->Create_Queue() unless ($me->Tablep($table));
-    my $best_statement = "INSERT into $table (genome_id, checked_out, done) SELECT id, 0, 0 from genome";
+    my $best_statement = "INSERT into $table (genome_id, checked_out, done) SELECT id, 0, 0 from gene_info";
     my ($cp,$cf,$cl) = caller();
     $me->MyExecute(statement => $best_statement, caller =>"$cp, $cf, $cl");
 }
@@ -1240,7 +1238,7 @@ sub Import_Genbank_Flatfile {
 	    # else {
 	    # $return .= "Did not insert anything into the genome table.\n";
 	    # my $gid = $me->MySelect(
-	    # statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",
+	    # statement => "SELECT id FROM gene_info WHERE accession = '$datum{accession}'",
 	    # type => 'single');
 	    # print "Doing set_Queue with genome_id $gid\n";
 	    # $me->Set_Queue(id => $gid);
@@ -1360,7 +1358,7 @@ sub Import_CDS {
 	    $me->Set_Queue(id => $genome_id);
 	} else {
 	    $return = 0;
-	    my $gid = $me->MySelect(statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",	type => 'single');
+	    my $gid = $me->MySelect(statement => "SELECT id FROM gene_info WHERE accession = '$datum{accession}'", type => 'single');
 	    $me->Set_Queue(id => $gid);
 	}
     }
@@ -1386,7 +1384,7 @@ sub mRNA_subsequence {
 sub Get_OMIM {
     my $me = shift;
     my $id = shift;
-    my $statement = qq(SELECT omim_id FROM genome WHERE id = ?);
+    my $statement = qq(SELECT omim_id FROM gene_info WHERE id = ?);
     my $omim = $me->MySelect(statement => $statement, vars => [$id], type => 'single');
     if (!defined($omim) or $omim eq 'none') {
 	return (undef);
@@ -1418,7 +1416,7 @@ sub Get_OMIM {
 sub Get_Sequence {
     my $me = shift;
     my $accession = shift;
-    my $statement = qq(SELECT mrna_seq FROM genome WHERE accession = ?);
+    my $statement = qq(SELECT mrna_seq FROM gene_seq WHERE accession = ?);
     my $sequence  = $me->MySelect(statement => $statement, vars => [$accession], type => 'single');
     if ($sequence) {
 	return ($sequence);
@@ -1431,7 +1429,7 @@ sub Get_Sequence {
 sub Get_Sequence_from_id {
     my $me = shift;
     my $id = shift;
-    my $statement = qq(SELECT mrna_seq FROM genome WHERE id = ?);
+    my $statement = qq(SELECT mrna_seq FROM gene_seq WHERE id = ?);
     my $sequence = $me->MySelect(statement => $statement, vars => [$id], type => 'single');
     if ($sequence) {
 	return ($sequence);
@@ -1501,7 +1499,7 @@ sub Get_Num_Bootfolds {
 sub Get_mRNA {
     my $me = shift;
     my $accession = shift;
-    my $statement = qq/SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?/;
+    my $statement = qq/SELECT mrna_seq FROM gene_seq WHERE accession = (SELECT id FROM gene_info WHERE accession = ?)/;
     my $info = $me->MySelect(statement => $statement, vars => [$accession], type => 'hash');
     my $mrna_seq  = $info->{mrna_seq};
     if ($mrna_seq) {
@@ -1515,8 +1513,10 @@ sub Get_mRNA {
 sub Get_ORF {
     my $me = shift;
     my $accession = shift;
-    my $statement = qq"SELECT mrna_seq, orf_start, orf_stop FROM genome WHERE accession = ?";
+    my $statement = qq"SELECT id, orf_start, orf_stop FROM gene_info WHERE accession = ?";
     my $info = $me->MySelect(statement => $statement, vars => [$accession], type => 'hash');
+    my $mrna_seq = $me->MySelect(statement => "SELECT mrna_seq FROM gene_seq WHERE id = ?", vars => [$info->{id}], type => 'single');
+    $info->{mrna_seq} = $mrna_seq;
     my $mrna_seq = $info->{mrna_seq};
     ### A PIECE OF CODE TO HANDLE PULLING SUBSEQUENCES FROM CDS                                                         
     my $start = $info->{orf_start} - 1;
@@ -1560,7 +1560,7 @@ sub Insert_Genome_Entry {
     my $me = shift;
     my $datum = shift;
     ## Check to see if the accession is already there
-    my $check = qq(SELECT id FROM genome where accession=?);
+    my $check = qq(SELECT id FROM gene_info where accession=?);
     my $already_id = $me->MySelect(statement => $check, vars => [$datum->{accession}], type => 'single');
     ## A check to make sure that the orf_start is not 0.  If it is, set it to 1 so it is consistent with the
     ## crap from the SGD
@@ -1574,7 +1574,7 @@ sub Insert_Genome_Entry {
 #    my $statement = qq(INSERT INTO genome
 #(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
 #    VALUES('$datum->{accession}', '$datum->{species}', '$datum->{genename}', '$datum->{version}', '$datum->{comment}', '$datum->{mrna_seq}', '$datum->{protein_seq}', '$datum->{orf_start}', '$datum->{orf_stop}', '$datum->{direction}'));
-#    my $statement = qq"INSERT DELAYED INTO genome
+#    my $statement = qq"INSERT DELAYED INTO gene_seq
 #(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
 #VALUES(?,?,?,?,?,?,?,?,?,?)";
     my $statement = qq"INSERT DELAYED INTO gene_info
@@ -1589,7 +1589,7 @@ VALUES(?,?,?,?,?,?,?,?)";
     my $stmt_seq = qq"INSERT DELAYED INTO gene_seq
 (info_id, mrna_seq, protein_seq)
 VALUES(?,?,?)";
-    my ($cp,$cf,$cl) = caller();
+    ($cp,$cf,$cl) = caller();
     $me->MyExecute(statement => $stmt_seq, vars => [$last_id, $datum->{mrna_seq}, $datum->{protein_seq},]);
 
 ## The following line is very important to ensure that multiple

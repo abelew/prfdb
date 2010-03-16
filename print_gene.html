@@ -13,14 +13,15 @@
  <tr align="left" valign="top">
  </tr>
 </table>
-% my $in = $db->MySelect(statement => "SELECT mrna_seq, orf_start, orf_stop, direction FROM genome WHERE accession = ?", vars =>[$accession], type => 'row');
+% my $in = $db->MySelect(statement => "SELECT orf_start, orf_stop, direction, id FROM gene_info WHERE accession = ?", vars =>[$accession], type => 'row');
+% my $mrna_seq = $db->MySelect(statement => "SELECT mrna_seq FROM gene_seq WHERE id = ?", vars => [$in->[3]], type => 'single');
 % my $slips = $db->MySelect(statement =>"SELECT DISTINCT(start), bp_mstop FROM mfe WHERE accession = ? ORDER BY start", vars => [$accession],);
 % my (@slipsites, @minus);
 % foreach my $s (@{$slips}) {
 %   push (@slipsites, $s->[0]);
 %   push (@minus, $s->[1]);
 %  }
-% my $str = HTMLMisc::Create_Pretty_mRNA(show_frame => $show_frame, accession => $accession, mrna_seq => $in->[0], orf_start => $in->[1], orf_stop => $in->[2], slipsites => \@slipsites, minus_bp => \@minus);
+% my $str = HTMLMisc::Create_Pretty_mRNA(show_frame => $show_frame, accession => $accession, mrna_seq => $mrna_seq, orf_start => $in->[0], orf_stop => $in->[1], slipsites => \@slipsites, minus_bp => \@minus);
 
 <table bgcolor="#E8E8E8" align="center">
   <tr>
@@ -53,7 +54,7 @@
 </form>   </tr>
 
 <%init>
- my $statement = "SELECT species,genename FROM genome WHERE accession = '$accession'";
+ my $statement = "SELECT species,genename FROM gene_info WHERE accession = '$accession'";
  my $fun = $db->MySelect(statement =>$statement);
  my $species = $fun->[0][0];
  my $genename = $fun->[0][1];

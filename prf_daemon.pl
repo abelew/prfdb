@@ -64,6 +64,9 @@ if (defined($config->{import_genbank})) {
     Import_Genbank($config->{import_genbank}, $config->{accession});
     exit(0);
 }
+if (defined($config->{import_genbank_accession})) {
+    Import_Genbank_Accession($config->{import_genbank_accession});
+}
 if (defined($config->{makeblast})) {
     Make_Blast();
     exit(0);
@@ -327,7 +330,7 @@ sub PRF_Gatherer {
       print "PRF_Gatherer: $current $slipsite_start\n" if (defined($config->{debug}));
       $num_slipsites++;
       if ($config->{do_utr} == 0) {
-	  my $end_of_orf = $db->MySelect(statement => "SELECT orf_stop FROM genome WHERE accession = ?", vars => [$state->{accession}], type =>'row',);
+	  my $end_of_orf = $db->MySelect(statement => "SELECT orf_stop FROM gene_info WHERE accession = ?", vars => [$state->{accession}], type =>'row',);
 	  if ($end_of_orf->[0] < $slipsite_start) {
 	      PRFdb::RemoveFile($rnamotif_information->{$slipsite_start}{filename});
 		next STARTSITE;
@@ -783,7 +786,7 @@ sub Make_Blast {
 }
 
 sub Make_Landscape_Tables {
-    my $tables = $db->MySelect("SELECT distinct(species) from genome");
+    my $tables = $db->MySelect("SELECT distinct(species) from gene_info");
     my @spec = @{$tables};
     foreach my $s (@spec) {
 	my $sp = $s->[0];
@@ -860,7 +863,6 @@ sub Zscore {
 }
 
 sub ReSync {
-    print "TESTME $config->{database_otherhost}\n";
     my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
     my $local_dbd = qq"dbi:$config->{database_type}:database=mysql;host=localhost";
     my $statement = "SHOW MASTER STATUS";
@@ -930,7 +932,7 @@ sub Maintenance {
 	  }
 	  print "Filling index_stats for $species\n";
 	  next if ($species =~ /^virus-/);
-	  $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species,]);
+	  $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM gene_info WHERE species = ?", type=>'single', vars =>[$species,]);
 	  $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species = ?",type=>'single', vars => [$species,]);
 	  $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = ?",type=>'single', vars => [$species],);
 	  my ($cp,$cf,$cl) = caller();
@@ -938,7 +940,7 @@ sub Maintenance {
 	  $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('',?,?,?,?)", vars => [$species, $num_genome, $num_mfe_entries, $num_mfe_knotted],);
       }
 	my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = 'virus'");
-	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species like 'virus-%'", type=>'single');
+	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM gene_info WHERE species like 'virus-%'", type=>'single');
 	$num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species like 'virus-%'",type=>'single');
 	$num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species like 'virus-%'",type=>'single');
 	$rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('', 'virus',?,?,?)", vars => [$num_genome, $num_mfe_entries, $num_mfe_knotted],);
@@ -1039,6 +1041,12 @@ sub Maintenance {
     }
     ## End generating all clouds
 #    $db->MyExecute("UPDATE wait set wait = '0'");
+}
+
+sub Import_Genbank_Accession {
+    my $acc = shift;
+    my $import = $db->Import_CDS($acc);
+    exit(0);
 }
 
 sub Import_Genbank {

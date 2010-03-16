@@ -28,7 +28,7 @@ my $uni = new Bio::DB::Universal;
 
 #   $seq1 = $uni->get_Seq_by_id("embl:HSHNRNPA");
 #   $seq2 = $uni->get_Seq_by_acc("gb|A000012");
-my $key  = 'NM_198255';
+my $key  = 'NM_133775';
 my $seq3 = $uni->get_Seq_by_id($key);
 print "TESTME: $seq3\n";
 foreach my $k ( keys %{$seq3} ) {

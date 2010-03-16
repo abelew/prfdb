@@ -90,7 +90,7 @@ sub Make_Extension {
     my $bottom_y_coord = $axes_coords->[4];
     my $x_range = $right_x_coord - $left_x_coord;
     my $y_range = $top_y_coord - $bottom_y_coord;
-    my $stmt = qq"SELECT DISTINCT mfe.id, mfe.accession, mfe.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, mfe.bp_mstop, mfe.mfe FROM genome,mfe WHERE mfe.genome_id = genome.id AND mfe.seqlength='100' AND mfe.algorithm = 'nupack' AND mfe.species = '$species'";
+    my $stmt = qq"SELECT DISTINCT mfe.id, mfe.accession, mfe.start, gene_info.orf_start, gene_info.orf_stop, gene_seq.mrna_seq, mfe.bp_mstop, mfe.mfe FROM gene_info,gene_seq,mfe WHERE gene_info.id = gene_seq.id AND mfe.genome_id = gene_info.id AND mfe.seqlength='100' AND mfe.algorithm = 'nupack' AND mfe.species = '$species'";
     my $stuff = $db->MySelect({statement => $stmt,});
     
     open(MAP, ">${filename}.map") or die("Unable to open the map file ${filename}.map");
@@ -591,8 +591,7 @@ sub Make_Landscape {
     my $data = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM $table WHERE accession='$accession' ORDER BY start, algorithm");
     return(undef) if (!defined($data));
     my $slipsites = $db->MySelect("SELECT distinct(start) FROM mfe WHERE accession='$accession' ORDER BY start");
-    my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession'");
-    
+    my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM gene_info WHERE accession = '$accession'");
     my $info = {};
     my @points = ();
     my ($mean_nupack, $mean_pknots, $mean_vienna) = 0;
@@ -613,7 +612,10 @@ sub Make_Landscape {
 	    $mean_vienna = $mean_vienna + $datum->[3];
 	}
     }    ## End foreach spot
-    return(undef) if ($position_counter == 0);  ## There is no data.
+    if ($position_counter == 0) {  ## There is no data!?
+	return(undef);
+	print STDERR "There is no data\n";
+    }
     $position_counter = $position_counter / 3;
     $mean_pknots = $mean_pknots / $position_counter;
     $mean_nupack = $mean_nupack / $position_counter;

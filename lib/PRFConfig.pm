@@ -69,7 +69,7 @@ sub new {
     $me->{database_name} = 'test' if (!defined($me->{database_name}));
     $me->{database_pass} = 'guest' if (!defined($me->{database_pass}));
     $me->{database_retries} = 0 if (!defined($me->{database_retries}));
-    $me->{database_timeout} = 30 if (!defined($me->{database_timeout}));
+    $me->{database_timeout} = 5 if (!defined($me->{database_timeout}));
     $me->{database_type} = 'mysql' if (!defined($me->{database_type}));
     $me->{database_user} = 'guest' if (!defined($me->{database_user}));
     $me->{debug} = undef if (!defined($me->{debug}));
@@ -194,6 +194,7 @@ sub new {
 				'hotknots:i' => \$conf{do_hotknots},
 				'import:s' => \$conf{import_accession},
 				'import_genbank:s' => \$conf{import_genbank},
+				'import_genbank_accession:s' => \$conf{import_genbank_accession},
 				'index_stats' => \$conf{index_stats},
 				'input' => \$conf{input},
 				'input_fasta:s' => \$conf{input_fasta},
