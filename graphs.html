@@ -41,6 +41,14 @@ Below is the same with the number of codons on the y axis.
   <img src="images/cloud/<% $species %>/extension-codons.png" usemap="#codons_extension">
 </center>
 
+%## Dump the percent map to STDOUT
+% open(PERCENT_MAP, "<$config->{base}/images/cloud/$species/extension-percent.png.map");
+% while (my $line = <PERCENT_MAP>) { print $line; }
+% close(PERCENT_MAP);
+% open(CODONS_MAP, "<$config->{base}/images/cloud/$species/extension-codons.png.map");
+% while (my $line = <CODONS_MAP>) { print $line; }
+% close(CODONS_MAP);
+
 <%init>
  my $pic = new PRFGraph(config=>$config,);
  my $test = $pic->Picture_Filename(type => 'cloud', species => $species, suffix => "-AAAAAAA-$seqlength",);

@@ -113,7 +113,7 @@ sub Make_Extension {
 	my $bp_minus_stop = $datum->[6];
 	my $mfe = $datum->[7];
 	my $zscore_stmt = qq"SELECT zscore from boot_$species where mfe_id = '$mfeid'";
-	my $zscore = $db->MySelect({statement => $zscore_stmt, type => 'single'});
+	my $zscore = $db->MySelect(statement => $zscore_stmt, type => 'single');
 	my $minus_string = '';
 	$mrna_sequence =~ tr/Tt/Uu/;
 	my @seq = split(//, $mrna_sequence);
@@ -150,13 +150,14 @@ sub Make_Extension {
 	$extension_length = $extension_length - 5;
 	my $minus_codons = ($extension_length / 3) * 5;
 	if (!defined($bp_minus_stop)) {
-	    my $stmt = qq/UPDATE mfe SET bp_mstop = '$extension_length' WHERE id = '$mfeid'/;
+	    my $stmt = qq"UPDATE mfe SET bp_mstop = '$extension_length' WHERE id = '$mfeid'";
 	    $db->MyExecute($stmt);
 	}
 	my $x_percentage = sprintf("%.2f", 100.0 *($start - $orf_start) / ($orf_stop - $orf_start));
 	my $y_percentage = sprintf("%.2f", 100.0 * (($extension_length + $start) - $orf_start) / ($orf_stop - $orf_start));
 	my $color;
 	## UNDEF VALUES HERE
+	print "TESTME BIG TEST: zscore: $zscore avgz: $avg_zscore mfe: $mfe avgm: $avg_mfe<br>\n";
 	if (($zscore < $avg_zscore) and ($mfe < $avg_mfe)) {
 	    $color = $gd->colorResolve(191,0,0);  ## Red
 	} elsif (($zscore >= $avg_zscore) and ($mfe < $avg_mfe)) {
