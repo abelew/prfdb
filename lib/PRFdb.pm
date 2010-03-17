@@ -326,7 +326,7 @@ sub MyConnect {
 	my $h = set_sig_handler('ALRM', sub {return("timeout");});
 	#implement 2 second time out
 	alarm($config->{database_timeout});  ## The timeout in seconds as defined by PRFConfig
-	my ($user, $pass)
+	my ($user, $pass);
 	if (defined($alt_user)) {
 	    $user = $alt_user;
 	    $pass = $alt_pass;
@@ -1517,7 +1517,7 @@ sub Get_ORF {
     my $info = $me->MySelect(statement => $statement, vars => [$accession], type => 'hash');
     my $mrna_seq = $me->MySelect(statement => "SELECT mrna_seq FROM gene_seq WHERE id = ?", vars => [$info->{id}], type => 'single');
     $info->{mrna_seq} = $mrna_seq;
-    my $mrna_seq = $info->{mrna_seq};
+    #my $mrna_seq = $info->{mrna_seq};
     ### A PIECE OF CODE TO HANDLE PULLING SUBSEQUENCES FROM CDS                                                         
     my $start = $info->{orf_start} - 1;
     my $stop = $info->{orf_stop} - 1;
