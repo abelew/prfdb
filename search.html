@@ -3,11 +3,10 @@
 my $query_statement;
 my $entries;
 if ($short or $accession) {
-  $query_statement = qq"SELECT * FROM gene_info WHERE accession = ?";
+  $query_statement = qq"SELECT * FROM genome WHERE accession = ?";
   $entries = $db->MySelect(statement => $query_statement, type => 'hash', descriptor => 1, vars =>[$accession]);
 } else {
-#  $query_statement = qq"SELECT * FROM gene_info WHERE ";
-  $query_statement = qq"SELECT * FROM gene_info WHERE ";
+  $query_statement = qq"SELECT * FROM genome WHERE ";
   if ($search_species_limit ne 'all') {
     $query_statement .= qq"species = '$search_species_limit' AND ";
 #  } elsif ($search_species_limit ne 'all') {

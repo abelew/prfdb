@@ -13,15 +13,14 @@
  <tr align="left" valign="top">
  </tr>
 </table>
-% my $in = $db->MySelect(statement => "SELECT orf_start, orf_stop, direction, id FROM gene_info WHERE accession = ?", vars =>[$accession], type => 'row');
-% my $mrna_seq = $db->MySelect(statement => "SELECT mrna_seq FROM gene_seq WHERE id = ?", vars => [$in->[3]], type => 'single');
+% my $in = $db->MySelect(statement => "SELECT orf_start, orf_stop, mrna_seq, direction, id FROM genome WHERE accession = ?", vars =>[$accession], type => 'row');
 % my $slips = $db->MySelect(statement =>"SELECT DISTINCT(start), bp_mstop FROM mfe WHERE accession = ? ORDER BY start", vars => [$accession],);
 % my (@slipsites, @minus);
 % foreach my $s (@{$slips}) {
 %   push (@slipsites, $s->[0]);
 %   push (@minus, $s->[1]);
 %  }
-% my $str = HTMLMisc::Create_Pretty_mRNA(show_frame => $show_frame, accession => $accession, mrna_seq => $mrna_seq, orf_start => $in->[0], orf_stop => $in->[1], slipsites => \@slipsites, minus_bp => \@minus);
+% my $str = HTMLMisc::Create_Pretty_mRNA(show_frame => $show_frame, accession => $accession, mrna_seq => $in->[2], orf_start => $in->[0], orf_stop => $in->[1], slipsites => \@slipsites, minus_bp => \@minus);
 
 <table bgcolor="#E8E8E8" align="center">
   <tr>
@@ -41,10 +40,12 @@
       <select name="show_frame"  onchange="this.form.submit()">
         <option value="none" <% (($show_frame eq 'none') ? 'SELECTED' : '') %>>none</option>
         <option value="zero" <% (($show_frame eq 'zero') ? 'SELECTED' : '') %>>zero frame</option>
-        <option value="one" <% (($show_frame eq 'one') ? 'SELECTED' : '') %>>minus one frame</option>
-        <option value="two" <% (($show_frame eq 'two') ? 'SELECTED' : '') %>>minus two frame</option>
+        <option value="one" <% (($show_frame eq 'one') ? 'SELECTED' : '') %>>minus two frame</option>
+        <option value="two" <% (($show_frame eq 'two') ? 'SELECTED' : '') %>>minus one frame</option>
         <option value="all" <% (($show_frame eq 'all') ? 'SELECTED' : '') %>>all</option>
       </select>
+      </input>
+      There is a bug above.
       Show translated reading frame(s).
     </td></tr>
 </form>
@@ -54,8 +55,8 @@
 </form>   </tr>
 
 <%init>
- my $statement = "SELECT species,genename FROM gene_info WHERE accession = '$accession'";
- my $fun = $db->MySelect(statement =>$statement);
+ my $statement = "SELECT species,genename FROM genome WHERE accession = ?";
+ my $fun = $db->MySelect(statement => $statement, vars => [$accession,]);
  my $species = $fun->[0][0];
  my $genename = $fun->[0][1];
 </%init>

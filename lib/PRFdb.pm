@@ -376,7 +376,7 @@ sub MyConnect {
 sub Get_GenomeId_From_Accession {
     my $me = shift;
     my $accession = shift;
-    my $info = $me->MySelect(statement => qq"SELECT id FROM gene_info WHERE accession = ?", vars => [$accession], type => 'single');
+    my $info = $me->MySelect(statement => qq"SELECT id FROM genome WHERE accession = ?", vars => [$accession], type => 'single');
     return ($info);
 }
 
@@ -397,7 +397,7 @@ sub Keyword_Search {
     my $me = shift;
     my $species = shift;
     my $keyword = shift;
-    my $statement = qq"SELECT accession, comment FROM gene_info WHERE comment like ? ORDER BY accession";
+    my $statement = qq"SELECT accession, comment FROM genome WHERE comment like ? ORDER BY accession";
     my $info = $me->MySelect(statement => $statement, vars => ['%$keyword%']);
     my $return = {};
     foreach my $accession (@{$info}) {
@@ -471,7 +471,7 @@ sub Genome_to_Fasta {
     my $me = shift;
     my $output = shift;
     my $species = shift;
-    my $statement = qq"SELECT DISTINCT accession, species, comment, mrna_seq FROM gene_info, gene_seq";
+    my $statement = qq"SELECT DISTINCT accession, species, comment, mrna_seq FROM genome";
     my $info;
     system("mkdir $config->{base}/blast") if (!-r  "$config->{base}/blast");
     open(OUTPUT, ">$config->{base}/blast/$output") or die("Could not open the fasta output file. $!");
@@ -711,7 +711,7 @@ sub Id_to_AccessionSpecies {
     my $id = shift;
     my $start = shift;
     $config->PRF_Error("Undefined value in Id_to_AccessionSpecies", $id) unless (defined($id));
-    my $statement = qq(SELECT accession, species from gene_info where id = ?);
+    my $statement = qq(SELECT accession, species from genome where id = ?);
     my $data = $me->MySelect(statement => $statement, vars => [$id], type => 'row');
     my $accession = $data->[0];
     my $species = $data->[1];
@@ -808,7 +808,7 @@ sub FillQueue {
 	$table = $config->{queue_table};
     }
     $me->Create_Queue() unless ($me->Tablep($table));
-    my $best_statement = "INSERT into $table (genome_id, checked_out, done) SELECT id, 0, 0 from gene_info";
+    my $best_statement = "INSERT into $table (genome_id, checked_out, done) SELECT id, 0, 0 from genome";
     my ($cp,$cf,$cl) = caller();
     $me->MyExecute(statement => $best_statement, caller =>"$cp, $cf, $cl");
 }
@@ -1238,7 +1238,7 @@ sub Import_Genbank_Flatfile {
 	    # else {
 	    # $return .= "Did not insert anything into the genome table.\n";
 	    # my $gid = $me->MySelect(
-	    # statement => "SELECT id FROM gene_info WHERE accession = '$datum{accession}'",
+	    # statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'",
 	    # type => 'single');
 	    # print "Doing set_Queue with genome_id $gid\n";
 	    # $me->Set_Queue(id => $gid);
@@ -1358,7 +1358,7 @@ sub Import_CDS {
 	    $me->Set_Queue(id => $genome_id);
 	} else {
 	    $return = 0;
-	    my $gid = $me->MySelect(statement => "SELECT id FROM gene_info WHERE accession = '$datum{accession}'", type => 'single');
+	    my $gid = $me->MySelect(statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'", type => 'single');
 	    $me->Set_Queue(id => $gid);
 	}
     }
@@ -1384,7 +1384,7 @@ sub mRNA_subsequence {
 sub Get_OMIM {
     my $me = shift;
     my $id = shift;
-    my $statement = qq(SELECT omim_id FROM gene_info WHERE id = ?);
+    my $statement = qq(SELECT omim_id FROM genome WHERE id = ?);
     my $omim = $me->MySelect(statement => $statement, vars => [$id], type => 'single');
     if (!defined($omim) or $omim eq 'none') {
 	return (undef);
@@ -1416,7 +1416,7 @@ sub Get_OMIM {
 sub Get_Sequence {
     my $me = shift;
     my $accession = shift;
-    my $statement = qq(SELECT mrna_seq FROM gene_seq WHERE accession = ?);
+    my $statement = qq(SELECT mrna_seq FROM genome WHERE accession = ?);
     my $sequence  = $me->MySelect(statement => $statement, vars => [$accession], type => 'single');
     if ($sequence) {
 	return ($sequence);
@@ -1429,7 +1429,7 @@ sub Get_Sequence {
 sub Get_Sequence_from_id {
     my $me = shift;
     my $id = shift;
-    my $statement = qq(SELECT mrna_seq FROM gene_seq WHERE id = ?);
+    my $statement = qq(SELECT mrna_seq FROM genome WHERE id = ?);
     my $sequence = $me->MySelect(statement => $statement, vars => [$id], type => 'single');
     if ($sequence) {
 	return ($sequence);
@@ -1499,7 +1499,7 @@ sub Get_Num_Bootfolds {
 sub Get_mRNA {
     my $me = shift;
     my $accession = shift;
-    my $statement = qq/SELECT mrna_seq FROM gene_seq WHERE accession = (SELECT id FROM gene_info WHERE accession = ?)/;
+    my $statement = qq"SELECT mrna_seq FROM genome WHERE accession = ?";
     my $info = $me->MySelect(statement => $statement, vars => [$accession], type => 'hash');
     my $mrna_seq  = $info->{mrna_seq};
     if ($mrna_seq) {
@@ -1513,12 +1513,10 @@ sub Get_mRNA {
 sub Get_ORF {
     my $me = shift;
     my $accession = shift;
-    my $statement = qq"SELECT id, orf_start, orf_stop FROM gene_info WHERE accession = ?";
+    my $statement = qq"SELECT id, orf_start, orf_stop, mrna_seq FROM genome WHERE accession = ?";
     my $info = $me->MySelect(statement => $statement, vars => [$accession], type => 'hash');
-    my $mrna_seq = $me->MySelect(statement => "SELECT mrna_seq FROM gene_seq WHERE id = ?", vars => [$info->{id}], type => 'single');
-    $info->{mrna_seq} = $mrna_seq;
-#    my $mrna_seq = $info->{mrna_seq};
-    ### A PIECE OF CODE TO HANDLE PULLING SUBSEQUENCES FROM CDS                                                         
+    my $mrna_seq = $info->{mrna_seq};
+    ### A PIECE OF CODE TO HANDLE PULLING SUBSEQUENCES FROM CDS
     my $start = $info->{orf_start} - 1;
     my $stop = $info->{orf_stop} - 1;
     my $offset = $stop - $start;
@@ -1560,7 +1558,7 @@ sub Insert_Genome_Entry {
     my $me = shift;
     my $datum = shift;
     ## Check to see if the accession is already there
-    my $check = qq(SELECT id FROM gene_info where accession=?);
+    my $check = qq"SELECT id FROM genome where accession = ?";
     my $already_id = $me->MySelect(statement => $check, vars => [$datum->{accession}], type => 'single');
     ## A check to make sure that the orf_start is not 0.  If it is, set it to 1 so it is consistent with the
     ## crap from the SGD
@@ -1574,29 +1572,19 @@ sub Insert_Genome_Entry {
 #    my $statement = qq(INSERT INTO genome
 #(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
 #    VALUES('$datum->{accession}', '$datum->{species}', '$datum->{genename}', '$datum->{version}', '$datum->{comment}', '$datum->{mrna_seq}', '$datum->{protein_seq}', '$datum->{orf_start}', '$datum->{orf_stop}', '$datum->{direction}'));
-#    my $statement = qq"INSERT DELAYED INTO gene_seq
-#(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
-#VALUES(?,?,?,?,?,?,?,?,?,?)";
-    my $statement = qq"INSERT DELAYED INTO gene_info
-(accession, species, genename, version, comment, orf_start, orf_stop, direction)
-VALUES(?,?,?,?,?,?,?,?)";
+    my $statement = qq"INSERT DELAYED INTO genome
+(accession, species, genename, version, comment, mrna_seq, orf_start, orf_stop, direction)
+VALUES(?,?,?,?,?,?,?,?,?)";
     my ($cp,$cf,$cl) = caller();
     $me->MyExecute(statement => $statement,
                caller => "$cp, $cf, $cl",
-#               vars => [$datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{protein_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
-               vars => [$datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
+               vars => [$datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
     my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
-    my $stmt_seq = qq"INSERT DELAYED INTO gene_seq
-(info_id, mrna_seq, protein_seq)
-VALUES(?,?,?)";
-    ($cp,$cf,$cl) = caller();
-    $me->MyExecute(statement => $stmt_seq, vars => [$last_id, $datum->{mrna_seq}, $datum->{protein_seq},]);
-
 ## The following line is very important to ensure that multiple
 ## calls to this don't end up with
 ## Increasingly long sequences
-foreach my $k (keys %{$datum}) {$datum->{$k} = undef;}
-return ($last_id);
+    foreach my $k (keys %{$datum}) {$datum->{$k} = undef;}
+    return ($last_id);
 }
 
 sub Insert_Numslipsite {
@@ -1787,7 +1775,7 @@ sub Put_Stats {
 		    #  0    1    2     3     4    5     6     7     8
 		    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 		    my $timestring = "$mon/$mday $hour:$min.$sec";
-		    print "$timestring  Now doing $species $seqlength $max_mfe $algorithm\n";
+#		    print "$timestring  Now doing $species $seqlength $max_mfe $algorithm\n";
 		    my $weedout_string = qq"WHERE species = '$species' AND algorithm = '$algorithm' AND seqlength = '$seqlength'";
  		    my $max_mfe = $me->MySelect(type => 'single', statement => "/* 1 of 19 */ SELECT max(mfe) FROM mfe $weedout_string");
 		    my $min_mfe = $me->MySelect(type => 'single', statement => "/* 2 of 19 */ SELECT min(mfe) FROM mfe $weedout_string");
@@ -1808,10 +1796,12 @@ sub Put_Stats {
 		    my $stdev_pairs_knotted = $me->MySelect(type => 'single', statement => "/* 17 of 19 */ SELECT stddev(pairs) FROM mfe $weedout_string AND knotp = '1' AND mfe <= '$max_mfe'");
 		    my $avg_zscore = $me->MySelect(type => 'single', statement => "/* 18 of 19 */ SELECT avg(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'");
 		    my $stdev_zscore = $me->MySelect(type => 'single', statement => "/* 19 of 19 */SELECT stddev(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'");
+#		    print "species:$species  seqlength:$seqlength  max_mfe:$max_mfe  min_mfe:$min_mfe  algorithm:$algorithm  num_seq:$num_sequences  avg_mfe:$avg_mfe  stdev_mfe:$stdev_mfe  avg_pairs:$avg_pairs  stdev_pairs:$stdev_pairs  num_nokn:$num_sequences_noknot  avg_mfe_no:$avg_mfe_noknot  stdev_mfe_no:$stdev_mfe_noknot  avg_pairs_no:$avg_pairs_noknot  stdev_pairs_no:$stdev_pairs_noknot  num_knot:$num_sequences_knotted  avg_mfe_knot:$avg_mfe_knotted  stdev_mfe_knotted:$stdev_mfe_knotted  avg_pairs_knot:$avg_pairs_knotted  stdev_pairs:kno:$stdev_pairs_knotted  avg_z:$avg_zscore  stdev_zscore:$stdev_zscore\n";
 		    my $statement = qq"INSERT DELAYED INTO stats
 (species, seqlength, max_mfe, min_mfe, algorithm, num_sequences, avg_mfe, stddev_mfe, avg_pairs, stddev_pairs, num_sequences_noknot, avg_mfe_noknot, stddev_mfe_noknot, avg_pairs_noknot, stddev_pairs_noknot, num_sequences_knotted, avg_mfe_knotted, stddev_mfe_knotted, avg_pairs_knotted, stddev_pairs_knotted, avg_zscore, stddev_zscore)
     VALUES
 ('$species', '$seqlength', '$max_mfe', '$min_mfe', '$algorithm', '$num_sequences', '$avg_mfe', '$stdev_mfe', '$avg_pairs', '$stdev_pairs', '$num_sequences_noknot', '$avg_mfe_noknot', '$stdev_mfe_noknot', '$avg_pairs_noknot', '$stdev_pairs_noknot', '$num_sequences_knotted', '$avg_mfe_knotted', '$stdev_mfe_knotted', '$avg_pairs_knotted', '$stdev_pairs_knotted', '$avg_zscore', '$stdev_zscore')";
+#                  print "STATEMENT: $statement\n";
                   my ($cp,$cf,$cl) = caller();
                   my $rows = $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
                   $inserted_rows = $inserted_rows + $rows;
@@ -2013,51 +2003,6 @@ sub Tablep {
     my $info = $me->MySelect($statement);
     my $answer = scalar(@{$info});
     return (scalar(@{$info}));
-}
-sub Create_Gene_Info {
-    my $me = shift;
-    my $statement = qq/CREATE table gene_info (
-id $config->{sql_id},
-accession $config->{sql_accession},
-gi_number $config->{sql_gi_number},
-species $config->{sql_species},
-genename $config->{sql_genename},
-locus text,
-ontology_function varchar(80),
-ontology_component varchar(80),
-ontology_process varchar(80),
-version int,
-comment $config->{sql_comment},
-defline text not null,
-omim_id varchar(30),
-found_snp bool,
-orf_start int,
-orf_stop int,
-direction char(7) DEFAULT 'forward',
-average_mfe text,
-snp_lastupdate TIMESTAMP DEFAULT '00:00:00',
-lastupdate $config->{sql_timestamp},
-INDEX(accession),
-FULLTEXT(locus),
-FULLTEXT(comment),
-FULLTEXT(defline),
-FULLTEXT(genename),
-PRIMARY KEY (id))/;
-    my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
-}
-
-sub Create_Gene_Seq {
-    my $me = shift;
-    my $statement = qq/CREATE table gene_seq (
-id $config->{sql_id},
-info_id int,
-mrna_seq longblob not null,
-protein_seq text,
-INDEX(info_id),
-PRIMARY KEY (id))/;
-    my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
 }
 
 sub Create_Genome {

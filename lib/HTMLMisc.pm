@@ -182,7 +182,6 @@ sub Create_Pretty_mRNA {
 	@tmp = @a;
 	@a = @t;
 	@t = @tmp;
-
 	unshift(@a, ' '); unshift(@o, ' '); unshift(@t, ' ');
     } else {
 	unshift(@a, ' '); unshift(@o, ' '); unshift(@t, ' ');

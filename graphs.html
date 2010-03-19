@@ -30,8 +30,8 @@ Below is a chart of extended reading frames, x axis percentage ORF, y axis perce
 <center>
 % if (!-f "$config->{base}/images/cloud/$species/extension-percent.png") {
 Generating new extensions now.
-% $pic->Make_Extension($species, "$config->{base}/images/cloud/$species/extension-percent.png", 'codons', $config->{base});
-% $pic->Make_Extension($species, "$config->{base}/images/cloud/$species/extension-codons.png", 'percent', $config->{base});
+% $pic->Make_Extension($species, "$config->{base}/images/cloud/$species/extension-percent.png", 'percent', $config->{base});
+% $pic->Make_Extension($species, "$config->{base}/images/cloud/$species/extension-codons.png", 'codons', $config->{base});
 % } 
  <img src="images/cloud/<% $species %>/extension-percent.png" usemap="#percent_extension">
 </center>

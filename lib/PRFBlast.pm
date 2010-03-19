@@ -21,7 +21,6 @@ sub Format_Db {
     my $me = shift;
     my $input = shift;                                                       ## Fasta file to format.
     my $command = qq"cd $config->{blastdir} && /usr/bin/zcat $input | formatdb -p F -o T -n nr -s";
-    print "TESTME: $command\n";
     system($command);
 }
 
@@ -29,6 +28,8 @@ sub Search {
     my $me = shift;
     my $sequence = shift;
     my $location = shift;
+    my $type = shift;
+    $type = 'blastn' if (!defined($type));
     my $return = {};
     my $factory;
     my $blast_output = new Bio::SearchIO(-format => 'blast',);
@@ -38,20 +39,21 @@ sub Search {
     $sequence =~ s/\d+//g;
     $sequence =~ tr/Uu/Tt/;
     my @tmp = split(//, $sequence);
-    foreach my $char (@tmp) {
-	if ($char != "A" and $char != "a" 
-	    and $char != "T" and $char != "t" 
-	    and $char != "G" and $char != "g"
-	    and $char != "C" and $char ne "c") {
-	    print "There is an illegal character in your search, $char<br>\n";
-	    return(undef);
-	}
-    }
+#    foreach my $char (@tmp) {
+#	if ($char != "A" and $char != "a" 
+#	    and $char != "T" and $char != "t" 
+#	    and $char != "G" and $char != "g"
+#	    and $char != "C" and $char ne "c") {
+#	    print "There is an illegal character in your search, $char<br>\n";
+#	    return(undef);
+#	}
+#    }
     my $seq = new Bio::Seq(-display_id => 'query',
 			   -seq => $sequence,);
     $location = 'local' if ($location ne 'local' and $location ne 'remote');
     if ($location eq 'local') {
-	my @params = (program => 'blastn',
+	## At this time there are no protein databases in the prfdb
+	my @params = (program => $type,
 		      ## -I tells blast to output the GI identifier
 		      ## , which is the id in the genome db
 		      I => 't',
@@ -71,7 +73,7 @@ sub Search {
     }
     elsif ($location eq 'remote') {
 	my @params = (-readmethod => 'SearchIO',
-		      -prog => 'blastn',
+		      -prog => $type,
 		      -data => 'nr',
 		      );
 	

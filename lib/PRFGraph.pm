@@ -88,10 +88,11 @@ sub Make_Extension {
     my $top_y_coord = $axes_coords->[2];
     my $right_x_coord = $axes_coords->[3];
     my $bottom_y_coord = $axes_coords->[4];
-    my $x_range = $right_x_coord - $left_x_coord;
+    my $x_range = ($right_x_coord - $left_x_coord);
+#    print "TESTME: left: $left_x_coord right: $right_x_coord top: $top_y_coord bottom: $bottom_y_coord $x_range<br><br><br>\n";
     my $y_range = $top_y_coord - $bottom_y_coord;
-    my $stmt = qq"SELECT DISTINCT mfe.id, mfe.accession, mfe.start, gene_info.orf_start, gene_info.orf_stop, gene_seq.mrna_seq, mfe.bp_mstop, mfe.mfe FROM gene_info,gene_seq,mfe WHERE gene_info.id = gene_seq.id AND mfe.genome_id = gene_info.id AND mfe.seqlength='100' AND mfe.algorithm = 'nupack' AND mfe.species = '$species'";
-    my $stuff = $db->MySelect({statement => $stmt,});
+    my $stmt = qq"SELECT DISTINCT mfe.id, mfe.accession, mfe.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, mfe.bp_mstop, mfe.mfe FROM genome,mfe WHERE genome.id = mfe.genome_id AND mfe.seqlength='100' AND mfe.algorithm = 'nupack' AND mfe.species = '$species'";
+    my $stuff = $db->MySelect(statement => $stmt,);
     
     open(MAP, ">${filename}.map") or die("Unable to open the map file ${filename}.map");
     my $map_string = '';
@@ -146,18 +147,32 @@ sub Make_Extension {
 	      $codon .= $seq[$c];
 	  }
       } ## End foreach character of the sequence
+	my $x_percentage = sprintf("%.2f", 100.0 * ($start - $orf_start) / ($orf_stop - $orf_start));
+	## start is mfe.start orf_start is genome.orf_start
+#	print "x_percentage:$x_percentage $accession 100 * ($start - $orf_start) / ($orf_stop - $orf_start))<br>\n";
+
+	my $x_coord = sprintf("%.2f", ((($x_range / 100) * $x_percentage) + $left_x_coord));
+
 	my $extension_length = length($minus_string);
-	$extension_length = $extension_length - 5;
-	my $minus_codons = ($extension_length / 3) * 5;
+	my $minus_codons = ($extension_length / 3);
+	my $minus_codons_pixels = $minus_codons * 5;
+	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons_pixels) + $bottom_y_coord);
+
+	my $y_percentage = sprintf("%.2f", 100.0 * (($extension_length + $start) - $orf_start) / ($orf_stop - $orf_start));
+	$y_percentage = 150 if ($y_percentage > 150);
+	my $percent_y_coord = sprintf("%.2f", ((($y_range / 150) * (150 - $y_percentage)) + $bottom_y_coord));
+	my $map_percent_y_coord = sprintf("%.2f", ((($y_range / 150) * (150 - $y_percentage)) + $bottom_y_coord));
+#	print "BIG TEST: x_percent:$x_percentage x_coord:$x_coord<br>
+#y_codons: minus_codons:$minus_codons  codons_coord:$codons_y_coord<br>
+#y_percent: y_percentage:$y_percentage percent_y_coord:$percent_y_coord<br>\n";
+
 	if (!defined($bp_minus_stop)) {
 	    my $stmt = qq"UPDATE mfe SET bp_mstop = '$extension_length' WHERE id = '$mfeid'";
 	    $db->MyExecute($stmt);
 	}
-	my $x_percentage = sprintf("%.2f", 100.0 *($start - $orf_start) / ($orf_stop - $orf_start));
-	my $y_percentage = sprintf("%.2f", 100.0 * (($extension_length + $start) - $orf_start) / ($orf_stop - $orf_start));
 	my $color;
 	## UNDEF VALUES HERE
-	print "TESTME BIG TEST: zscore: $zscore avgz: $avg_zscore mfe: $mfe avgm: $avg_mfe<br>\n";
+#	print "TESTME BIG TEST: zscore: $zscore avgz: $avg_zscore mfe: $mfe avgm: $avg_mfe<br>\n";
 	if (($zscore < $avg_zscore) and ($mfe < $avg_mfe)) {
 	    $color = $gd->colorResolve(191,0,0);  ## Red
 	} elsif (($zscore >= $avg_zscore) and ($mfe < $avg_mfe)) {
@@ -167,15 +182,13 @@ sub Make_Extension {
 	} else {
 	    $color = $gd->colorResolve(165,165,165);
 	}
-	my $x_coord = sprintf("%.2f", (($x_range / 100) * $x_percentage + $left_x_coord));
-	my $percent_y_coord = sprintf("%.2f", ((($y_range / 130) * (130 - $y_percentage)) + $bottom_y_coord));
-	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons) + $bottom_y_coord);
-	my $url = qq"/browse.html?short=1&accession=$accession";
+	my $url = qq"/search.html?short=1&accession=$accession";
 	if ($type eq 'percent') {
-	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession, mfe: $avg_mfe z: $avg_zscore">\n/;
+	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession, mfe:$mfe z:$zscore xpercent:$x_percentage ypercent:$y_percentage">\n/;
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);
 	} elsif ($type eq 'codons') {
-	    $map_string = qq/<area shape="circle" coords="${x_coord},${codons_y_coord},$radius" href="${url}" title="$accession">\n/;
+	    $map_string = qq/<area shape="circle" coords="${x_coord},${codons_y_coord},$radius" href="${url}" title="$accession mfe:$mfe z:$zscore xpercent:$x_percentage ycodons:$minus_codons">\n/;
+#	    print "Percent: xcoord: $x_coord xcoord: $codons_y_coord<br>\n";
 	    $gd->filledArc($x_coord, $codons_y_coord, 4,4,0,360,$color,4);
 	} else {
 	    die("Type is non-specified");
@@ -188,8 +201,7 @@ sub Make_Extension {
     close IMG;
     print MAP "</map>\n";
     close MAP;
-    system("/usr/bin/uniq ${filename}.map > e");
-    system("/bin/mv e ${filename}.map");
+    system("/usr/bin/uniq ${filename}.map > ${filename}.tmp  ;  /bin/mv ${filename}.tmp ${filename}.map");
 }
 
 sub Make_Cloud {
@@ -592,7 +604,7 @@ sub Make_Landscape {
     my $data = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM $table WHERE accession='$accession' ORDER BY start, algorithm");
     return(undef) if (!defined($data));
     my $slipsites = $db->MySelect("SELECT distinct(start) FROM mfe WHERE accession='$accession' ORDER BY start");
-    my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM gene_info WHERE accession = '$accession'");
+    my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession'");
     my $info = {};
     my @points = ();
     my ($mean_nupack, $mean_pknots, $mean_vienna) = 0;
