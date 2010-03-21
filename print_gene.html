@@ -27,7 +27,7 @@
     <td>
     <strong>
       <pre>
-% if ($show_frame ne 'none' or $show_frame ne 'all') {
+% if ($show_frame ne 'none' and $show_frame ne 'all') {
 Showing minus <% $show_frame %> reading frame(s).
 % }
 &gt;<% $accession %> | <% $genename %>
