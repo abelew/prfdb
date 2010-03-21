@@ -274,15 +274,20 @@ $counter, shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shift(@s), shif
 
   my $ret;
   if ($show_frame eq 'all') {
-      $ret = $all;
+      return($all);
+#      $ret = $all;
   } elsif ($show_frame eq 'zero') {
-      $ret = $zero;
+      return($zero);
+#      $ret = $zero;
   } elsif ($show_frame eq 'one') {
-      $ret = $one;
+      return($one);
+#      $ret = $one;
   } elsif ($show_frame eq 'two') {
-      $ret = $two;
+      return($two);
+#      $ret = $two;
   } else {
-      $ret = $none;
+      return($none);
+#      $ret = $none;
   }
 
    return($ret);

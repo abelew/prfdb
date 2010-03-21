@@ -27,6 +27,9 @@
     <td>
     <strong>
       <pre>
+% if ($show_frame ne 'none' or $show_frame ne 'all') {
+Showing minus <% $show_frame %> reading frame(s).
+% }
 &gt;<% $accession %> | <% $genename %>
 <% $str %>
       </pre>
@@ -40,12 +43,11 @@
       <select name="show_frame"  onchange="this.form.submit()">
         <option value="none" <% (($show_frame eq 'none') ? 'SELECTED' : '') %>>none</option>
         <option value="zero" <% (($show_frame eq 'zero') ? 'SELECTED' : '') %>>zero frame</option>
-        <option value="one" <% (($show_frame eq 'one') ? 'SELECTED' : '') %>>minus two frame</option>
-        <option value="two" <% (($show_frame eq 'two') ? 'SELECTED' : '') %>>minus one frame</option>
+        <option value="one" <% (($show_frame eq 'one') ? 'SELECTED' : '') %>>minus one frame</option>
+        <option value="two" <% (($show_frame eq 'two') ? 'SELECTED' : '') %>>minus two frame</option>
         <option value="all" <% (($show_frame eq 'all') ? 'SELECTED' : '') %>>all</option>
       </select>
       </input>
-      There is a bug above.
       Show translated reading frame(s).
     </td></tr>
 </form>
