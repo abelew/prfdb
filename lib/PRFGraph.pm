@@ -89,7 +89,6 @@ sub Make_Extension {
     my $right_x_coord = $axes_coords->[3];
     my $bottom_y_coord = $axes_coords->[4];
     my $x_range = ($right_x_coord - $left_x_coord);
-#    print "TESTME: left: $left_x_coord right: $right_x_coord top: $top_y_coord bottom: $bottom_y_coord $x_range<br><br><br>\n";
     my $y_range = $top_y_coord - $bottom_y_coord;
     my $stmt = qq"SELECT DISTINCT mfe.id, mfe.accession, mfe.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, mfe.bp_mstop, mfe.mfe FROM genome,mfe WHERE genome.id = mfe.genome_id AND mfe.seqlength='100' AND mfe.algorithm = 'nupack' AND mfe.species = '$species'";
     my $stuff = $db->MySelect(statement => $stmt,);
@@ -172,7 +171,6 @@ sub Make_Extension {
 	}
 	my $color;
 	## UNDEF VALUES HERE
-#	print "TESTME BIG TEST: zscore: $zscore avgz: $avg_zscore mfe: $mfe avgm: $avg_mfe<br>\n";
 	if (($zscore < $avg_zscore) and ($mfe < $avg_mfe)) {
 	    $color = $gd->colorResolve(191,0,0);  ## Red
 	} elsif (($zscore >= $avg_zscore) and ($mfe < $avg_mfe)) {
@@ -1640,7 +1638,6 @@ sub Make_Directory {
 	    $ret_url .= "$num/";
 	}
 	$ret_url =~ s/\/$//g;
-#	print "TESTME URL Make_Directory: $ret_url<br>\n";
 	return($ret_url);
     }
     

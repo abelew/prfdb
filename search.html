@@ -138,7 +138,10 @@ It is available here: <a href="http://mgc.nci.nih.gov">http://mgc.nci.nih.gov</a
 Search the <select name="location">
  <option value="local">PRFdb</option>
  <option value="remote">NCBI</option>
-</select> for an arbitrary sequence using BLAST.<br>
+</select> for an arbitrary sequence using <select name="blast_type">
+ <option value="blastn">nucleotide</option>
+ <option value="tblastn">protein</option>
+</select> BLAST.<br>
 <textarea name="search_string" rows=12 cols=100 wrap="physical"></textarea>
 <br>
 <input type="submit" name="blastsearch" value="Perform Blast Search"></form></tr>

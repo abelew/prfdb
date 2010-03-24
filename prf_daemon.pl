@@ -64,6 +64,10 @@ if (defined($config->{import_genbank})) {
     Import_Genbank($config->{import_genbank}, $config->{accession});
     exit(0);
 }
+if (defined($config->{dbexec})) {
+    $db->MyExecute(statement => "$config->{dbexec}");
+    exit(0);
+}
 if (defined($config->{import_genbank_accession})) {
     Import_Genbank_Accession($config->{import_genbank_accession});
 }

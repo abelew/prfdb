@@ -299,7 +299,6 @@ sub MyBrackets {
 	    push(@threeprime, $parens[$parens[$c]]);
 	    $stuff{$barcode->[$c]}{"threeprime"} = \@threeprime;
 	}
-#	print "TESTME: Element: $c points to: $parens[$c]\n";
     }  ## End of each element in parens
 #    print "Early TEST: @parens\n";
     
