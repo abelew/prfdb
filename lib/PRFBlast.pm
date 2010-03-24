@@ -68,10 +68,10 @@ sub Search {
 	my $executable;
         $executable = $factory->executable('blastall', "$config->{workdir}/blastall");
 	$blast_output = $factory->blastall($seq); ## A Bio::SearchIO
+	print STDERR "TESTME: $blast_output<Br>\n";
 	chdir("$config->{base}");
 	$result = $blast_output->next_result;
-    }
-    elsif ($location eq 'remote') {
+    } elsif ($location eq 'remote') {
 	my @params = (-readmethod => 'SearchIO',
 		      -prog => $type,
 		      -data => 'nr',
@@ -94,8 +94,7 @@ sub Search {
 		  }
 #		  print STDERR ". ";
 		  sleep(1);
-	      } 
-	      else {
+	      } else {
 #		  print STDERR "Got here\n";
 		  $result = $blast_output->next_result();
 		  if (defined($result)) {
@@ -104,13 +103,14 @@ sub Search {
 	      }    ## End else
 	  }    ## End each rid
       }    ## End all rids
-    } ## Endif is the location 'remote'
-    else {
+    ## Endif is the location 'remote'
+    } else {
 #	print STDERR "$location is neither remote nor local, something is wrong\n";
 	return(undef);
     }
     my $count = 0;
-  ## Global results here
+    return(undef) if (!defined($result));
+    ## Global results here
     $return->{algorithm} = $result->algorithm() if (defined($result->algorithm()));
     $return->{algorithm_version} = $result->algorithm_version();
     $return->{query_name} = $result->query_name();
@@ -122,19 +122,19 @@ sub Search {
     $return->{available_parameters} = $result->available_parameters();
     $return->{num_hits} = $result->num_hits();
     
-  #  print "Summary:<br>
-  #algo  $return->{algorithm}<br>
-  #version  $return->{algorithm_version}<br>
-  #name  $return->{query_name}<br>
-  #len  $return->{query_length}<br>
-  #name  $return->{database_name}<br>
-  #numletters  $return->{database_numletters}<br>
-  #stats  $return->{available_statistics}<br>
-  #params  $return->{available_parameters}<br>
-  #num_hits  $return->{num_hits}<br>
-  #";
-
-  ## Results for each hit here
+    #  print "Summary:<br>
+    #algo  $return->{algorithm}<br>
+    #version  $return->{algorithm_version}<br>
+    #name  $return->{query_name}<br>
+    #len  $return->{query_length}<br>
+    #name  $return->{database_name}<br>
+    #numletters  $return->{database_numletters}<br>
+    #stats  $return->{available_statistics}<br>
+    #params  $return->{available_parameters}<br>
+    #num_hits  $return->{num_hits}<br>
+    #";
+    
+    ## Results for each hit here
     while ( my $hit = $result->next_hit() ) {
 	$return->{hits}->[$count]->{hit_name}    = $hit->name();
 	$return->{hits}->[$count]->{length}      = $hit->length();
