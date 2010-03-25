@@ -1,3 +1,4 @@
+% if (!defined($accession)) {  ## No accession, print out the form.
 Type the exact accession of the sequence you wish to import.<br>
 
 This must be in the NCBI NR database.<br>
@@ -5,24 +6,11 @@ This must be in the NCBI NR database.<br>
 <input type="text" name="import_accession"  size="20" /><hr>
 <input type="submit" name="perform_import" value="Perform Import"></form></tr>
 
-% if (!($name) && !($email)) {
-   Enter your info:<br><br>
-   <FORM action="index.html" method="GET">
-   Name: <INPUT type="text" size="10" name="name"><br>
-   Email: <INPUT type="text" size="10" name="email"><br>
-   <INPUT type="submit">
 % } else {
-   This is what you entered:<br> 
-   Name: <% $name %><br>
-   Email: <% $email %><br>
-   hitting submit is the same as calling  /index.html,name=>"First Name",email=>"Email Address" 
+%  my $import = $db->Import_CDS($accession);
+<p>Imported <% $import %> bases into the PRFdb under the accession <a href="/search.html?accession=<% $accession %>"><% $accession %></a></p>
 % }
 
-<%init>
-   my $component_count = "first";
-</%init>
 <%args>
-   $category=>undef
-   $name=>undef
-   $email=>undef
+   $accession => undef
 </%args>
