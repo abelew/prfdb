@@ -43,15 +43,16 @@ my $ah = new HTML::Mason::ApacheHandler(
 					request_class => 'MasonX::Request::WithApacheSession',
 					session_class => 'Apache::Session::File',
 					session_cookie_domain => 'umd.edu',
-					session_directory => "$ENV{PRFDB_HOME}/sessions/data",
-					session_lock_directory => "$ENV{PRFDB_HOME}/sessions/locks",
+#					session_directory => "$ENV{PRFDB_HOME}/sessions/data",
+#					session_lock_directory => "$ENV{PRFDB_HOME}/sessions/locks",
+					session_directory => "/var/www/sessions/data",
+					session_lock_directory => "/var/www/sessions/locks",
 					session_use_cookie => 1,
 					);
 sub handler {
     my ($r) =  @_;
     my $return = eval { $ah->handle_request($r) };
-    if ( my $err = $@ )
-    {
+    if (my $err = $@) {
 	$r->pnotes(error => $err);
 	$r->filename($r->document_root . '/error/500.html');
 	return $ah->handle_request($r);

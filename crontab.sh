@@ -1,5 +1,5 @@
 #!/bin/bash
-PRFDB_HOME=/usr/local/prfdb/prfdb_test
+export PRFDB_HOME=/usr/local/prfdb/prfdb_test
 cd $PRFDB_HOME
 date >> crontab.out
 if [ $1 ]; then
