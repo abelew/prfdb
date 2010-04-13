@@ -33,7 +33,7 @@ if (!defined($search_string)) {
     <p>There were no hits in the blast database.<br></p>
 % }
 % my @hits = @{$local_info->{hits}};
-% foreach my $c (1 .. $#hits) {  ## Skip the first hit, which is identical.
+% foreach my $c (0 .. $#hits) {
 <p>Hit Number: <% $c %><br>
 Name: <% $local_info->{hits}->[$c]->{hit_name} %><br>
 % if ($location eq 'local') {

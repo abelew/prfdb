@@ -13,6 +13,7 @@ use Overlap;
 use SeqMisc;
 use PRFBlast;
 use Agree;
+use PRFGraph;
 $SIG{INT} = 'CLEANUP';
 $SIG{BUS} = 'CLEANUP';
 $SIG{SEGV} = 'CLEANUP';
