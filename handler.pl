@@ -19,6 +19,8 @@ BEGIN {
     }
 }
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
+$ENV{BLASTDIR} = $config->{blastdir};
+$ENV{BLASTDATADIR} = $config->{blastdir};
 my $database_hosts = $config->{database_host};
 Apache::DBI->connect_on_init("DBI:$config->{database_type}:database=$config->{database_name};host=$database_host->[0]", $config->{database_user}, $config->{database_pass}, $config->{database_args}) or print "Can't connect to database: $DBI::errstr $!";
 Apache::DBI->setPingTimeOut("DBI:$config->{database_type}:$config->{database_name}:$database_host->[0]", 0);
@@ -48,8 +50,7 @@ my $ah = new HTML::Mason::ApacheHandler(
 sub handler {
     my ($r) =  @_;
     my $return = eval { $ah->handle_request($r) };
-    if ( my $err = $@ )
-    {
+    if (my $err = $@) {
 	$r->pnotes(error => $err);
 	$r->filename($r->document_root . '/error/500.html');
 	return $ah->handle_request($r);

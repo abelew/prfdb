@@ -22,15 +22,15 @@ $SIG{QUIT} = 'CLEANUP';
 
 $config = new PRFConfig(config_file => "$ENV{HOME}/prfdb.conf");
 $db = new PRFdb(config => $config);
-my $ids = $db->Grab_Queue();
-my $import_accession = $db->Get_Import_Queue();
-print "TESTME: $import_accession\n";
-if (defined($import_accession)) {
-    my $import = $db->Import_CDS($import_accession);
-    print "TESTME: $import\n";
-    if (defined($import) and $import !=~ m/Error/) {
-	print "Imported $import_accession\n";
-	$db->MyExecute("DELETE FROM import_queue WHERE accession = '$import_accession'");
-    }
-}
-
+#my $ids = $db->Grab_Queue();
+#my $import_accession = $db->Get_Import_Queue();
+#print "TESTME: $import_accession\n";
+#if (defined($import_accession)) {
+#    my $import = $db->Import_CDS($import_accession);
+#    print "TESTME: $import\n";
+#    if (defined($import) and $import !=~ m/Error/) {
+#	print "Imported $import_accession\n";
+#	$db->MyExecute("DELETE FROM import_queue WHERE accession = '$import_accession'");
+#    }
+#}
+$db->Create_Gene_Info();

@@ -5,6 +5,10 @@ use Bio::SeqIO;
 use Bio::SearchIO::blast;
 use Bio::Tools::Run::StandAloneBlast;
 use Bio::Tools::Run::RemoteBlast;
+use Bio::Root::Exception;
+use Error;
+$Error::Debug = 1;
+
 
 my $config;
 
@@ -39,6 +43,7 @@ sub Search {
     $sequence =~ s/\d+//g;
     $sequence =~ tr/Uu/Tt/;
     my @tmp = split(//, $sequence);
+    print STDERR "Got here? $sequence $location $type<br>\n";
 #    foreach my $char (@tmp) {
 #	if ($char != "A" and $char != "a" 
 #	    and $char != "T" and $char != "t" 
@@ -48,16 +53,14 @@ sub Search {
 #	    return(undef);
 #	}
 #    }
-    my $seq = new Bio::Seq(-display_id => 'query',
-			   -seq => $sequence,);
+    my $seq = new Bio::Seq(-display_id => 'query', -seq => $sequence,);
     $location = 'local' if ($location ne 'local' and $location ne 'remote');
     if ($location eq 'local') {
 	## At this time there are no protein databases in the prfdb
-	my @params = (program => $type,
-		      ## -I tells blast to output the GI identifier
-		      ## , which is the id in the genome db
-		      I => 't',
-		      );
+	my @params = (program => $type, I => 't',);
+	## -I tells blast to output the GI identifier
+	## , which is the id in the genome db
+
 	## The param array just takes the first 
 	## letter of the key and passes its value as the argument eg.
 	## -p blastn -d prfdb -I t
@@ -66,21 +69,23 @@ sub Search {
 	### return Bio::SearchIO::blast objects
 	chdir("$config->{blastdb}");
 	my $executable;
-        $executable = $factory->executable('blastall', "$config->{workdir}/blastall");
-	$blast_output = $factory->blastall($seq); ## A Bio::SearchIO
+        $executable = $factory->executable('blastall', "$config->{blastdir}/blastall");
+	eval {
+	    $blast_output = $factory->blastall($seq);
+	};
+	if ($@) {
+	    return(undef);
+	}
 	chdir("$config->{base}");
 	$result = $blast_output->next_result;
-    }
-    elsif ($location eq 'remote') {
+    } elsif ($location eq 'remote') {
 	my @params = (-readmethod => 'SearchIO',
 		      -prog => $type,
 		      -data => 'nr',
 		      );
 	
 	$factory = new Bio::Tools::Run::RemoteBlast(@params);
-#	print STDERR "TESTME:$seq $factory\n";
 	my $r = $factory->submit_blast($seq);
-#	print STDERR "TESTME, did submit_blast work? $r\n";
 	my $rid_counter = 0;
       LOOP: while (my @rids = $factory->each_rid()) {
 	  foreach my $rid (@rids) {
@@ -94,8 +99,7 @@ sub Search {
 		  }
 #		  print STDERR ". ";
 		  sleep(1);
-	      } 
-	      else {
+	      } else {
 #		  print STDERR "Got here\n";
 		  $result = $blast_output->next_result();
 		  if (defined($result)) {
@@ -104,13 +108,14 @@ sub Search {
 	      }    ## End else
 	  }    ## End each rid
       }    ## End all rids
-    } ## Endif is the location 'remote'
-    else {
+    ## Endif is the location 'remote'
+    } else {
 #	print STDERR "$location is neither remote nor local, something is wrong\n";
 	return(undef);
     }
     my $count = 0;
-  ## Global results here
+    return(undef) if (!defined($result));
+    ## Global results here
     $return->{algorithm} = $result->algorithm() if (defined($result->algorithm()));
     $return->{algorithm_version} = $result->algorithm_version();
     $return->{query_name} = $result->query_name();
@@ -122,19 +127,19 @@ sub Search {
     $return->{available_parameters} = $result->available_parameters();
     $return->{num_hits} = $result->num_hits();
     
-  #  print "Summary:<br>
-  #algo  $return->{algorithm}<br>
-  #version  $return->{algorithm_version}<br>
-  #name  $return->{query_name}<br>
-  #len  $return->{query_length}<br>
-  #name  $return->{database_name}<br>
-  #numletters  $return->{database_numletters}<br>
-  #stats  $return->{available_statistics}<br>
-  #params  $return->{available_parameters}<br>
-  #num_hits  $return->{num_hits}<br>
-  #";
-
-  ## Results for each hit here
+    #  print "Summary:<br>
+    #algo  $return->{algorithm}<br>
+    #version  $return->{algorithm_version}<br>
+    #name  $return->{query_name}<br>
+    #len  $return->{query_length}<br>
+    #name  $return->{database_name}<br>
+    #numletters  $return->{database_numletters}<br>
+    #stats  $return->{available_statistics}<br>
+    #params  $return->{available_parameters}<br>
+    #num_hits  $return->{num_hits}<br>
+    #";
+    
+    ## Results for each hit here
     while ( my $hit = $result->next_hit() ) {
 	$return->{hits}->[$count]->{hit_name}    = $hit->name();
 	$return->{hits}->[$count]->{length}      = $hit->length();
@@ -161,7 +166,6 @@ sub Search {
 	while (my $hsp = $hit->next_hsp()) {
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{algorithm} = $hsp->algorithm() if (defined( $hsp->algorithm()));
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{evalue} = $hsp->evalue() if (defined($hsp->evalue()));
-	    #	print "TEST: $return->{hits}->[$count]->{hsps}->[$hsp_count]->{evalue}<br>\n";
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{expect} = $hsp->expect() if ( defined($hsp->expect()));
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{frac_identical} = $hsp->frac_identical() if (defined($hsp->frac_identical()));
 	    $return->{hits}->[$count]->{hsps}->[$hsp_count]->{frac_conserved} = $hsp->frac_conserved() if (defined($hsp->frac_conserved()));
@@ -201,7 +205,6 @@ sub Search {
 	    #          $return->{$count}->{hsps}->{$hsp_count}->{$k} = $hsp->{$k};
 	    #          print "KEY: $k VALUE: $hsp->{$k}\n";
 	    #        }
-	    #        print "TESTME: $hit->{_hsplength}\n";
 	}    ## Foreach hsp
 	$count++;
     }    ## Foreach hit

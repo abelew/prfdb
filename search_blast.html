@@ -1,16 +1,31 @@
-% if (!defined($search_string)) {
-<p>search_string is not defined</p>
-%   if (defined($start) and defined($accession)) {
-%     $search_string = $db->MySelect(statement => "SELECT sequence FROM mfe WHERE accession = ? AND start = ? LIMIT 1", vars => [$accession, $start], type => 'single');
-%   } elsif (defined($accession)) {
-%     $search_string = $db->MySelect(statement => "SELECT mrna_seq FROM genome WHERE id = ? LIMIT 1", vars => [$accession], type => 'single');
-%   }
-% }
-% $search_string =~ tr/Uu/Tt/;
-% $search_string =~ s/\s//g;
-% my $blast = new PRFBlast(config=>$config);
+<%perl>
+my $local_info;
+my $blast = new PRFBlast(config=>$config);
+if (!defined($search_string)) {
+  if (defined($start) and defined($accession)) {
+      $search_string = $db->MySelect(statement => "SELECT sequence FROM mfe WHERE accession = ? AND start = ? LIMIT 1", vars => [$accession, $start], type => 'single');
+  } elsif (defined($accession)) {
+      $search_string = $db->MySelect(statement => "SELECT mrna_seq FROM genome WHERE accession = ? LIMIT 1", vars => [$accession], type => 'single');
+  }
+  $search_string =~ tr/Uu/Tt/;
+  $search_string =~ s/\s//g;
+  $local_info = $blast->Search($search_string, $location);
+} elsif ($blast_type eq 'blastn') {
+    $search_string =~ tr/Uu/Tt/;
+    $search_string =~ s/\s//g;
+    $local_info = $blast->Search($search_string, $location);
+} elsif ($blast_type eq 'tblastn') {
+    $local_info = $blast->Search($search_string, $location, $blast_type);
+} else {
+    $local_info = $blast->Search($search_string, $location, 'blastn');
+}
+</%perl>
 </p>
-% my $local_info = $blast->Search($search_string, $location);
+
+% if (!defined($local_info)) {
+  <p>There was an error in your blast search, the most likely cause is that the query sequence was not long enough.
+  Please remind me to sort out the potential errors so I can report them more fully</p>
+% } else {
 <p>Searching the <% $location %> BLAST database, the query sequence has <% $local_info->{query_length} %> bases.<br>
 % my (%hit_names, %accessions, %lengths, %descriptions, %scores, %significances, %bitses);
 % my (%hsps_evalue, %hsps_expect, %hsps_gaps, %hsps_querystring, %hsps_homostring, %hsps_hitstring, %hsps_numid, %hsps_numcon, %hsps_length, %hsps_score);
@@ -24,7 +39,7 @@ Name: <% $local_info->{hits}->[$c]->{hit_name} %><br>
 % if ($location eq 'local') {
 Accession: <a href="/search.html?short=1&accession=<% $local_info->{hits}->[$c]->{accession} %>">
 % } else {
-Importing doesn't work yet, Accession: <a href="/import.html?accession=<% $local_info->{hits}->[$c]->{accession} %>">
+Accession: <a href="/import.html?accession=<% $local_info->{hits}->[$c]->{accession} %>" title="Import <% $local_info->{hits}->[$c]->{accession} %> into the PRFdb">
 % }
   <% $local_info->{hits}->[$c]->{accession} %></a><br>
 Length: <% $local_info->{hits}->[$c]->{length} %><br>
@@ -67,11 +82,12 @@ Evalue: <% $local_info->{hits}->[$c]->{hsps}->[$d]->{evalue} %>
 <hr>
 <br>
 % }
-
+% }
 
 <%args>
   $start => undef
   $accession => undef
   $search_string => undef
   $location => undef
+  $blast_type => 'blastn'  
 </%args>

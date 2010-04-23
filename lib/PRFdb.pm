@@ -2336,6 +2336,27 @@ sub Create_Wait {
     $me->MyExecute(statement => $stmt);
 }
 
+sub Create_Gene_Info {
+   my $me = shift;
+   my $statement = qq/CREATE table gene_info (
+genome_id bigint,
+accession $config->{sql_accession},
+species $config->{sql_species},
+genename $config->{sql_genename},
+comment $config->{sql_comment},
+defline text not null,
+INDEX(accession),
+FULLTEXT(comment),
+FULLTEXT(defline),
+FULLTEXT(genename),
+PRIMARY KEY (genome_id))/;
+   my ($cp, $cf, $cl) = caller();
+   $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
+   my $insert_stmt = qq"INSERT IGNORE INTO gene_info (genome_id, accession, species, genename, comment, defline) SELECT id, accession, species, genename, comment, defline FROM genome";
+   ($cp, $cf, $cl) = caller();
+   $me->MyExecute(statement => $insert_stmt, caller =>"$cp,$cf,$cl",);
+}
+
 sub Create_Errors {
     my $me = shift;
     my $statement = qq\CREATE table errors (

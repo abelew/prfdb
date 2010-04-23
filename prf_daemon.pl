@@ -13,6 +13,7 @@ use Overlap;
 use SeqMisc;
 use PRFBlast;
 use Agree;
+use PRFGraph;
 $SIG{INT} = 'CLEANUP';
 $SIG{BUS} = 'CLEANUP';
 $SIG{SEGV} = 'CLEANUP';
@@ -62,6 +63,10 @@ if (defined($config->{import_genbank})) {
 	die("This operation also requires an accession.");
     }
     Import_Genbank($config->{import_genbank}, $config->{accession});
+    exit(0);
+}
+if (defined($config->{dbexec})) {
+    $db->MyExecute(statement => "$config->{dbexec}");
     exit(0);
 }
 if (defined($config->{import_genbank_accession})) {
