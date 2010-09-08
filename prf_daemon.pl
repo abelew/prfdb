@@ -96,6 +96,16 @@ if (defined($config->{maintain})) {
     Maintenance();
     exit(0);
 }
+if (defined($config->{do_stats})) {
+    my $data = {
+	species => $config->{index_species},
+	seqlength => $config->{seqlength},
+	max_mfe => [$config->{max_mfe}],
+	algorithm => ['pknots','nupack','hotknots'],
+    };
+    $db->Put_Stats($data);
+    exit(0);
+}
 if (defined($config->{optimize})) {
     Optimize($config->{optimize});
     exit(0);

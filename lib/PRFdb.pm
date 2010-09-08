@@ -1804,6 +1804,10 @@ sub Put_Stats {
 #                  print "STATEMENT: $statement\n";
                   my ($cp,$cf,$cl) = caller();
                   my $rows = $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
+                  if (defined($me->{errors}->{errstr})) {
+                    print "The statement: $me->{errors}->{statement} had an error:
+$me->{errors}->{errstr}\n";
+                  }
                   $inserted_rows = $inserted_rows + $rows;
                 }
             }
