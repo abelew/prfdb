@@ -289,10 +289,9 @@ sub Generic_Search_All {
     my $par = shift;
     my $species = shift;
     my $descriptor_file = $me->Make_Descriptor($str,$par);
-    my $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
-    my $db = new PRFdb(config => $config);
     my $stmt = qq"SELECT accession FROM genome WHERE species = '$species'";
     print "TESTME $stmt\n";
+    my $db = new PRFdb(config => $config);
     my $accessions = $db->MySelect(statement => $stmt,);
     my $count = 0;
     foreach my $accession (@{$accessions}) {
@@ -309,21 +308,25 @@ sub Generic_Search {
     my $me = shift;
     my $descriptor = shift;
     my $accession = shift;
-    my $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
-    my $db = new PRFdb(config => $config);
     my $stmt = qq"SELECT mrna_seq FROM genome WHERE accession = '$accession'";
+    my $db = new PRFdb(config => $config);
     my $sequence = $db->MySelect(statement => $stmt, type => 'single');
     my @information = split(//, $sequence);
     my $inf = PRFdb::MakeFasta(\@information, 0, $#information);
     my $fh = $inf->{fh};
     my $filename = $inf->{filename};
     my $command = qq"$config->{exe_rnamotif} -context -descr $descriptor $filename 2>$filename.err | $config->{exe_rmprune}";
+#    my $command = qq"$config->{exe_rnamotif} -context -descr $descriptor $filename";
     print "RNAMotif, running $command\n" if (defined($config->{debug}));
+#    print "TESTME: $command\n";
     open(RNAMOT, "$command |") or PRF_Error("RNAMotif_Search:: Search, Unable to run rnamotif: $!", 'rnamotif', '');
     while (my $line = <RNAMOT>) {
 	print $line;
     }
     close(RNAMOT);
+#    local $| = 1;
+#    system($command);
+    PRFdb::RemoveFile($filename);
 }
 
 sub Get_Next_Stem {

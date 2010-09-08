@@ -621,6 +621,7 @@ sub RemoveFile {
 	    if ($c eq $f) {
 		$num_deleted++;
 		unlink($f);
+		unlink("$f.err") if (-r "$f.err");
 	    }
 	}
 	push(@new_open_files, $f);
