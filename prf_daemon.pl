@@ -6,7 +6,7 @@ use lib "$ENV{HOME}/usr/lib/perl5";
 use lib 'lib';
 use PRFConfig;
 use PRFdb qw"AddOpen RemoveFile";
-use RNAMotif_Search;
+use RNAMotif;
 use RNAFolders;
 use Bootlace;
 use Overlap;
@@ -309,7 +309,7 @@ sub PRF_Gatherer {
     $state->{genome_information} = $db->Get_ORF($state->{accession});
     my $sequence = $state->{genome_information}->{sequence};
     my $orf_start = $state->{genome_information}->{orf_start};
-    my $motifs = new RNAMotif_Search(config => $config);
+    my $motifs = new RNAMotif(config => $config);
     my $rnamotif_information;
     my $num_slipsites = 0;
     my $sp = 'UNDEF';
@@ -550,7 +550,7 @@ sub Check_Environment {
     die("Database pass not defined") if ($config->{database_pass} eq 'prfconfigdefault_pass');
     
     unless (-r $config->{exe_rnamotif_descriptor}) {
-	RNAMotif_Search::Descriptor(config=>$config);
+	RNAMotif::Descriptor(config=>$config);
 	  unless (-r $config->{exe_rnamotif_descriptor}) {
 	      die("Unable to read the rnamotif descriptor file: $!");
 	  }
