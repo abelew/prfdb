@@ -53,6 +53,12 @@ if ($config->{checks}) {
 }
 ## Some Arguments should be checked before others...
 ## These first arguments are not exclusive and so are separate ifs
+if (defined($config->{shell})) {
+    my $host = $config->{database_host}->[0];
+    my @command = ('mysql', '-h', "$host", '-u', "$config->{database_user}", "--password=$config->{database_pass}", "$config->{database_name}");
+    system(@command);
+    exit($?);
+}
 if ($config->{create_boot}) {
     die("Need species unless") unless (defined($config->{species}));
     my $table = "boot_$config->{species}";
