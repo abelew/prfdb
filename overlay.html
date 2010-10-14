@@ -1,0 +1,56 @@
+% my $query = $overlayquery;
+% $query =~ s/\s+//g;
+% my $boot_table = qq"boot_$species";
+% my $new_accession = $db->MySelect({statement => qq/SELECT accession FROM genome WHERE accession regexp '$query' or genename regexp '$query' or locus regexp '$query' or comment regexp '$query'/, type => 'single'});
+% my $query_statement = qq/SELECT mfe.mfe, $boot_table.zscore, mfe.start, mfe.algorithm FROM mfe,$boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.seqlength = 100 AND mfe.species = '$species' AND mfe.id = $boot_table.mfe_id AND mfe.accession = '$new_accession'/;
+% my $overlay_points = $db->MySelect(statement => $query_statement,);
+% my $cloud_url = qq"images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
+% my $image_dir = "$config->{base}/images/tmp";
+% my $overlay_output = PRFdb::MakeTempfile(directory => $image_dir, SUFFIX => '.png', template => 'cloud_XXXXX',);
+% my $overlay_map = qq"${overlay_output}.map";
+% my @t = split(/\//, $overlay_output);
+% my $short_overlay = pop @t;
+% my $overlay_url = qq"images/tmp/$short_overlay";
+% my $args = {
+%     seqlength => 100,
+%     url => qq"images/",
+%     species => $species,
+%     points => $overlay_points,
+%     filename => $overlay_output,
+%     map => $overlay_map,
+%     accession => $new_accession,
+%#     inputstring => $inputstring,
+% };
+% my $cloud = new PRFGraph(config => $config);
+% my $overlay_data = $cloud->Make_Overlay(%{$args});
+<center>
+<p>This is a cloud for <i><% $species %></i> with an overlay for <% $new_accession %>
+<br>
+<div style="position: absolute; z-index:100">
+<img src="<% $cloud_url %>" usemap="#map">
+</div>
+<div style="position: absolute; z-index:5000">
+<img src="<% $overlay_url %>" usemap="#overlaymap">
+
+</div>
+</center>
+<div>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br>
+
+<br>
+
+% open(OUT, "<$overlay_map");
+% while (my $l = <OUT>) { print $l };
+% close(OUT);
+
+<%args>
+ $species => undef
+ $seqlength => undef
+ $slipsites => undef
+ $cloud_filters => undef
+ $overlayquery => undef
+</%args>

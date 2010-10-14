@@ -23,9 +23,12 @@ sub new {
 
 sub Format_Db {
     my $me = shift;
+    my $dir = shift;
     my $input = shift;                                                       ## Fasta file to format.
-    my $command = qq"cd $config->{blastdir} && /usr/bin/zcat $input | formatdb -p F -o T -n nr -s";
+    my $command = qq"cd $dir/blast && /usr/bin/zcat $input | formatdb -i stdin -p F -o T -n nr -s";
     system($command);
+#    my $protein_command = qq"cd $config->{blastdir} && /usr/bin/cat $input | formatdb -p T -o T -n nr -s";
+#    system($protein_command);
 }
 
 sub Search {

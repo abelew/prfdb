@@ -217,6 +217,7 @@ sub new {
 				'species:s' => \$conf{species},
 				'startmotif:s' => \$conf{startmotif},
 				'startpos:s' => \$conf{startpos},
+				'do_stats:s' => \$conf{do_stats},
 				'stats' => \$conf{stats},
 				'utr:i' => \$conf{do_utr},
 				'workdir:s' => \$conf{workdir},

@@ -471,12 +471,13 @@ sub Genome_to_Fasta {
     my $me = shift;
     my $output = shift;
     my $species = shift;
-    my $statement = qq"SELECT DISTINCT accession, species, comment, mrna_seq FROM genome";
+    my $statement = qq"SELECT DISTINCT id, accession, species, comment, mrna_seq FROM genome";
     my $info;
     system("mkdir $config->{base}/blast") if (!-r  "$config->{base}/blast");
-    open(OUTPUT, ">$config->{base}/blast/$output") or die("Could not open the fasta output file. $!");
+    #open(OUTPUT, ">>$config->{base}/blast/$output") or die("Could not open the fasta output file. $!");
+    open(OUTPUT, " | gzip --stdout -f - >> $config->{base}/blast/$output") or die("Could not open the fasta output file. $!");
     if (defined($species)) {
-	$statement .= ' WHERE species = \'$species\'';
+	$statement .= " WHERE species = \'$species\'";
     }
     $info = $me->MySelect($statement);
     my $count = 0;
@@ -487,18 +488,19 @@ sub Genome_to_Fasta {
 	    next;
 	}
 	else {	
-	    my $id = $count;
-	    my $accession = $datum->[0];
-	    my $species = $datum->[1];
-	    my $comment = $datum->[2];
-	    my $sequence = $datum->[3];
-	    print OUTPUT ">gi|$id|gb|$accession $species $comment
+	    my $id = $datum->[0];
+	    my $accession = $datum->[1];
+	    my $species = $datum->[2];
+	    my $comment = $datum->[3];
+	    my $sequence = $datum->[4];
+	    my $string = qq(>gi|$id|gb|$accession $species $comment
 $sequence
-";
+);
+	    print OUTPUT $string;
 	}
     }
     close(OUTPUT);
-    system("/usr/bin/gzip $config->{base}/blast/$output");
+#    system("/usr/bin/gzip $config->{base}/blast/$output");
 }
 
 sub Sequence_to_Fasta {
@@ -1804,6 +1806,10 @@ sub Put_Stats {
 #                  print "STATEMENT: $statement\n";
                   my ($cp,$cf,$cl) = caller();
                   my $rows = $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
+                  if (defined($me->{errors}->{errstr})) {
+                    print "The statement: $me->{errors}->{statement} had an error:
+$me->{errors}->{errstr}\n";
+                  }
                   $inserted_rows = $inserted_rows + $rows;
                 }
             }

@@ -2,7 +2,7 @@
 %  if (!defined($overlayquery)) {
 
 <center>
-<form method="post" action="overlaysearch_perform" enctype="application/x-www-form-urlencoded">
+<form method="post" action="overlay.html?species=<% $species %>&seqlength=<% $seqlength %>&slipsites=<% $slipsites %>" enctype="application/x-www-form-urlencoded">
 <input type="text" name="overlayquery"  size="20" /><input type="submit" name="search overlay" value="Overlay" /></form>
 </center>
 

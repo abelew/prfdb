@@ -96,6 +96,16 @@ if (defined($config->{maintain})) {
     Maintenance();
     exit(0);
 }
+if (defined($config->{do_stats})) {
+    my $data = {
+	species => $config->{index_species},
+	seqlength => $config->{seqlength},
+	max_mfe => [$config->{max_mfe}],
+	algorithm => ['pknots','nupack','hotknots'],
+    };
+    $db->Put_Stats($data);
+    exit(0);
+}
 if (defined($config->{optimize})) {
     Optimize($config->{optimize});
     exit(0);
@@ -783,11 +793,18 @@ sub Check_Sequence_Length {
 ## End Check_Sequence_length
 
 sub Make_Blast {
-    my $outputfile = 'blast_prfdb.fasta';
-    $db->Genome_to_Fasta($outputfile);
+    my @sp = @{$config->{index_species}};
+    my $outputfile = 'blast_prfdb.fasta.gz';
+    system("rm $config->{base}/blast/$outputfile");
+    system("touch $config->{base}/blast/$outputfile");
+    foreach my $s (@sp) {
+	next if ($s =~ /virus/);
+	print "Getting $s\n";
+	$db->Genome_to_Fasta($outputfile, $s);
+    }
     my $blast = new PRFBlast;
     print "Formatting Database\n";
-    $blast->Format_Db($outputfile);
+    $blast->Format_Db($config->{base}, $outputfile);
 }
 
 sub Make_Landscape_Tables {

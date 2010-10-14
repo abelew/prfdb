@@ -93,7 +93,7 @@ sub Make_Extension {
     my $stmt = qq"SELECT DISTINCT mfe.id, mfe.accession, mfe.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, mfe.bp_mstop, mfe.mfe FROM genome,mfe WHERE genome.id = mfe.genome_id AND mfe.seqlength='100' AND mfe.algorithm = 'nupack' AND mfe.species = '$species'";
     my $stuff = $db->MySelect(statement => $stmt,);
     
-    open(MAP, ">${filename}.map") or die("Unable to open the map file ${filename}.map");
+    open(MAP, ">${filename}.map") or print("Unable to open the map file ${filename}.map");
     my $map_string = '';
     if ($type eq 'percent') {
 	$map_string = qq/<map name="percent_extension" id="percent_extension">\n/;
@@ -344,7 +344,7 @@ sub Make_Cloud {
     my $radius = 1;
     my %slipsites_numbers = ();
     my %slips_significant = ();
-    open(MAP, ">${tmp_filename}.map") or die("Unable to open the map file ${tmp_filename}.map");
+    open(MAP, ">${tmp_filename}.map") or print("Unable to open the map file ${tmp_filename}.map");
     print MAP "<map name=\"map\" id=\"map\">\n";
     my $image_map_string;
     if ($args_slipsites eq 'all') {
@@ -496,11 +496,10 @@ sub Make_Overlay {
     my $url = $args{url};
     my $accession = $args{accession};
     my $inputstring = $args{inputstring};
-    
     my $graph = new GD::Graph::points('800','800');
     my $db = new PRFdb(config => $config);
-    my $mfe_min_value = $db->MySelect({statement => qq/SELECT min(mfe) FROM mfe WHERE species = '$species'/, type => 'single'});
-    my $mfe_max_value = $db->MySelect({statement => qq/SELECT max(mfe) FROM mfe WHERE species = '$species'/, type => 'single'});
+    my $mfe_min_value = $db->MySelect(statement => qq/SELECT min(mfe) FROM mfe WHERE species = '$species'/, type => 'single');
+    my $mfe_max_value = $db->MySelect(statement => qq/SELECT max(mfe) FROM mfe WHERE species = '$species'/, type => 'single');
     $mfe_min_value -= 3.0;
     $mfe_max_value += 3.0;
     my $z_min_value = -10;
@@ -533,7 +532,7 @@ sub Make_Overlay {
     my $points = {};
     my $max_counter = 1;
 
-    open(MAP, ">$map_filename") or die("Unable to open the map file $map_filename: $!");
+    open(MAP, ">$map_filename") or print("Unable to open the map file $map_filename: $!");
     print MAP "<map name=\"overlaymap\" id=\"overlaymap\">\n";
 
     my $radius = 6;
@@ -551,7 +550,7 @@ sub Make_Overlay {
         print MAP $map_string;
     }
     print MAP "</map>\n";
-    open (IMG, ">$filename") or die "error opening $filename to write image: $!";
+    open (IMG, ">$filename") or print "error opening filename:<$filename> to write image: $!";
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -819,7 +818,7 @@ sub Make_Distribution {
     my $bl = $gd->colorAllocate(0,0,0);
     $gd->filledRectangle($mfe_xbar_coord, $bottom_y_coord+1 , $mfe_xbar_coord+1, $top_y_coord-1, $bl);
     my $filename = $me->Picture_Filename(type => 'distribution');
-    open(IMG, ">$filename") or die ("Unable to open $filename $!");
+    open(IMG, ">$filename") or print ("Unable to open $filename $!");
     binmode IMG;
     print IMG $gd->png;
     close IMG;

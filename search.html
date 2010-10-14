@@ -32,7 +32,8 @@ foreach my $c (keys %{$entries}) {
   $entries->{$c}->{structure_count} = $slipsite_structure_count->[1];
 } ## End foreach
 if ($entries_count == 0) {
-  print "  <p>No entry was found.</p><br>\n";
+  print "  <p>No entry was found for the search term: '$query'.</p><br>\n";
+  print " TESTME $query_statement<br>\n";
 }
 my $species = $entries->{$entries_keys[0]}->{species};
 my $accession = $entries->{$entries_keys[0]}->{accession};
