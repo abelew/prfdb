@@ -623,6 +623,7 @@ sub RemoveFile {
 	    if ($c eq $f) {
 		$num_deleted++;
 		unlink($f);
+		unlink("$f.err") if (-r "$f.err");
 	    }
 	}
 	push(@new_open_files, $f);
@@ -909,14 +910,14 @@ sub Grab_Queue {
 
 sub Get_Import_Queue {
     my $me = shift;
-    my $first = $me->MyExecute(statement => "LOCK TABLES import_queue WRITE");
+#    my $first = $me->MyExecute(statement => "LOCK TABLES import_queue WRITE");
     my $stmt = qq"SELECT id, accession FROM import_queue WHERE checked_out = '0' LIMIT 1";
     my $datum = $me->MySelect(statement => $stmt);
     my $id = $datum->[0]->[0];
     my $accession = $datum->[0]->[1];
     my $stmt2 = qq"UPDATE import_queue SET checked_out = '1' WHERE id = ?";
     $me->MyExecute(statement => $stmt2, vars => [$id]);
-    $me->MyExecute(statement => "UNLOCK TABLES");
+#    $me->MyExecute(statement => "UNLOCK TABLES");
     return($accession);
 }
 
@@ -935,7 +936,7 @@ sub Get_Queue {
     }
     ## This id is the same id which uniquely identifies a sequence in the genome database
     my $single_id;
-    my $first = $me->MyExecute(statement => "LOCK TABLES $table WRITE");
+#    my $first = $me->MyExecute(statement => "LOCK TABLES $table WRITE");
     if ($config->{randomize_id}) {
 	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out IS NULL OR checked_out = '0' ORDER BY RAND() LIMIT 1";
     } else {
@@ -959,7 +960,7 @@ sub Get_Queue {
     my $update = qq"UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?";
     my ($cp, $cf, $cl) = caller();
     $me->MyExecute(statement => $update, vars=> [$id], caller =>"$cp, $cf, $cl");
-    $me->MyExecute(statement => "UNLOCK TABLES");
+#    $me->MyExecute(statement => "UNLOCK TABLES");
     my $return = {
 	queue_table => $table,
 	queue_id  => $id,

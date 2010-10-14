@@ -6,7 +6,7 @@ use lib "$ENV{HOME}/usr/lib/perl5";
 use lib 'lib';
 use PRFConfig;
 use PRFdb qw"AddOpen RemoveFile";
-use RNAMotif_Search;
+use RNAMotif;
 use RNAFolders;
 use Bootlace;
 use Overlap;
@@ -53,6 +53,12 @@ if ($config->{checks}) {
 }
 ## Some Arguments should be checked before others...
 ## These first arguments are not exclusive and so are separate ifs
+if (defined($config->{shell})) {
+    my $host = $config->{database_host}->[0];
+    my @command = ('mysql', '-h', "$host", '-u', "$config->{database_user}", "--password=$config->{database_pass}", "$config->{database_name}");
+    system(@command);
+    exit($?);
+}
 if ($config->{create_boot}) {
     die("Need species unless") unless (defined($config->{species}));
     my $table = "boot_$config->{species}";
@@ -309,10 +315,15 @@ sub PRF_Gatherer {
     $state->{genome_information} = $db->Get_ORF($state->{accession});
     my $sequence = $state->{genome_information}->{sequence};
     my $orf_start = $state->{genome_information}->{orf_start};
-    my $motifs = new RNAMotif_Search(config => $config);
+    my $motifs = new RNAMotif(config => $config);
     my $rnamotif_information;
+    my $num_slipsites = 0;
     my $sp = 'UNDEF';
     my $ac = 'UNDEF';
+    if (!defined($orf_start)) {
+	print STDERR "ORF START for $ac is not defined, setting it to 0.";
+	$orf_start = 0;
+    }
     $sp = $state->{species} if (defined($state->{species}));
     $ac = $state->{accession} if (defined($state->{accession}));
     my $current = "sp:$sp acc:$ac st:$orf_start l:$len";
@@ -326,8 +337,7 @@ sub PRF_Gatherer {
 	$rnamotif_information->{$startpos}{filename} = $inf->{filename};
 	$rnamotif_information->{$startpos}{sequence} = $inf->{string};
 	$state->{rnamotif_information} = $rnamotif_information;
-    }
-    else {
+    } else {
 	$rnamotif_information = $motifs->Search($state->{genome_information}->{sequence},
 						$state->{genome_information}->{orf_start},
 						$len);
@@ -336,11 +346,7 @@ sub PRF_Gatherer {
 	    $db->Insert_NumSlipsite($state->{accession}, 0);
 	}
     } ## End else, so all start sites should be collected.
-    
-    if (!defined($rnamotif_information)) {
-	return(0);
-    }
-    my $num_slipsites = 0;
+    return(0) if (!defined($rnamotif_information));
   STARTSITE: foreach my $slipsite_start (keys %{$rnamotif_information}) {
       print "PRF_Gatherer: $current $slipsite_start\n" if (defined($config->{debug}));
       $num_slipsites++;
@@ -348,17 +354,15 @@ sub PRF_Gatherer {
 	  my $end_of_orf = $db->MySelect(statement => "SELECT orf_stop FROM genome WHERE accession = ?", vars => [$state->{accession}], type =>'row',);
 	  if ($end_of_orf->[0] < $slipsite_start) {
 	      PRFdb::RemoveFile($rnamotif_information->{$slipsite_start}{filename});
-		next STARTSITE;
-	    }
+	      next STARTSITE;
+	  }
       }  ## End of if do_utr
       
       my ($nupack_mfe_id, $pknots_mfe_id, $hotknots_mfe_id);
       $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
       $state->{sequence} = $rnamotif_information->{$slipsite_start}{sequence};
       
-      if (!defined($state->{fasta_file} or
-		   $state->{fasta_file} eq ''
-		   or !-r $state->{fasta_file})) {
+      if (!defined($state->{fasta_file} or $state->{fasta_file} eq '' or !-r $state->{fasta_file})) {
 	  print "The fasta file for: $state->{accession} $slipsite_start does not exist.\n";
 	  print "You may expect this script to die momentarily.\n";
       }
@@ -368,13 +372,11 @@ sub PRF_Gatherer {
 	  print "The sequence is: $check_seq and will be skipped.\n" if (defined($config->{debug}));
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
-      } 
-      elsif ($check_seq eq 'null') {
+      } elsif ($check_seq eq 'null') {
 	  print "The sequence is null and will be skipped.\n"  if (defined($config->{debug}));
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
-      } 
-      elsif ($check_seq eq 'polya') {
+      } elsif ($check_seq eq 'polya') {
 	  print "The sequence is polya and will be skipped.\n"  if (defined($config->{debug}));
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
@@ -554,7 +556,7 @@ sub Check_Environment {
     die("Database pass not defined") if ($config->{database_pass} eq 'prfconfigdefault_pass');
     
     unless (-r $config->{exe_rnamotif_descriptor}) {
-	RNAMotif_Search::Descriptor(config=>$config);
+	RNAMotif::Descriptor(config=>$config);
 	  unless (-r $config->{exe_rnamotif_descriptor}) {
 	      die("Unable to read the rnamotif descriptor file: $!");
 	  }
