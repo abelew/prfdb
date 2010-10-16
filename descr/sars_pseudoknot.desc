@@ -1,0 +1,58 @@
+parms
+  wc += gu;
+
+descr
+# Slippery site
+  ss(tag='slipsite1', seq="^n\{3\}$")
+  ss(tag='slipsite2', seq="^h\{3\}$")
+  ss(tag='slipsite3', seq="^n$")
+# Spacer
+  ss(tag='spacer', minlen=6, maxlen=6)
+# Stem 1 5p side
+  h5(tag='helix1', minlen=9, maxlen=11, pairfrac=1.0)
+## Short loop 1
+  ss(tag='loop1', minlen=3, maxlen=3)
+## Stem 2 5p side
+  h5(tag='helix2', minlen=5, maxlen=5, pairfrac=1.0)
+  h5(tag='helix2_continued', minlen=2, maxlen=2, pairfrac=1.0)
+## Close stem 1
+  h3(tag='helix1')
+## Stem 3 5p side
+  h5(tag='helix3', minlen=8, maxlen=10, pairfrac=0.8)
+## Loop 2
+  ss(tag='loop2', minlen=8, maxlen=10)
+## Close Stem 3
+  h3(tag='helix3')
+## Loop 3
+  ss(tag='loop3', minlen=2, maxlen=4)
+## Close Stem 2
+  h3(tag='helix2_continued')
+  ss(tag='helix2_bulge3', minlen=0, maxlen=1)
+  h3(tag='helix2')
+
+
+score
+  {
+  SCORE= 0.0;
+  gcnt = 0;
+
+  if (ss(tag='slipsite1') == 'aaa')
+   SCORE += 0.6;
+  else if (ss(tag='slipsite1') == 'uuu')
+   SCORE += 0.6;
+  else if (ss(tag='slipsite1') == 'ttt')
+   SCORE += 0.6;
+  else if (ss(tag='slipsite1') == 'ccc')
+   SCORE += 0.5;
+  else if (ss(tag='slipsite1') == 'ggg')
+   SCORE += 0.5;
+
+  if (ss(tag='slipsite2') == 'aaa')
+   SCORE += 0.6;
+  else if (ss(tag='slipsite2') == 'uuu')
+   SCORE += 0.6;
+  else if (ss(tag='slipsite2') == 'ttt')
+   SCORE += 0.6;
+
+  if( SCORE < 1.0 ){ REJECT; }
+}
