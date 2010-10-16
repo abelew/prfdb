@@ -1,3 +1,5 @@
+The following pertains to Jacobs et. al.
+
 Materials and Methods:
 Hardware and Software:
 All operations were performed using: a dual PIII Xeon 866 Mhz with 2Gb ram running Linux.
@@ -10,3 +12,8 @@ All analyses were carried out with the help of Perl; all code is availble at:
 http://prfdb.umd.edu/browser/code/
 All data is maintained in a mySQL database.
 
+
+The current prfdb used the following:
+All operations were performed using:  
+The University of Maryland high performance computing cluster.
+This cluster contains approximately 2056 processors.

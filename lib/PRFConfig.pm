@@ -162,6 +162,7 @@ sub new {
     $me->{using_pbs} = 0 if (!defined($me->{using_pbs}));
     $me->{window_space} = 15 if (!defined($me->{window_space}));
     $me->{workdir} = 'work' if (!defined($me->{workdir}));
+    $me->{z_test} = 'z_test' if (!defined($me->{z_test}));
     my ($open, %data, $config_option);
     if (-r $me->{config_file}) {
 	$open = $me->{appconfig}->file($me->{config_file});
