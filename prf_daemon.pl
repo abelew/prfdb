@@ -191,22 +191,22 @@ MAINLOOP: until (defined($state->{time_to_die})) {
     if ($state->{done_count} > 60 and !defined($config->{master})) {$state->{time_to_die} = 1}
     if (defined($config->{seqlength})) {
 	$state->{seqlength} = $config->{seqlength};
-    } 
-    else {
+    } else {
 	$state->{seqlength} = 100;
     }
-    my $import_accession = $db->Get_Import_Queue();
-    if (defined($import_accession)) {
-	my $import = $db->Import_CDS($import_accession);
-	if (defined($import) and $import !~ m/Error/) {
-	    if ($import == 0) {
-		print "Did not import $import_accession, it has no coding sequence defined.\n";
-	    } else {
-		print "Imported $import_accession added $import bases.\n";
+    if (defined($config->{process_import_queue})) {
+	my $import_accession = $db->Get_Import_Queue();
+	if (defined($import_accession)) {
+	    my $import = $db->Import_CDS($import_accession);
+	    if (defined($import) and $import !~ m/Error/) {
+		if ($import == 0) {
+		    print "Did not import $import_accession, it has no coding sequence defined.\n";
+		} else {
+		    print "Imported $import_accession added $import bases.\n";
+		}
 	    }
 	}
     }
-
     my $ids = $db->Grab_Queue();
     $state->{queue_table} = $ids->{queue_table};
     $state->{queue_id} = $ids->{queue_id};
@@ -565,8 +565,7 @@ sub Check_Environment {
 	my $copy_command;
 	if ($config->{has_modperl}) {
 	    $copy_command = qq(cp $config->{base}/html/htaccess.modperl $config->{base}/.htaccess);
-	}
-	else {
+	} else {
 	    $copy_command = qq(cp $config->{base}/html/htaccess.cgi $config->{base}/.htaccess);
 	}
 	system($copy_command);
@@ -588,20 +587,17 @@ sub Print_Config {
     ### This is a little function designed to give the user a chance to abort
     if   ($config->{nupack_nopairs_hack}) {
 	print "I AM using a hacked version of nupack!\n"; 
-    }
-    else {
+    } else {
 	print "I AM NOT using a hacked version of nupack!\n";
     }
     if ($config->{do_nupack}) {
 	print "I AM doing a nupack fold using the program: $config->{exe_nupack}\n";
-    }
-    else {
+    } else {
 	print "I AM NOT doing a nupack fold\n"; 
     }
     if ($config->{do_pknots}) {
 	print "I AM doing a pknots fold using the program: $config->{exe_pknots}\n";
-    }
-    else {
+    } else {
 	print "I AM NOT doing a pknots fold\n";
     }
     if ($config->{do_boot}) {
@@ -619,13 +615,12 @@ sub Print_Config {
 	}
 	print "nupack is using the following program for bootstrap:
 $nu_boot and running: $config->{boot_iterations} times\n";
-    } 
-    else {
+    } else {
 	print "I AM NOT doing a boot.\n";
     }
     if ($config->{arch_specific_exe}) {
-	print "I AM USING ARCH SPECIFIC EXECUTABLES\n"; }
-    else {
+	print "I AM USING ARCH SPECIFIC EXECUTABLES\n";
+    } else {
 	print "I am not using arch specific executables\n"; 
     }
     if (ref($config->{seqlength}) eq 'ARRAY') {
@@ -668,8 +663,7 @@ sub Check_Boot_Connectivity {
 						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
 		$new_mfe_id = Check_Nupack($fold_search, $slipsite_start);
-	    }
-	    elsif ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'pknots') {
+	    } elsif ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'pknots') {
 		### Then there is no pknots information :(
 		if (!defined($state->{accession})) {
 		    die("The accession is no longer defined. This cannot be allowed.")
@@ -702,8 +696,7 @@ sub Check_Folds {
 						 $state->{seqlength}, $type);
 	$mfe_id = $state->{$mfe_varname};
 	print "Check_Folds $type - already done: state: $mfe_id\n" if (defined($config->{debug}));
-    }
-    else { ### If there are NO existing folds...
+    } else { ### If there are NO existing folds...
 	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n" if (defined($config->{debug}));
 	my ($info, $mfe_id);
 	if ($type eq 'pknots') {
@@ -711,20 +704,17 @@ sub Check_Folds {
 	    $mfe_id = $db->Put_Pknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Pknots and returned $mfe_id\n" if (defined($config->{debug}));
-	}
-	elsif ($type eq 'nupack') {
+	} elsif ($type eq 'nupack') {
 	    $info = $fold_search->Nupack_NOPAIRS();
 	    $mfe_id = $db->Put_Nupack($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Nupack and returned $mfe_id\n" if (defined($config->{debug}));
-	}
-	elsif ($type eq 'hotknots') {
+	} elsif ($type eq 'hotknots') {
 	    $info = $fold_search->Hotknots();
 	    $mfe_id = $db->Put_Hotknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Hotknots and returned $mfe_id\n" if (defined($config->{debug}));
-	}
-	else {
+	} else {
 	    die("Non existing type in Check_Folds");
 	}
     }    ### Done checking for pknots folds

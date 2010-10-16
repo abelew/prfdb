@@ -212,6 +212,7 @@ sub new {
 	'optimize:s' => \$conf{optimize},
 	'output' => \$conf{output},
 	'pknots:i' => \$conf{do_pknots},
+	'process_import_queue' => \$conf{process_import_queue},
 	'randomize' => \$conf{randomize_id},
 	'resetqueue' => \$conf{resetqueue},
 	'shell' => \$conf{shell},
