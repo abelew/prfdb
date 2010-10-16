@@ -1018,19 +1018,16 @@ sub Import_Fasta {
             if ($linenum > 1) {
                 if (defined($config->{startpos})) {
                     $datum{orf_start} = $config->{startpos};
-                }
-                else {
+                } else {
                     $datum{orf_start} = 1;
                 }
                 if (defined($config->{endpos})) {
                     if ($config->{endpos} > 0) {
                         $datum{orf_stop} = $config->{end_pos};
-                    }
-                    else {  ## A negative offset
+                    } else {  ## A negative offset
                         $datum{orf_stop} = length($datum{mrna_seq}) - $config->{endpos};
                     }
-                }
-                else {
+                } else {
                     $datum{orf_stop} = length($datum{mrna_seq});
                 }
                 my $genome_id = $me->Insert_Genome_Entry(\%datum);
@@ -1046,8 +1043,12 @@ sub Import_Fasta {
 			      version => undef,
 			      comment => undef,
 			      mrna_seq => undef,);
-		    my ($fake_accession, $comment)  = split(/\,/, $line);
-		    my ($accession, $genename) = split(/ /,  $fake_accession);
+		    my @tmp_split = split(/ /, $line);
+		    my $accession = $tmp_split[0];
+		    my $comment = $line;
+		    my $genename = $accession;
+#		    my ($fake_accession, $comment)  = split(/\,/, $line);
+#		    my ($accession, $genename) = split(/ /,  $fake_accession);
 		    $accession =~ s/^\>//g;
                     $accession =~ s/ORFN//g;
 		    $datum{accession} = $accession;
@@ -1058,8 +1059,8 @@ sub Import_Fasta {
 		    $datum{direction} = 'forward';
 		    $datum{defline} = $line;
                     $datum{species} = $config->{species};
-		}    ## End if the style is sgd
-		elsif ($style eq 'celegans') {
+		    ## End if the style is sgd
+		} elsif ($style eq 'celegans') {
                     %datum = (accession => undef,
                               genename => undef,
                               version => undef,
