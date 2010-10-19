@@ -417,11 +417,9 @@ sub Mfeid_to_Bpseq {
     if (!defined($outputfile)) {
 	$fh = PRFdb::MakeTempfile(SUFFIX => '.bpseq');
 	$filename = $fh->filename;
-    }
-    elsif (ref($outputfile) eq 'GLOB') {
+    } elsif (ref($outputfile) eq 'GLOB') {
 	$fh = $outputfile;
-    }
-    else {
+    } else {
 	$fh = \*OUT;
 	open($fh, ">$outputfile");
 	$filename = $outputfile;
@@ -452,12 +450,10 @@ sub Mfeid_to_Bpseq {
     foreach my $c (0 .. $#seq_array) {
 	if (!defined($in_array[$c])) {
 	    $output .= "$c $seq_array[$c] 0\n";
-	}
-	elsif ($in_array[$c] eq '.') {
+	} elsif ($in_array[$c] eq '.') {
 	    my $position = $c + 1;
 	    $output .= "$position $seq_array[$c] 0\n";
-	}
-	else {
+	} else {
 	    my $position = $c + 1;
 	    my $bound_position = $in_array[$c] + 1;
 	    $output .= "$position $seq_array[$c] $bound_position\n";
@@ -486,8 +482,7 @@ sub Genome_to_Fasta {
 	if (!defined($datum)) {
 	    print "Problem with $count element\n";
 	    next;
-	}
-	else {	
+	} else {	
 	    my $id = $datum->[0];
 	    my $accession = $datum->[1];
 	    my $species = $datum->[2];
@@ -1030,12 +1025,23 @@ sub Import_Fasta {
                 } else {
                     $datum{orf_stop} = length($datum{mrna_seq});
                 }
+		## Insert the entry here and add the queue entry
+
+		if (!defined($datum{protein_seq}) or $datum{protein_seq} eq '') {
+		    my $seq = new SeqMisc(sequence => $datum{mrna_seq});
+		    my $aa_seq = $seq->{aaseq};
+		    my $aa = '';
+		    foreach my $c (@{$aa_seq}) { $aa .= $c; }
+		    $datum{protein_seq} = $aa;
+		}
                 my $genome_id = $me->Insert_Genome_Entry(\%datum);
-                my $queue_id = $me->Set_Queue(id => $genome_id,);
-                my $queue_num = "$queue_id";
-                print "Added $queue_num\n";
-                push(@return_array, $queue_num);
-            }
+#  This is repeated at the end of this function, I need to make sure that is kosher
+		if (defined($genome_id)) {
+		    print "1: Added $genome_id\n";
+		    push(@return_array, $genome_id);
+		}
+            }  ## End if linenum == 1
+
 	    if (defined($style)) {
 		if ($style eq 'sgd') {
 		    %datum = (accession => undef,
@@ -1043,14 +1049,9 @@ sub Import_Fasta {
 			      version => undef,
 			      comment => undef,
 			      mrna_seq => undef,);
-		    my @tmp_split = split(/ /, $line);
-		    my $accession = $tmp_split[0];
-		    my $comment = $line;
-		    my $genename = $accession;
-#		    my ($fake_accession, $comment)  = split(/\,/, $line);
-#		    my ($accession, $genename) = split(/ /,  $fake_accession);
+		    my ($fake_accession, $comment) = split(/\,/, $line);
+		    my ($accession, $genename) = split(/ /,  $fake_accession);
 		    $accession =~ s/^\>//g;
-                    $accession =~ s/ORFN//g;
 		    $datum{accession} = $accession;
 		    $datum{genename} = $genename;
 		    $datum{comment} = $comment;
@@ -1058,44 +1059,33 @@ sub Import_Fasta {
 		    $datum{protein_seq} = '';
 		    $datum{direction} = 'forward';
 		    $datum{defline} = $line;
-                    $datum{species} = $config->{species};
+		    $datum{species} = $config->{species};
+		    if (!defined($datum{genename})) {
+			$datum{genename} = $datum{accession};
+		    }
+		    if (!defined($datum{version})) {
+			$datum{version} = 1;
+		    }
 		    ## End if the style is sgd
 		} elsif ($style eq 'celegans') {
-                    %datum = (accession => undef,
-                              genename => undef,
-                              version => undef,
-                              comment => undef,
-                              mrna_seq => undef,);
-                    my ($accession, $genename) = split(/\|/, $line);
-                    $accession =~ s/\>//g;
-                    $datum{genename} = $genename;
-                    $datum{accession} = $accession;
-                    $datum{species} = $config->{species};
-		    if (!defined($datum{genename})) {
-                        $datum{genename} = $datum{accession};
-                    }
-                    if (!defined($datum{version})) {
-                        $datum{version} = 1;
-                    }
-                }    ## End if the style is sgd
-
-		elsif ($style eq 'celegans') {
-                    %datum = (
-			      accession => undef,
+		    %datum = (accession => undef,
 			      genename => undef,
 			      version => undef,
 			      comment => undef,
-			      mrna_seq => undef
-			      );
-                    my ($accession, $genename) = split(/\|/, $line);
-                    $accession =~ s/\>//g;
-                    $datum{genename} = $genename;
-                    $datum{accession} = $accession;
-                    $datum{species} = $config->{species};
-                }
-
-
-		elsif ($style eq 'mgc') {
+			      mrna_seq => undef,);
+		    my ($accession, $genename) = split(/\|/, $line);
+		    $accession =~ s/\>//g;
+		    $datum{genename} = $genename;
+		    $datum{accession} = $accession;
+		    $datum{species} = $config->{species};
+		    if (!defined($datum{genename})) {
+			$datum{genename} = $datum{accession};
+		    }
+		    if (!defined($datum{version})) {
+			$datum{version} = 1;
+		    }
+		    ## End if the style is of C. elegans
+		} elsif ($style eq 'mgc') {
 		    %datum = (accession => undef,
 			      genename => undef,
 			      version => undef,
@@ -1105,8 +1095,7 @@ sub Import_Fasta {
 		    my ($accession, $version);
 		    if ($accession_version =~ m/\./) {
 			($accession, $version) = split(/\./, $accession_version);
-		    }
-		    else {
+		    } else {
 			$accession = $accession_version;
 			$version   = '0';
 		    }
@@ -1120,26 +1109,47 @@ sub Import_Fasta {
 		    $datum{protein_seq} = '';
 		    $datum{direction} = 'forward';
 		    $datum{defline} = $line;
+		    ## End if the style is from the mammalian gene collection
+		} elsif ($style eq 'misc') {
+		    %datum = (accession => undef,
+			      genename => undef,
+			      version => undef,
+			      comment => undef,
+			      mrna_seq => undef,);
+		    my @tmp_split = split(/ /, $line);
+		    my $accession = $tmp_split[0];
+		    $accession =~ s/\>//g;
+		    my $comment = $line;
+		    my $genename = $accession;
+		    $accession =~ s/^\>//g;
+		    $accession =~ s/ORFN//g;
+		    $comment =~ s/^\>//g;
+		    $datum{accession} = $accession;
+		    $datum{genename} = $genename;
+		    $datum{comment} = $comment;
+		    $datum{genename} = $genename;
+		    $datum{protein_seq} = '';
+		    $datum{direction} = 'forward';
+		    $datum{defline} = $line;
+		    $datum{species} = $config->{species};
+		    ## End if the style is misc
 		}
-		else {
-		    print "No style.\n";
-		}
-	    }    ## End if the style is defined.
-	    else {
+	    } else {
 		print "Style is not defined.\n";
 	    }
-	}    ## End if you are on a > line
-	else {
+	    ## End if you are on a > line
+	} else {
 	    $line =~ s/\s//g;
 	    $line =~ s/\d//g;
 	    $datum{mrna_seq} .= $line;
 	    ## The line after every Import_CDS had better clear datum{mrna_seq} or the sequence
 	    ## will grow with every new sequence.
-	}    ## Not an accession line
+ 	}    ## Not an accession line
     }    ## End looking at every line.
     close(IN);
+
     if (!defined($datum{species})) {
-        $datum{species} = $config->{species};
+	$datum{species} = $config->{species};
     }
     $datum{orf_start} = 0;
     $datum{orf_stop}  = length($datum{mrna_seq});
@@ -1150,11 +1160,9 @@ sub Import_Fasta {
 	foreach my $c (@{$aa_seq}) { $aa .= $c; }
 	$datum{protein_seq} = $aa;
     }
-    
+
     my $genome_id = $me->Insert_Genome_Entry(\%datum);
-    my $queue_id = $me->Set_Queue(id => $genome_id,);
-    print "Added $queue_id\n" if(defined($config->{debug}));
-    push(@return_array, $queue_id);
+    push(@return_array, $genome_id);
     return (\@return_array);
 }
 
@@ -1568,15 +1576,15 @@ sub Insert_Genome_Entry {
     ## crap from the SGD
     $datum->{orf_start} = 1 if (!defined($datum->{orf_start}) or $datum->{orf_start} == 0);
     if (defined($already_id)) {
-#	print "The accession $datum->{accession} is already in the database with id: $already_id\n";
-	return ($already_id);
+	print "The accession $datum->{accession} is already in the database with id: $already_id\n";
+	return (undef);
     }
     $datum->{version} = 0 if (!defined($datum->{version}));
     $datum->{comment} = "" if (!defined($datum->{comment}));
 #    my $statement = qq(INSERT INTO genome
 #(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
 #    VALUES('$datum->{accession}', '$datum->{species}', '$datum->{genename}', '$datum->{version}', '$datum->{comment}', '$datum->{mrna_seq}', '$datum->{protein_seq}', '$datum->{orf_start}', '$datum->{orf_stop}', '$datum->{direction}'));
-    my $statement = qq"INSERT DELAYED INTO genome
+    my $statement = qq"INSERT INTO genome
 (accession, species, genename, version, comment, mrna_seq, orf_start, orf_stop, direction)
 VALUES(?,?,?,?,?,?,?,?,?)";
     my ($cp,$cf,$cl) = caller();
@@ -1584,6 +1592,15 @@ VALUES(?,?,?,?,?,?,?,?,?)";
                caller => "$cp, $cf, $cl",
                vars => [$datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
     my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
+    my $queue_id = $me->Set_Queue(id => $last_id,);
+    my $gene_info_stmt = qq"INSERT INTO gene_info
+(genome_id, accession, species, genename, comment)
+VALUES(?,?,?,?,?)";
+    ($cp,$cf,$cl) = caller();
+    my $gene_info = $me->MyExecute(statement => $gene_info_stmt,
+                                   caller => "$cp,$cf,$cl",
+                                   vars => [$last_id,$datum->{accession},$datum->{species},$datum->{genename},$datum->{comment}]);
+
 ## The following line is very important to ensure that multiple
 ## calls to this don't end up with
 ## Increasingly long sequences

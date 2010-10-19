@@ -127,6 +127,23 @@ sub new {
 	    UAA => '*',
 	    UGA => '*',
 	    UAG => '*',
+	    ## A catchall to pick up Ns
+	    '?' => [['NNN',],['WTF', 'Damnit']],
+	    NNN => '?',
+	    NNA => '?', NNU => '?', NNG => '?', NNC => '?',
+	    NAA => '?', NAU => '?', NAG => '?', NAC => '?',
+	    NUA => '?', NUU => '?', NUG => '?', NUC => '?',
+	    NCA => '?', NCU => '?', NCG => '?', NCC => '?',
+	    NGA => '?', NGU => '?', NGG => '?', NGC => '?',
+	    ANN => '?', UNN => '?', GNN => '?', CNN => '?',
+	    AAN => '?', AUN => '?', AGN => '?', ACN => '?',
+	    UAN => '?', UUN => '?', UGN => '?', UCN => '?',
+	    GAN => '?', GUN => '?', GCN => '?', GCN => '?',
+	    CAN => '?', CUN => '?', CCN => '?', CCN => '?',
+	    ANA => '?', ANU => '?', ANC => '?', ANG => '?',
+	    UNA => '?', UNU => '?', UNC => '?', UNG => '?',
+	    CNA => '?', CNU => '?', CNC => '?', CNG => '?',
+	    GNA => '?', GNU => '?', GNC => '?', GNG => '?',
 	},
     }, $class;
     my @ntseq = @{$me->{sequence}};
@@ -155,6 +172,8 @@ sub new {
 	$last_three = $three;
 	($one, $two, $three) = splice(@ntseq, 0, 3);
 	my $codon_string = join('', $one, $two, $three);
+	$codon_string = uc($codon_string);
+	$codon_string =~ tr/T/U/;
 	my ($minus_one_codon_string, $minus_two_codon_string);
 	if (defined($last_three)) {
 	    $minus_one_codon_string = join('', $last_three, $one, $two);
