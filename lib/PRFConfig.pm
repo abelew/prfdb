@@ -189,6 +189,7 @@ sub new {
 	'boot:i' => \$conf{do_boot},
 	'clear_queue' => \$conf{clear_queue},
 	'copyfrom:s' => \$conf{copyfrom},
+	'create_tables' => \$conf{create_tables},
 	'dbexec:s' => \$conf{dbexec},
 	'fasta_style:s' => \$conf{fasta_style},
 	'fillqueue' => \$conf{fillqueue},

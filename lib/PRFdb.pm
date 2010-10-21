@@ -310,6 +310,7 @@ sub MyConnect {
     my $host = sub {
 	my $value = shift;
 	my $range = scalar(@hosts);
+	$range = 1 if ($range == 0);
 	my $index = $value % $range;
 	return($hosts[$index]);
     };
@@ -2030,6 +2031,109 @@ sub Tablep {
     return (scalar(@{$info}));
 }
 
+#### Create all the tables of the PRFdb here
+sub Create_Agree {
+    my $me = shift;
+    my $statement = qq"CREATE table agree (
+id $config->{sql_id},
+accession $config->{sql_accession},
+start int,
+length int,
+all_agree int,
+no_agree int,
+n_alone int,
+h_alone int,
+p_alone int,
+hplusn int,
+nplusp int,
+hplusp int,
+hnp int,
+PRIMARY KEY (id))";
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
+}
+
+sub Create_Boot {
+    my $me = shift;
+    my $table = shift;
+    $table = 'boot_virus' if ($table =~ /virus/);
+    my $statement = qq\CREATE TABLE $table (
+id $config->{sql_id},
+genome_id int,
+mfe_id int,
+species $config->{sql_species},
+accession $config->{sql_accession},
+start int,
+seqlength int,
+iterations int,
+rand_method varchar(20),
+mfe_method varchar(20),
+mfe_mean float,
+mfe_sd float,
+mfe_se float,
+pairs_mean float,
+pairs_sd float,
+pairs_se float,
+mfe_values text,
+zscore float,
+lastupdate $config->{sql_timestamp},
+INDEX(genome_id),
+INDEX(mfe_id),
+INDEX(accession),
+PRIMARY KEY(id))\;
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement => $statement, caller =>"$cp, $cf, $cl",);
+    print "Created $table\n" if (defined($config->{debug}));
+}
+
+sub Create_Errors {
+    my $me = shift;
+    my $statement = qq\CREATE table errors (
+					    id $config->{sql_id},
+					    time $config->{sql_timestamp},
+					    message blob,
+					    accession $config->{sql_accession},
+					    PRIMARY KEY(id))\;
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl");
+}
+
+sub Create_Evaluate {
+    my $me = shift;
+    my $statement = qq(CREATE table evaluate (
+id $config->{sql_id},
+species $config->{sql_species},
+accession $config->{sql_accession},
+start int,
+length int,
+pseudoknot bool,
+min_mfe float,
+PRIMARY KEY (id)));
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",)
+}
+
+sub Create_Gene_Info {
+   my $me = shift;
+   my $statement = qq/CREATE table gene_info (
+genome_id bigint,
+accession $config->{sql_accession},
+species $config->{sql_species},
+genename $config->{sql_genename},
+comment $config->{sql_comment},
+defline text not null,
+INDEX(accession),
+FULLTEXT(comment),
+FULLTEXT(defline),
+FULLTEXT(genename),
+PRIMARY KEY (genome_id))/;
+   my ($cp, $cf, $cl) = caller();
+   $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
+   my $insert_stmt = qq"INSERT IGNORE INTO gene_info (genome_id, accession, species, genename, comment, defline) SELECT id, accession, species, genename, comment, defline FROM genome";
+   ($cp, $cf, $cl) = caller();
+   $me->MyExecute(statement => $insert_stmt, caller =>"$cp,$cf,$cl",);
+}
+
 sub Create_Genome {
     my $me = shift;
     my $statement = qq/CREATE table genome (
@@ -2062,25 +2166,15 @@ PRIMARY KEY (id))/;
     $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
 }
 
-sub Create_Agree {
+sub Create_Import_Queue {
     my $me = shift;
-    my $statement = qq"CREATE table agree (
+    my $table = 'import_queue';
+    my $stmt = qq"CREATE TABLE $table (
 id $config->{sql_id},
 accession $config->{sql_accession},
-start int,
-length int,
-all_agree int,
-no_agree int,
-n_alone int,
-h_alone int,
-p_alone int,
-hplusn int,
-nplusp int,
-hplusp int,
-hnp int,
 PRIMARY KEY (id))";
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
+    $me->MyExecute(statement =>$stmt, caller => "$cp, $cf, $cl");
 }
 
 sub Create_Index_Stats {
@@ -2108,51 +2202,6 @@ PRIMARY KEY (id))/;
     $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
 }
 
-sub Create_Evaluate {
-    my $me = shift;
-    my $statement = qq(CREATE table evaluate (
-id $config->{sql_id},
-species $config->{sql_species},
-accession $config->{sql_accession},
-start int,
-length int,
-pseudoknot bool,
-min_mfe float,
-PRIMARY KEY (id)));
-    my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",)
-    }
-
-sub Create_Stats {
-    my $me = shift;
-    my $statement = qq(CREATE table stats (
-id $config->{sql_id},
-species $config->{sql_species},
-seqlength int,
-max_mfe float,
-algorithm varchar(10),
-num_sequences int,
-avg_mfe float,
-stddev_mfe float,
-avg_pairs float,
-stddev_pairs float,
-num_sequences_noknot int,
-avg_mfe_noknot float,
-stddev_mfe_noknot float,
-avg_pairs_noknot float,
-stddev_pairs_noknot float,
-num_sequences_knotted int,
-avg_mfe_knotted float,
-stddev_mfe_knotted float,
-avg_pairs_knotted float,
-stddev_pairs_knotted float,
-avg_zscore float,
-stddev_zscore float,
-PRIMARY KEY (id)));
-    my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
-}
-
 sub Create_Overlap {
     my $me = shift;
     my $statement = qq(CREATE table overlap (
@@ -2171,38 +2220,33 @@ PRIMARY KEY (id)));
     $me->MyExecute(statement => $statement, caller =>"$cp, $cf, $cl",);
 }
 
-sub Create_Import_Queue {
-    my $me = shift;
-    my $table = 'import_queue';
-    my $stmt = qq"CREATE TABLE $table (
-id $config->{sql_id},
-accession $config->{sql_accession},
-PRIMARY KEY (id))";
-    my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement =>$stmt, caller => "$cp, $cf, $cl");
-}
-
-sub Create_Queue {
+sub Create_Landscape {
     my $me = shift;
     my $table = shift;
-    if (!defined($table)) {
-	if (defined( $config->{queue_table})) {
-	    $table = $config->{queue_table};
-	}
-	else {
-	    $table = 'queue';
-	}
-    }
+    $table = 'landscape_virus' if ($table =~ /virus/);
     my $statement = qq\CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,
-checked_out bool,
-checked_out_time timestamp default 0,
-done bool,
-done_time timestamp default 0,
-PRIMARY KEY (id))\;
+species $config->{sql_species},
+accession $config->{sql_accession},
+algorithm char(10),
+start int,
+seqlength int,
+sequence text,
+output text,
+parsed text,
+parens text,
+mfe float,
+pairs int,
+knotp bool,
+barcode text,
+lastupdate $config->{sql_timestamp},
+INDEX(genome_id),
+INDEX(accession),
+PRIMARY KEY(id))\;
     my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement =>$statement,  caller =>"$cp, $cf, $cl",);
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
+    print "Created $table\n" if (defined($config->{debug}));
 }
 
 sub Create_MFE {
@@ -2262,6 +2306,70 @@ PRIMARY KEY(id))\;
     $me->MyExecute(statement => $statement,  caller =>"$cp, $cf, $cl",);
 }
 
+sub Create_Nosy {
+    my $me = shift;
+    my $statement = qq\CREATE TABLE nosy (
+ip char(15),
+visited $config->{sql_timestamp},
+PRIMARY KEY(ip))\;
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
+    print "Created nosy\n" if (defined($config->{debug}));
+}
+
+sub Create_Queue {
+    my $me = shift;
+    my $table = shift;
+    if (!defined($table)) {
+	if (defined( $config->{queue_table})) {
+	    $table = $config->{queue_table};
+	}
+	else {
+	    $table = 'queue';
+	}
+    }
+    my $statement = qq\CREATE TABLE $table (
+id $config->{sql_id},
+genome_id int,
+checked_out bool,
+checked_out_time timestamp default 0,
+done bool,
+done_time timestamp default 0,
+PRIMARY KEY (id))\;
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement =>$statement,  caller =>"$cp, $cf, $cl",);
+}
+
+sub Create_Stats {
+    my $me = shift;
+    my $statement = qq(CREATE table stats (
+id $config->{sql_id},
+species $config->{sql_species},
+seqlength int,
+max_mfe float,
+algorithm varchar(10),
+num_sequences int,
+avg_mfe float,
+stddev_mfe float,
+avg_pairs float,
+stddev_pairs float,
+num_sequences_noknot int,
+avg_mfe_noknot float,
+stddev_mfe_noknot float,
+avg_pairs_noknot float,
+stddev_pairs_noknot float,
+num_sequences_knotted int,
+avg_mfe_knotted float,
+stddev_mfe_knotted float,
+avg_pairs_knotted float,
+stddev_pairs_knotted float,
+avg_zscore float,
+stddev_zscore float,
+PRIMARY KEY (id)));
+    my ($cp, $cf, $cl) = caller();
+    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
+}
+
 sub Create_Variations {
     my $me = shift;
     my $statement = qq\CREATE TABLE variations (
@@ -2281,118 +2389,30 @@ PRIMARY KEY(id))\;
     $me->MyExecute(statement => $statement,caller=>"$cp, $cf, $cl",);
 }
 
-sub Create_Nosy {
-    my $me = shift;
-    my $statement = qq\CREATE TABLE nosy (
-ip char(15),
-visited $config->{sql_timestamp},
-PRIMARY KEY(ip))\;
-    my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
-    print "Created nosy\n" if (defined($config->{debug}));
-}
-
-
-sub Create_Landscape {
-    my $me = shift;
-    my $table = shift;
-    $table = 'landscape_virus' if ($table =~ /virus/);
-    my $statement = qq\CREATE TABLE $table (
-id $config->{sql_id},
-genome_id int,
-species $config->{sql_species},
-accession $config->{sql_accession},
-algorithm char(10),
-start int,
-seqlength int,
-sequence text,
-output text,
-parsed text,
-parens text,
-mfe float,
-pairs int,
-knotp bool,
-barcode text,
-lastupdate $config->{sql_timestamp},
-INDEX(genome_id),
-INDEX(accession),
-PRIMARY KEY(id))\;
-    my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
-    print "Created $table\n" if (defined($config->{debug}));
-}
-
-sub Create_Boot {
-    my $me = shift;
-    my $table = shift;
-    $table = 'boot_virus' if ($table =~ /virus/);
-    my $statement = qq\CREATE TABLE $table (
-id $config->{sql_id},
-genome_id int,
-mfe_id int,
-species $config->{sql_species},
-accession $config->{sql_accession},
-start int,
-seqlength int,
-iterations int,
-rand_method varchar(20),
-mfe_method varchar(20),
-mfe_mean float,
-mfe_sd float,
-mfe_se float,
-pairs_mean float,
-pairs_sd float,
-pairs_se float,
-mfe_values text,
-zscore float,
-lastupdate $config->{sql_timestamp},
-INDEX(genome_id),
-INDEX(mfe_id),
-INDEX(accession),
-PRIMARY KEY(id))\;
-    my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement => $statement, caller =>"$cp, $cf, $cl",);
-    print "Created $table\n" if (defined($config->{debug}));
-}
-
 sub Create_Wait {
     my $me = shift;
     my $stmt = qq"CREATE table wait (wait int, primary key(wait))";
     $me->MyExecute(statement => $stmt);
 }
 
-sub Create_Gene_Info {
-   my $me = shift;
-   my $statement = qq/CREATE table gene_info (
-genome_id bigint,
-accession $config->{sql_accession},
-species $config->{sql_species},
-genename $config->{sql_genename},
-comment $config->{sql_comment},
-defline text not null,
-INDEX(accession),
-FULLTEXT(comment),
-FULLTEXT(defline),
-FULLTEXT(genename),
-PRIMARY KEY (genome_id))/;
-   my ($cp, $cf, $cl) = caller();
-   $me->MyExecute(statement =>$statement, caller => "$cp, $cf, $cl",);
-   my $insert_stmt = qq"INSERT IGNORE INTO gene_info (genome_id, accession, species, genename, comment, defline) SELECT id, accession, species, genename, comment, defline FROM genome";
-   ($cp, $cf, $cl) = caller();
-   $me->MyExecute(statement => $insert_stmt, caller =>"$cp,$cf,$cl",);
-}
-
-sub Create_Errors {
+sub Create_Tables {
     my $me = shift;
-    my $statement = qq\CREATE table errors (
-					    id $config->{sql_id},
-					    time $config->{sql_timestamp},
-					    message blob,
-					    accession $config->{sql_accession},
-					    PRIMARY KEY(id))\;
-    my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl");
+    $me->Create_Agree(); 
+    $me->Create_Errors();
+    $me->Create_Evaluate();
+    $me->Create_Gene_Info();
+    $me->Create_Genome();
+    $me->Create_Import_Queue(); 
+    $me->Create_Index_Stats();
+    $me->Create_MFE();
+    $me->Create_MFE_Utr();
+    $me->Create_Nosy();
+    $me->Create_NumSlipsite();
+    $me->Create_Overlap();
+    $me->Create_Queue();
+    $me->Create_Stats();
+    $me->Create_Variations();
+    $me->Create_Wait();
 }
-
 
 1;

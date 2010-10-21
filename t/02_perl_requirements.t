@@ -18,3 +18,6 @@ use_ok(Statistics::Basic);
 use_ok(Statistics::Distributions);
 use_ok(Bio::DB::Universal);
 use_ok(AppConfig);
+use_ok(Log::Log4perl);
+use_ok(Log::Log4perl::Level);
+use_ok(Bio::Root::Exception);
