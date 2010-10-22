@@ -1,6 +1,3 @@
-# Before 'make install' is performed, this script
-# should be run with 'make test'
-
 use Test::More qw(no_plan);
 BEGIN {
   use lib qq"$ENV{PRFDB_HOME}/lib";
@@ -16,3 +13,7 @@ is(defined($config), 1, 'PRFConfig did not load properly');
 is($config->{database_name} ne 'test', 1, 'The database should not be test, did you set up your prfdb.conf?');
 is($config->{database_user} ne 'guest', 1, 'The database user should not be guest.');
 is($config->{database_pass} ne 'guest', 1, 'The database user should not be guest.');
+if ($config->{has_modperl}) {
+   use MyDeps;
+   MyDeps::Resolve('apache');
+}
