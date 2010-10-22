@@ -3,7 +3,7 @@ use strict;
 use constant PI => scalar(4 * atan2 1, 1);
 use DBI;
 use PRFConfig qw / PRF_Error PRF_Out /;
-use PRFdb;
+use PRFdb qw / callstack /;
 use GD::Graph::mixed;
 use GD::SVG;
 use Statistics::Basic qw(:all);
@@ -76,7 +76,7 @@ sub Make_Extension {
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}",12);
 #    my $fun = [[0,0,0,[0,0,0]];
     my $fun = [[0,0,0],[0,100,0]];
-    my $gd = $graph->plot($fun) or die ($graph->error);
+    my $gd = $graph->plot($fun) or callstack(), die ($graph->error);
     my $black = $gd->colorResolve(0,0,0);
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);
@@ -93,7 +93,7 @@ sub Make_Extension {
     my $stmt = qq"SELECT DISTINCT mfe.id, mfe.accession, mfe.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, mfe.bp_mstop, mfe.mfe FROM genome,mfe WHERE genome.id = mfe.genome_id AND mfe.seqlength='100' AND mfe.algorithm = 'nupack' AND mfe.species = '$species'";
     my $stuff = $db->MySelect(statement => $stmt,);
     
-    open(MAP, ">${filename}.map") or print("Unable to open the map file ${filename}.map");
+    open(MAP, ">${filename}.map") or callstack(), print("Unable to open the map file ${filename}.map");
     my $map_string = '';
     if ($type eq 'percent') {
 	$map_string = qq/<map name="percent_extension" id="percent_extension">\n/;
@@ -125,7 +125,7 @@ sub Make_Extension {
 	} elsif (($orf_start % 3) == 2) {
 	    $stop_count = 0;
 	} else {
-	    die "WTF?";
+	    callstack(), die "WTF?";
 	}
 	my $minus_start = $start + 4;
 	my $codon = '';
@@ -189,11 +189,12 @@ sub Make_Extension {
 #	    print "Percent: xcoord: $x_coord xcoord: $codons_y_coord<br>\n";
 	    $gd->filledArc($x_coord, $codons_y_coord, 4,4,0,360,$color,4);
 	} else {
+	    callstack();
 	    die("Type is non-specified");
 	}
 	print MAP $map_string;
     }  ## End foreach stuff
-    open(IMG, ">$filename") or die "error opening file to write image: $!";
+    open(IMG, ">$filename") or callstack(), die "error opening file to write image: $!";
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -249,7 +250,7 @@ sub Make_Cloud {
     $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $fun = [[-100,-100,-100],[0,0,0]];
-    my $gd = $graph->plot($fun,) or die ($graph->error);
+    my $gd = $graph->plot($fun,) or callstack(), die ($graph->error);
     my $black = $gd->colorResolve(0,0,0);
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);
@@ -344,7 +345,7 @@ sub Make_Cloud {
     my $radius = 1;
     my %slipsites_numbers = ();
     my %slips_significant = ();
-    open(MAP, ">${tmp_filename}.map") or print("Unable to open the map file ${tmp_filename}.map");
+    open(MAP, ">${tmp_filename}.map") or callstack(), print("Unable to open the map file ${tmp_filename}.map");
     print MAP "<map name=\"map\" id=\"map\">\n";
     my $image_map_string;
     if ($args_slipsites eq 'all') {
@@ -479,7 +480,7 @@ sub Make_Cloud {
 	Make_SlipBars(\%slips_significant, $bar_sig_filename);
 	Make_SlipBars(\%percent_sig, $percent_sig_filename);
     }
-    open (IMG, ">$filename") or die "error opening $filename to write image: $!";
+    open (IMG, ">$filename") or callstack(), die "error opening $filename to write image: $!";
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -517,7 +518,7 @@ sub Make_Overlay {
     $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $fun = [[-100,-100,-100],[0,0,0]];
-    my $gd = $graph->plot($fun,) or die ($graph->error);
+    my $gd = $graph->plot($fun,) or callstack(), die ($graph->error);
     my $black = $gd->colorResolve(0,0,0);
     my $axes_coords = $graph->get_feature_coordinates('axes');
     my $left_x_coord = $axes_coords->[1];
@@ -532,7 +533,7 @@ sub Make_Overlay {
     my $points = {};
     my $max_counter = 1;
 
-    open(MAP, ">$map_filename") or print("Unable to open the map file $map_filename: $!");
+    open(MAP, ">$map_filename") or callstack(), print("Unable to open the map file $map_filename: $!");
     print MAP "<map name=\"overlaymap\" id=\"overlaymap\">\n";
 
     my $radius = 6;
@@ -550,7 +551,7 @@ sub Make_Overlay {
         print MAP $map_string;
     }
     print MAP "</map>\n";
-    open (IMG, ">$filename") or print "error opening filename:<$filename> to write image: $!";
+    open (IMG, ">$filename") or callstack(), print "error opening filename:<$filename> to write image: $!";
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -624,6 +625,7 @@ sub Make_Landscape {
     }    ## End foreach spot
     if ($position_counter == 0) {  ## There is no data!?
 	return(undef);
+	callstack();
 	print STDERR "There is no data\n";
     }
     $position_counter = $position_counter / 3;
@@ -656,13 +658,13 @@ sub Make_Landscape {
     $graph->set(bgclr => 'white', x_label => 'Distance on ORF', y_label => 'kcal/mol',
 		y_label_skip => 2, y_number_format => "%.2f", x_labels_vertical => 1,
 		x_label_skip => 100, line_width => 2, dclrs => [qw(blue red green blue red green)],
-		default_type => 'lines', types => [qw(lines lines lines lines lines lines)],) or die $graph->error;
+		default_type => 'lines', types => [qw(lines lines lines lines lines lines)],) or callstack(), die $graph->error;
     $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    my $gd = $graph->plot(\@mfe_data) or die($graph->error);
+    my $gd = $graph->plot(\@mfe_data) or callstack(), die($graph->error);
     
     my $axes_coords = $graph->get_feature_coordinates('axes');
     my $top_x_coord = $axes_coords->[1];
@@ -684,7 +686,7 @@ sub Make_Landscape {
 	$gd->filledRectangle($slipsite_x_coord, $bottom_y_coord+1, $slipsite_x_coord+1, $top_y_coord-1, $black);
     }
 
-    open(IMG, ">$filename") or die $!;
+    open(IMG, ">$filename") or callstack(), die $!;
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -793,7 +795,7 @@ sub Make_Distribution {
     $graph->set(bgclr => 'white', types => [qw(bars lines lines lines)], x_label => 'kcal/mol',
 		y_label => 'p(x)', y_label_skip => 2, y_number_format => "%.2f",
 		x_labels_vertical => 1, x_label_skip => 1, line_width => 3,
-		dclrs => [qw(blue red green black)], borderclrs => [qw(black)]) or die $graph->error;
+		dclrs => [qw(blue red green black)], borderclrs => [qw(black)]) or callstack(), die $graph->error;
     
     $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -801,7 +803,7 @@ sub Make_Distribution {
     $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     
-    my $gd = $graph->plot(\@data) or die $graph->error;
+    my $gd = $graph->plot(\@data) or callstack(), die $graph->error;
     
     my $axes_coords = $graph->get_feature_coordinates('axes');
     
@@ -818,7 +820,7 @@ sub Make_Distribution {
     my $bl = $gd->colorAllocate(0,0,0);
     $gd->filledRectangle($mfe_xbar_coord, $bottom_y_coord+1 , $mfe_xbar_coord+1, $top_y_coord-1, $bl);
     my $filename = $me->Picture_Filename(type => 'distribution');
-    open(IMG, ">$filename") or print ("Unable to open $filename $!");
+    open(IMG, ">$filename") or callstack(), print ("Unable to open $filename $!");
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -1574,7 +1576,7 @@ sub Picture_Filename {
 	my $command = qq"/bin/mkdir -p $tmpdir";
 	my $output = '';
 	if (!-d $tmpdir) {
-	    open (CMD, "$command |") or die("Could not run $command
+	    open (CMD, "$command |") or callstack(), die("Could not run $command
 Make sure that user $< and/or group $( has write permissions: $!");
 	    while (my $line = <CMD>) {
 		$output .= $line;
@@ -1653,7 +1655,7 @@ sub Make_Directory {
     	my $command = qq(/bin/mkdir -p $directory);
 	my $output = '';
 	if (!-r $directory) {
-	    open (CMD, "$command |") or die("Could not run $command
+	    open (CMD, "$command |") or callstack(), die("Could not run $command
 Make sure that user $< and/or group $( has write permissions: $!");
 	    while (my $line = <CMD>) {
 		$output .= $line;

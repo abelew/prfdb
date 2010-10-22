@@ -12,7 +12,6 @@ $template_config->{EVAL_PERL} = 0;
 $template_config->{INTERPOLATE} = 0;
 $template_config->{POST_CHOMP} = 0;
 $template_config->{pbs_arches} = 'linux';
-$template_config->{num_daemons} = 5;
 $template_config->{perl} = '/usr/local/bin/perl';
 my $template = new Template($template_config);
 

@@ -1721,7 +1721,7 @@ sub Put_MFE {
 	$errorstring = "Undefined value(s) in Put_MFE: $errorstring";
 	$config->PRF_Error($errorstring, $data->{species}, $data->{accession});
     }
-    $data->{sequence} =~ tr/actgu/ACTGU/;
+    $data->{sequence} =~ tr/actgun/ACTGUN/;
     my $statement = qq(INSERT INTO $table (genome_id, species, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?));
     
     my ($cp,$cf,$cl) = caller();

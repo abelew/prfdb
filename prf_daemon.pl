@@ -405,6 +405,9 @@ sub PRF_Gatherer {
 	  my $pk = $pknots_mfe_info->{mfe};
 	  my $nu = $nupack_mfe_info->{mfe};
 	  my $vi = $vienna_mfe_info->{mfe};
+          print "Pknots was undefined in do_comparison\n" if (!defined($pk));
+          print "Nupack was undefined in do_comparison\n" if (!defined($pk));
+          print "Vienna was undefined in do_comparison\n" if (!defined($pk));
 	  my $comparison_string = "$pk,$nu,$vi";
 	  $comparison_string =~ s/\s+//g;
 	  my $update_string = qq(UPDATE mfe SET compare_mfes = '$comparison_string' WHERE accession = '$state->{accession}' AND seqlength = '$state->{seqlength}' AND start = '$slipsite_start');

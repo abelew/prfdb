@@ -85,8 +85,8 @@ sub new {
     $me->{ENV_LIBRARY_PATH} = $ENV{LD_LIBRARY_PATH} if (!defined($me->{ENV_LIBRARY_PATH}));
     $me->{EVAL_PERL} = 0 if (!defined($me->{EVAL_PERL}));
     $me->{exe_hotknots} = 'HotKnot' if (!defined($me->{exe_hotknots}));
-    $me->{exe_nupack} = 'Fold.out' if (!defined($me->{exe_nupack}));
-    $me->{exe_nupack_boot} = 'Fold.out.boot' if (!defined($me->{exe_nupack_boot}));
+    $me->{exe_nupack} = 'Fold.out.nopairs' if (!defined($me->{exe_nupack}));
+    $me->{exe_nupack_boot} = 'Fold.out.boot.nopairs' if (!defined($me->{exe_nupack_boot}));
     $me->{exe_pknots} = 'pknots' if (!defined($me->{exe_pknots}));
     $me->{exe_perl} = '/usr/bin/perl -w' if (!defined($me->{exe_perl}));
     $me->{exe_rmprune} = 'rmprune' if (!defined($me->{exe_rmprune}));
@@ -118,14 +118,14 @@ sub new {
     $me->{max_mfe} = 10.0 if (!defined($me->{max_mfe}));
     $me->{niceness} = 20 if (!defined($me->{niceness}));
     $me->{num_daemons} = '60' if (!defined($me->{num_daemons}));
-    $me->{nupack_nopairs_hack} = 0 if (!defined($me->{nupack_nopairs_hack}));
+    $me->{nupack_nopairs_hack} = 1 if (!defined($me->{nupack_nopairs_hack}));
     $me->{open_files} = [] if (!defined($me->{open_files}));
     $me->{output_file} = 'output.txt' if (!defined($me->{output_file}));
     $me->{pbs_arches} = 'aix4 irix6 linux-ia64' if (!defined($me->{pbs_arches}));
     $me->{pbs_cpu} = '1' if (!defined($me->{pbs_cpu}));
     $me->{pbs_memory} = '2000' if (!defined($me->{pbs_memory}));
     $me->{pbs_partialname} = 'fold' if (!defined($me->{pbs_partialname}));
-    $me->{pbs_shell} = '/bin/sh' if (!defined($me->{pbs_shell}));
+    $me->{pbs_shell} = '/bin/bash' if (!defined($me->{pbs_shell}));
     $me->{pbs_template} = 'pbs_template' if (!defined($me->{pbs_template}));
     $me->{POST_CHOMP} = 1 if (!defined($me->{POST_CHOMP}));
     $me->{queue_table} = 'queue' if (!defined($me->{queue_table}));

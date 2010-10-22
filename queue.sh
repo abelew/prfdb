@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 . ~/.bashrc
 cd $PRFDB_HOME
 QSTAT=/usr/local/torque/bin/qstat
@@ -7,8 +8,8 @@ PARTIAL=`grep pbs_partialname prfdb.conf | awk -F= '{print $2}' | sed 's/'\''//g
 for arch in lin
   do
   for num in {1..5}
-
     do
+    num=`echo $num | awk '{printf "%02d", $num}'`
     EXIST=`$QSTAT | grep $USERID | grep $PARTIAL | awk '{print $2}' | grep $arch | awk -F'_' '{print $3}' | grep $num`
     if [ "$EXIST" = "" ]; then
 	if [ $arch = "lin" ]; then
