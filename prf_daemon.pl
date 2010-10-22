@@ -2,8 +2,8 @@
 use strict;
 use vars qw"$db $config";
 use DBI;
-use lib "$ENV{HOME}/usr/lib/perl5";
-use lib 'lib';
+use lib "$ENV{PRFDB_HOME}/usr/lib/perl5";
+use lib "$ENV{PRFDB_HOME}/lib";
 use PRFConfig;
 use PRFdb qw"AddOpen RemoveFile";
 use RNAMotif;
