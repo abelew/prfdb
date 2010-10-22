@@ -102,7 +102,7 @@ __________________________
 		    $front_pos++;         ## The next time we jump to front, jump to next
 		    $spaces++;
 		    $times_in_stem = 0;
-		} elsif  $spaces <= $me->{max_spaces}) {
+		} elsif ($spaces <= $me->{max_spaces}) {
 		## The current position is a dot and we have not passed max_spaces
 		## this may be a bulge of an existing stem
 		$next = $back_pos;    ## Jump to the back

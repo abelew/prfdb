@@ -47,8 +47,7 @@ sub Nupack_NOPAIRS {
     };
     chdir($config->{workdir});
     my $command;
-    callstack();
-    die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
+    callstack(), die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
     die("$config->{workdir}/dataS_G.rna is missing.") unless ( -r "$config->{workdir}/dataS_G.rna" );
 
     if (defined($pseudo) and $pseudo eq 'nopseudo') {
