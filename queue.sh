@@ -1,13 +1,13 @@
 #!/bin/bash
-set -x
 . ~/.bashrc
 cd $PRFDB_HOME
 QSTAT=/usr/local/torque/bin/qstat
 USERID=`id | awk -F'(' '{print $2}' | awk -F ')' '{print $1}'`
 PARTIAL=`grep pbs_partialname prfdb.conf | awk -F= '{print $2}' | sed 's/'\''//g'`
+DAEMONS=`grep num_daemons prfdb.conf | awk -F= '{print $2}'`
 for arch in lin
   do
-  for num in {1..5}
+for num in $(eval echo {1..$DAEMONS})
     do
     num=`echo $num | awk '{printf "%02d", $num}'`
     EXIST=`$QSTAT | grep $USERID | grep $PARTIAL | awk '{print $2}' | grep $arch | awk -F'_' '{print $3}' | grep $num`
