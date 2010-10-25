@@ -1584,6 +1584,8 @@ VALUES(?,?,?,?,?,?,?,?,?)";
                caller => "$cp, $cf, $cl",
                vars => [$datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
     my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
+
+    $me->MyExecute(statement => qq"INSERT IGNORE INTO gene_info (genome_id, accession, species, genename, comment, defline) SELECT id, accession, species, genename, comment, defline FROM genome WHERE id = '$last_id'");
 ## The following line is very important to ensure that multiple
 ## calls to this don't end up with
 ## Increasingly long sequences
