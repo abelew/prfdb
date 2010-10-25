@@ -1,5 +1,6 @@
 #!/bin/bash
 . ~/.bashrc
+set -x
 cd $PRFDB_HOME
 QSTAT=/usr/local/torque/bin/qstat
 USERID=`id | awk -F'(' '{print $2}' | awk -F ')' '{print $1}'`

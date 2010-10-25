@@ -107,6 +107,7 @@ sub new {
     $me->{index_species} = ['saccharomyces_cerevisiae', 'homo_sapiens', 'bos_taurus', 'danio_rerio', 'mus_musculus', 'rattus_norvegicus', 'xenopus_laevis', 'xenopus_tropicalis', 'saccharomyces_kudriavzevii', 'saccharomyces_castellii', 'saccharomyces_kluyveri', 'saccharomyces_bayanus', 'saccharomyces_paradoxus', 'schizosaccharomyces_pombe', 'saccharomyces_mikatae', 'caenorhabiditis_elegans', 'escherichia_coli', 'drosophila_melanogaster', 'virus'] if (!defined($me->{index_species}));
     $me->{INCLUDE_PATH} = 'html/' if (!defined($me->{INCLUDE_PATH}));
     $me->{INTERPOLATE} = 1 if (!defined($me->{INTERPOLATE}));
+    $me->{jobs} = 0 if (!defined($me->{jobs}));
     $me->{landscape_seqlength} = 105 if (!defined($me->{landscape_seqlength}));
     $me->{log} = 'prfdb.log' if (!defined($me->{log}));
     $me->{log_error} = 'prfdb.errors' if (!defined($me->{log_error}));
@@ -121,12 +122,13 @@ sub new {
     $me->{nupack_nopairs_hack} = 1 if (!defined($me->{nupack_nopairs_hack}));
     $me->{open_files} = [] if (!defined($me->{open_files}));
     $me->{output_file} = 'output.txt' if (!defined($me->{output_file}));
-    $me->{pbs_arches} = 'aix4 irix6 linux-ia64' if (!defined($me->{pbs_arches}));
+    $me->{pbs_arches} = 'linux' if (!defined($me->{pbs_arches}));
     $me->{pbs_cpu} = '1' if (!defined($me->{pbs_cpu}));
     $me->{pbs_memory} = '2000' if (!defined($me->{pbs_memory}));
     $me->{pbs_partialname} = 'fold' if (!defined($me->{pbs_partialname}));
     $me->{pbs_shell} = '/bin/bash' if (!defined($me->{pbs_shell}));
     $me->{pbs_template} = 'pbs_template' if (!defined($me->{pbs_template}));
+    $me->{perl} = '/usr/local/bin/perl' if (!defined($me->{perl}));
     $me->{POST_CHOMP} = 1 if (!defined($me->{POST_CHOMP}));
     $me->{queue_table} = 'queue' if (!defined($me->{queue_table}));
     $me->{randomize_id} = 0 if (!defined($me->{randomize_id}));
@@ -203,9 +205,9 @@ sub new {
 	'input_fasta:s' => \$conf{input_fasta},
 	'input_file:s' => \$conf{input_file},
 	'iterations:i' => \$conf{boot_iterations},
+	'jobs' => $conf{jobs},
 	'landscape_length:i' => \$conf{landscape_seqlength},
 	'length:i' => \$conf{seqlength},
-	'make_jobs' => \$conf{make_jobs},
 	'make_landscape' => \$conf{make_landscape},
 	'makeblast' => \$conf{makeblast},
 	'maintain' => \$conf{maintain},
@@ -456,7 +458,6 @@ hotknots       explicitly turn on/off hotknots
 boot           turn on/off randomization
 utr            turn on/off the folding in the 3' utr
 checks         perform a series of checks to see if the database is ready for use
-make_jobs      create job files for PBS
 ";
     print $helpstring;
     exit(0);
