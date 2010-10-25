@@ -2,8 +2,8 @@
 use strict;
 use vars qw"$db $config";
 use DBI;
-use lib "$ENV{HOME}/usr/lib/perl5";
-use lib 'lib';
+use lib "$ENV{PRFDB_HOME}/usr/lib/perl5";
+use lib "$ENV{PRFDB_HOME}/lib";
 use PRFConfig;
 use PRFdb qw"AddOpen RemoveFile";
 use RNAMotif;
@@ -52,25 +52,10 @@ if ($config->{checks}) {
     Check_Blast();
 }
 ## Some Arguments should be checked before others...
-## These first arguments are not exclusive and so are separate ifs
-if (defined($config->{shell})) {
-    my $host = $config->{database_host}->[0];
-    my @command = ('mysql', '-h', "$host", '-u', "$config->{database_user}", "--password=$config->{database_pass}", "$config->{database_name}");
-    system(@command);
-    exit($?);
-}
-if ($config->{create_boot}) {
-    die("Need species unless") unless (defined($config->{species}));
-    my $table = "boot_$config->{species}";
-    $db->Create_Boot($table);
-}
-if (defined($config->{import_genbank})) {
-    if (!defined($config->{accession})) {
-	die("This operation also requires an accession.");
-    }
-    Import_Genbank($config->{import_genbank}, $config->{accession});
+if (defined($config->{jobs})) {
+    Make_Queue_Jobs();
     exit(0);
-}
+}    
 if (defined($config->{dbexec})) {
     $db->MyExecute(statement => "$config->{dbexec}");
     exit(0);
@@ -144,9 +129,6 @@ if (defined($config->{input_file})) {
 	Read_Accessions($config->{input_file});
     }
 }
-if (defined($config->{make_jobs})) {
-    Make_Jobs();  ## USED FOR PBS SYSTEMS
-}
 if (defined($config->{accession})) {
     $state->{queue_id} = 0;
     ## Dumb hack lives on
@@ -191,22 +173,22 @@ MAINLOOP: until (defined($state->{time_to_die})) {
     if ($state->{done_count} > 60 and !defined($config->{master})) {$state->{time_to_die} = 1}
     if (defined($config->{seqlength})) {
 	$state->{seqlength} = $config->{seqlength};
-    } 
-    else {
+    } else {
 	$state->{seqlength} = 100;
     }
-    my $import_accession = $db->Get_Import_Queue();
-    if (defined($import_accession)) {
-	my $import = $db->Import_CDS($import_accession);
-	if (defined($import) and $import !~ m/Error/) {
-	    if ($import == 0) {
-		print "Did not import $import_accession, it has no coding sequence defined.\n";
-	    } else {
-		print "Imported $import_accession added $import bases.\n";
+    if (defined($config->{process_import_queue})) {
+	my $import_accession = $db->Get_Import_Queue();
+	if (defined($import_accession)) {
+	    my $import = $db->Import_CDS($import_accession);
+	    if (defined($import) and $import !~ m/Error/) {
+		if ($import == 0) {
+		    print "Did not import $import_accession, it has no coding sequence defined.\n";
+		} else {
+		    print "Imported $import_accession added $import bases.\n";
+		}
 	    }
 	}
     }
-
     my $ids = $db->Grab_Queue();
     $state->{queue_table} = $ids->{queue_table};
     $state->{queue_id} = $ids->{queue_id};
@@ -405,6 +387,9 @@ sub PRF_Gatherer {
 	  my $pk = $pknots_mfe_info->{mfe};
 	  my $nu = $nupack_mfe_info->{mfe};
 	  my $vi = $vienna_mfe_info->{mfe};
+          print "Pknots was undefined in do_comparison\n" if (!defined($pk));
+          print "Nupack was undefined in do_comparison\n" if (!defined($pk));
+          print "Vienna was undefined in do_comparison\n" if (!defined($pk));
 	  my $comparison_string = "$pk,$nu,$vi";
 	  $comparison_string =~ s/\s+//g;
 	  my $update_string = qq(UPDATE mfe SET compare_mfes = '$comparison_string' WHERE accession = '$state->{accession}' AND seqlength = '$state->{seqlength}' AND start = '$slipsite_start');
@@ -565,8 +550,7 @@ sub Check_Environment {
 	my $copy_command;
 	if ($config->{has_modperl}) {
 	    $copy_command = qq(cp $config->{base}/html/htaccess.modperl $config->{base}/.htaccess);
-	}
-	else {
+	} else {
 	    $copy_command = qq(cp $config->{base}/html/htaccess.cgi $config->{base}/.htaccess);
 	}
 	system($copy_command);
@@ -588,20 +572,17 @@ sub Print_Config {
     ### This is a little function designed to give the user a chance to abort
     if   ($config->{nupack_nopairs_hack}) {
 	print "I AM using a hacked version of nupack!\n"; 
-    }
-    else {
+    } else {
 	print "I AM NOT using a hacked version of nupack!\n";
     }
     if ($config->{do_nupack}) {
 	print "I AM doing a nupack fold using the program: $config->{exe_nupack}\n";
-    }
-    else {
+    } else {
 	print "I AM NOT doing a nupack fold\n"; 
     }
     if ($config->{do_pknots}) {
 	print "I AM doing a pknots fold using the program: $config->{exe_pknots}\n";
-    }
-    else {
+    } else {
 	print "I AM NOT doing a pknots fold\n";
     }
     if ($config->{do_boot}) {
@@ -619,13 +600,12 @@ sub Print_Config {
 	}
 	print "nupack is using the following program for bootstrap:
 $nu_boot and running: $config->{boot_iterations} times\n";
-    } 
-    else {
+    } else {
 	print "I AM NOT doing a boot.\n";
     }
     if ($config->{arch_specific_exe}) {
-	print "I AM USING ARCH SPECIFIC EXECUTABLES\n"; }
-    else {
+	print "I AM USING ARCH SPECIFIC EXECUTABLES\n";
+    } else {
 	print "I am not using arch specific executables\n"; 
     }
     if (ref($config->{seqlength}) eq 'ARRAY') {
@@ -668,8 +648,7 @@ sub Check_Boot_Connectivity {
 						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
 		$new_mfe_id = Check_Nupack($fold_search, $slipsite_start);
-	    }
-	    elsif ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'pknots') {
+	    } elsif ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'pknots') {
 		### Then there is no pknots information :(
 		if (!defined($state->{accession})) {
 		    die("The accession is no longer defined. This cannot be allowed.")
@@ -702,8 +681,7 @@ sub Check_Folds {
 						 $state->{seqlength}, $type);
 	$mfe_id = $state->{$mfe_varname};
 	print "Check_Folds $type - already done: state: $mfe_id\n" if (defined($config->{debug}));
-    }
-    else { ### If there are NO existing folds...
+    } else { ### If there are NO existing folds...
 	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n" if (defined($config->{debug}));
 	my ($info, $mfe_id);
 	if ($type eq 'pknots') {
@@ -711,20 +689,17 @@ sub Check_Folds {
 	    $mfe_id = $db->Put_Pknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Pknots and returned $mfe_id\n" if (defined($config->{debug}));
-	}
-	elsif ($type eq 'nupack') {
+	} elsif ($type eq 'nupack') {
 	    $info = $fold_search->Nupack_NOPAIRS();
 	    $mfe_id = $db->Put_Nupack($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Nupack and returned $mfe_id\n" if (defined($config->{debug}));
-	}
-	elsif ($type eq 'hotknots') {
+	} elsif ($type eq 'hotknots') {
 	    $info = $fold_search->Hotknots();
 	    $mfe_id = $db->Put_Hotknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Hotknots and returned $mfe_id\n" if (defined($config->{debug}));
-	}
-	else {
+	} else {
 	    die("Non existing type in Check_Folds");
 	}
     }    ### Done checking for pknots folds
@@ -818,46 +793,6 @@ sub Make_Landscape_Tables {
 	$db->Create_Landscape($sp);
     }
     exit(0);
-}
-
-sub Make_Jobs {
-    use lib "$ENV{HOME}/usr/perl.irix/lib";
-    use Template;
-    use PRFConfig;
-    my $template_config = $config;
-    $template_config->{PRE_PROCESS} = undef;
-    $template_config->{EVAL_PERL} = 0;
-    $template_config->{INTERPOLATE} = 0;
-    $template_config->{POST_CHOMP} = 0;
-    my $template = new Template($template_config);
-    
-    my $base = $template_config->{base};
-    my $prefix = $template_config->{prefix};
-    my $input_file = "$prefix/descr/job_template";
-    my @arches = split(/ /, $config->{pbs_arches});
-    foreach my $arch (@arches) {
-	system("mkdir jobs/$arch") unless (-d "jobs/$arch");
-	foreach my $daemon ("01" .. $config->{num_daemons}) {
-	    my $output_file = "jobs/$arch/$daemon";
-	    my $name = $template_config->{pbs_partialname};
-	    my $pbs_fullname = "${name}${daemon}_${arch}";
-	    my $incdir = "${base}/usr/perl.${arch}/lib";
-	    my $vars = {
-		pbs_shell => $template_config->{pbs_shell},
-		pbs_memory => $template_config->{pbs_memory},
-		pbs_cpu => $template_config->{pbs_cpu},
-		pbs_arch => $arch,
-		pbs_name => $pbs_fullname,
-		pbs_cput => $template_config->{pbs_cput},
-		prefix => $prefix,
-		perl => $template_config->{perl},
-		incdir => $incdir,
-		daemon_name => $template_config->{daemon_name},
-		job_num => $daemon,
-	    };
-	    $template->process($input_file, $vars, $output_file) or die $template->error();
-	}
-    }
 }
 
 sub Zscore {
@@ -1173,6 +1108,51 @@ sub CLEANUP {
     PRFdb::RemoveFile('all') if (defined($config->{remove_end}));
     print "\n\nCaught Fatal signal.\n\n";
     exit(0);
+}
+
+sub Make_Queue_Jobs {
+    ## copying out of the perl script make_jobs.pl
+    use Template;
+    my $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
+    chdir($config->{base});
+    my $template_config = $config;
+    $template_config->{PRE_PROCESS} = undef;
+    $template_config->{EVAL_PERL} = 0;
+    $template_config->{INTERPOLATE} = 0;
+    $template_config->{POST_CHOMP} = 0;
+    my $template = new Template($template_config);
+    my $base = $template_config->{base};
+    my $input_file = "$base/descr/job_template";
+    my @arches = split(/ /, $config->{pbs_arches});
+    foreach my $arch (@arches) {
+	system("mkdir jobs/$arch") unless (-d "jobs/$arch");
+	my $archchar = substr($arch,0,3);
+	foreach my $daemon ("01" .. $config->{num_daemons}) {
+	    my $output_file = "jobs/$arch/$daemon";
+	    ## First delete the existing job file in case a change has been made to the
+	    ## configuration file
+	    unlink($output_file);
+	    my $name = $template_config->{pbs_partialname};
+	    my $pbs_fullname = "${name}_${archchar}_${daemon}";
+	    my $incdir = "${base}/usr/perl.${arch}/lib";
+	    my $vars = {
+		pbs_shell => $template_config->{pbs_shell},
+		pbs_memory => $template_config->{pbs_memory},
+		pbs_cpu => $template_config->{pbs_cpu},
+		pbs_arch => $arch,
+		pbs_name => $pbs_fullname,
+		pbs_cput => $template_config->{pbs_cput},
+		perl => $template_config->{perl},
+		incdir => $incdir,
+		daemon_name => $template_config->{daemon_name},
+		job_num => $daemon,
+		base => $config->{base},
+	    };
+	    $template->process($input_file, $vars, $output_file) or die $template->error();
+#	    system("/usr/local/bin/qsub $output_file");
+#	    print "Going to run /usr/local/bin/qsub $output_file\n";
+	}
+    }
 }
 
 END {

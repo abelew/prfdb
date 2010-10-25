@@ -47,16 +47,15 @@ sub Nupack_NOPAIRS {
     };
     chdir($config->{workdir});
     my $command;
-    die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
+    callstack(), die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
     die("$config->{workdir}/dataS_G.rna is missing.") unless ( -r "$config->{workdir}/dataS_G.rna" );
 
     if (defined($pseudo) and $pseudo eq 'nopseudo') {
-	die("$nupack_boot is missing.") unless ( -r $nupack_boot );
+	callstack(), die("$nupack_boot is missing.") unless ( -r $nupack_boot );
 	$command = qq($nupack_boot $inputfile 2>$errorfile);
-    } 
-    else {
+    } else {
 	warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{exe_nupack} =~ /nopairs/);
-	die("$nupack is missing.") unless (-r $nupack);
+	callstack(), die("$nupack is missing.") unless (-r $nupack);
 	$command = qq($nupack $inputfile 2>$errorfile);
     }
     print "NUPACK_NOPAIRS: infile: $inputfile accession: $accession start: $start
@@ -77,11 +76,9 @@ command: $command\n" if (defined($config->{debug}));
 	if ($count == 15) {
 	    my ($crap, $len) = split(/\ \=\ /, $line);
 	    $return->{seqlength} = $len;
-	}
-	elsif ($count == 17) {    ## Line 17 returns the input sequence
+	} elsif ($count == 17) {    ## Line 17 returns the input sequence
 	    $return->{sequence} = $line;
-	}
-	elsif ($line =~ /^\d+\s\d+$/) {
+	} elsif ($line =~ /^\d+\s\d+$/) {
 	    my ($fiveprime, $threeprime) = split(/\s+/, $line);
 	    my $five = $fiveprime - 1;
 	    my $three = $threeprime - 1;
@@ -89,21 +86,17 @@ command: $command\n" if (defined($config->{debug}));
 	    $nupack_output[$five] = $three;
 	    $pairs++;
 	    $count--;
-	}
-	elsif ($count == 18) {    ## Line 18 returns paren output
+	} elsif ($count == 18) {    ## Line 18 returns paren output
 	    $return->{parens} = $line;
-	}
-	elsif ($count == 19) {    ## Get the MFE here
+	} elsif ($count == 19) {    ## Get the MFE here
 	    my $tmp = $line;
 	    $tmp =~ s/^mfe\ \=\ //g;
 	    $tmp =~ s/\ kcal\/mol//g;
 	    $return->{mfe} = $tmp;
-	}
-	elsif ($count == 20) {    ## Is it a pseudoknot?
+	} elsif ($count == 20) {    ## Is it a pseudoknot?
 	    if ($line eq 'pseudoknotted!') {
 		$return->{knotp} = 1;
-	    }
-	    else {
+	    } else {
 		$return->{knotp} = 0;
 	    }
 	}
@@ -117,11 +110,11 @@ command: $command\n" if (defined($config->{debug}));
     }
     if ($nupack_return eq '139') {
 	$config->PRF_Error("Nupack file permission error on out.pair/out.ene", $accession);
-	die("Nupack file permission error.");
+	callstack(), die("Nupack file permission error.");
     }
     unless ($nupack_return eq '0' or $nupack_return eq '256') {
 	$config->PRF_Error("Nupack Error running $command: $!", $accession);
-	  die("Nupack Error running $command\n
+	  callstack(), die("Nupack Error running $command\n
 Error:  $command $!
 Return: $nupack_return\n");
     }
@@ -134,10 +127,12 @@ Return: $nupack_return\n");
     $return->{output} = $nupack_output_string;
     $return->{pairs}  = $pairs;
     if (!defined($return->{output})) {
+	callstack();
 	print STDERR "Output is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Output is not defined in RNAFolders", $me->{species}, $accession);
     }
     if (!defined($return->{pairs})) {
+	callstack();
 	print STDERR "Pairs is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Pairs is not defined in RNAFolders", $me->{species}, $accession);
     }
@@ -146,8 +141,7 @@ Return: $nupack_return\n");
     if (defined($config->{max_spaces})) {
 	my $max_spaces = $config->{max_spaces};
 	$parser = new PkParse(debug => $config->{debug}, max_spaces => $max_spaces);
-    }
-    else {
+    } else {
 	$parser = new PkParse(debug => $config->{debug});
     }
     my $out = $parser->Unzip(\@nupack_output);
@@ -162,6 +156,7 @@ Return: $nupack_return\n");
     $return->{barcode} = $barcode;
     chdir($config->{base});
     if (!defined($return->{sequence})) {
+	callstack();
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
 	$return->{sequence} = $me->{sequence};
@@ -177,8 +172,8 @@ sub Vienna {
     my $start = $me->{start};
     my $config = $me->{config};
     if (!-r $inputfile) {
-	print "Missing the inputfile.\n";
 	callstack();
+	print "Missing the inputfile.\n";
 	open(NEWIN, ">$inputfile");
 	my $db = new PRFdb(config => $config);
 	my $seq = $db->MySelect("SELECT slipsite, sequence FROM mfe where accession = ?", vars => [$accession]);
@@ -193,8 +188,8 @@ ${missing_slipsite}${missing_sequence}
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
     if (!defined($seq)) {
-	print STDERR "Sequence is not defined in Vienna.\n";
 	callstack();
+	print STDERR "Sequence is not defined in Vienna.\n";
     }
     my $errorfile = qq(${inputfile}_vienna.err);
     AddOpen($errorfile);
@@ -237,6 +232,7 @@ command: $command\n" if (defined($config->{debug}));
     close(VI);
     RemoveFile($errorfile);
     if (!defined($return->{sequence})) {
+	callstack();
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
     }
@@ -268,13 +264,12 @@ sub Pknots {
     chdir($config->{workdir});
     my $command;
     if (!-r $config->{exe_pknots}) {
-	die("pknots is missing. $config->{exe_pknots}");
+	callstack(), die("pknots is missing. $config->{exe_pknots}");
     }
     if (defined($pseudo) and $pseudo eq 'nopseudo') {
-	$command = qq($config->{exe_pknots} $inputfile 2>$errorfile);
-    }
-    else {
-	$command = qq($config->{exe_pknots} -k $inputfile 2>$errorfile);
+	$command = qq"$config->{exe_pknots} $inputfile 2>$errorfile";
+    } else {
+	$command = qq"$config->{exe_pknots} -k $inputfile 2>$errorfile";
     }
     print "PKNOTS: infile: $inputfile accession: $accession start: $start
 command: $command\n" if (defined($config->{debug}));
@@ -293,19 +288,15 @@ command: $command\n" if (defined($config->{debug}));
 	if ($line =~ /^NAM/) {
 	    ($crap, $return->{slipsite}) = split(/NAM\s+/, $line);
 	    $return->{slipsite} =~ tr/actgTu/ACUGUU/;
-	}
-	elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
+	} elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
 	    $line_to_read = $counter + 2;
-	}
-	elsif (defined($line_to_read) and $line_to_read == $counter) {
+	} elsif (defined($line_to_read) and $line_to_read == $counter) {
 	    $line =~ s/^\s+//g;
 	    $line =~ s/$/ /g;
 	    $string .= $line;
-	}
-	elsif ($line =~ /\/mol\)\:\s+/) {
+	} elsif ($line =~ /\/mol\)\:\s+/) {
 	    ($crap, $return->{mfe}) = split(/\/mol\)\:\s+/, $line);
-	}
-	elsif ($line =~ /found\:\s+/) {
+	} elsif ($line =~ /found\:\s+/) {
 	    ($crap, $return->{pairs}) = split(/found\:\s+/, $line);
 	}
     }    ## For every line of pknots
@@ -313,8 +304,8 @@ command: $command\n" if (defined($config->{debug}));
     ## CLOSE PK in Pknots
     my $pknots_return = $?;
     unless ($pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134') {
+	callstack();
 	$config->PRF_Error("Pknots Error running $command: $!", $accession);
-#    die("Pknots Error! $!");
     }
     RemoveFile($errorfile);
     $string =~ s/\s+/ /g;
@@ -322,8 +313,7 @@ command: $command\n" if (defined($config->{debug}));
     if (defined($config->{max_spaces})) {
 	my $max_spaces = $config->{max_spaces};
 	$parser = new PkParse(debug => $config->{debug}, max_spaces => $max_spaces);
-    }
-    else {
+    } else {
 	$parser = new PkParse(debug => $config->{debug});
     }
     my @struct_array = split(/\s+/, $string);
@@ -340,8 +330,7 @@ command: $command\n" if (defined($config->{debug}));
     $return->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
     if ($parser->{pseudoknot} == 0) {
 	$return->{knotp} = 0;
-    }
-    else {
+    } else {
 	$return->{knotp} = 1;
     }
     if ($return->{parens} =~ /\{/) {
@@ -349,6 +338,7 @@ command: $command\n" if (defined($config->{debug}));
     }
     chdir($config->{base});
     if (!defined($return->{sequence})) {
+	callstack();
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
     }
@@ -365,8 +355,7 @@ sub Get_Sequence_From_Input {
 	chomp $line;
 	if ($line =~ /^\>/) {
 	    next;
-	}
-	else {
+	} else {
 	    $seq .= $line;
 	}
     }
@@ -386,8 +375,7 @@ sub Get_Slipsite_From_Input {
 	    ($slipsite, $crap) = split(/ /, $line);
 	    $slipsite =~ tr/actgTu/ACUGUU/;
 	    $slipsite =~ s/\>//g;
-	}
-	else {
+	} else {
 	    next;
 	}
     }
@@ -425,18 +413,14 @@ sub Pknots_Boot {
 	chomp $line;
 	if ($line =~ /^NAM/) {
 	    my ($crap, $name ) = split( /NAM\s+/, $line);
-	}
-	elsif ($line =~ m/\/mol\)\:\s+/) {
+	} elsif ($line =~ m/\/mol\)\:\s+/) {
 	    ($crap, $return->{mfe}) = split(/\/mol\)\:\s+/, $line);
-	}
-	elsif ($line =~ /found\:\s+/) {
+	} elsif ($line =~ /found\:\s+/) {
 	    ($crap, $return->{pairs}) = split(/found\:\s+/, $line);
 	    $uninteresting = 1;
-	}
-	elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
+	} elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
 	    $line_to_read = $counter + 2;
-	}
-	elsif (defined($line_to_read) and $line_to_read == $counter) {
+	} elsif (defined($line_to_read) and $line_to_read == $counter) {
 	    $line =~ s/^\s+//g;
 	    $line =~ s/$/ /g;
 	    $string .= $line;
@@ -446,8 +430,8 @@ sub Pknots_Boot {
     ## CLOSE PK in Pknots_Boot
     my $pknots_return = $?;
     unless ($pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134') {
+	callstack();
 	$config->PRF_Error("Pknots Error: $command $!", $accession);
-#    die("Pknots Error! $command $!");
     }
     RemoveFile($errorfile);
     return ($return);
@@ -491,14 +475,12 @@ sub Nupack_Boot_NOPAIRS {
 	if ($line =~ /^\d+\s\d+$/) {
 	    $pairs++;
 	    $counter--;
-	}
-	elsif ($counter == 19) {
+	} elsif ($counter == 19) {
 	    my $tmp = $line;
 	    $tmp =~ s/^mfe\ \=\ //g;
 	    $tmp =~ s/\ kcal\/mol//g;
 	    $return->{mfe} = $tmp;
-	}
-	else {
+	} else {
 	    next;
 	}
     }    ## End of the output from nupack_boot
@@ -506,11 +488,13 @@ sub Nupack_Boot_NOPAIRS {
     ## CLOSE NU in Nupack_Boot_NOPAIRS
     my $nupack_return = $?;
     if ($nupack_return eq '139') {
+	callstack();
 	$config->PRF_Error("Nupack file permission error on out.pair/out.ene", $accession);
 	die("Nupack file permission error.");
     }
     unless ($nupack_return eq '0' or $nupack_return eq '256') {
 	$config->PRF_Error("Nupack Error running $command: $!", $accession);
+	callstack();
 	die("Nupack Error running $command: $!");
     }
     RemoveFile($errorfile);
@@ -544,8 +528,7 @@ sub Hotknots {
     my $tempfile = $inputfile;
     if ($tempfile =~ m/\.fasta/) {
       $tempfile =~ s/\.fasta/\.seq/g;
-    }
-    else {
+    } else {
       $tempfile .= ".seq";
     }
     open(IN, ">$tempfile");
@@ -554,7 +537,7 @@ sub Hotknots {
     my $command = qq"$config->{workdir}/$config->{exe_hotknots} -I $seqname -noPS -b";
     print "HotKnots: infile: $inputfile accession: $accession start: $start
 command: $command\n" if (defined($config->{debug}));
-    open(HK, "$command |") or print STDERR "problem with $command $!";
+    open(HK, "$command |") or callstack(), print STDERR "problem with $command $!";
     while(my $line = <HK>) {
 #	print $line;
 	$ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
@@ -570,17 +553,16 @@ command: $command\n" if (defined($config->{debug}));
 	if ($basepair =~ /\d+/) {
 	    if ($basepair == 0) {
 		$ret->{output} .= '. ';
-	    }
-	    elsif ($basepair > 0) {
+	    } elsif ($basepair > 0) {
 		my $basepair_num = $basepair - 1;
 		$ret->{output} .= "$basepair_num ";
 		$ret->{pairs}++;
-	    }
-	    else {
+	    } else {
+		callstack();
 		die("Something is fubared");
 	    }
-	}
-	else {
+	} else {
+	    callstack();
 	    die("Something is fubared");
 	}
     }
@@ -612,12 +594,12 @@ command: $command\n" if (defined($config->{debug}));
     $ret->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
     if ($parser->{pseudoknot} == 0) {
 	$ret->{knotp} = 0;
-    }
-    else {
+    } else {
 	$ret->{knotp} = 1;
     }
     chdir($config->{base});
     if (!defined($ret->{sequence})) {
+	callstack();
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
     }
@@ -670,21 +652,18 @@ command: $command\n" if (defined($config->{debug}));
         if ($basepair =~ /\d+/) {
             if ($basepair == 0) {
                 $ret->{output} .= '. ';
-            }
-            elsif ($basepair > 0) {
+            } elsif ($basepair > 0) {
                 my $basepair_num = $basepair - 1;
                 $ret->{output} .= "$basepair_num ";
                 $ret->{pairs}++;
-            }
-            else {
+            } else {
+		callstack();
                 print STDERR "The number of basepairs is negative?  $basepair\n";
-                #die("Something is fubared");
                 last;
             }
-        }
-        else {
+        } else {
+	    callstack();
             print STDERR "The base pair is not a number: $basepair\n";
-            #die("Something is fubared");
             last;
         }
     }
@@ -715,8 +694,7 @@ command: $command\n" if (defined($config->{debug}));
     $ret->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
     if ($parser->{pseudoknot} == 0) {
         $ret->{knotp} = 0;
-    }
-    else {
+    } else {
         $ret->{knotp} = 1;
     }
     chdir($config->{base});

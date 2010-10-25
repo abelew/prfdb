@@ -46,7 +46,6 @@ sub Search {
     $sequence =~ s/\d+//g;
     $sequence =~ tr/Uu/Tt/;
     my @tmp = split(//, $sequence);
-    print STDERR "Got here? $sequence $location $type<br>\n";
 #    foreach my $char (@tmp) {
 #	if ($char != "A" and $char != "a" 
 #	    and $char != "T" and $char != "t" 
