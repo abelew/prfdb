@@ -107,7 +107,6 @@ sub new {
     $me->{index_species} = ['saccharomyces_cerevisiae', 'homo_sapiens', 'bos_taurus', 'danio_rerio', 'mus_musculus', 'rattus_norvegicus', 'xenopus_laevis', 'xenopus_tropicalis', 'saccharomyces_kudriavzevii', 'saccharomyces_castellii', 'saccharomyces_kluyveri', 'saccharomyces_bayanus', 'saccharomyces_paradoxus', 'schizosaccharomyces_pombe', 'saccharomyces_mikatae', 'caenorhabiditis_elegans', 'escherichia_coli', 'drosophila_melanogaster', 'virus'] if (!defined($me->{index_species}));
     $me->{INCLUDE_PATH} = 'html/' if (!defined($me->{INCLUDE_PATH}));
     $me->{INTERPOLATE} = 1 if (!defined($me->{INTERPOLATE}));
-    $me->{jobs} = 0 if (!defined($me->{jobs}));
     $me->{landscape_seqlength} = 105 if (!defined($me->{landscape_seqlength}));
     $me->{log} = 'prfdb.log' if (!defined($me->{log}));
     $me->{log_error} = 'prfdb.errors' if (!defined($me->{log_error}));

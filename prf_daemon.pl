@@ -5,7 +5,7 @@ use DBI;
 use lib "$ENV{PRFDB_HOME}/usr/lib/perl5";
 use lib "$ENV{PRFDB_HOME}/lib";
 use PRFConfig;
-use PRFdb qw"AddOpen RemoveFile";
+use PRFdb qw"AddOpen RemoveFile callstack";
 use RNAMotif;
 use RNAFolders;
 use Bootlace;
@@ -1120,12 +1120,13 @@ sub Make_Queue_Jobs {
     $template_config->{EVAL_PERL} = 0;
     $template_config->{INTERPOLATE} = 0;
     $template_config->{POST_CHOMP} = 0;
+    $template_config->{ABSOLUTE} = 1;
     my $template = new Template($template_config);
     my $base = $template_config->{base};
-    my $input_file = "$base/descr/job_template";
+    my $input_file = "descr/job_template";
     my @arches = split(/ /, $config->{pbs_arches});
     foreach my $arch (@arches) {
-	system("mkdir jobs/$arch") unless (-d "jobs/$arch");
+	system("mkdir -p jobs/$arch") unless (-d "jobs/$arch");
 	my $archchar = substr($arch,0,3);
 	foreach my $daemon ("01" .. $config->{num_daemons}) {
 	    my $output_file = "jobs/$arch/$daemon";
