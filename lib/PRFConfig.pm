@@ -1,3 +1,4 @@
+
 package PRFConfig;
 use strict;
 use AppConfig qw/:argcount :expand/;
@@ -51,6 +52,10 @@ sub new {
 	    ARGCOUNT => 1,
 	},});
 
+    ## First fill out a set of default configuration values
+    ## The following for loop will include all of these in conf_specification_temp
+    ## which will in turn be passed to GetOpts
+    ## As a result, _all_ of these variables may be overridden on the command line.
     $me->{ABSOLUTE} = 1 if (!defined($me->{ABSOLUTE}));
     $me->{add_to_path} = "/usr/bin:/usr/local/bin" if (!defined($me->{add_to_path}));
     $me->{arch_specific_exe} = 0 if (!defined($me->{arch_specific_exe}));
@@ -117,13 +122,14 @@ sub new {
     $me->{maintenance_skip_clouds} = 0 if (!defined($me->{maintenance_skip_clouds}));
     $me->{max_mfe} = 10.0 if (!defined($me->{max_mfe}));
     $me->{niceness} = 20 if (!defined($me->{niceness}));
-    $me->{num_daemons} = '60' if (!defined($me->{num_daemons}));
     $me->{nupack_nopairs_hack} = 1 if (!defined($me->{nupack_nopairs_hack}));
     $me->{open_files} = [] if (!defined($me->{open_files}));
     $me->{output_file} = 'output.txt' if (!defined($me->{output_file}));
     $me->{pbs_arches} = 'linux' if (!defined($me->{pbs_arches}));
     $me->{pbs_cpu} = '1' if (!defined($me->{pbs_cpu}));
+    $me->{pbs_cputime} = '24:00:00' if (!defined($me->{pbs_cputime}));
     $me->{pbs_memory} = '2000' if (!defined($me->{pbs_memory}));
+    $me->{pbs_num_daemons} = '20' if (!defined($me->{num_daemons}));
     $me->{pbs_partialname} = 'fold' if (!defined($me->{pbs_partialname}));
     $me->{pbs_shell} = '/bin/bash' if (!defined($me->{pbs_shell}));
     $me->{pbs_template} = 'pbs_template' if (!defined($me->{pbs_template}));
@@ -179,6 +185,7 @@ sub new {
 #	die;
 #   }
 
+    ## This makes all of the above options over-rideable on the command line.
     my (%conf, %conf_specification, %conf_specification_temp);
     foreach my $default (keys %{$me}) {
 	$conf_specification{"$default:s"} = \$conf{$default};
@@ -204,7 +211,7 @@ sub new {
 	'input_fasta:s' => \$conf{input_fasta},
 	'input_file:s' => \$conf{input_file},
 	'iterations:i' => \$conf{boot_iterations},
-	'jobs' => \$conf{jobs},
+	'make_jobs' => \$conf{make_jobs},
 	'landscape_length:i' => \$conf{landscape_seqlength},
 	'length:i' => \$conf{seqlength},
 	'make_landscape' => \$conf{make_landscape},
@@ -229,12 +236,14 @@ sub new {
 	'zscore' => \$conf{zscore},
 	'resync' => \$conf{resync},
 	);
+    ## This makes both of the above groups command-line changeable
     foreach my $name (keys %conf_specification_temp) {
 	$conf_specification{$name} = $conf_specification_temp{$name};
     }
     undef(%conf_specification_temp);
     GetOptions(%conf_specification);
 
+    ## This puts every option defined above into the PRFConfig namespace.
     foreach my $opt (keys %conf) {
 	if (defined($conf{$opt})) {
 	    $me->{$opt} = $conf{$opt};
