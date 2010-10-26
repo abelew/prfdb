@@ -1,4 +1,4 @@
-#PBS -S [% pbs_shell %] -l walltime=24:00:00,nodes=1 -N [% pbs_name %]
+#PBS -S [% pbs_shell %] -l walltime=[% pbs_cputime %],nodes=[% pbs_nodes %] -N [% pbs_name %]
 . ~/.bash_environment
 cd [% base %]
 [% perl %] -I [% incdir %] [% base %]/[% daemon_name %] [% job_num %] 2>[% base %]/outputs/[% pbs_arch %]_[% job_num %].err 1>[% base %]/outputs/[% pbs_arch %]_[% job_num %].out
