@@ -205,7 +205,7 @@ sub new {
 	'input_fasta:s' => \$conf{input_fasta},
 	'input_file:s' => \$conf{input_file},
 	'iterations:i' => \$conf{boot_iterations},
-	'jobs' => $conf{jobs},
+	'jobs' => \$conf{jobs},
 	'landscape_length:i' => \$conf{landscape_seqlength},
 	'length:i' => \$conf{seqlength},
 	'make_landscape' => \$conf{make_landscape},
