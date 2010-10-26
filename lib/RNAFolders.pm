@@ -65,7 +65,9 @@ command: $command\n" if (defined($config->{debug}));
     my $count = 0;
     my @nupack_output = ();
     my $pairs = 0;
+    my $nupack_output = '';
     while (my $line = <NU>) {
+	$nupack_output .= $line;
 	if ($line =~ /Error opening loop data file: dataS_G.rna/) {
 	    $config->PRF_Error("RNAFolders::Nupack_NOPAIRS, Missing dataS_G.rna!");
 	}
@@ -158,6 +160,7 @@ Return: $nupack_return\n");
     if (!defined($return->{sequence})) {
 	callstack();
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
+	print STDERR "The full output from nupack was: $nupack_output\n";
 	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
 	$return->{sequence} = $me->{sequence};
     }
