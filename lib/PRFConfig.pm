@@ -279,6 +279,11 @@ sub new {
     if (ref($me->{seqlength}) eq '') {
 	$me->{seqlength} = eval($me->{seqlength});
     }
+    if (defined($me->{shell})) {
+	my $host = $me->{database_host}->[0];
+	system("mysql -u $me->{database_user} --password=$me->{database_pass} -h $host $me->{database_name}");
+	exit(0);
+    }
 
     my $err = $me->{log_error};
     my $out = $me->{log};
