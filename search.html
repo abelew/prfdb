@@ -54,7 +54,59 @@ my $long_species;
 
 % } else { ### If there is not 0 nor 1 hit, then there are multiple.
 
-<table width="100%" border="0" cellspacing="0" cellpadding="2">
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/jquery.tablesorter.js"></script>
+<script type="text/javascript" src="/js/jquery.tablesorter.pager.js"></script>
+<script type="text/javascript" id="js">
+$(document).ready(function()
+ {
+  $("#search_results")
+  .tablesorter({widthFixed: true, widgets: ['zebra'],})
+  .tablesorterPager({container: $("#pager")});
+  $("#pollen").bind("sortStart",function() { 
+      $("#overlay").show(); 
+  }).bind("sortEnd",function() { 
+      $("#overlay").hide(); 
+  }); 
+ })
+</script>
+<style>
+#overlay {
+	top: 100px;
+	left: 50%;
+	position: absolute;
+	margin-left: -100px;
+	width: 200px;
+	text-align: center;
+	display: none;
+	margin-top: -10px;
+	background: #000;
+	color: #FFF;
+}
+</style>
+<div id="overlay">
+  Please wait...
+</div>
+
+  <div id="pager">
+	<form> 
+		<img src="/images/first.png" class="first"/> 
+		<img src="/images/prev.png" class="prev"/> 
+		<input type="text" class="pagedisplay"/> 
+		<img src="/images/next.png" class="next"/> 
+		<img src="/images/last.png" class="last"/> 
+		<select class="pagesize"> 
+			<option selected="selected"  value="50">50</option> 
+			<option value="10">10</option> 
+			<option value="25">25</option> 
+			<option value="100">100</option> 
+		</select> 
+	</form> 
+  </div> 
+
+
+<table width="100%" border="0" cellspacing="0" cellpadding="2" id="search_results">
+  <thead>
   <tr bgcolor="#000000">
      <td></td>
     <td width="35%" nowrap>
@@ -73,6 +125,8 @@ my $long_species;
       <div align="left"><strong><font color="#FFFFFF">Comments</font></strong></div>
     </td>
   </tr>
+  </thead>
+  <tbody>
 % foreach my $entry (sort keys %{$entries}) {
 % my $species = $entries->{$entry}->{species};
 % $long_species = HTMLMisc::Make_Species($species);
@@ -114,6 +168,7 @@ my $long_species;
       <div align="left"><% $comment %></div>
     </td>
   </tr>
+  </tbody>
   <tr><td> </td></tr>
 
 % } ## End foreach entry in entries
