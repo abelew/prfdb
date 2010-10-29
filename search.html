@@ -59,72 +59,29 @@ my $long_species;
 <script type="text/javascript" src="/js/jquery.tablesorter.pager.js"></script>
 <script type="text/javascript" id="js">
 $(document).ready(function()
- {
-  $("#search_results")
+{
+  $("#search")
   .tablesorter({widthFixed: true, widgets: ['zebra'],})
   .tablesorterPager({container: $("#pager")});
-  $("#pollen").bind("sortStart",function() { 
+  $("#search").bind("sortStart",function() { 
       $("#overlay").show(); 
   }).bind("sortEnd",function() { 
       $("#overlay").hide(); 
   }); 
+  $("#test").tablesorter({widthFixed: true, widgets: ['zebra'],})
  })
-
 </script>
-<style>
-#overlay {
-	top: 100px;
-	left: 50%;
-	position: absolute;
-	margin-left: -100px;
-	width: 200px;
-	text-align: center;
-	display: none;
-	margin-top: -10px;
-	background: #000;
-	color: #FFF;
-}
-</style>
-<div id="overlay">
-  Please wait...
-</div>
 
-  <div id="pager">
-	<form> 
-		<img src="/images/first.png" class="first"/> 
-		<img src="/images/prev.png" class="prev"/> 
-		<input type="text" class="pagedisplay"/> 
-		<img src="/images/next.png" class="next"/> 
-		<img src="/images/last.png" class="last"/> 
-		<select class="pagesize"> 
-			<option selected="selected"  value="50">50</option> 
-			<option value="10">10</option> 
-			<option value="25">25</option> 
-			<option value="100">100</option> 
-		</select> 
-	</form> 
-  </div> 
-
-
-<table width="100%" border="0" cellspacing="0" cellpadding="2" id="search_results">
+<table id="search" class="tablesorter">
   <thead>
-  <tr bgcolor="#000000">
-     <td></td>
-    <td width="35%" nowrap>
-      <div align="left"><strong><font color="#FFFFFF">Gene Name</font></strong></div>
-    </td>
-    <td nowrap width="10%">
-      <div align="left"><strong><font color="#FFFFFF">Accession</font></strong></div>
-      </td>
-    <td nowrap width="15%">
-      <div align="left"><strong><font color="#FFFFFF">Species</font></strong></div>
-    </td>
-    <td nowrap width="5%">
-      <div align="center"><strong><font color="#FFFFFF">#Slips</font></strong></div>
-    </td>
-    <td nowrap width="35%">
-      <div align="left"><strong><font color="#FFFFFF">Comments</font></strong></div>
-    </td>
+  <tr>
+    <th></th>
+    <th width="35%" nowrap><div align="left"><strong><font color="#FFFFFF">Gene Name</font></strong></div></th>
+    <th nowrap width="10%"><div align="left"><strong><font color="#FFFFFF">Accession</font></strong></div></th>
+    <th nowrap width="15%"><div align="left"><strong><font color="#FFFFFF">Species</font></strong></div></th>
+    <th nowrap width="5%"><div align="center"><strong><font color="#FFFFFF">#Slips</font></strong></div></th>
+    <th nowrap width="35%"><div align="left"><strong><font color="#FFFFFF">Comments</font></strong></div></th>
+
   </tr>
   </thead>
   <tbody>
@@ -144,36 +101,60 @@ $(document).ready(function()
 % my $omim_id = $entries->{$id}->{omim_id};
 % my $slipsite_count = $entries->{$id}->{slipsite_count};
   <tr>
-    <td valign="top">
-	<a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><img src="/html/external.png" border="0"></a>
-  </td>
-    <td valign="top" width="35%">
-      <div align="left">
-<a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><% $genename %></a>
-<& link_out.html, accession => $accession &>
-
-  </div>
-    </td>
-    <td valign="top" width="10%">
-      <div align="left">
-	  <a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><strong><% $accession %></strong></a>
-      </div>
-    </td>
-    <td valign="top" width="15%">
-      <div align="left"><i><% HTMLMisc::Make_Species($species) %></i></div>
-    </td>
-    <td valign="top" width="5%">
-      <div align="center"><strong><% $slipsite_count %></strong></div>
-    </td>
-    <td valign="top" width="35%">
-      <div align="left"><% $comment %></div>
-    </td>
+   <td valign="top"><a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><img src="/html/external.png" border="0"></a></td>
+   <td><div align="left"><a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><% $genename %></a><& link_out.html, accession => $accession &></td>
+    <td valign="top" width="10%"><div align="left"><a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><strong><% $accession %></strong></a></div></td>
+    <td valign="top" width="15%"><div align="left"><i><% HTMLMisc::Make_Species($species) %></i></div></td>
+    <td valign="top" width="5%"><div align="center"><strong><% $slipsite_count %></strong></div></td>
+    <td valign="top" width="35%"><div align="left"><% $comment %></div></td>
   </tr>
-  </tbody>
-  <tr><td> </td></tr>
-
 % } ## End foreach entry in entries
+  </tbody>
 </table>
+<style>
+#overlay {
+	top: 100px;
+	left: 50%;
+	position: absolute;
+	margin-left: -100px;
+	width: 200px;
+	text-align: center;
+	display: none;
+	margin-top: -10px;
+	background: #000;
+	color: #FFF;
+}
+</style>
+<div id="overlay">
+  Please wait...
+</div>
+%#<!---
+%#  <tr>
+%#    <td><a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><img src="/html/external.png" border="0"></a></td>
+%#    <td><a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><% $genename %></a>
+%#<& link_out.html, accession => $accession &></td>
+%#    <td><a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><strong><% $accession %></strong></a></td>
+%#    <td><i><% HTMLMisc::Make_Species($species) %></i></td>
+%#    <td><strong><% $slipsite_count %></strong></td>
+%#    <td><% $comment %></div></td>
+%#  </tr>
+%#--->
+<div id="pager">
+	<form> 
+		<img src="/images/first.png" class="first"/> 
+		<img src="/images/prev.png" class="prev"/> 
+		<input type="text" class="pagedisplay"/> 
+		<img src="/images/next.png" class="next"/> 
+		<img src="/images/last.png" class="last"/> 
+		<select class="pagesize"> 
+			<option selected="selected" value="10">10</option> 
+			<option value="20">20</option> 
+			<option value="50">50</option> 
+			<option value="100">100</option> 
+		</select> 
+	</form> 
+  </div> 
+
 % } ## End the else there are multiple hits
 
 % } else {  ## If you haven't filled out any of the form, then provide it.
