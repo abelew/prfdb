@@ -13,7 +13,8 @@ use Overlap;
 use SeqMisc;
 use PRFBlast;
 use Agree;
-use PRFGraph;
+my $load_return = eval "use PRFGraph; 1";
+warn("Could not load PRFGraph, disabling graphing routines.\n$@\n") unless($load_return);
 $SIG{INT} = 'CLEANUP';
 $SIG{BUS} = 'CLEANUP';
 $SIG{SEGV} = 'CLEANUP';
@@ -916,82 +917,85 @@ sub Maintenance {
 		      next SP if ($sp eq $species);
 		  }
 		  foreach my $slip (@slipsites) {
-		      print "Generating picture for $species slipsite: $slip knotted: $pk seqlength: $seqlength\n";
-		      my $cloud = new PRFGraph(config => $config);
-		      my $pknots_only = undef;
-		      my $boot_table = "boot_$species";
-		      my $suffix = undef;
-		      if ($pk eq 'yes') {
-			  $suffix .= "-pknot";
-			  $pknots_only = 1;
-		      }
-		      if ($slip eq 'all') {
-			  $suffix .= "-all";
-		      } else {
-			  $suffix .= "-${slip}";
-		      }
-		      $suffix .= "-${seqlength}";
-		      my $cloud_output_filename = $cloud->Picture_Filename(type => 'cloud',
-									   species => $species,
-									   suffix => $suffix,);
-		      my $cloud_url = $cloud->Picture_Filename(type => 'cloud',
-							       species => $species,
-							       url => 'url',
-							       suffix => $suffix,);
-		      $cloud_url = $config->{base} . '/' . $cloud_url;
-		      my ($points_stmt, $averages_stmt, $points, $averages);
-		      if (!-f $cloud_output_filename) {
-			  $points_stmt = qq"SELECT SQL_BUFFER_RESULT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
-			  $averages_stmt = qq"SELECT SQL_BUFFER_RESULT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
-			  
+		      ## First check if we were able to load PRFGraph
+		      if ($load_return) {
+			  print "Generating picture for $species slipsite: $slip knotted: $pk seqlength: $seqlength\n";
+			  my $cloud = new PRFGraph(config => $config);
+			  my $pknots_only = undef;
+			  my $boot_table = "boot_$species";
+			  my $suffix = undef;
 			  if ($pk eq 'yes') {
-			      $points_stmt .= "mfe.knotp = '1' AND ";
-			      $averages_stmt .= "mfe.knotp = '1' AND ";
+			      $suffix .= "-pknot";
+			      $pknots_only = 1;
 			  }
-			  $points_stmt .= " mfe.genome_id = genome.id";
-			  $averages_stmt =~ s/AND $//g;
-			  $points = $db->MySelect(statement => $points_stmt, vars => [$species]);
-			  $averages = $db->MySelect(statement => $averages_stmt, vars => [$species], type => 'row',);
-			  my $cloud_data;
-			  my %args;
-			  if ($pk eq 'yes') {
-			      %args = (
-				       seqlength => $seqlength,
-				       species => $species,
-				       points => $points,
-				       averages => $averages,
-				       filename => $cloud_output_filename,
-				       url => $config->{base},
-				       pknot => 1,
-				       slipsites => $slip,
-				       );
+			  if ($slip eq 'all') {
+			      $suffix .= "-all";
 			  } else {
-			      %args = (
-				       seqlength => $seqlength,
-				       species => $species,
-				       points => $points,
-				       averages => $averages,
-				       filename => $cloud_output_filename,
-				       url => $config->{base},
-				       slipsites => $slip,
-				       );
+			      $suffix .= "-${slip}";
 			  }
-			  $cloud_data = $cloud->Make_Cloud(%args);
-		      }
-		      
-		      my $map_file = $cloud_output_filename . '.map';
-		      my $extension_percent_filename = $cloud->Picture_Filename(type => 'extension_percent',
-										species => $species,);
-		      my $extension_codons_filename = $cloud->Picture_Filename(type=> 'extension_codons',
-									       species => $species,);
-		      my $percent_map_file = $extension_percent_filename . '.map';
-		      my $codons_map_file = $extension_codons_filename . '.map';
-		      
-		      if (!-f $extension_codons_filename) {
-			  $cloud->Make_Extension($species, $extension_codons_filename, 'codons', $config->{base});
-		      }
-		      if (!-f $extension_percent_filename) {
-			  $cloud->Make_Extension($species, $extension_percent_filename, 'percent', $config->{base});
+			  $suffix .= "-${seqlength}";
+			  my $cloud_output_filename = $cloud->Picture_Filename(type => 'cloud',
+									       species => $species,
+									       suffix => $suffix,);
+			  my $cloud_url = $cloud->Picture_Filename(type => 'cloud',
+								   species => $species,
+								   url => 'url',
+								   suffix => $suffix,);
+			  $cloud_url = $config->{base} . '/' . $cloud_url;
+			  my ($points_stmt, $averages_stmt, $points, $averages);
+			  if (!-f $cloud_output_filename) {
+			      $points_stmt = qq"SELECT SQL_BUFFER_RESULT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
+			      $averages_stmt = qq"SELECT SQL_BUFFER_RESULT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
+			      
+			      if ($pk eq 'yes') {
+				  $points_stmt .= "mfe.knotp = '1' AND ";
+				  $averages_stmt .= "mfe.knotp = '1' AND ";
+			      }
+			      $points_stmt .= " mfe.genome_id = genome.id";
+			      $averages_stmt =~ s/AND $//g;
+			      $points = $db->MySelect(statement => $points_stmt, vars => [$species]);
+			      $averages = $db->MySelect(statement => $averages_stmt, vars => [$species], type => 'row',);
+			      my $cloud_data;
+			      my %args;
+			      if ($pk eq 'yes') {
+				  %args = (
+				      seqlength => $seqlength,
+				      species => $species,
+				      points => $points,
+				      averages => $averages,
+				      filename => $cloud_output_filename,
+				      url => $config->{base},
+				      pknot => 1,
+				      slipsites => $slip,
+				      );
+			      } else {
+				  %args = (
+				      seqlength => $seqlength,
+				      species => $species,
+				      points => $points,
+				      averages => $averages,
+				      filename => $cloud_output_filename,
+				      url => $config->{base},
+				      slipsites => $slip,
+				      );
+			      }
+			      $cloud_data = $cloud->Make_Cloud(%args);
+			  }
+			  
+			  my $map_file = $cloud_output_filename . '.map';
+			  my $extension_percent_filename = $cloud->Picture_Filename(type => 'extension_percent',
+										    species => $species,);
+			  my $extension_codons_filename = $cloud->Picture_Filename(type=> 'extension_codons',
+										   species => $species,);
+			  my $percent_map_file = $extension_percent_filename . '.map';
+			  my $codons_map_file = $extension_codons_filename . '.map';
+			  
+			  if (!-f $extension_codons_filename) {
+			      $cloud->Make_Extension($species, $extension_codons_filename, 'codons', $config->{base});
+			  }
+			  if (!-f $extension_percent_filename) {
+			      $cloud->Make_Extension($species, $extension_percent_filename, 'percent', $config->{base});
+			  }
 		      }
 		} ## Foreach slipsite
 	    } ## foreach species
