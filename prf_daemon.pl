@@ -1118,18 +1118,17 @@ sub Make_Queue_Jobs {
     ## copying out of the perl script make_jobs.pl
     use Template;
     my $template_config;
+    foreach my $k (keys %{$config}) {
+	$template_config->{$k} = $config->{$k};
+    }
     $template_config->{PRE_PROCESS} = 0;
     $template_config->{EVAL_PERL} = 0;
     $template_config->{INTERPOLATE} = 0;
     $template_config->{POST_CHOMP} = 0;
     $template_config->{ABSOLUTE} = 1;
-    foreach my $k (keys %{$config}) {
-	next unless ($k =~ /^pbs/);
-	$template_config->{$k} = $config->{$k};
-    }
     $template_config->{base} = $config->{base};
     my $template = new Template($template_config);
-    my $input_file = "descr/job_template";
+    my $input_file = "$template_config->{base}/descr/job_template";
     my @arches = split(/ /, $config->{pbs_arches});
     foreach my $arch (@arches) {
 	system("mkdir -p jobs/$arch") unless (-d "jobs/$arch");
@@ -1150,7 +1149,7 @@ sub Make_Queue_Jobs {
 		pbs_name => $pbs_fullname,
 		pbs_cputime => $template_config->{pbs_cputime},
 		pbs_nodes => 1,
-		perl => $template_config->{perl},
+		perl => $template_config->{exe_perl},
 		incdir => $incdir,
 		daemon_name => $template_config->{daemon_name},
 		job_num => $daemon,
