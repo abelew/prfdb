@@ -23,4 +23,4 @@ for num in $(eval echo {01..`echo -n $DAEMONS`})
      fi 
      done
   done
-at "now + 4 hours" < queue.sh 2>/dev/null 1>&}
+at "now + 4 hours" < queue.sh 2>/dev/null 1>&2
