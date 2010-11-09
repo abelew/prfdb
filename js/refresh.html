@@ -1,0 +1,12 @@
+<script language="JavaScript">
+var sURL = "<% $refresh_url %>";
+function doLoad() {  setTimeout( "refresh()", <% $seconds %> * 1000); }
+function refresh() { window.location.href = sURL; }
+</script>
+<script language="JavaScript1.1">
+function refresh() { window.location.replace( sURL ); }
+</script>
+<%args>
+  $refresh_url =>"/"
+  $seconds => 0
+</%args>
