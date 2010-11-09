@@ -84,6 +84,7 @@ if (defined($config->{make_landscape})) {
     exit(0);
 }
 if (defined($config->{maintain})) {
+    print "Performing maintenance of the PRFdb.\n";
     Maintenance();
     exit(0);
 }
