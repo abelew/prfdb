@@ -93,7 +93,7 @@ sub new {
     $me->{exe_nupack} = 'Fold.out.nopairs' if (!defined($me->{exe_nupack}));
     $me->{exe_nupack_boot} = 'Fold.out.boot.nopairs' if (!defined($me->{exe_nupack_boot}));
     $me->{exe_pknots} = 'pknots' if (!defined($me->{exe_pknots}));
-    $me->{exe_perl} = '/usr/bin/perl -w' if (!defined($me->{exe_perl}));
+    $me->{exe_perl} = '/usr/local/bin/perl -w' if (!defined($me->{exe_perl}));
     $me->{exe_rmprune} = 'rmprune' if (!defined($me->{exe_rmprune}));
     $me->{exe_rnafold} = 'RNAfold' if (!defined($me->{exe_rnafold}));
     $me->{exe_rnamotif} = 'rnamotif' if (!defined($me->{exe_rnamotif}));
@@ -133,7 +133,6 @@ sub new {
     $me->{pbs_partialname} = 'fold' if (!defined($me->{pbs_partialname}));
     $me->{pbs_shell} = '/bin/bash' if (!defined($me->{pbs_shell}));
     $me->{pbs_template} = 'pbs_template' if (!defined($me->{pbs_template}));
-    $me->{perl} = '/usr/local/bin/perl' if (!defined($me->{perl}));
     $me->{POST_CHOMP} = 1 if (!defined($me->{POST_CHOMP}));
     $me->{queue_table} = 'queue' if (!defined($me->{queue_table}));
     $me->{randomize_id} = 0 if (!defined($me->{randomize_id}));
