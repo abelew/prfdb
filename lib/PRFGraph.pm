@@ -343,8 +343,18 @@ sub Make_Cloud {
 	} ## Foreach y point
     } ## Foreach x point
     my $radius = 1;
+    my @all_slipsites = ('AAAAAAA','AAAAAAU','AAAAAAC','AAAUUUA','AAAUUUU','AAAUUUC',
+			 'UUUUUUA','UUUUUUU','UUUUUUC','UUUAAAA','UUUAAAU','UUUAAAC',
+			 'GGGAAAA','GGGAAAU','GGGAAAC','GGGUUUA','GGGUUUU','GGGUUUC',
+			 'CCCAAAA','CCCAAAU','CCCAAAC','AAAUUUA','CCCUUUU','CCCUUUC',
+			 ## Theoretically non-allowed slipsites here
+			 'AAAAAAG','UUUUUUG','AAAUUUG','UUUAAAG','GGGAAAG','GGGUUUG',
+			 'CCCAAAG','CCCUUUG'
+			 );
     my %slipsites_numbers = ();
+    foreach my $s (@all_slipsites) { $slipsites_numbers{$s}{num} = 0; }
     my %slips_significant = ();
+    foreach my $s (@all_slipsites) { $slips_significant{$s}{num} = 0; }
     open(MAP, ">${tmp_filename}.map") or callstack(), print("Unable to open the map file ${tmp_filename}.map");
     print MAP "<map name=\"map\" id=\"map\">\n";
     my $image_map_string;

@@ -9,11 +9,14 @@ my %slippery_sites = (aaaaaaa => 'A AAA AAA', aaaaaac => 'A AAA AAC', aaaaaat =>
 		      aaauuua => 'A AAT TTA', aaauuuc => 'A AAT TTC', aaauuuu => 'A AAT TTT',
 		      cccaaaa => 'C CCA AAA', cccaaac => 'C CCA AAC', cccaaat => 'C CCA AAT',
 		      cccuuua => 'C CCT TTA', cccuuuc => 'C CCT TTC', cccuuuu => 'C CCT TTT',
-		      gggaaaa => 'G GGA AAA', gggaaac => 'G GGA AAC', gggaaag => 'G GGA AAG',
-		      gggaaat => 'G GGA AAT', ggguuua => 'G GGT TTA', ggguuuc => 'G GGT TTC',
-		      ggguuuu => 'G GGT TTT', uuuaaaa => 'T TTA AAA', uuuaaac => 'T TTA AAC',
-		      uuuaaau => 'T TTA AAT', uuuuuua => 'T TTT TTA', uuuuuuc => 'T TTT TTC',
-		      uuuuuuu => 'T TTT TTT',
+		      gggaaaa => 'G GGA AAA', gggaaac => 'G GGA AAC', gggaaat => 'G GGA AAT',
+		      ggguuua => 'G GGT TTA', ggguuuc => 'G GGT TTC', ggguuuu => 'G GGT TTT',
+		      uuuaaaa => 'T TTA AAA', uuuaaac => 'T TTA AAC', uuuaaau => 'T TTA AAT',
+		      uuuuuua => 'T TTT TTA', uuuuuuc => 'T TTT TTC', uuuuuuu => 'T TTT TTT',
+		      ## Theoretically non-allowed slipsites below
+		      aaaaaag => 'A AAA AAG', uuuuuug => 'T TTT TTG', aaauuug => 'A AAT TTG',
+		      uuuaaag => 'T TTA AAG', gggaaag => 'G GGA AAG', ggguuug => 'G GGT TTG',
+		      cccaaag => 'C CCA AAG', cccuuug => 'C CCT TTG',
 		      );
 
 sub new {
