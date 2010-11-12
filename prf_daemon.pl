@@ -1,19 +1,20 @@
 #!/usr/local/bin/perl -w 
 use strict;
 use vars qw"$db $config";
-use DBI;
 use lib "$ENV{PRFDB_HOME}/usr/lib/perl5";
 use lib "$ENV{PRFDB_HOME}/lib";
-use PRFConfig;
-use PRFdb qw"AddOpen RemoveFile callstack";
-use RNAMotif;
-use RNAFolders;
-use Bootlace;
-use Overlap;
-use SeqMisc;
-use PRFBlast;
-use Agree;
-my $load_return = eval "use PRFGraph; 1";
+die("Could not load PRFConfig.\n$@\n") unless (eval "use PRFConfig; 1");
+$config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
+die("Could not load PRFdb.\n$@\n") unless (eval "use PRFdb qw'AddOpen RemoveFile callstack'; 1");
+$db = new PRFdb(config => $config);
+die("Could not load RNAMotif.\n$@\n") unless (eval "use RNAMotif; 1");
+die("Could not load RNAFolders.\n$@\n") unless (eval "use RNAFolders; 1");
+die("Could not load Bootlace.\n$@\n") unless (eval "use Bootlace; 1");
+die("Could not load Overlap.\n$@\n") unless (eval "use Overlap; 1");
+die("Could not load SeqMisc.\n$@\n") unless (eval "use SeqMisc; 1");
+die("Could not load PRFBlast.\n$@\n") unless (eval "use PRFBlast; 1");
+die("Could not load Agree.\n$@\n") unless (eval "use Agree; 1");
+my $load_return = eval("use PRFGraph; 1");
 warn("Could not load PRFGraph, disabling graphing routines.\n$@\n") unless($load_return);
 $SIG{INT} = 'CLEANUP';
 $SIG{BUS} = 'CLEANUP';
@@ -22,8 +23,6 @@ $SIG{PIPE} = 'CLEANUP';
 $SIG{ABRT} = 'CLEANUP';
 $SIG{QUIT} = 'CLEANUP';
 
-$config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
-$db = new PRFdb(config => $config);
 setpriority(0,0,$config->{niceness});
 $ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}" if(defined($config->{ENV_LIBRARY_PATH}));
 our $state = { time_to_die => undef,
@@ -1020,8 +1019,9 @@ sub Import_Genbank_Accession {
 sub Import_Genbank {
     my $import_genbank = shift;
     my $accession = shift;
-    use Bio::DB::Universal;
-    use Bio::Index::GenBank;
+    die("Could not load Bio::DB::Universal.\n $@\n") unless (eval "use Bio::DB::Universal; 1");
+    die("Could not load Bio::Index::GenBank.\n $@\n") unless (eval "use Bio::Index::GenBank; 1");
+    
     my $uni = new Bio::DB::Universal();
     my $in  = Bio::SeqIO->new(-file => $import_genbank,
 			      -format => 'genbank');
@@ -1121,7 +1121,7 @@ sub CLEANUP {
 
 sub Make_Queue_Jobs {
     ## copying out of the perl script make_jobs.pl
-    use Template;
+    die("Could not load Template.\n$@\n") unless (eval "use Template; 1");
     my $template_config;
     foreach my $k (keys %{$config}) {
 	$template_config->{$k} = $config->{$k};
