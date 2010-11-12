@@ -171,13 +171,17 @@ sub Make_Extension {
 	}
 	my $color;
 	## UNDEF VALUES HERE
-	if (($zscore < $avg_zscore) and ($mfe < $avg_mfe)) {
-	    $color = $gd->colorResolve(191,0,0);  ## Red
-	} elsif (($zscore >= $avg_zscore) and ($mfe < $avg_mfe)) {
-	    $color = $gd->colorResolve(0,191,0);  ## Green, I think
-	} elsif (($zscore < $avg_zscore) and ($mfe >= $avg_mfe)) {
+	if (($mfe < $avg_mfe) and ($zscore > $avg_zscore)) {
+	    ## Red
+	    $color = $gd->colorResolve(191,0,0); 
+	} elsif ($mfe < $avg_mfe) {
+	    ## Green, I think
+	    $color = $gd->colorResolve(0,191,0);
+	} elsif ($zscore > $avg_zscore) {
+	    ## Blue?
 	    $color = $gd->colorResolve(0,0,191);
 	} else {
+	    ## Gray?
 	    $color = $gd->colorResolve(165,165,165);
 	}
 	my $url = qq"/search.html?short=1&accession=$accession";

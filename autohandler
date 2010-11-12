@@ -46,8 +46,8 @@
  <b><a href="import.html"><% ($r->uri eq "$path/import.html") ? qq(<font color="white">) : "" %>Import</a></b></td>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/fold.html") ? "#366e6d" : "white" %>">
  <b><a href="fold.html"><% ($r->uri eq "$path/fold.html") ? qq(<font color="white">) : "" %>Fold</a></b></td>
-<td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/help.html") ? "#366e6d" : "white" %>">
- <b><a href="help.html"><% ($r->uri eq "$path/help.html") ? qq(<font color="white">) : "" %>Help</a></b></td>
+<td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/help/help.html") ? "#366e6d" : "white" %>">
+ <b><a href="help/help.html"><% ($r->uri eq "$path/help/help.html") ? qq(<font color="white">) : "" %>Help</a></b></td>
  </tr>
 
  <tr align="left" valign="top">
