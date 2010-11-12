@@ -856,18 +856,21 @@ sub Maintenance {
     $finished_species = [] if (!defined($finished_species));
 #    $db->MyExecute("UPDATE wait SET wait = '1'");
     unless ($config->{maintenance_skip_sleep}) {
-	sleep(120);
+	sleep(10);
     }
     ## Optimize the tables
     my $tables = $db->MySelect("show tables");
     unless ($config->{maintenance_skip_optimize}) {
 	foreach my $t (@{$tables}) {
+            print "Performing OPTIMIZE TABLE $t->[0]\n";
 	    $db->MyExecute("OPTIMIZE TABLE $t->[0]");
+            print "Performing ANALYZE TABLE $t->[0]\n";
 	    $db->MyExecute("ANALYZE TABLE $t->[0]");
 	}
     }
     ## Fill in missing zscores
     unless ($config->{maintenance_skip_zscore}) {
+        print "Calculating Z scores\n";
 	Zscore();
     }
     ## The stats table
@@ -878,6 +881,7 @@ sub Maintenance {
 	    max_mfe => [$config->{max_mfe}],
 	    algorithm => ['pknots','nupack','hotknots'],
 	};
+        print "Recreating the Stats table\n";
 	$db->Put_Stats($data, $finished_species);
     }
     ## End the stats table
