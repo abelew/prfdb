@@ -7,23 +7,25 @@
 </center>
 
 %  }
-
 <center>
 % my $long_species = HTMLMisc::Make_Species($species);
 <p>This is the <i><% $long_species %></i> distribution for <% $slipsites %> slipsites.
 <br>
-% my $filename = '';
+% my $filename = qq"$config->{base}/images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
 % if ($cloud_filters =~ /pseudo/) {
 %  $filename = qq"$config->{base}/images/cloud/${species}/cloud-pknot-${slipsites}-${seqlength}.png";
+%   if (-f $filename) {
 <img src="images/cloud/<% $species %>/cloud-pknot-<% $slipsites %>-<% $seqlength %>.png" usemap="#map">
+%   } ## End if -f $filename
 % } else {
 %  $filename = qq"$config->{base}/images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
+%   if (-f $filename) {
 <img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $seqlength %>.png" usemap="#map">
+%   }
 % }
 % if (-f $filename) {
 
 </center>
-
 <br>
 The x axis displays the range of putative <a href="help_detail#help_mfe">
 minimum free energy</a> values computed for all <i></i>
@@ -58,11 +60,9 @@ coordinates wihch share more than 1 sequence window.
 These graphs take about a minute to generate, this page will refresh with the freshly generated
 graph in one minute.</p>
 
-<& refresh.js, refresh_url=>"distribution.html?species=$species&seqlength=$seqlength&slipsites=$slipsites", seconds => 30 &>
+<& /js/refresh.html, refresh_url=>"distribution.html?species=$species&seqlength=$seqlength&slipsites=$slipsites", seconds => 30 &>
 <& generate_distribution.html, species=>$species, slipsites=>$slipsites, seqlength=>$seqlength &>
-
-% }
-
+%  }
 % }  ## If the parameters are not defined, print the html form to get them
 % else {
 

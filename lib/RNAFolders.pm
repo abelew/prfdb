@@ -647,31 +647,33 @@ command: $command\n" if (defined($config->{debug}));
     my $bpseqfile = "${seqname}0.bpseq";
     AddOpen($tempfile);
     AddOpen($bpseqfile);
-    open(BPSEQ, "<$bpseqfile");
-    $ret->{output} = '';
-    $ret->{pairs} = 0;
-    while (my $bps = <BPSEQ>) {
-        my ($basenum, $base, $basepair) = split(/\s+/, $bps);
-        if ($basepair =~ /\d+/) {
-            if ($basepair == 0) {
-                $ret->{output} .= '. ';
-            } elsif ($basepair > 0) {
-                my $basepair_num = $basepair - 1;
-                $ret->{output} .= "$basepair_num ";
-                $ret->{pairs}++;
-            } else {
+    my $open_ret = open(BPSEQ, "<$bpseqfile");
+    if (defined($open_ret)) {
+	$ret->{output} = '';
+	$ret->{pairs} = 0;
+	while (my $bps = <BPSEQ>) {
+	    my ($basenum, $base, $basepair) = split(/\s+/, $bps);
+	    if ($basepair =~ /\d+/) {
+		if ($basepair == 0) {
+		    $ret->{output} .= '. ';
+		} elsif ($basepair > 0) {
+		    my $basepair_num = $basepair - 1;
+		    $ret->{output} .= "$basepair_num ";
+		    $ret->{pairs}++;
+		} else {
+		    callstack();
+		    print STDERR "The number of basepairs is negative?  $basepair\n";
+		    last;
+		}
+	    } else {
 		callstack();
-                print STDERR "The number of basepairs is negative?  $basepair\n";
-                last;
-            }
-        } else {
-	    callstack();
-            print STDERR "The base pair is not a number: $basepair\n";
-            last;
-        }
-    }
-    $ret->{pairs} = $ret->{pairs} / 2;
-    close(BPSEQ);
+		print STDERR "The base pair is not a number: $basepair\n";
+		last;
+	    }
+	}
+	$ret->{pairs} = $ret->{pairs} / 2;
+	close(BPSEQ);
+    } ## If we were able to open the CT file.
     my $ctfile = qq(${seqname}.ct);
     AddOpen($ctfile);
     open(GETMFE, "grep ENERGY $ctfile | head -1 |");

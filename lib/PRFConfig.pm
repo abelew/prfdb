@@ -1,4 +1,3 @@
-
 package PRFConfig;
 use strict;
 use AppConfig qw/:argcount :expand/;
