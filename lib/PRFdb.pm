@@ -1784,11 +1784,14 @@ sub Put_Stats {
     my $finished = shift;
     my $inserted_rows = 0;
     $finished = [] if (!defined($finished));
-	
+    my $st_count = 0;
+    my $st_total = scalar(@{$data->{species}});
     OUT: foreach my $species (@{$data->{species}}) {
+	$st_count++;
 	foreach my $sp (@{$finished}) {
 	    next OUT if ($sp eq $species);
 	}
+	print "Starting Put_Stats for $species.  Number $st_count of $st_total.\n";
 	my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
 	$me->MyExecute(statement => qq"DELETE FROM stats WHERE species = '$species'");
 	foreach my $seqlength (@{$data->{seqlength}}) {

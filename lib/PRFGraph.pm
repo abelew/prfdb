@@ -114,6 +114,7 @@ sub Make_Extension {
 	my $mfe = $datum->[7];
 	my $zscore_stmt = qq"SELECT zscore from boot_$species where mfe_id = '$mfeid'";
 	my $zscore = $db->MySelect(statement => $zscore_stmt, type => 'single');
+	next if (!defined($zscore));
 	my $minus_string = '';
 	$mrna_sequence =~ tr/Tt/Uu/;
 	my @seq = split(//, $mrna_sequence);
@@ -171,6 +172,8 @@ sub Make_Extension {
 	}
 	my $color;
 	## UNDEF VALUES HERE
+#	print "TESTME: MFE:$mfe AVG:$avg_mfe Z:$zscore avg:$avg_zscore\n";
+#	sleep 1;
 	if (($mfe < $avg_mfe) and ($zscore > $avg_zscore)) {
 	    ## Red
 	    $color = $gd->colorResolve(191,0,0); 
@@ -186,6 +189,10 @@ sub Make_Extension {
 	}
 	my $url = qq"/search.html?short=1&accession=$accession";
 	if ($type eq 'percent') {
+#	    if (!defined($zscore)) {
+#		print "TESTME: $zscore_stmt\n";
+#		sleep 10;
+#	    }
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession, mfe:$mfe z:$zscore xpercent:$x_percentage ypercent:$y_percentage">\n/;
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);
 	} elsif ($type eq 'codons') {
@@ -401,41 +408,41 @@ sub Make_Cloud {
 	    if ($x_coord <= $mfe_significant_coord and $y_coord <= $z_significant_coord) {
 		if (!defined($slips_significant{$slipsite})) {
 		    $slips_significant{$slipsite}{num} = 1;
-		    if ($slipsite =~ /^AAA....$/) {
-			$slips_significant{$slipsite}{color} = 'red';
-		    } elsif ($slipsite =~ /^UUU....$/) {
-			$slips_significant{$slipsite}{color} = 'green';
-		    } elsif ($slipsite =~ /^GGG....$/) {
-			$slips_significant{$slipsite}{color} = 'blue';
-		    } elsif ($slipsite =~ /^CCC....$/) {
-			$slips_significant{$slipsite}{color} = 'black';
-		    } else {
-			#warn("This sucks. $slipsite doesn't match");
-			next;
-		    }
 		} else {
 		    $slips_significant{$slipsite}{num}++;
 		}
-	    }
-	    
-	    if (!defined($slipsites_numbers{$slipsite})) {
-		$slipsites_numbers{$slipsite}{num} = 1;
 		if ($slipsite =~ /^AAA....$/) {
-		    $slipsites_numbers{$slipsite}{color} = 'red';
+		    $slips_significant{$slipsite}{color} = 'red';
 		} elsif ($slipsite =~ /^UUU....$/) {
-		    $slipsites_numbers{$slipsite}{color} = 'green';
+		    $slips_significant{$slipsite}{color} = 'green';
 		} elsif ($slipsite =~ /^GGG....$/) {
-		    $slipsites_numbers{$slipsite}{color} = 'blue';
+		    $slips_significant{$slipsite}{color} = 'blue';
 		} elsif ($slipsite =~ /^CCC....$/) {
-		    $slipsites_numbers{$slipsite}{color} = 'black';
+		    $slips_significant{$slipsite}{color} = 'black';
 		} else {
-		    #warn("This sucks. $slipsite doesn't match the expected");
+#		    print "TESTME: slipsite must be something different: $slipsite\n";
+		    $slips_significant{$slipsite}{color} = 'yellow';
+		    #warn("This sucks. $slipsite doesn't match");
 		    next;
 		}
+	    }
+	    if (!defined($slipsites_numbers{$slipsite})) {
+		$slipsites_numbers{$slipsite}{num} = 1;
 	    } else {
 		$slipsites_numbers{$slipsite}{num}++;
 	    }
-	    
+	    if ($slipsite =~ /^AAA....$/) {
+		$slipsites_numbers{$slipsite}{color} = 'red';
+	    } elsif ($slipsite =~ /^UUU....$/) {
+		$slipsites_numbers{$slipsite}{color} = 'green';
+	    } elsif ($slipsite =~ /^GGG....$/) {
+		$slipsites_numbers{$slipsite}{color} = 'blue';
+	    } elsif ($slipsite =~ /^CCC....$/) {
+		$slipsites_numbers{$slipsite}{color} = 'black';
+	    } else {
+		#warn("This sucks. $slipsite doesn't match the expected");
+		next;
+	    }
 	    if ($args_slipsites eq $slipsite) {
 		my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 		my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
@@ -482,12 +489,21 @@ sub Make_Cloud {
     my %percent_sig;
     foreach my $slip (keys %slipsites_numbers) {
 	## UNDEF VALUES HERE, DIVISION BY ZERO
+#	print "TESTME: $slip $slipsites_numbers{$slip}{num}\n";
 	if (!defined($slipsites_numbers{$slip}{num})) {
 	    $percent_sig{$slip}{num} = 0;
+	    $percent_sig{$slip}{color} = 'yellow';
+	    $slipsites_numbers{$slip}{num} = 0;
+	    $slipsites_numbers{$slip}{color} = 'yellow';
+	} else {
+	    if ($slipsites_numbers{$slip}{num} == 0) {
+		$percent_sig{$slip}{num} = 0;
+	    } else {
+		$percent_sig{$slip}{num} = (($slips_significant{$slip}{num} / $slipsites_numbers{$slip}{num}) * 100.0);
+		$percent_sig{$slip}{num} = sprintf("%.1f", $percent_sig{$slip}{num});
+	    }
+	    $percent_sig{$slip}{color} = $slips_significant{$slip}{color};
 	}
-	$percent_sig{$slip}{num} = (($slips_significant{$slip}{num} / $slipsites_numbers{$slip}{num}) * 100.0);
-	$percent_sig{$slip}{num} = sprintf("%.1f", $percent_sig{$slip}{num});
-	$percent_sig{$slip}{color} = $slips_significant{$slip}{color};
     }
     if (defined($args_slipsites) and $args_slipsites ne 'all') {
 	Make_SlipBars(\%slipsites_numbers, $bar_filename);
@@ -580,9 +596,15 @@ sub Make_SlipBars {
     my @colors;
     my $color_string = '';
     ## UNDEF VALUES HERE
+    my $nums;
+    foreach my $k (keys %{$numbers}) {
+#	print "WTF: $numbers->{$k}{color}\n";
+	$nums->{$k} = $numbers->{$k} if (defined($numbers->{$k}{num}));
+    }
+    $numbers = $nums;
     foreach my $k (sort { $numbers->{$b}{num} <=> $numbers->{$a}{num} } keys %{$numbers}) {
 #    foreach my $k (sort  keys %{$numbers}) {
-	$color_string .= "$numbers->{$k}{color} ";
+#	$color_string .= "$numbers->{$k}{color} ";
 	push (@colors, $numbers->{$k}{color});
 	push (@keys, $k);
 	push (@values, $numbers->{$k}{num});
@@ -590,10 +612,11 @@ sub Make_SlipBars {
     my @data = (\@keys, \@values);
     my $bargraph = new GD::Graph::bars(700,400);
     $bargraph->set(x_label => 'slipsite', y_label => 'number', title => 'How many of each slipsite',
-		   dclrs => [ qw(blue black red green) ], cycle_clrs => 1, dclrs => \@colors,
+		   dclrs => [ qw"blue black red green" ], cycle_clrs => 1, dclrs => \@colors,
 		   show_values => 1, values_vertical => 1, x_labels_vertical => 1,
 		   y_max_value => $values[0],);
-    #	dclrs => [ qw($color_string) ],
+    #dclrs => [ qw"blue black red green" ],
+    #dclrs => [ qw($color_string) ],
     $bargraph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $bargraph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $bargraph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
