@@ -126,7 +126,7 @@ sub new {
     $me->{output_file} = 'output.txt' if (!defined($me->{output_file}));
     $me->{pbs_arches} = 'linux' if (!defined($me->{pbs_arches}));
     $me->{pbs_cpu} = '1' if (!defined($me->{pbs_cpu}));
-    $me->{pbs_cputime} = '24:00:00' if (!defined($me->{pbs_cputime}));
+    $me->{pbs_cputime} = '48:00:00' if (!defined($me->{pbs_cputime}));
     $me->{pbs_memory} = '2000' if (!defined($me->{pbs_memory}));
     $me->{pbs_num_daemons} = '20' if (!defined($me->{num_daemons}));
     $me->{pbs_partialname} = 'fold' if (!defined($me->{pbs_partialname}));
