@@ -47,7 +47,7 @@ sub Make_Extension {
 	$graph->set(y_max_value=>150);
 	$graph->set(y_label=>'-1 frame extension in percent');
     } elsif ($type eq 'codons') {
-	$graph->set(y_max_value=>150);
+	$graph->set(y_max_value=>200);
 	$graph->set(y_label=> '-1 frame extension in codons');
     } else {
 	$graph->set(y_max_value=>200);
@@ -155,7 +155,7 @@ sub Make_Extension {
 
 	my $extension_length = length($minus_string);
 	my $minus_codons = ($extension_length / 3);
-	my $minus_codons_pixels = $minus_codons * 5;
+	my $minus_codons_pixels = $minus_codons * 4;
 	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons_pixels) + $bottom_y_coord);
 
 	my $y_percentage = sprintf("%.2f", 100.0 * (($extension_length + $start) - $orf_start) / ($orf_stop - $orf_start));
@@ -196,6 +196,7 @@ sub Make_Extension {
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession, mfe:$mfe z:$zscore xpercent:$x_percentage ypercent:$y_percentage">\n/;
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);
 	} elsif ($type eq 'codons') {
+	    $minus_codons = sprintf("%.1f", $minus_codons);
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${codons_y_coord},$radius" href="${url}" title="$accession mfe:$mfe z:$zscore xpercent:$x_percentage ycodons:$minus_codons">\n/;
 #	    print "Percent: xcoord: $x_coord xcoord: $codons_y_coord<br>\n";
 	    $gd->filledArc($x_coord, $codons_y_coord, 4,4,0,360,$color,4);
