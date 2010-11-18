@@ -3,7 +3,7 @@ use strict;
 use IO::Handle;
 use lib 'lib';
 use PkParse;
-use PRFdb qw / callstack AddOpen RemoveFile /;
+use PRFdb qw / Callstack AddOpen RemoveFile /;
 
 sub new {
     my ($class, %arg) = @_;
@@ -47,15 +47,15 @@ sub Nupack_NOPAIRS {
     };
     chdir($config->{workdir});
     my $command;
-    callstack(), die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
-    die("$config->{workdir}/dataS_G.rna is missing.") unless ( -r "$config->{workdir}/dataS_G.rna" );
+    Callstack(), die("$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
+    die("$config->{workdir}/dataS_G.rna is missing.") unless (-r "$config->{workdir}/dataS_G.rna");
 
     if (defined($pseudo) and $pseudo eq 'nopseudo') {
-	callstack(), die("$nupack_boot is missing.") unless ( -r $nupack_boot );
+	Callstack(), die("$nupack_boot is missing.") unless (-r $nupack_boot);
 	$command = qq($nupack_boot $inputfile 2>$errorfile);
     } else {
 	warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{exe_nupack} =~ /nopairs/);
-	callstack(), die("$nupack is missing.") unless (-r $nupack);
+	Callstack(), die("$nupack is missing.") unless (-r $nupack);
 	$command = qq($nupack $inputfile 2>$errorfile);
     }
     print "NUPACK_NOPAIRS: infile: $inputfile accession: $accession start: $start
@@ -112,11 +112,11 @@ command: $command\n" if (defined($config->{debug}));
     }
     if ($nupack_return eq '139') {
 	$config->PRF_Error("Nupack file permission error on out.pair/out.ene", $accession);
-	callstack(), die("Nupack file permission error.");
+	Callstack(), die("Nupack file permission error.");
     }
     unless ($nupack_return eq '0' or $nupack_return eq '256') {
 	$config->PRF_Error("Nupack Error running $command: $!", $accession);
-	  callstack(), die("Nupack Error running $command\n
+	  Callstack(), die("Nupack Error running $command\n
 Error:  $command $!
 Return: $nupack_return\n");
     }
@@ -129,12 +129,12 @@ Return: $nupack_return\n");
     $return->{output} = $nupack_output_string;
     $return->{pairs}  = $pairs;
     if (!defined($return->{output})) {
-	callstack();
+	Callstack();
 	print STDERR "Output is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Output is not defined in RNAFolders", $me->{species}, $accession);
     }
     if (!defined($return->{pairs})) {
-	callstack();
+	Callstack();
 	print STDERR "Pairs is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Pairs is not defined in RNAFolders", $me->{species}, $accession);
     }
@@ -158,7 +158,7 @@ Return: $nupack_return\n");
     $return->{barcode} = $barcode;
     chdir($config->{base});
     if (!defined($return->{sequence})) {
-	callstack();
+	Callstack();
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
 	print STDERR "The full output from nupack was: $nupack_output\n";
 	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
@@ -175,11 +175,13 @@ sub Vienna {
     my $start = $me->{start};
     my $config = $me->{config};
     if (!-r $inputfile) {
-	callstack();
+	Callstack();
 	print "Missing the inputfile.\n";
 	open(NEWIN, ">$inputfile");
 	my $db = new PRFdb(config => $config);
-	my $seq = $db->MySelect("SELECT slipsite, sequence FROM mfe where accession = ?", vars => [$accession]);
+	my $species = $db->MySelect("SELECT species FROM genome WHERE accession = ?", vars => [$accession], type => 'single');
+	my $mfe_table = "mfe_$species";
+	my $seq = $db->MySelect("SELECT slipsite, sequence FROM $mfe_table where accession = ?", vars => [$accession]);
 	my $missing_slipsite = $seq->[0]->[0];
 	my $missing_sequence = $seq->[0]->[1];
 	print NEWIN ">$accession
@@ -191,7 +193,7 @@ ${missing_slipsite}${missing_sequence}
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
     if (!defined($seq)) {
-	callstack();
+	Callstack();
 	print STDERR "Sequence is not defined in Vienna.\n";
     }
     my $errorfile = qq(${inputfile}_vienna.err);
@@ -235,7 +237,7 @@ command: $command\n" if (defined($config->{debug}));
     close(VI);
     RemoveFile($errorfile);
     if (!defined($return->{sequence})) {
-	callstack();
+	Callstack();
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
     }
@@ -267,7 +269,7 @@ sub Pknots {
     chdir($config->{workdir});
     my $command;
     if (!-r $config->{exe_pknots}) {
-	callstack(), die("pknots is missing. $config->{exe_pknots}");
+	Callstack(), die("pknots is missing. $config->{exe_pknots}");
     }
     if (defined($pseudo) and $pseudo eq 'nopseudo') {
 	$command = qq"$config->{exe_pknots} $inputfile 2>$errorfile";
@@ -307,7 +309,7 @@ command: $command\n" if (defined($config->{debug}));
     ## CLOSE PK in Pknots
     my $pknots_return = $?;
     unless ($pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134') {
-	callstack();
+	Callstack();
 	$config->PRF_Error("Pknots Error running $command: $!", $accession);
     }
     RemoveFile($errorfile);
@@ -341,7 +343,7 @@ command: $command\n" if (defined($config->{debug}));
     }
     chdir($config->{base});
     if (!defined($return->{sequence})) {
-	callstack();
+	Callstack();
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
     }
@@ -433,7 +435,7 @@ sub Pknots_Boot {
     ## CLOSE PK in Pknots_Boot
     my $pknots_return = $?;
     unless ($pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134') {
-	callstack();
+	Callstack();
 	$config->PRF_Error("Pknots Error: $command $!", $accession);
     }
     RemoveFile($errorfile);
@@ -491,13 +493,13 @@ sub Nupack_Boot_NOPAIRS {
     ## CLOSE NU in Nupack_Boot_NOPAIRS
     my $nupack_return = $?;
     if ($nupack_return eq '139') {
-	callstack();
+	Callstack();
 	$config->PRF_Error("Nupack file permission error on out.pair/out.ene", $accession);
 	die("Nupack file permission error.");
     }
     unless ($nupack_return eq '0' or $nupack_return eq '256') {
 	$config->PRF_Error("Nupack Error running $command: $!", $accession);
-	callstack();
+	Callstack();
 	die("Nupack Error running $command: $!");
     }
     RemoveFile($errorfile);
@@ -540,7 +542,7 @@ sub Hotknots {
     my $command = qq"$config->{workdir}/$config->{exe_hotknots} -I $seqname -noPS -b";
     print "HotKnots: infile: $inputfile accession: $accession start: $start
 command: $command\n" if (defined($config->{debug}));
-    open(HK, "$command |") or callstack(), print STDERR "problem with $command $!";
+    open(HK, "$command |") or Callstack(), print STDERR "problem with $command $!";
     while(my $line = <HK>) {
 #	print $line;
 	$ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
@@ -561,11 +563,11 @@ command: $command\n" if (defined($config->{debug}));
 		$ret->{output} .= "$basepair_num ";
 		$ret->{pairs}++;
 	    } else {
-		callstack();
+		Callstack();
 		die("Something is fubared");
 	    }
 	} else {
-	    callstack();
+	    Callstack();
 	    die("Something is fubared");
 	}
     }
@@ -602,7 +604,7 @@ command: $command\n" if (defined($config->{debug}));
     }
     chdir($config->{base});
     if (!defined($ret->{sequence})) {
-	callstack();
+	Callstack();
 	print STDERR "Sequence is not defined for accession: $accession start: $start\n";
 	$config->PRF_Error("Sequence is not defined in RNAFolders", $me->{species}, $accession);
     }
@@ -661,12 +663,12 @@ command: $command\n" if (defined($config->{debug}));
 		    $ret->{output} .= "$basepair_num ";
 		    $ret->{pairs}++;
 		} else {
-		    callstack();
+		    Callstack();
 		    print STDERR "The number of basepairs is negative?  $basepair\n";
 		    last;
 		}
 	    } else {
-		callstack();
+		Callstack();
 		print STDERR "The base pair is not a number: $basepair\n";
 		last;
 	    }

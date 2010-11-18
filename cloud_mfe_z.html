@@ -6,14 +6,15 @@
 % my $z_minus = $z - 0.1;
 % my ($stmt, $stuff);
 % my $boot_table = "boot_$species";
+% my $mt = "mfe_$species";
 % if (defined($slipsites) and $pknot) {
-%   $stmt = qq/SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, $boot_table WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND round(mfe.mfe,2) = round($mfe,2) AND round($boot_table.zscore,1) = round($z,1) AND mfe.knotp = '1' AND mfe.id = $boot_table.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession/;
+%   $stmt = qq"SELECT distinct $mt.accession, $mt.start, $mt.id FROM $mt, $boot_table WHERE $mt.seqlength = $seqlength AND round($mt.mfe,2) = round($mfe,2) AND round($boot_table.zscore,1) = round($z,1) AND $mt.knotp = '1' AND $mt.id = $boot_table.mfe_id AND $mt.slipsite = '$slipsites' ORDER BY $mt.start, $mt.accession";
 % } elsif (defined($slipsites) and !$pknot) {
-%   $stmt = qq/SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, $boot_table WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2)  AND ROUND($boot_table.zscore,1) = ROUND($z,1) AND mfe.id = $boot_table.mfe_id AND mfe.slipsite = '$slipsites' ORDER BY mfe.start,mfe.accession/;
+%   $stmt = qq"SELECT distinct $mt.accession, $mt.start, $mt.id FROM $mt, $boot_table WHERE $mt.seqlength = $seqlength AND ROUND($mt.mfe,2) = ROUND($mfe,2)  AND ROUND($boot_table.zscore,1) = ROUND($z,1) AND $mt.id = $boot_table.mfe_id AND $mt.slipsite = '$slipsites' ORDER BY $mt.start, $mt.accession";
 % } elsif (!defined($slipsites) and $pknot) {
-%   $stmt = qq/SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, $boot_table WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND($boot_table.zscore,1) = ROUND($z,1)  AND mfe.knotp = '1' AND mfe.id = $boot_table.mfe_id ORDER BY mfe.start,mfe.accession/;
+%   $stmt = qq"SELECT distinct $mt.accession, $mt.start, $mt.id FROM $mt, $boot_table WHERE $mt.seqlength = $seqlength AND ROUND($mt.mfe,2) = ROUND($mfe,2) AND ROUND($boot_table.zscore,1) = ROUND($z,1)  AND $mt.knotp = '1' AND $mt.id = $boot_table.mfe_id ORDER BY $mt.start, $mt.accession";
 % } else {  ## used to be elsif (!defined($slipsites) and !$pknot) {
-%   $stmt = qq/SELECT distinct mfe.accession, mfe.start, mfe.id FROM mfe, $boot_table WHERE mfe.species = '$species' AND mfe.seqlength = $seqlength AND ROUND(mfe.mfe,2) = ROUND($mfe,2) AND ROUND($boot_table.zscore,1) = ROUND($z,1)  AND mfe.id = $boot_table.mfe_id ORDER BY mfe.start,mfe.accession/;
+%   $stmt = qq"SELECT distinct $mt.accession, $mt.start, $mt.id FROM $mt, $boot_table WHERE $mt.seqlength = $seqlength AND ROUND($mt.mfe,2) = ROUND($mfe,2) AND ROUND($boot_table.zscore,1) = ROUND($z,1)  AND $mt.id = $boot_table.mfe_id ORDER BY $mt.start, $mt.accession";
 % }
 % $stuff = $db->MySelect(statement => $stmt,);
 % if ($#$stuff == -1) {

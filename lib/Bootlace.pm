@@ -30,7 +30,7 @@ sub new {
       config => $arg{config},
       fasta_comment => undef,
       fasta_data => undef,
-    fasta_arrayref => [],
+      fasta_arrayref => [],
   }, $class;
     my $inputfile = $me->{inputfile};
     open(IN, "<$inputfile") or PRFConfig::PRF_Error("Could not open the Bootlace input file. $inputfile  $!", $arg{species}, $arg{accession});

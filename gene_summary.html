@@ -33,7 +33,7 @@
    <a href="/search_blast.html?location=remote&accession=<% $accession %>" title="Run BLAST to search the NR database for sequences similar to this gene.">Remote Blast</a> using this gene.</br>
   <br>
 % my $table = "landscape_$species";
-% my $landscape = $db->MySelect("SELECT count(id) FROM $table WHERE accession = '$accession'");
+% my $landscape = $db->MySelect(statement => "SELECT count(id) FROM $table WHERE accession = ?", vars => [$accession], type => 'single');
    Download: <a href="/download_sequence.html?accession=<% $accession %>" title="Download a fasta file containing this gene.">Nucleotide</a> or <a href="/download_aasequence.html?accession=<% $accession %>" title="Download a fasta file containing this gene's amino acid sequence.">Amino acid</a> sequence.<br>
   </td>
  </tr>

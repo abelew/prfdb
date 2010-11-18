@@ -1,23 +1,32 @@
-Required Software:
+Required Software that isn't likely to be in your distribution:
 rnamotif
 pknots
 nupack
-libpng
-libjpeg
-libgd
+hotknots
+ViennaRNA
 
-
-Required Perl Modules:
-
-DBI
-Template
-DBD::Mysql
-CGI
-Statistics::Distribution
-GD::Graph
-GD::Image with png support
-Bioperl
+The list of required perl modules may be found in lib/MyDeps.pm
+It makes an attempt to auto-install anything that is missing.
+If it fails, you can run perl -MCPAN -e shell
+then install 'missing_module' in order to get yourself squared away. 
 
 Required Editing:
+Set PRFDB_HOME in your apache configuration, check the file
+apache/xprfdb.conf for more details
+If you are running a web server you will also need to set
+PRFDB_NAME and PRFDB_IP
+
 Copy prfdb.conf.default to prfdb.conf
-Check over the fields there, prefix, db, username should all be changed
+The fields for database_user, database_pass etc need to be changed.
+Most other settings are fine by default, but you can change pretty much
+anything from the configuration file if you desire.
+
+Finally:
+Run ./prf_daemon --setup_db
+
+You can test your installation with:
+./prf_daemon --shell
+
+If it worked, you can do a show tables and see all the initial tables.
+At that point, you will likely want to import some sequences.
+./prf_daemon --import needs to be documented...

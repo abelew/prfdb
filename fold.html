@@ -77,7 +77,7 @@ forkfunc(\&tmp_fold, @child_args);
 </%perl>
 
 <p>This should redirect you to the output page for your folding.</p>
-<& refresh.js, refresh_url => "folds/$short_filename.html", seconds => 5 &>
+<& /js/refresh.html, refresh_url => "folds/$short_filename.html", seconds => 5 &>
 
 
 % }

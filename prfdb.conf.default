@@ -1,21 +1,6 @@
 add_to_path = "/usr/bin:/usr/local/prfdb/work:/usr/local/bin"
 LD_LIBRARY_PATH="/a/f20-fs1/export/home/deepthought/abelew/usr/lib"
 prefix = "$(base)"
-queue_table = "queue"
-checks = 0
-check_webqueue = 1
-seqlength = ['50','75','100']
-nupack_nopairs_hack = 1   ## For the NCI systems I hacked nupack
-arch_specific_exe = 0     ## Architecture specific executables (used for a pbs environment with linux/aix/irix)
-boot_iterations = 100
-boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot_NOPAIRS, hotknots => \&RNAFolders::Hotknots_Boot, }
-boot_randomizers = { array => \&SeqMisc::ArrayShuffle, }
-exe_nupack = "Fold.out.nopairs"
-exe_nupack_boot = "Fold.out.boot.nopairs"
-database_name = 'prfdb_test'
-database_host = ['cbmgintra.umd.edu','cbmgapps.umd.edu']
+database_host = ['first.host.in.mysql_replication','second.host.in.mysql_replication']
 database_user = 'prfdb'
-database_pass = 'drevil'
-
-index_species = ['saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus', 'danio_rerio', 'bos_taurus','rattus_norvegicus','xenopus_tropicalis', 'xenopus_laevis', 'virus'] ## arabidopsis_thaliana
-pbs_partialname='deepthought'
+database_pass = 'PASSWORD'

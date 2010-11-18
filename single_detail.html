@@ -172,9 +172,9 @@
 
       <tr>
 	<td text-align="right"><span style="whitespace: nowrap">
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono"><u><% $information->{slipsite} %></u><% $information->{pk_input} %></font></b>
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono"><u><% $information->{slipsite} %></u><% $information->{pk_input_colored} %></font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_subseq.html?mfeid=<% $information->{mfe_id} %>">Download&nbsp;subsequence</a>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_subseq.html?mfeid=<% $information->{id} %>">Download&nbsp;subsequence</a>
 	  </font></div>
          </span>
         </td>
@@ -182,9 +182,9 @@
 
       <tr>
 	<td text-align="right"><span style="whitespace: nowrap">
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{brackets} %></font></b>
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{brackets_colored} %></font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_parens.html?mfeid=<% $information->{mfe_id} %>">Download&nbsp;brackets</a>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_parens.html?mfeid=<% $information->{id} %>">Download&nbsp;brackets</a>
 	  </font></div>
          </span>
 	</td>
@@ -192,9 +192,9 @@
 
       <tr>
         <td text-align="right"><span style="whitespace: nowrap">
-    	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{parsed} %></font></b>
+    	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{parsed_colored} %></font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_parsed.html?mfeid=<% $information->{mfe_id} %>">Download&nbsp;parsed</a>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download_parsed.html?mfeid=<% $information->{id} %>">Download&nbsp;parsed</a>
 	  </font></div>
          </span>
 	</td>
@@ -203,11 +203,11 @@
       <tr>
         <td text-align="right"><span style="whitespace: nowrap">
 	  <embed id="feynman" src="<% $information->{feynman_url} %>" align="bottom" width="<% $information->{feynman_width} %>" height="<% $information->{feynman_height} %>" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
-	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;&nbsp;<a href="/download_bpseq.html?mfeid=<% $information->{mfe_id} %>">Download&nbsp;bpseq</a><br>&nbsp;&nbsp;&nbsp;Download
-<a href="/download_png.html?accession=<% $information->{accession} %>&format=png&mfeid=<% $information->{mfe_id} %>&species=<% $information->{species} %>">&nbsp;png,</a>
-<a href="/download_png.html?accession=<% $information->{accession} %>&format=pdf&mfeid=<% $information->{mfe_id} %>&species=<% $information->{species} %>">pdf,</a>
-<a href="/download_png.html?accession=<% $information->{accession} %>&format=ps&mfeid=<% $information->{mfe_id} %>&species=<% $information->{species} %>">ps</a>, View
-<a href="/cfeynman.html?accession=<% $information->{accession} %>&mfeid=<% $information->{mfe_id} %>&species=<% $information->{species} %>">cfeynman graph</a>, Try
+	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;&nbsp;<a href="/download_bpseq.html?mfeid=<% $information->{id} %>">Download&nbsp;bpseq</a><br>&nbsp;&nbsp;&nbsp;Download
+<a href="/download_png.html?accession=<% $information->{accession} %>&format=png&mfeid=<% $information->{id} %>&species=<% $information->{species} %>">&nbsp;png,</a>
+<a href="/download_png.html?accession=<% $information->{accession} %>&format=pdf&mfeid=<% $information->{id} %>&species=<% $information->{species} %>">pdf,</a>
+<a href="/download_png.html?accession=<% $information->{accession} %>&format=ps&mfeid=<% $information->{id} %>&species=<% $information->{species} %>">ps</a>, View
+<a href="/cfeynman.html?accession=<% $information->{accession} %>&mfeid=<% $information->{id} %>&species=<% $information->{species} %>">cfeynman graph</a>, Try
 <a href="/feynman_overlap.html?start=<% $information->{slipstart} %>&seqlength=<% $information->{seqlength} %>&accession=<% $information->{accession} %>">An overlap</a>
 
 <br>

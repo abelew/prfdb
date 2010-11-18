@@ -19,8 +19,7 @@
  }
  if (!defined($picture_status)) {
   $url = undef;
- }
- else {
+ } else {
   use Image::Size;
   ($width, $height) = imgsize($filename);
   $url = $pic->Picture_Filename(type => 'landscape',url=>'url');

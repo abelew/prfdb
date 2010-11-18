@@ -3,7 +3,9 @@
 my $query_statement;
 my $entries;
 my $question = '';
+my $species;
 if ($short or $accession) {
+    $species = $db->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", type => 'single', vars => [$accession]);
   $query_statement = qq"SELECT * FROM genome WHERE accession = ?";
   $question = $accession;
 } else {
@@ -20,34 +22,30 @@ if ($short or $accession) {
   }
 }
 $entries = $db->MySelect(statement => $query_statement, type => 'hash', descriptor => 1, vars => [$question]);
-
 my @entries_keys = ();
 my $entries_count = 0;
 foreach my $c (keys %{$entries}) {
   push(@entries_keys, $c);
   $entries_count++;
-  my $slip_stmt = qq"SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?";
+  $species = $db->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", type => 'single', vars => [$entries->{$c}->{accession}]);
+  my $mt = "mfe_$species";
+  my $slip_stmt = qq"SELECT count(distinct(start)), count(distinct(id)) FROM $mt WHERE accession = ?";
   my $slipsite_structure_count = $db->MySelect(statement => $slip_stmt, vars => [$entries->{$c}->{accession}], type => 'row',);
   $entries->{$c}->{slipsite_count} = $slipsite_structure_count->[0];
   $entries->{$c}->{structure_count} = $slipsite_structure_count->[1];
 } ## End foreach
-if ($entries_count == 0) {
-  print "  <p>No entry was found for the search term: '$query'.</p><br>\n";
-  print " TESTME $query_statement<br>\n";
-}
-my $species = $entries->{$entries_keys[0]}->{species};
-my $accession = $entries->{$entries_keys[0]}->{accession};
-my $long_species;
 </%perl>
+% if ($entries_count == 0) {
+  <p>No entry was found for the search term: '<% $query %>'.</p><br>
+% } elsif ($entries_count == 1) {
+%   my $long_species = HTMLMisc::Make_Species($species);
+%   my $genename = $entries->{$entries_keys[0]}->{genename};
+%   my $accession = $entries->{$entries_keys[0]}->{accession};
+%   my $comment = $entries->{$entries_keys[0]}->{comment};
+%   my $omim_id = $entries->{$entries_keys[0]}->{omim_id};
+%   my $orf_start = $entries->{$entries_keys[0]}->{orf_start};
+%   my $orf_stop = $entries->{$entries_keys[0]}->{orf_stop};
 
-% if ($entries_count == 1) {
-% $long_species = HTMLMisc::Make_Species($entries->{$entries_keys[0]}->{species});
-% my $genename = $entries->{$entries_keys[0]}->{genename};
-% my $accession = $entries->{$entries_keys[0]}->{accession};
-% my $comment = $entries->{$entries_keys[0]}->{comment};
-% my $omim_id = $entries->{$entries_keys[0]}->{omim_id};
-% my $orf_start = $entries->{$entries_keys[0]}->{orf_start};
-% my $orf_stop = $entries->{$entries_keys[0]}->{orf_stop};
 <& gene_summary.html, accession => $accession, genename => $genename, accession => $accession, long_species => $long_species, species => $species, comment => $comment, omim_id => $omim_id &>
 <& list_slipsites.html, accession => $accession, species => $species, comment => $comment, omim_id => $omim_id, orf_start => $orf_start, orf_stop => $orf_stop &>
 <& print_gene.html, accession => $accession, translate => $translate &>
@@ -87,9 +85,10 @@ $(document).ready(function()
   <tbody>
 % foreach my $entry (sort keys %{$entries}) {
 % my $species = $entries->{$entry}->{species};
-% $long_species = HTMLMisc::Make_Species($species);
+% my $long_species = HTMLMisc::Make_Species($species);
 % $entries->{$entry}->{long_species} = $long_species;
-% my $slip_stmt = qq"SELECT count(distinct(start)), count(distinct(id)) FROM mfe WHERE accession = ?";
+% my $mt = "mfe_$species";
+% my $slip_stmt = qq"SELECT count(distinct(start)), count(distinct(id)) FROM $mt WHERE accession = ?";
 % my $slipsite_structure_count = $db->MySelect(statement => $slip_stmt, vars => [$entries->{$entry}->{accession}], type => 'row');
 % $entries->{$entry}->{slipsite_count} = $slipsite_structure_count->[0];
 % }  ## End foreach my $entry
@@ -128,24 +127,13 @@ $(document).ready(function()
 <div id="overlay">
   Please wait...
 </div>
-%#<!---
-%#  <tr>
-%#    <td><a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><img src="/html/external.png" border="0"></a></td>
-%#    <td><a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><% $genename %></a>
-%#<& link_out.html, accession => $accession &></td>
-%#    <td><a href="/search.html?short=1&accession=<% $accession %>&species=<% $species %>" rel="external" target="_blank"><strong><% $accession %></strong></a></td>
-%#    <td><i><% HTMLMisc::Make_Species($species) %></i></td>
-%#    <td><strong><% $slipsite_count %></strong></td>
-%#    <td><% $comment %></div></td>
-%#  </tr>
-%#--->
 <div id="pager">
 	<form> 
-		<img src="/images/first.png" class="first"/> 
-		<img src="/images/prev.png" class="prev"/> 
+		<img src="/images/first.gif" class="first"/> 
+		<img src="/images/previous.gif" class="prev"/> 
 		<input type="text" class="pagedisplay"/> 
-		<img src="/images/next.png" class="next"/> 
-		<img src="/images/last.png" class="last"/> 
+		<img src="/images/next.gif" class="next"/> 
+		<img src="/images/last.gif" class="last"/> 
 		<select class="pagesize"> 
 			<option selected="selected" value="10">10</option> 
 			<option value="20">20</option> 

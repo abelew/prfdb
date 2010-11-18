@@ -222,7 +222,9 @@ sub new {
 	'pknots:i' => \$conf{do_pknots},
 	'process_import_queue' => \$conf{process_import_queue},
 	'randomize' => \$conf{randomize_id},
+	'reconnect' => \$conf{reconnect},
 	'resetqueue' => \$conf{resetqueue},
+	'setup_db' => \$conf{setup_db},
 	'shell' => \$conf{shell},
 	'species:s' => \$conf{species},
 	'startmotif:s' => \$conf{startmotif},
@@ -274,9 +276,41 @@ sub new {
     if (ref($me->{index_species}) eq '') {
 	$me->{index_species} = eval($me->{index_species});
     }
+    if (defined($me->{reconnect})) {
+	eval "use PRFdb qw'Callstack'; 1";
+ 	my $db = new PRFdb(config => $me);
+	$db->Reconnect($me->{prune});
+	exit(0);
+    }
     if (ref($me->{seqlength}) eq '') {
 	$me->{seqlength} = eval($me->{seqlength});
     }
+    if (defined($me->{setup_db})) {
+	print "Running this assumes that you put an option
+in your prfdb.conf with the localhost SQL root password TEMPORARILY!
+Do so with a line like: database_root_password = PASSWORD
+In addition, it assumes you have a chosen password for the database.
+I am going to wait 10 seconds before running to let you suspend me
+and go check..\n";
+	sleep(3);
+	print "Go on, go check.";
+	sleep(7);
+	my $cmd = qq/mysqladmin -u root --password=$me->{database_root_password} create $me->{database_name}/;
+	system($cmd);
+	$cmd = qq/mysql -u root --password=$me->{database_root_password} mysql -e "CREATE USER '$me->{database_user}'\@'\%' IDENTIFIED BY '$me->{database_pass}'"/;
+	system($cmd);
+	$cmd = qq/mysql -u root --password=$me->{database_root_password} mysql -e "GRANT ALL PRIVILEGES ON '$me->{database_name}'.* to '$me->{database_user}'\@'\%'"/;
+	system($cmd);
+	eval "use PRFdb qw'Callstack'; 1";
+ 	my $db = new PRFdb(config => $me);
+	print "Creating Tables\n";
+	$db->Create_Tables();
+	$db->Create_MFE("mfe_saccharomyces_cerevisiae");
+	$db->Create_Boot("boot_saccharomyces_cerevisiae");
+	$db->Create_Landscape("landscape_saccharomyces_cerevisiae");
+	exit(0);
+    }
+
     if (defined($me->{shell})) {
 	my $host = $me->{database_host}->[0];
 	system("mysql -u $me->{database_user} --password=$me->{database_pass} -h $host $me->{database_name}");

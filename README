@@ -2,7 +2,8 @@ This is a README file, there are many like it, but this is my own.
 
 Start with an explanation of the database and its schemas.
 The primary key for everything lies in the genome table.
-GENOME:
+
+genome:
 Id Acccession Species Genename Version Comment Mrna_seq Protein_seq Orf_start Orf_stop Lastupdate
   Id is auto-incremented.  Genename must be parsed out of the input database and so is not as
   reliable as comment.  mrna_seq is the full sequence given.  protein_seq comes from the cds
@@ -11,7 +12,10 @@ Problems:
   1)  This table is filled with 1 full copy of the genomic sequence (mrna_seq) for every
       orf in the sequence, this is annoying for viral genomes.
 
-QUEUE
+gene_info:
+  Same as GENOME except text information about each gene, indexed for fast searching.
+
+queue:
 Id Genome_id Public Params Out Done
   Each id is unique, but the genome_id will be used to pull the sequence
   SELECT id, genome_id, params where public='1' order by rand() limit 1
@@ -21,23 +25,23 @@ Id Genome_id Public Params Out Done
   UPDATE queue set done='1' where id='xxx'
   should tell the database that a given sequence is finished
 
-RNAMOTIF
-id genome_id species accession start total permissable filedata output lastupdate
-  Each id should be unique, but genome_id will come from the genome table.
-  So, in order to get all the rnamotif information for a given accession and region one would
-  SELECT * from rnamotif where genome_id='123'
-  But if you want all ORFs for an accession
-  SELECT * from rnamotif where accession='1234'
-
-NUPACK/PKNOTS/ETC
+mfe_$species:
 Id Genome_id Species Accession Start Slipsite Seqlength Sequence Output Parsed Mfe Pairs Knotp Barcode Lastupdate
   Same ideas apply.  The only time the Accession should be duplicated is when you have
    a)  Multiple slippery sites per transcript
    b)  Multiple ORFs per transcript
 
-BOOT
+boot_$species:
 ID Genome_id Species Accession Start Iterations Rand_method Mfe_method Mfe_mean Mfe_Sd Mfe_Se Pairs_mean Pairs_sd Pairs_se Mfe_values Lastupdate
 
-DERIVED
-ID Mfe_source Mfe_id Boot_id Accession Image Z_score Lastupdate
-Mfe_source is the source table, mfe_id is the id in that table, boot_id is the id from boot
+landscape_$species:
+The largest tables in the database, contain the mfe data for entire sequences.
+
+overlap:
+Looks for + and - 1 frameshift products
+
+agree:
+Generates statistics about how well nupack,pknots, and hotknots agree for each sequence
+
+index_stats:
+Generates statistics used for the web site.
