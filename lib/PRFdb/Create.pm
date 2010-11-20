@@ -1,8 +1,8 @@
 package PRFdb::Create;
 use strict;
-use PRFdb;
 our @ISA = qw(PRFdb);
 our $AUTOLOAD;
+
 
 #### Create all the tables of the PRFdb here
 sub Agree {
