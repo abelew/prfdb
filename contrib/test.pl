@@ -35,7 +35,7 @@ foreach my $species_es (@{$species_list}) {
     next if ($species =~ /virus/);
     my $mt = "mfe_$species";
     print "Starting $species... ";
-    my $delete = $db->MyExecute("DROP TABLE $mt");
+#    my $delete = $db->MyExecute("DROP TABLE $mt");
     $db->Create_MFE($mt);
     my $insert = $db->MyExecute("INSERT INTO $mt (genome_id, accession, algorithm, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode, compare_mfes, has_snp, bp_mstop) SELECT genome_id, accession, algorithm, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode, compare_mfes, has_snp, bp_mstop FROM mfe WHERE species = '$species'");
 

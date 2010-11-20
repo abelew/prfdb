@@ -67,37 +67,55 @@ sub new {
 }
 
 sub Callstack {
-  my ($path, $line, $subr);
-  my $max_depth = 30;
-  my $i = 1;
-  if ($log->is_warn()) {
-    $log->warn("--- Begin stack trace ---");
-    while ((my @call_details = (caller($i++))) && ($i<$max_depth)) {
-      $log->warn("$call_details[1] line $call_details[2] in function $call_details[3]");
+    my %args = @_;
+    $log->warn("$args{message}") if ($args{message});
+    my ($path, $line, $subr);
+    my $max_depth = 30;
+    my $i = 1;
+    if ($log->is_warn()) {
+	$log->warn("--- Begin stack trace ---");
+	while ((my @call_details = (caller($i++))) && ($i<$max_depth)) {
+	    $log->warn("$call_details[1] line $call_details[2] in function $call_details[3]");
+	}
+	if (defined($!)) {
+	    $log->warn("STDERR: $!");
+	}
+	$log->warn("--- End stack trace ---");
     }
-    $log->warn("--- End stack trace ---");
-  }
+    if ($args{die}) {
+	my $die_message = qq"";
+	$die_message .= "$args{message}" if (defined($args{message}));
+	$die_message .= ": $!" if (defined($!));
+	die($die_message);
+    }
 }
 
 sub Disconnect {
     my $num_disconnected = 0;
-    
+    my $me = undef;
+    my @handles = ();
+    if (ref($_[0]) eq 'PRFdb') {
+	$me = shift @_;
+	@handles = @{$me->{handles}};
+    }
+
     if (@_) {
 	foreach my $num (@_) {
 	    $num_disconnected++;
 	    print "Disconnecting $num now\n";
 	    my $handle = $PRFdb::handles->[$num];
 	    my $rc = $handle->disconnect();
+	    Callstack() unless ($rc);
 	}
     } else {
 	if (defined($PRFdb::handles)) {
 	    my @handles = @{$PRFdb::handles};
-	    foreach my $num (@handles) {
-		$num_disconnected++;
-		print "Disconnecting $num now\n";
-		my $handle = $PRFdb::handles->[$num];
-		my $rc = $handle->disconnect();
-	    }
+	}
+	foreach my $num (@handles) {
+	    $num_disconnected++;
+	    print "Disconnecting $num_disconnected now\n";
+	    my $handle = $PRFdb::handles->[$num_disconnected];
+	    my $rc = $handle->disconnect() if (defined($handle));
 	}
     }
     return($num_disconnected);
@@ -128,7 +146,7 @@ sub MySelect {
 
     my $return = undef;
     if (!defined($statement)) {
-	die("No statement in MySelect");
+	Callstack(die => 1, message => "No statement in MySelect");
     }
 
 #    $me->dbh = $me->MyConnect($statement);
@@ -144,11 +162,9 @@ sub MySelect {
     }
     
     if (!defined($rv)) {
-	Callstack();
 	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
-	print STDERR "$hour:$min:$sec $mon-$mday Execute failed for: $statement
-with: error $DBI::errstr\n";
-	Callstack();
+	Callstack(message => qq"$hour:$min:$sec $mon-$mday Execute failed for: $statement
+with: error $DBI::errstr\n");
 	$me->{errors}->{statement} = $statement;
 	$me->{errors}->{errstr} = $DBI::errstr;
 	return(undef);
@@ -205,9 +221,8 @@ with: error $DBI::errstr\n";
 
     if (defined($DBI::errstr)) {
 	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
-	print STDERR "$hour:$min:$sec $mon-$mday Execute failed for: $statement
-with: error $DBI::errstr\n";
-	Callstack();
+	Callstack(message => "$hour:$min:$sec $mon-$mday Execute failed for: $statement
+with: error $DBI::errstr\n");
 	$me->{errors}->{statement} = $statement;
 	$me->{errors}->{errstr} = $DBI::errstr;
 	Write_SQL($statement);
@@ -251,9 +266,8 @@ sub MyExecute {
     my $rows = 0;
     if (!defined($rv)) {
 	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
-	print STDERR "$hour:$min:$sec $mon-$mday Execute failed for: $statement
-with: error $DBI::errstr\n";
-	Callstack();
+	Callstack(message => "$hour:$min:$sec $mon-$mday Execute failed for: $statement
+with: error $DBI::errstr\n");
 	print STDERR "Host: $config->{database_host} Db: $config->{database_name}\n" if (defined($config->{debug}) and $config->{debug} > 0);
 	$me->{errors}->{statement} = $statement;
 	$me->{errors}->{errstr} = $DBI::errstr;
@@ -388,7 +402,7 @@ sub MyConnect {
 	$me->{errors}->{errstr} = $DBI::errstr;
 	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
 	my $error = qq"$hour:$min:$sec $mon-$mday Could not open cached connection: dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}, $DBI::err. $DBI::errstr";
-	die($error);
+	Callstack(die => 1, message => $error);
     }
     $dbh->{mysql_auto_reconnect} = 1;
     $dbh->{InactiveDestroy} = 1;
@@ -518,8 +532,7 @@ sub Genome_to_Fasta {
     my $statement = qq"SELECT DISTINCT genome_id, accession, comment, FROM gene_info";
     my $info;
     system("mkdir $config->{base}/blast") if (!-r  "$config->{base}/blast");
-    #open(OUTPUT, ">>$config->{base}/blast/$output") or die("Could not open the fasta output file. $!");
-    open(OUTPUT, " | gzip --stdout -f - >> $config->{base}/blast/$output") or die("Could not open the fasta output file. $!");
+    open(OUTPUT, " | gzip --stdout -f - >> $config->{base}/blast/$output") or Callstack(die => 1, message => "Could not open the fasta output file.");
     if (defined($species)) {
 	$statement .= " WHERE species = \'$species\'";
     }
@@ -727,7 +740,7 @@ sub Id_to_AccessionSpecies {
     my $me = shift;
     my $id = shift;
     my $start = shift;
-    $config->PRF_Error("Undefined value in Id_to_AccessionSpecies", $id) unless (defined($id));
+    Callstack(message => "Undefined value in Id_to_AccessionSpecies") unless (defined($id));
     my $statement = qq"SELECT accession, species from gene_info where id = ?";
     my $data = $me->MySelect(statement => $statement, vars => [$id], type => 'row');
     my $accession = $data->[0];
@@ -900,13 +913,13 @@ sub Import_Fasta {
     my $startpos = shift;
     my @return_array;
     print "Starting Import_Fasta  with with style = $style\n";
-    open(IN, "<$file") or die "Could not open the input file. $!";
+    open(IN, "<$file") or Callstack(die => 1, message => "Could not open the input file.");
     my %datum = (accession => undef, genename => undef, version => undef, comment => undef, mrna_seq => undef);
     my $linenum = 0;
     if (defined($config->{species})) {
 	print "Species is defined as $config->{species}\n";
     } else {
-	die ("Species must be defined.");
+	Callstack(die => 1, message => "Species must be defined.");
     }
     while (my $line = <IN>) {
 	$linenum++;
@@ -1229,7 +1242,7 @@ sub Import_CDS {
 	    $sub_sequence =~ tr/ATGCatgcuU/TACGtacgaA/;
 	    $tmp_mrna_sequence = $sub_sequence;
 	} else {
-	    $config->PRF_Error("WTF: Direction is not forward or reverse");
+	    Callstack(message => "WTF: Direction is not forward or reverse");
 	    $direction = 'forward';
 	}
 	### Don't change me, this is provided by genbank
@@ -1406,7 +1419,7 @@ sub Put_MFE {
     my $errorstring = Check_Insertion(\@pknots, $data);
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_MFE: $errorstring";
-	$config->PRF_Error($errorstring, $data->{species}, $data->{accession});
+	Callstack(message => $errorstring);
     }
     my $species = $data->{species};
     my $table = qq"mfe_$species";
@@ -1436,13 +1449,12 @@ sub Put_MFE_Landscape {
     my $errorstring = Check_Insertion(\@filled, $data);
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_MFE_Landscape: $errorstring";
-	$config->PRF_Error($errorstring, $data->{accession});
+	Callstack(message => $errorstring);
     }
     if (defined($data->{sequence})) {
 	$data->{sequence} =~ tr/actgu/ACTGU/;
     } else {
-	Callstack();
-	print STDERR "Sequence is not defined for Species:$data->{species}, Accession:$data->{accession}, Start:$data->{start}, Seqlength:$data->{seqlength}\n";
+	Callstack(message => qq"Sequence is not defined for Species:$data->{species}, Accession:$data->{accession}, Start:$data->{start}, Seqlength:$data->{seqlength}");
 	return(undef);
     }
     my $statement = qq"INSERT DELAYED INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -1557,7 +1569,7 @@ sub Put_Boot {
 	    my $errorstring = Check_Insertion(\@boot, $data);
 	    if (defined($errorstring)) {
 		$errorstring = "Undefined value(s) in Put_Boot: $errorstring";
-		$config->PRF_Error($errorstring, $species, $accession);
+		Callstack(message => $errorstring);
 	    }
 	    my $boot_table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
 #	    my $statement = qq"INSERT INTO $boot_table
@@ -1568,8 +1580,7 @@ sub Put_Boot {
             my $undefined_values = Check_Defined(genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values);
             if ($undefined_values) {
               $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
-              $config->PRF_Error( $errorstring, $species, $accession );
-              print "$errorstring, $species, $accession\n";
+              Callstack(message => $errorstring);
             }
             my $inserted_rows = $me->MyExecute(statement => $statement, vars => [ $data->{genome_id}, $mfe_id, $species, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ],);
             $rows = $rows + $inserted_rows;
@@ -1609,7 +1620,7 @@ sub Put_Single_Boot {
     
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_Boot: $errorstring";
-	$config->PRF_Error($errorstring, $species, $accession);
+	Callstack(message => $errorstring);
     }
     my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
 #    my $statement = qq"INSERT INTO $table
@@ -1622,8 +1633,7 @@ sub Put_Single_Boot {
 
     if ($undefined_values) {
         $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
-        $config->PRF_Error($errorstring, $species, $accession);
-        print "$errorstring, $species, $accession\n";
+        Callstack(message => $errorstring);
     }
     my $rows = $me->MyExecute(statement => $statement,);
 
@@ -1708,6 +1718,43 @@ sub Tablep {
     return (scalar(@{$info}));
 }
 
+sub ReSync {
+    my $me = shift;
+    my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
+    my $local_dbd = qq"dbi:$config->{database_type}:database=mysql;host=localhost";
+    print "TESTME: $other_dbd\n";
+    my $statement = "SHOW MASTER STATUS";
+    my $other_dbh_num = $me->MyConnect($statement, $other_dbd, 'root', 'rsoqolt');
+    my $local_dbh_num = $me->MyConnect($statement, $local_dbd, 'root', 'rsoqolt');
+    my $other_dbh = $me->{handles}->[$other_dbh_num];
+    my $local_dbh = $me->{handles}->[$local_dbh_num];
+    my $o_sth = $other_dbh->prepare($statement);
+    my $l_sth = $local_dbh->prepare($statement);
+    my $o_rv = $o_sth->execute();
+    my $l_rv = $l_sth->execute();
+    my $o_return = $o_sth->fetchrow_arrayref();
+    my $l_return = $l_sth->fetchrow_arrayref();
+    my $o_file = $o_return->[0];
+    my $l_file = $l_return->[0];
+    my $o_pos = $o_return->[1];
+    my $l_pos = $l_return->[1];
+    my $l_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$o_file', MASTER_LOG_POS=$o_pos";
+    my $o_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$l_file', MASTER_LOG_POS=$l_pos";
+    print "Local log file and position is: $l_file $l_pos\n";
+    print "Changing remote master with: $o_reset\n";
+    print "Remote log file and position is: $o_file $o_pos\n";
+    print "Changing local master with: $l_reset\n";
+    $o_sth = $other_dbh->prepare($o_reset);
+    $l_sth = $local_dbh->prepare($l_reset);
+    $o_rv = $o_sth->execute();
+    $l_rv = $l_sth->execute();
+    $l_reset = "START SLAVE";
+    $o_reset = "START SLAVE";
+    $o_sth = $other_dbh->prepare($o_reset);
+    $l_sth = $local_dbh->prepare($l_reset);
+    $o_rv = $o_sth->execute();
+    $l_rv = $l_sth->execute();
+}
 
 sub Cleanup {
     print "\n\nCaught Fatal signal. @_\n\n";    

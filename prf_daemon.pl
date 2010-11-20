@@ -68,7 +68,7 @@ if (defined($config->{makeblast})) {
     exit(0);
 }
 if (defined($config->{resync})) {
-    ReSync();
+    $db->ReSync();
     exit(0);
 }
 if (defined($config->{zscore})) {
@@ -209,15 +209,15 @@ sub Read_Accessions {
     my $retries = 10;
     ## Rewrite the list of things to do removing the ones which are done
     system("touch ${accession_file}.done");
-    open(D, "<${accession_file}.done") or die "Could not open the done file.";
+    open(D, "<${accession_file}.done") or Callstack(die => 1, message => "Could not open the done file.");
     my @done_list = ();
     while (my $line = <D>) {
 	chomp $line;
 	push(@done_list, $line);
     }
     close(D);
-    open(A, ">${accession_file}.new") or die "Could not open the accession file.";
-    open(AA, "<$accession_file") or die "Could niot open the accession file.";
+    open(A, ">${accession_file}.new") or Callstack(die => 1, message => "Could not open the accession file.");
+    open(AA, "<$accession_file") or Callstack(die => 1, message => "Could niot open the accession file.");
   AA: while (my $line = <AA>) {
       chomp $line;
       my $num_left = scalar(@done_list);
@@ -232,14 +232,14 @@ sub Read_Accessions {
     close(AA);
     system("rm $accession_file.done");
     system("mv ${accession_file}.new $accession_file");
-    open(DONE, ">${accession_file}.done") or die "Could not open the done file.";
-    open(AC, "<$accession_file") or die "Could not open the file of accessions $!";
+    open(DONE, ">${accession_file}.done") or Callstack(die => 1, message => "Could not open the done file.");
+    open(AC, "<$accession_file") or Callstack(die => 1, message => "Could not open the file of accessions");
     OUTER: while (my $accession = <AC>) {
 	sleep(2);
 	my $attempts = 0;
 	while ($attempts < $retries) {
 	    if ($attempts >= $retries) {
-		die("Unable to acquire sequence for $accession after $retries attempts.");
+		Callstack(die => 1, message => "Unable to acquire sequence for $accession after $retries attempts.");
 	    }
 	    chomp $accession;
 	    print "Importing Accession: $accession\n";
@@ -489,7 +489,9 @@ sub Landscape_Gatherer {
 $sequence_string
 ";
 	$state->{fasta_file} = $db->Sequence_to_Fasta($individual_sequence);
-	if (!defined($state->{accession})) {die("The accession is no longer defined. This cannot be allowed.")};
+	if (!defined($state->{accession})) {
+	    Callstack(die => 1, message => "The accession is no longer defined. This cannot be allowed.");
+	}
 	my $landscape_table = qq/landscape_$state->{species}/;
 	my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
 					 species => $state->{species}, accession => $state->{accession},
@@ -645,8 +647,8 @@ sub Check_Boot_Connectivity {
 		### Then there is no nupack information :(
 		#print "No Nupack information!\n";
 		if (!defined($state->{accession})) {
-		    die("The accession is no longer defined. This cannot be allowed.")
-		    };
+		    Callstack(die => 1, message => "The accession is no longer defined. This cannot be allowed.");
+		}
 		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
 						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
@@ -654,8 +656,8 @@ sub Check_Boot_Connectivity {
 	    } elsif ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'pknots') {
 		### Then there is no pknots information :(
 		if (!defined($state->{accession})) {
-		    die("The accession is no longer defined. This cannot be allowed.")
-		    };
+		    Callstack(die => 1, message => "The accession is no longer defined. This cannot be allowed.");
+		}
 		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
 						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
@@ -702,7 +704,7 @@ sub Check_Folds {
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Hotknots and returned $mfe_id\n" if (defined($config->{debug}));
 	} else {
-	    die("Non existing type in Check_Folds");
+	    Callstack(die => 1, message => "Non existing type in Check_Folds");
 	}
     }    ### Done checking for pknots folds
     return ($mfe_id);
@@ -723,7 +725,7 @@ sub Check_Sequence_Length {
     my @seqarray = split(//, $sequence);
     my $sequence_length = $#seqarray + 1;
     my $wanted_sequence_length = $state->{seqlength};
-    open(IN, "<$filename") or die("Check_Sequence_Length: Couldn't open $filename $!");
+    open(IN, "<$filename") or Callstack(die => 1, message => "Check_Sequence_Length: Couldn't open $filename");
     ## OPEN IN in Check_Sequence_Length
     my $output = '';
     my @out = ();
@@ -826,34 +828,6 @@ sub Zscore {
     }
     my $cleaning = qq"DELETE FROM $mt WHERE mfe > '10'";
     $db->MyExecute($cleaning);
-}
-
-sub ReSync {
-    my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
-    my $local_dbd = qq"dbi:$config->{database_type}:database=mysql;host=localhost";
-    my $statement = "SHOW MASTER STATUS";
-    my $other_dbh = $db->MyConnect($statement, $other_dbd, 'root', 'rsoqolt');
-    my $local_dbh = $db->MyConnect($statement, $local_dbd, 'root', 'rsoqolt');
-    my $o_sth = $other_dbh->prepare($statement);
-    my $l_sth = $local_dbh->prepare($statement);
-    my $o_rv = $o_sth->execute();
-    my $l_rv = $l_sth->execute();
-    my $o_return = $o_sth->fetchrow_arrayref();
-    my $l_return = $l_sth->fetchrow_arrayref();
-    my $o_file = $o_return->[0];
-    my $l_file = $l_return->[0];
-    my $o_pos = $o_return->[1];
-    my $l_pos = $l_return->[1];
-    my $l_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$o_file', MASTER_LOG_POS=$o_pos";
-    my $o_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$l_file', MASTER_LOG_POS=$l_pos";
-    print "Local log file and position is: $l_file $l_pos\n";
-    print "Changing remote master with: $o_reset\n";
-    print "Remote log file and position is: $o_file $o_pos\n";
-    print "Changing local master with: $l_reset\n";
-    $o_sth = $other_dbh->prepare($o_reset);
-    $l_sth = $local_dbh->prepare($l_reset);
-    $o_rv = $o_sth->execute();
-    $l_rv = $l_sth->execute();
 }
 
 sub Maintenance {
@@ -1161,7 +1135,7 @@ sub Make_Queue_Jobs {
 		job_num => $daemon,
 		base => $config->{base},
 	    };
-	    $template->process($input_file, $vars, $output_file) or die $template->error();
+	    $template->process($input_file, $vars, $output_file) or Callstack(die => 1, message => $template->error());
 #	    system("/usr/local/bin/qsub $output_file");
 #	    print "Going to run /usr/local/bin/qsub $output_file\n";
 	}

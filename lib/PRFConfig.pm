@@ -2,6 +2,7 @@ package PRFConfig;
 use strict;
 use AppConfig qw/:argcount :expand/;
 use Getopt::Long;
+use PRFdb qw" Callstack ";
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(PRF_Out PRF_Error config);    # Symbols to be exported by default
@@ -98,7 +99,6 @@ sub new {
     $me->{exe_rnamotif} = 'rnamotif' if (!defined($me->{exe_rnamotif}));
     $me->{exe_rnamotif_descriptor} = 'descr/rnamotif_template.out' if (!defined($me->{exe_rnamotif_descriptor}));
     $me->{exe_rnamotif_template} = 'rnamotif_template' if (!defined($me->{exe_rnamotif_template}));
-    $me->{exe_zcat} = 'zcat' if (!defined($me->{exe_zcat}));
     $me->{genome_table} = 'genome' if (!defined($me->{genome_table}));
     $me->{graph_distribution_x_size} = 400 if (!defined($me->{graph_distribution_x_size}));
     $me->{graph_distribution_y_size} = 300 if (!defined($me->{graph_distribution_y_size}));
@@ -177,17 +177,13 @@ sub new {
 	    undef $data{$config_option};
 	}
     }
-#    else {
-#	my $cwd = `pwd`;
-#	print STDERR "Can't find the config file $me->{config_file} in $cwd\n";
-#	die;
-#   }
 
     ## This makes all of the above options over-rideable on the command line.
     my (%conf, %conf_specification, %conf_specification_temp);
     foreach my $default (keys %{$me}) {
 	$conf_specification{"$default:s"} = \$conf{$default};
     }
+    ## These are all of the configuration options for the commandline specifically
     %conf_specification_temp = (
 	'accession|i:s' => \$conf{accession},
 	'arch:i' => \$conf{arch_specific_exe},
@@ -215,6 +211,7 @@ sub new {
 	'make_landscape' => \$conf{make_landscape},
 	'makeblast' => \$conf{makeblast},
 	'maintain' => \$conf{maintain},
+	'mysql_backup' => \$conf{mysql_backup},
 	'nodaemon:i' => \$conf{nodaemon},
 	'nupack_nopairs:i' => \$conf{nupack_nopairs_hack},
 	'optimize:s' => \$conf{optimize},
@@ -250,13 +247,13 @@ sub new {
 	}
     }
     undef(%conf);
+
     if (defined($me->{help})) {
 	Help();
     }
     if (defined($me->{blast_db})) {
 	$ENV{BLASTDB} = qq"$me->{blast_db}/blast";
     }
-
     if (defined($me->{checks}) and $me->{checks} == 1) {
 	$me->{debug} = 0;
     }
@@ -310,7 +307,15 @@ and go check..\n";
 	$db->Create_Landscape("landscape_saccharomyces_cerevisiae");
 	exit(0);
     }
-
+    if (defined($me->{mysql_backup})) {
+	my $host = $me->{database_host}->[0];
+	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+	my $suffix = "mysqldump_${min}${hour}${mon}${wday}${year}.txt.gz";
+	my $dump_command = qq"nice mysqldump -u $me->{database_user} --password=$me->{database_pass}";
+	my $commandline = qq"cd $ENV{PRFDB_HOME}/backup && $dump_command $me->{database_name} | gzip > $me->{database_name}_$suffix && rm `ls -t $me->{database_name}_* | tail \-1` 2>$ENV{PRFDB_HOME}/backup/mysqldump.out 1>&2";
+	system($commandline);
+	exit(0);
+    }
     if (defined($me->{shell})) {
 	my $host = $me->{database_host}->[0];
 	system("mysql -u $me->{database_user} --password=$me->{database_pass} -h $host $me->{database_name}");
@@ -368,7 +373,7 @@ and go check..\n";
 		my $exe_path = join('', $me->{workdir} , '/linux/', $me->{$exe});
 		$me->{$exe} = $exe_path;
 	    } else {
-		die("Architecture $arch not available.");
+		Callstack(die => 1, message => "Architecture $arch not available.");
 	    }
 	}    ## For every modified executable
 	
@@ -399,7 +404,7 @@ sub PRF_Out {
     my $me = shift;
     my $message = shift;
     my $out = $me->{log};
-    open(OUTFH, ">>$out") or die "Unable to open the log file $out: $!\n";
+    open(OUTFH, ">>$out") or Callstack(die => 1, message => "Unable to open the log file $out.");
     ## OPEN OUTFH in PRF_Out
     my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
     my $month = $mon + 1;
@@ -408,22 +413,6 @@ sub PRF_Out {
     print OUTFH "$datestring\t$message\n";
     close(OUTFH);
     ## CLOSE OUTFH in PRF_Out
-}
-
-sub PRF_Error {
-    my $me = shift;
-    my $message = shift;
-    my $accession = shift;
-    my $err = $me->{log_error};
-    open(ERRFH, ">>$err") or die "Unable to open the log file $err: $!\n";
-    ## OPEN ERRFH in PRF_Error
-    my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
-    my $month = $mon + 1;
-    my $y = $year + 1900;
-    my $datestring = qq"$hour:$min:$sec $mday/$month/$y";
-    print ERRFH "$datestring\t$message\n";
-    close(ERRFH);
-    ## CLOSE ERRFH in PRF_Err
 }
 
 sub AddOpen {
@@ -511,7 +500,7 @@ checks         perform a series of checks to see if the database is ready for us
 
 sub AUTOLOAD {
     my $me = shift;
-    my $type = ref($me) or die("$me is not an object");
+    my $type = ref($me) or Callstack(die => 1, message => "$me is not an object");
     my $name = $AUTOLOAD;
     $name =~ s/.*://;   # strip fully-qualified portion
     if (@_) {

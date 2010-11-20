@@ -8,5 +8,5 @@ use PRFdb qw"AddOpen RemoveFile Callstack Cleanup";
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
 $db = new PRFdb(config => $config);
 $SIG{INT} = \&PRFdb::Cleanup;
-$db->Create_Test("Hi");
-$db->Get_Test("GET_TEST");
+$db->MySelect("SELECT * FROM wait");
+$db->Disconnect();
