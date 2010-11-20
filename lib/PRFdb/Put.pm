@@ -132,8 +132,7 @@ sub MFE_Landscape {
     if (defined($data->{sequence})) {
 	$data->{sequence} =~ tr/actgu/ACTGU/;
     } else {
-	Callstack();
-	print STDERR "Sequence is not defined for Species:$data->{species}, Accession:$data->{accession}, Start:$data->{start}, Seqlength:$data->{seqlength}\n";
+	Callstack(message => qq"Sequence is not defined for Species:$data->{species}, Accession:$data->{accession}, Start:$data->{start}, Seqlength:$data->{seqlength}");
 	return(undef);
     }
     my $statement = qq"INSERT DELAYED INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
