@@ -2,7 +2,7 @@ package Overlap;
 use strict;
 use lib 'lib';
 use SeqMisc;
-use PRFConfig qw /PRF_Error PRF_Out /;
+use PRFConfig qw / PRF_Out /;
 
 my $config = $PRFConfig::config;
 
@@ -48,7 +48,7 @@ sub Alt_Orf {
     my $sequence = $me->{sequence};
     if (!defined($sequence)) {
 	my $error_string = "Alt_Orf: sequence is not defined!";
-	PRF_Error($error_string, $me->{species}, $me->{accession});
+	Callstack($error_string);
 	print "$me->{species} $me->{accession}: $error_string\n";
     }
     my @seq = split(//, $sequence);

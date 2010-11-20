@@ -3,7 +3,7 @@ use strict;
 use lib '.';
 use PRFdb;
 use Template;
-use PRFConfig qw / PRF_Error PRF_Out /;
+use PRFConfig qw / PRF_Out /;
 my $config;
 my %slippery_sites = (aaaaaaa => 'A AAA AAA', aaaaaac => 'A AAA AAC', aaaaaat => 'A AAA AAT',
 		      aaauuua => 'A AAT TTA', aaauuuc => 'A AAT TTC', aaauuuu => 'A AAT TTT',
@@ -72,7 +72,7 @@ sub Search {
 		## These + 1's are required because thus far the start site has been incorrectly calculated.
 		my $command = qq"$config->{exe_rnamotif} -context -descr $config->{exe_rnamotif_descriptor} $filename 2>rnamotif.err | $config->{exe_rmprune}";
 		print "RNAMotif, running $command\n" if (defined($config->{debug}));
-		open(RNAMOT, "$command |") or PRF_Error("RNAMotif_Search:: Search, Unable to run rnamotif: $!", 'rnamotif', '');
+		open(RNAMOT, "$command |") or Callstack(message => "RNAMotif_Search:: Search, Unable to run rnamotif.");
 		## OPEN RNAMOT in Search
 		my $permissable = 0;
 		my $nonpermissable = 0;
@@ -100,7 +100,7 @@ sub Search {
 		close(RNAMOT);
 		## CLOSE RNAMOT in Search
 		## Overwrite the fasta file with the same sequence minus the slippery site.
-		open(NOSLIP, ">$filename") or die("Could not open $filename $!");
+		open(NOSLIP, ">$filename") or Callstack(die => 1, message => "Could not open $filename.");
 		my $data = ">$slipsite $start_in_full_sequence $end_in_full_sequence
 $no_slip_string
 ";
@@ -135,7 +135,7 @@ sub Descriptor {
     my $template = new Template($template_config);
     my $rnamotif_template_file = qq"$config->{base}/descr/$config->{exe_rnamotif_template}";
     if (!-r $rnamotif_template_file) {
-	die("Need an rnamotif template");
+	Callstack(die => 1, message => "Need an rnamotif template");
     }
     unless (-r $config->{exe_rnamotif_descriptor}) {
 	my $vars = {
@@ -158,7 +158,7 @@ sub Descriptor {
 	    stem2_spacer_max => $config->{stem2_spacer_max},
 	};
 	$template->process($config->{exe_rnamotif_template}, $vars,
-			   $config->{exe_rnamotif_descriptor}) or die $template->error();
+			   $config->{exe_rnamotif_descriptor}) or Callstack(die => 1, message =>  $template->error());
     }    ## Unless the rnamotif descriptor file exists.
 }
 
@@ -322,7 +322,7 @@ sub Generic_Search {
 #    my $command = qq"$config->{exe_rnamotif} -context -descr $descriptor $filename";
     print "RNAMotif, running $command\n" if (defined($config->{debug}));
 #    print "TESTME: $command\n";
-    open(RNAMOT, "$command |") or PRF_Error("RNAMotif_Search:: Search, Unable to run rnamotif: $!", 'rnamotif', '');
+    open(RNAMOT, "$command |") or Callstack(message => "RNAMotif_Search:: Search, Unable to run rnamotif.");
     while (my $line = <RNAMOT>) {
 	print $line;
     }

@@ -1,4 +1,5 @@
 package PkParse;
+use PRFdb qw" Callstack ";
 
 sub new {
   my ($class, %args) = @_;
@@ -160,7 +161,7 @@ __________________________
 	}
 	
 	else {
-	    die("WTF?");
+	    Callstack(die => 1, message =>"WTF?");
 	}
     }    ### Back to the if facing forward
     
@@ -236,7 +237,7 @@ __________________________
 	}
 	
 	else {
-	    die("WTF?");
+	    Callstack(die => 1, message => "WTF?");
 	}
     }    ## End facing the back
     if ($me->{debug}) {
@@ -569,7 +570,7 @@ sub ReBarcoder {
   } else {
       return $str;
   }
-  die "WHAT THE HELLL!?!?!?!?!?!\n";
+  Callstack(die => 1, messages => "WHAT THE HELLL!?!?!?!?!?!");
 }
 
 sub Condense {
@@ -717,7 +718,7 @@ sub PkParse_Error {
   my $string = shift;
   my $input_string = '';
   foreach my $c (@{$input}) { $input_string .= $c }
-  open(ERROR, ">>pkparse_error.txt") or die("Could not open the pkparse_error file $!");
+  open(ERROR, ">>pkparse_error.txt") or Callstack(die => 1, message => "Could not open the pkparse_error file.");
   ## OPEN ERROR in PkParse_Error
   if ($string eq 'loop') {
       print ERROR "Too many loops for $input_string\n";
