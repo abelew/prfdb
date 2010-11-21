@@ -35,38 +35,41 @@ sub Make_Extension {
     my $db = new PRFdb(config => $config);
     ## UNDEF VALUES this statement is pulling up undefined values...
     my $averages = qq"SELECT avg_mfe, avg_zscore, stddev_mfe, stddev_zscore FROM stats WHERE species = '$species' AND seqlength = '100' AND algorithm = 'nupack'";
-    my $averages_fun = $db->MySelect($averages);
-    my $avg_mfe = $averages_fun->[0]->[0];
-    my $avg_zscore = $averages_fun->[0]->[1];
-    my $mfe_minus_stdev = $avg_mfe - $averages_fun->[0]->[2];
-    my $zscore_minus_stdev = $avg_zscore - $averages_fun->[0]->[3];
+    my $averages_fun = $db->MySelect(statement => $averages, type => 'row');
+    my $avg_mfe = $averages_fun->[0];
+    my $avg_zscore = $averages_fun->[1];
+    my $mfe_minus_stdev = $avg_mfe - $averages_fun->[2];
+    my $zscore_minus_stdev = $avg_zscore - $averages_fun->[3];
+    if (!defined($avg_mfe)) {
+	
+    }
     my $radius = 4;
     my $graph = new GD::Graph::points('800','800');
     $graph->set(bgclr => 'white');
     if ($type eq 'percent') {
-	$graph->set(y_max_value=>150);
-	$graph->set(y_label=>'-1 frame extension in percent');
+	$graph->set(y_max_value => 150);
+	$graph->set(y_label => '-1 frame extension in percent');
     } elsif ($type eq 'codons') {
-	$graph->set(y_max_value=>200);
-	$graph->set(y_label=> '-1 frame extension in codons');
+	$graph->set(y_max_value => 200);
+	$graph->set(y_label => '-1 frame extension in codons');
     } else {
-	$graph->set(y_max_value=>200);
-	$graph->set(y_label=>'testme');
+	$graph->set(y_max_value => 200);
+	$graph->set(y_label => 'testme');
     }
-    $graph->set(x_label=>'Percentage ORF');
-    $graph->set(y_min_value=>0);
-    $graph->set(y_ticks=>1);
-    $graph->set(y_tick_number=>10);
-    $graph->set(y_tick_offset=>2);
-    $graph->set(y_label_skip=>2);
-    $graph->set(x_min_value=>0);
-    $graph->set(x_max_value=>100);
-    $graph->set(x_ticks=>1);
-    $graph->set(x_tick_number=>10);
-    $graph->set(x_label_skip=>2);
-    $graph->set(x_tick_offset=>2);
-    $graph->set(markers=> [7,7]);
-    $graph->set(marker_size=> 0);
+    $graph->set(x_label => 'Percentage ORF');
+    $graph->set(y_min_value => 0);
+    $graph->set(y_ticks => 1);
+    $graph->set(y_tick_number => 10);
+    $graph->set(y_tick_offset => 2);
+    $graph->set(y_label_skip => 2);
+    $graph->set(x_min_value => 0);
+    $graph->set(x_max_value => 100);
+    $graph->set(x_ticks => 1);
+    $graph->set(x_tick_number => 10);
+    $graph->set(x_label_skip => 2);
+    $graph->set(x_tick_offset => 2);
+    $graph->set(markers => [7,7]);
+    $graph->set(marker_size => 0);
     $graph->set(bgclr => 'white');
     $graph->set(dclrs => [qw(black black)]);
     $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", 12);
@@ -173,7 +176,7 @@ sub Make_Extension {
 	}
 	my $color;
 	## UNDEF VALUES HERE
-#	print "TESTME: MFE:$mfe AVG:$avg_mfe Z:$zscore avg:$avg_zscore\n";
+#	print "TESTME: MFE:$mfe AVG:$avg_mfe Z:$zscore avg:$avg_zscore<br>\n";
 #	sleep 1;
 	if (($mfe < $avg_mfe) and ($zscore > $avg_zscore)) {
 	    ## Red
@@ -608,7 +611,13 @@ sub Make_SlipBars {
     }
     my @data = (\@keys, \@values);
     my $bargraph = new GD::Graph::bars(700,400);
-    $bargraph->set(x_label => 'slipsite', y_label => 'number', title => 'How many of each slipsite',
+    my $y_label = 'number';
+    my $title = 'How many of each slipsite';
+    if ($filename =~ /percent/) {
+	$y_label = 'percent';
+	$title = 'Percent significant of each slipsite'
+    }
+    $bargraph->set(x_label => 'slipsite', y_label => $number, title => $title,
 		   dclrs => [ qw"blue black red green" ], cycle_clrs => 1, dclrs => \@colors,
 		   show_values => 1, values_vertical => 1, x_labels_vertical => 1,
 		   y_max_value => $values[0],);

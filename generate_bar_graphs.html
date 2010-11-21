@@ -4,14 +4,18 @@ Making graphs for <% $species %>
 <%perl>
 my $boot_table = "boot_$species";
 my $mt = "mfe_$species";
-my $points_stmt = qq"SELECT $mt.mfe, $boot_table.zscore, $mt.accession, $mt.knotp, $mt.slipsite, $mt.start, genome.genename FROM $mt, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.species = ? AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND $mt.genome_id = genome.id";
-my $averages_stmt = qq"SELECT avg($mt.mfe), avg($boot_table.zscore), stddev($mt.mfe), stddev($boot_table.zscore) FROM $mt, $boot_table WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.species = ? AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id";
-my $points = $db->MySelect(statement => $points_stmt, vars => [$species]);
-my $averages = $db->MySelect(statement => $averages_stmt, vars => [$species], type => 'row');
+my $points_stmt = qq"SELECT $mt.mfe, $boot_table.zscore, $mt.accession, $mt.knotp, $mt.slipsite, $mt.start, genome.genename FROM $mt, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND $mt.genome_id = genome.id";
+my $averages_stmt = qq"SELECT avg($mt.mfe), avg($boot_table.zscore), stddev($mt.mfe), stddev($boot_table.zscore) FROM $mt, $boot_table WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id";
+my $points = $db->MySelect(statement => $points_stmt);
+my $averages = $db->MySelect(statement => $averages_stmt, type => 'row');
 my $cloud = new PRFGraph(config=>$config);
-my $cloud_data = $cloud->Make_Cloud(seqlength => $seqlength, species => $species, points => $points,
-	averages => $averages, filename => qq"$config->{base}/images/cloud/$species/cloud-all-AAAAAAA-100.png",
-	url => $config->{base}, slipsites => 'AAAAAAA',);
+my $cloud_data = $cloud->Make_Cloud(seqlength => $seqlength,
+				    species => $species,
+				    points => $points,
+				    averages => $averages,
+				    filename => qq"$config->{base}/images/cloud/$species/cloud-all-AAAAAAA-100.png",
+				    url => $config->{base},
+				    slipsites => 'AAAAAAA',);
 </%perl>
 
 <%args>

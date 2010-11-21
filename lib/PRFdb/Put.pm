@@ -259,7 +259,7 @@ sub Stats {
 		    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 		    my $timestring = "$mon/$mday $hour:$min.$sec";
 #		    print "$timestring  Now doing $species $seqlength $max_mfe $algorithm\n";
-		    my $weedout_string = qq"WHERE species = '$species' AND algorithm = '$algorithm' AND seqlength = '$seqlength'";
+		    my $weedout_string = qq"WHERE algorithm = '$algorithm' AND seqlength = '$seqlength'";
  		    my $max_mfe = $me->MySelect(type => 'single', statement => "/* 1 of 19 */ SELECT max(mfe) FROM $mfe_table $weedout_string");
 		    my $min_mfe = $me->MySelect(type => 'single', statement => "/* 2 of 19 */ SELECT min(mfe) FROM $mfe_table $weedout_string");
 		    my $num_sequences = $me->MySelect(type => 'single', statement => "/* 3 of 19 */ SELECT count(id) FROM $mfe_table $weedout_string AND mfe <= '$max_mfe'");
@@ -277,8 +277,8 @@ sub Stats {
 		    my $stdev_mfe_knotted = $me->MySelect(type => 'single', statement => "/* 15 of 19 */ SELECT stddev(mfe) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$max_mfe'");
 		    my $avg_pairs_knotted = $me->MySelect(type => 'single', statement => "/* 16 of 19 */ SELECT avg(pairs) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$max_mfe'");
 		    my $stdev_pairs_knotted = $me->MySelect(type => 'single', statement => "/* 17 of 19 */ SELECT stddev(pairs) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$max_mfe'");
-		    my $avg_zscore = $me->MySelect(type => 'single', statement => "/* 18 of 19 */ SELECT avg(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'");
-		    my $stdev_zscore = $me->MySelect(type => 'single', statement => "/* 19 of 19 */SELECT stddev(zscore) FROM $table WHERE mfe_method = '$algorithm' AND species = '$species' AND seqlength = '$seqlength'");
+		    my $avg_zscore = $me->MySelect(type => 'single', statement => "/* 18 of 19 */ SELECT avg(zscore) FROM $table WHERE mfe_method = '$algorithm' AND seqlength = '$seqlength'");
+		    my $stdev_zscore = $me->MySelect(type => 'single', statement => "/* 19 of 19 */SELECT stddev(zscore) FROM $table WHERE mfe_method = '$algorithm' AND seqlength = '$seqlength'");
 #		    print "species:$species  seqlength:$seqlength  max_mfe:$max_mfe  min_mfe:$min_mfe  algorithm:$algorithm  num_seq:$num_sequences  avg_mfe:$avg_mfe  stdev_mfe:$stdev_mfe  avg_pairs:$avg_pairs  stdev_pairs:$stdev_pairs  num_nokn:$num_sequences_noknot  avg_mfe_no:$avg_mfe_noknot  stdev_mfe_no:$stdev_mfe_noknot  avg_pairs_no:$avg_pairs_noknot  stdev_pairs_no:$stdev_pairs_noknot  num_knot:$num_sequences_knotted  avg_mfe_knot:$avg_mfe_knotted  stdev_mfe_knotted:$stdev_mfe_knotted  avg_pairs_knot:$avg_pairs_knotted  stdev_pairs:kno:$stdev_pairs_knotted  avg_z:$avg_zscore  stdev_zscore:$stdev_zscore\n";
 		    my $statement = qq"INSERT DELAYED INTO stats
 (species, seqlength, max_mfe, min_mfe, algorithm, num_sequences, avg_mfe, stddev_mfe, avg_pairs, stddev_pairs, num_sequences_noknot, avg_mfe_noknot, stddev_mfe_noknot, avg_pairs_noknot, stddev_pairs_noknot, num_sequences_knotted, avg_mfe_knotted, stddev_mfe_knotted, avg_pairs_knotted, stddev_pairs_knotted, avg_zscore, stddev_zscore)
