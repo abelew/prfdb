@@ -7,7 +7,7 @@ use Apache::DBI;
 use File::Temp qw/ tmpnam /;
 use lib qq"$ENV{PRFDB_HOME}/lib";
 use PRFConfig;
-use PRFdb qw/ AddOpen RemoveFile /;
+use PRFdb qw/ AddOpen RemoveFile Callstack /;
 use RNAFolders;
 use PRFGraph;
 use SeqMisc;
@@ -15,7 +15,7 @@ use PRFBlast;
 use HTMLMisc;
 BEGIN {
     if (!defined($ENV{PRFDB_HOME})) {
-	die("PRFDB_HOME is not set.  Either set it in your apache env vars or shell profile.");
+	Callstack(die => 1, message => "PRFDB_HOME is not set.  Either set it in your apache env vars or shell profile.");
     }
 }
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");

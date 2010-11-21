@@ -3,7 +3,7 @@ use strict;
 use constant PI => scalar(4 * atan2 1, 1);
 use DBI;
 use PRFConfig qw / PRF_Error PRF_Out /;
-use PRFdb qw / callstack /;
+use PRFdb qw / Callstack /;
 use GD::Graph::mixed;
 use GD::SVG;
 use Statistics::Basic qw(:all);
@@ -47,7 +47,7 @@ sub Make_Extension {
 	$graph->set(y_max_value=>150);
 	$graph->set(y_label=>'-1 frame extension in percent');
     } elsif ($type eq 'codons') {
-	$graph->set(y_max_value=>150);
+	$graph->set(y_max_value=>200);
 	$graph->set(y_label=> '-1 frame extension in codons');
     } else {
 	$graph->set(y_max_value=>200);
@@ -76,7 +76,7 @@ sub Make_Extension {
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}",12);
 #    my $fun = [[0,0,0,[0,0,0]];
     my $fun = [[0,0,0],[0,100,0]];
-    my $gd = $graph->plot($fun) or callstack(), die ($graph->error);
+    my $gd = $graph->plot($fun) or Callstack(die => 1, message => $graph->error);
     my $black = $gd->colorResolve(0,0,0);
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);
@@ -90,10 +90,11 @@ sub Make_Extension {
     my $bottom_y_coord = $axes_coords->[4];
     my $x_range = ($right_x_coord - $left_x_coord);
     my $y_range = $top_y_coord - $bottom_y_coord;
-    my $stmt = qq"SELECT DISTINCT mfe.id, mfe.accession, mfe.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, mfe.bp_mstop, mfe.mfe FROM genome,mfe WHERE genome.id = mfe.genome_id AND mfe.seqlength='100' AND mfe.algorithm = 'nupack' AND mfe.species = '$species'";
+    my $mt = "mfe_$species";
+    my $stmt = qq"SELECT DISTINCT ${mt}.id, ${mt}.accession, ${mt}.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, ${mt}.bp_mstop, ${mt}.mfe FROM genome,$mt WHERE genome.id = ${mt}.genome_id AND ${mt}.seqlength='100' AND ${mt}.algorithm = 'nupack'";
     my $stuff = $db->MySelect(statement => $stmt,);
     
-    open(MAP, ">${filename}.map") or callstack(), print("Unable to open the map file ${filename}.map");
+    open(MAP, ">${filename}.map") or Callstack(message => qq"Unable to open the map file ${filename}.map");
     my $map_string = '';
     if ($type eq 'percent') {
 	$map_string = qq/<map name="percent_extension" id="percent_extension">\n/;
@@ -114,6 +115,7 @@ sub Make_Extension {
 	my $mfe = $datum->[7];
 	my $zscore_stmt = qq"SELECT zscore from boot_$species where mfe_id = '$mfeid'";
 	my $zscore = $db->MySelect(statement => $zscore_stmt, type => 'single');
+	next if (!defined($zscore));
 	my $minus_string = '';
 	$mrna_sequence =~ tr/Tt/Uu/;
 	my @seq = split(//, $mrna_sequence);
@@ -125,7 +127,7 @@ sub Make_Extension {
 	} elsif (($orf_start % 3) == 2) {
 	    $stop_count = 0;
 	} else {
-	    callstack(), die "WTF?";
+	    Callstack(message => "WTF?", die => 1);
 	}
 	my $minus_start = $start + 4;
 	my $codon = '';
@@ -154,7 +156,7 @@ sub Make_Extension {
 
 	my $extension_length = length($minus_string);
 	my $minus_codons = ($extension_length / 3);
-	my $minus_codons_pixels = $minus_codons * 5;
+	my $minus_codons_pixels = $minus_codons * 4;
 	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons_pixels) + $bottom_y_coord);
 
 	my $y_percentage = sprintf("%.2f", 100.0 * (($extension_length + $start) - $orf_start) / ($orf_stop - $orf_start));
@@ -166,11 +168,13 @@ sub Make_Extension {
 #y_percent: y_percentage:$y_percentage percent_y_coord:$percent_y_coord<br>\n";
 
 	if (!defined($bp_minus_stop)) {
-	    my $stmt = qq"UPDATE mfe SET bp_mstop = '$extension_length' WHERE id = '$mfeid'";
+	    my $stmt = qq"UPDATE mfe_$species SET bp_mstop = '$extension_length' WHERE id = '$mfeid'";
 	    $db->MyExecute($stmt);
 	}
 	my $color;
 	## UNDEF VALUES HERE
+#	print "TESTME: MFE:$mfe AVG:$avg_mfe Z:$zscore avg:$avg_zscore\n";
+#	sleep 1;
 	if (($mfe < $avg_mfe) and ($zscore > $avg_zscore)) {
 	    ## Red
 	    $color = $gd->colorResolve(191,0,0); 
@@ -186,19 +190,23 @@ sub Make_Extension {
 	}
 	my $url = qq"/search.html?short=1&accession=$accession";
 	if ($type eq 'percent') {
+#	    if (!defined($zscore)) {
+#		print "TESTME: $zscore_stmt\n";
+#		sleep 10;
+#	    }
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession, mfe:$mfe z:$zscore xpercent:$x_percentage ypercent:$y_percentage">\n/;
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);
 	} elsif ($type eq 'codons') {
+	    $minus_codons = sprintf("%.1f", $minus_codons);
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${codons_y_coord},$radius" href="${url}" title="$accession mfe:$mfe z:$zscore xpercent:$x_percentage ycodons:$minus_codons">\n/;
 #	    print "Percent: xcoord: $x_coord xcoord: $codons_y_coord<br>\n";
 	    $gd->filledArc($x_coord, $codons_y_coord, 4,4,0,360,$color,4);
 	} else {
-	    callstack();
-	    die("Type is non-specified");
+	    Callstack(message => "Type is not specified", die => 1);
 	}
 	print MAP $map_string;
     }  ## End foreach stuff
-    open(IMG, ">$filename") or callstack(), die "error opening file to write image: $!";
+    open(IMG, ">$filename") or Callstack(message => qq"error opening file to write image", die => 1);
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -226,17 +234,12 @@ sub Make_Cloud {
     if (defined($args{pknot}) and $args{pknot} == 1) {
 	$pknot = 1;
     }
-    
+    my $mt = "mfe_$species";
     my $graph = new GD::Graph::points('800','800');
     my $db = new PRFdb(config => $config);
     my ($mfe_min_value, $mfe_max_value);
-    if ($species eq 'all') {
-	$mfe_min_value = $db->MySelect(statement => qq/SELECT min(mfe) FROM mfe/, type => 'single');
-	$mfe_max_value = $db->MySelect(statement => qq/SELECT max(mfe) FROM mfe/, type => 'single');
-    } else {
-	$mfe_min_value = $db->MySelect(statement => qq/SELECT min(mfe) FROM mfe WHERE species = '$species'/, type => 'single');
-	$mfe_max_value = $db->MySelect(statement => qq/SELECT max(mfe) FROM mfe WHERE species = '$species'/, type => 'single');
-    }
+    $mfe_min_value = $db->MySelect(statement => qq"SELECT min(mfe) FROM $mt", type => 'single');
+    $mfe_max_value = $db->MySelect(statement => qq"SELECT max(mfe) FROM $mt", type => 'single');
     $mfe_min_value -= 3.0;
     $mfe_max_value += 3.0;
     my $z_min_value = -10;
@@ -254,7 +257,7 @@ sub Make_Cloud {
     $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $fun = [[-100,-100,-100],[0,0,0]];
-    my $gd = $graph->plot($fun,) or callstack(), die ($graph->error);
+    my $gd = $graph->plot($fun,) or Callstack(die => 1, message => $graph->error);
     my $black = $gd->colorResolve(0,0,0);
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);
@@ -359,7 +362,7 @@ sub Make_Cloud {
     foreach my $s (@all_slipsites) { $slipsites_numbers{$s}{num} = 0; }
     my %slips_significant = ();
     foreach my $s (@all_slipsites) { $slips_significant{$s}{num} = 0; }
-    open(MAP, ">${tmp_filename}.map") or callstack(), print("Unable to open the map file ${tmp_filename}.map");
+    open(MAP, ">${tmp_filename}.map") or Callstack(message => qq"Unable to open the map file ${tmp_filename}.map");
     print MAP "<map name=\"map\" id=\"map\">\n";
     my $image_map_string;
     if ($args_slipsites eq 'all') {
@@ -401,41 +404,41 @@ sub Make_Cloud {
 	    if ($x_coord <= $mfe_significant_coord and $y_coord <= $z_significant_coord) {
 		if (!defined($slips_significant{$slipsite})) {
 		    $slips_significant{$slipsite}{num} = 1;
-		    if ($slipsite =~ /^AAA....$/) {
-			$slips_significant{$slipsite}{color} = 'red';
-		    } elsif ($slipsite =~ /^UUU....$/) {
-			$slips_significant{$slipsite}{color} = 'green';
-		    } elsif ($slipsite =~ /^GGG....$/) {
-			$slips_significant{$slipsite}{color} = 'blue';
-		    } elsif ($slipsite =~ /^CCC....$/) {
-			$slips_significant{$slipsite}{color} = 'black';
-		    } else {
-			#warn("This sucks. $slipsite doesn't match");
-			next;
-		    }
 		} else {
 		    $slips_significant{$slipsite}{num}++;
 		}
-	    }
-	    
-	    if (!defined($slipsites_numbers{$slipsite})) {
-		$slipsites_numbers{$slipsite}{num} = 1;
 		if ($slipsite =~ /^AAA....$/) {
-		    $slipsites_numbers{$slipsite}{color} = 'red';
+		    $slips_significant{$slipsite}{color} = 'red';
 		} elsif ($slipsite =~ /^UUU....$/) {
-		    $slipsites_numbers{$slipsite}{color} = 'green';
+		    $slips_significant{$slipsite}{color} = 'green';
 		} elsif ($slipsite =~ /^GGG....$/) {
-		    $slipsites_numbers{$slipsite}{color} = 'blue';
+		    $slips_significant{$slipsite}{color} = 'blue';
 		} elsif ($slipsite =~ /^CCC....$/) {
-		    $slipsites_numbers{$slipsite}{color} = 'black';
+		    $slips_significant{$slipsite}{color} = 'black';
 		} else {
-		    #warn("This sucks. $slipsite doesn't match the expected");
+#		    print "TESTME: slipsite must be something different: $slipsite\n";
+		    $slips_significant{$slipsite}{color} = 'yellow';
+		    #warn("This sucks. $slipsite doesn't match");
 		    next;
 		}
+	    }
+	    if (!defined($slipsites_numbers{$slipsite})) {
+		$slipsites_numbers{$slipsite}{num} = 1;
 	    } else {
 		$slipsites_numbers{$slipsite}{num}++;
 	    }
-	    
+	    if ($slipsite =~ /^AAA....$/) {
+		$slipsites_numbers{$slipsite}{color} = 'red';
+	    } elsif ($slipsite =~ /^UUU....$/) {
+		$slipsites_numbers{$slipsite}{color} = 'green';
+	    } elsif ($slipsite =~ /^GGG....$/) {
+		$slipsites_numbers{$slipsite}{color} = 'blue';
+	    } elsif ($slipsite =~ /^CCC....$/) {
+		$slipsites_numbers{$slipsite}{color} = 'black';
+	    } else {
+		#warn("This sucks. $slipsite doesn't match the expected");
+		next;
+	    }
 	    if ($args_slipsites eq $slipsite) {
 		my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 		my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
@@ -482,19 +485,28 @@ sub Make_Cloud {
     my %percent_sig;
     foreach my $slip (keys %slipsites_numbers) {
 	## UNDEF VALUES HERE, DIVISION BY ZERO
+#	print "TESTME: $slip $slipsites_numbers{$slip}{num}\n";
 	if (!defined($slipsites_numbers{$slip}{num})) {
 	    $percent_sig{$slip}{num} = 0;
+	    $percent_sig{$slip}{color} = 'yellow';
+	    $slipsites_numbers{$slip}{num} = 0;
+	    $slipsites_numbers{$slip}{color} = 'yellow';
+	} else {
+	    if ($slipsites_numbers{$slip}{num} == 0) {
+		$percent_sig{$slip}{num} = 0;
+	    } else {
+		$percent_sig{$slip}{num} = (($slips_significant{$slip}{num} / $slipsites_numbers{$slip}{num}) * 100.0);
+		$percent_sig{$slip}{num} = sprintf("%.1f", $percent_sig{$slip}{num});
+	    }
+	    $percent_sig{$slip}{color} = $slips_significant{$slip}{color};
 	}
-	$percent_sig{$slip}{num} = (($slips_significant{$slip}{num} / $slipsites_numbers{$slip}{num}) * 100.0);
-	$percent_sig{$slip}{num} = sprintf("%.1f", $percent_sig{$slip}{num});
-	$percent_sig{$slip}{color} = $slips_significant{$slip}{color};
     }
     if (defined($args_slipsites) and $args_slipsites ne 'all') {
 	Make_SlipBars(\%slipsites_numbers, $bar_filename);
 	Make_SlipBars(\%slips_significant, $bar_sig_filename);
 	Make_SlipBars(\%percent_sig, $percent_sig_filename);
     }
-    open (IMG, ">$filename") or callstack(), die "error opening $filename to write image: $!";
+    open (IMG, ">$filename") or Callstack(die => 1, message => qq"error opening $filename to write image.");
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -513,8 +525,9 @@ sub Make_Overlay {
     my $inputstring = $args{inputstring};
     my $graph = new GD::Graph::points('800','800');
     my $db = new PRFdb(config => $config);
-    my $mfe_min_value = $db->MySelect(statement => qq/SELECT min(mfe) FROM mfe WHERE species = '$species'/, type => 'single');
-    my $mfe_max_value = $db->MySelect(statement => qq/SELECT max(mfe) FROM mfe WHERE species = '$species'/, type => 'single');
+    my $mt = "mfe_$species";
+    my $mfe_min_value = $db->MySelect(statement => qq"SELECT min(mfe) FROM $mt", type => 'single');
+    my $mfe_max_value = $db->MySelect(statement => qq"SELECT max(mfe) FROM $mt", type => 'single');
     $mfe_min_value -= 3.0;
     $mfe_max_value += 3.0;
     my $z_min_value = -10;
@@ -532,7 +545,7 @@ sub Make_Overlay {
     $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $fun = [[-100,-100,-100],[0,0,0]];
-    my $gd = $graph->plot($fun,) or callstack(), die ($graph->error);
+    my $gd = $graph->plot($fun,) or Callstack(die => 1, message => $graph->error);
     my $black = $gd->colorResolve(0,0,0);
     my $axes_coords = $graph->get_feature_coordinates('axes');
     my $left_x_coord = $axes_coords->[1];
@@ -547,7 +560,7 @@ sub Make_Overlay {
     my $points = {};
     my $max_counter = 1;
 
-    open(MAP, ">$map_filename") or callstack(), print("Unable to open the map file $map_filename: $!");
+    open(MAP, ">$map_filename") or Callstack(message => qq"Unable to open the map file $map_filename.");
     print MAP "<map name=\"overlaymap\" id=\"overlaymap\">\n";
 
     my $radius = 6;
@@ -565,7 +578,7 @@ sub Make_Overlay {
         print MAP $map_string;
     }
     print MAP "</map>\n";
-    open (IMG, ">$filename") or callstack(), print "error opening filename:<$filename> to write image: $!";
+    open (IMG, ">$filename") or Callstack(message => qq"error opening filename:<$filename> to write image.");
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -580,9 +593,15 @@ sub Make_SlipBars {
     my @colors;
     my $color_string = '';
     ## UNDEF VALUES HERE
+    my $nums;
+    foreach my $k (keys %{$numbers}) {
+#	print "WTF: $numbers->{$k}{color}\n";
+	$nums->{$k} = $numbers->{$k} if (defined($numbers->{$k}{num}));
+    }
+    $numbers = $nums;
     foreach my $k (sort { $numbers->{$b}{num} <=> $numbers->{$a}{num} } keys %{$numbers}) {
 #    foreach my $k (sort  keys %{$numbers}) {
-	$color_string .= "$numbers->{$k}{color} ";
+#	$color_string .= "$numbers->{$k}{color} ";
 	push (@colors, $numbers->{$k}{color});
 	push (@keys, $k);
 	push (@values, $numbers->{$k}{num});
@@ -590,10 +609,11 @@ sub Make_SlipBars {
     my @data = (\@keys, \@values);
     my $bargraph = new GD::Graph::bars(700,400);
     $bargraph->set(x_label => 'slipsite', y_label => 'number', title => 'How many of each slipsite',
-		   dclrs => [ qw(blue black red green) ], cycle_clrs => 1, dclrs => \@colors,
+		   dclrs => [ qw"blue black red green" ], cycle_clrs => 1, dclrs => \@colors,
 		   show_values => 1, values_vertical => 1, x_labels_vertical => 1,
 		   y_max_value => $values[0],);
-    #	dclrs => [ qw($color_string) ],
+    #dclrs => [ qw"blue black red green" ],
+    #dclrs => [ qw($color_string) ],
     $bargraph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $bargraph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $bargraph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -613,9 +633,10 @@ sub Make_Landscape {
     my $table = "landscape_$species";
     system("touch $filename");
     my $db = new PRFdb(config=>$config);
+    my $mt = "mfe_$species";
     my $data = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM $table WHERE accession='$accession' ORDER BY start, algorithm");
     return(undef) if (!defined($data));
-    my $slipsites = $db->MySelect("SELECT distinct(start) FROM mfe WHERE accession='$accession' ORDER BY start");
+    my $slipsites = $db->MySelect("SELECT distinct(start) FROM $mt WHERE accession='$accession' ORDER BY start");
     my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession'");
     my $info = {};
     my @points = ();
@@ -639,8 +660,7 @@ sub Make_Landscape {
     }    ## End foreach spot
     if ($position_counter == 0) {  ## There is no data!?
 	return(undef);
-	callstack();
-	print STDERR "There is no data\n";
+	Callstack(message => "There is no data.");
     }
     $position_counter = $position_counter / 3;
     $mean_pknots = $mean_pknots / $position_counter;
@@ -672,13 +692,13 @@ sub Make_Landscape {
     $graph->set(bgclr => 'white', x_label => 'Distance on ORF', y_label => 'kcal/mol',
 		y_label_skip => 2, y_number_format => "%.2f", x_labels_vertical => 1,
 		x_label_skip => 100, line_width => 2, dclrs => [qw(blue red green blue red green)],
-		default_type => 'lines', types => [qw(lines lines lines lines lines lines)],) or callstack(), die $graph->error;
+		default_type => 'lines', types => [qw(lines lines lines lines lines lines)],) or Callstack(die => 1, message => $graph->error);
     $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    my $gd = $graph->plot(\@mfe_data) or callstack(), die($graph->error);
+    my $gd = $graph->plot(\@mfe_data) or Callstack(die => 1, message => $graph->error);
     
     my $axes_coords = $graph->get_feature_coordinates('axes');
     my $top_x_coord = $axes_coords->[1];
@@ -700,7 +720,7 @@ sub Make_Landscape {
 	$gd->filledRectangle($slipsite_x_coord, $bottom_y_coord+1, $slipsite_x_coord+1, $top_y_coord-1, $black);
     }
 
-    open(IMG, ">$filename") or callstack(), die $!;
+    open(IMG, ">$filename") or Callstack(die => 1);
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -809,7 +829,7 @@ sub Make_Distribution {
     $graph->set(bgclr => 'white', types => [qw(bars lines lines lines)], x_label => 'kcal/mol',
 		y_label => 'p(x)', y_label_skip => 2, y_number_format => "%.2f",
 		x_labels_vertical => 1, x_label_skip => 1, line_width => 3,
-		dclrs => [qw(blue red green black)], borderclrs => [qw(black)]) or callstack(), die $graph->error;
+		dclrs => [qw(blue red green black)], borderclrs => [qw(black)]) or Callstack(message => $graph->error, die => 1);
     
     $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -817,7 +837,7 @@ sub Make_Distribution {
     $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
     
-    my $gd = $graph->plot(\@data) or callstack(), die $graph->error;
+    my $gd = $graph->plot(\@data) or Callstack(die => 1, message => $graph->error);
     
     my $axes_coords = $graph->get_feature_coordinates('axes');
     
@@ -834,7 +854,7 @@ sub Make_Distribution {
     my $bl = $gd->colorAllocate(0,0,0);
     $gd->filledRectangle($mfe_xbar_coord, $bottom_y_coord+1 , $mfe_xbar_coord+1, $top_y_coord-1, $bl);
     my $filename = $me->Picture_Filename(type => 'distribution');
-    open(IMG, ">$filename") or callstack(), print ("Unable to open $filename $!");
+    open(IMG, ">$filename") or Callstack(message => "Unable to open $filename.");
     binmode IMG;
     print IMG $gd->png;
     close IMG;
@@ -854,8 +874,10 @@ sub Make_Feynman {
     } else {
 	$id = $me->{mfe_id};
 	my $db = new PRFdb(config=>$config);
-	my $stmt = qq(SELECT sequence, slipsite, parsed, output FROM mfe WHERE id = ?);
-	my $info = $db->MySelect({statement => $stmt, vars => [$id], type => 'row' });
+	my $species = $db->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", type => 'single', vars => [$me->{accession}]);
+	my $mt = qq"mfe_$species";
+	my $stmt = qq"SELECT sequence, slipsite, parsed, output FROM $mt WHERE id = '$id'";
+	my $info = $db->MySelect(statement => $stmt, type => 'row');
 	$sequence = $info->[0];
 	$slipsite = $info->[1];
 	$parsed = $info->[2];
@@ -1006,9 +1028,10 @@ sub Make_OFeynman {
     my $include_slipsite = shift;
     my $slipsite = undef;
     $include_slipsite = 1 if (!defined($slipsite) and !defined($include_slipsite));
+    my $mt = "mfe_$me->{species}";
     my $ids = $me->{ids};
     my $db = new PRFdb(config=>$config);
-    my $stmt = qq"SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ? or id = ? or id = ?";
+    my $stmt = qq"SELECT sequence, slipsite, parsed, output, algorithm FROM $mt WHERE id = ? or id = ? or id = ?";
     my $info = $db->MySelect(statement => $stmt, vars => [$ids->[0], $ids->[1], $ids->[2]],);
     my $sequence = $info->[0]->[0];
     $slipsite = $info->[0]->[1];
@@ -1246,7 +1269,8 @@ sub Make_Classical {
     my $me = shift;
     my $id = $me->{mfe_id};
     my $db = new PRFdb(config => $config);
-    my $stmt = qq"SELECT sequence, parsed, output FROM mfe WHERE id = ?";
+    my $mt = qq"mfe_$me->{species}";
+    my $stmt = qq"SELECT sequence, parsed, output FROM $mt WHERE id = ?";
     my $info = $db->MySelect(statement => $stmt, vars => [$id], type => 'row');
     my $sequence = $info->[0];
     my $parsed = $info->[1];
@@ -1389,7 +1413,8 @@ sub Make_CFeynman {
     my $me = shift;
     my $id = $me->{mfe_id};
     my $db = new PRFdb(config => $config);
-    my $stmt = qq"SELECT sequence, parsed, output FROM mfe WHERE id = ?";
+    my $mt = qq"mfe_$me->{species}";
+    my $stmt = qq"SELECT sequence, parsed, output FROM $mt WHERE id = ?";
     my $info = $db->MySelect(statement => $stmt, vars => [$id], type => 'row');
     my $sequence = $info->[0];
     my $parsed = $info->[1];
@@ -1590,8 +1615,8 @@ sub Picture_Filename {
 	my $command = qq"/bin/mkdir -p $tmpdir";
 	my $output = '';
 	if (!-d $tmpdir) {
-	    open (CMD, "$command |") or callstack(), die("Could not run $command
-Make sure that user $< and/or group $( has write permissions: $!");
+	    open (CMD, "$command |") or Callstack(message => qq"Could not run $command
+Make sure that user $< and/or group $( has write permissions.", die => 1);
 	    while (my $line = <CMD>) {
 		$output .= $line;
 	    }  ## End while mkdir
@@ -1649,8 +1674,11 @@ sub Make_Directory {
 
     if (defined($url)) {
 	my $ret_url = "images/$type/";
-	while (my $num = shift(@cheat)) {
-	    $ret_url .= "$num/";
+#	while (my $num = shift(@cheat)) {
+#	    $ret_url .= "$num/";
+#	}
+	foreach my $n (@cheat) {
+	    $ret_url .= "$n/";
 	}
 	$ret_url =~ s/\/$//g;
 	return($ret_url);
@@ -1662,15 +1690,15 @@ sub Make_Directory {
     } else {
 	$directory = qq"$config->{base}/images/$type/";
 	my @cheat_again = split(//, $nums);
-	while (my $num = shift(@cheat_again)) {
-	    $directory .= "$num/";
+	foreach my $n (@cheat_again) {
+	    $directory .= "$n/";
 	}
 	$directory =~ s/\/$//g;
     	my $command = qq(/bin/mkdir -p $directory);
 	my $output = '';
 	if (!-r $directory) {
-	    open (CMD, "$command |") or callstack(), die("Could not run $command
-Make sure that user $< and/or group $( has write permissions: $!");
+	    open (CMD, "$command |") or Callstack(message => qq"Could not run $command
+Make sure that user $< and/or group $( has write permissions.");
 	    while (my $line = <CMD>) {
 		$output .= $line;
 	    }  ## End while mkdir

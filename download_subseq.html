@@ -1,6 +1,7 @@
 <%perl>
  $r->content_type('application/octet-stream');
- my $stmt = qq"SELECT genome.comment,mfe.accession,mfe.sequence,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id";
+ my $mt = "mfe_$species";
+ my $stmt = qq"SELECT genome.comment, $mt.accession, $mt.sequence, $mt.start FROM genome, $mt WHERE $mt.id = ? and $mt.genome_id=genome.id";
  my $seq = $db->MySelect(statement => $stmt, vars => [$mfeid], type => 'row');
  my @tmp = split(//, $seq->[2]);
  my $filename = qq"$seq->[1]_$seq->[3].fasta";
@@ -15,4 +16,5 @@
 </%perl>
 <%args>
  $mfeid => undef;
+ $species => "saccharomyces_cerevisiae";
 </%args>

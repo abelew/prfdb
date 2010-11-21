@@ -1,4 +1,5 @@
-% my $stmt = qq"SELECT id FROM mfe WHERE accession = ? AND seqlength = ? AND start = ?";
+% my $mt = "mfe_$species";
+% my $stmt = qq"SELECT id FROM $mt WHERE accession = ? AND seqlength = ? AND start = ?";
 % my $mfe_ids = $db->MySelect(statement => $stmt, vars => [$accession, $seqlength, $start]);
 % my @ids = ();
 % foreach my $id (@{$mfe_ids}) {
@@ -60,4 +61,5 @@ if something goes wrong, darkslategray<br>
   $start => undef;
   $accession => undef;
   $seqlength => undef;
+  $species => "saccharomyces_cerevisiae";
 </%args>

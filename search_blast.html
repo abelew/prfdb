@@ -3,7 +3,9 @@ my $local_info;
 my $blast = new PRFBlast(config=>$config);
 if (!defined($search_string)) {
   if (defined($start) and defined($accession)) {
-      $search_string = $db->MySelect(statement => "SELECT sequence FROM mfe WHERE accession = ? AND start = ? LIMIT 1", vars => [$accession, $start], type => 'single');
+      my $sp = $db->MySelect(statement => "SELECT species FROM genome WHERE accession = ?", type => 'single', vars => [$accession]);
+      my $mt = "mfe_$sp";
+      $search_string = $db->MySelect(statement => "SELECT sequence FROM $mt WHERE accession = ? AND start = ? LIMIT 1", vars => [$accession, $start], type => 'single');
   } elsif (defined($accession)) {
       $search_string = $db->MySelect(statement => "SELECT mrna_seq FROM genome WHERE accession = ? LIMIT 1", vars => [$accession], type => 'single');
   }
@@ -41,9 +43,14 @@ Accession: <a href="/search.html?short=1&accession=<% $local_info->{hits}->[$c]-
 % } else {
 Accession: <a href="/import.html?accession=<% $local_info->{hits}->[$c]->{accession} %>" title="Import <% $local_info->{hits}->[$c]->{accession} %> into the PRFdb">
 % }
+% my @description_array = split(/ /, $local_info->{hits}->[$c]->{description});
   <% $local_info->{hits}->[$c]->{accession} %></a><br>
 Length: <% $local_info->{hits}->[$c]->{length} %><br>
-Description: <% $local_info->{hits}->[$c]->{description} %><br>
+Description:
+% foreach my $word (@description_array) {
+  <a href="/search.html?search_species_limit=all&query=<% $word %>"><% $word %></a>&nbsp;
+% }
+<br>
 Score: <% $local_info->{hits}->[$c]->{score} %>
    Significance: <% $local_info->{hits}->[$c]->{significance} %>
    Bits: <% $local_info->{hits}->[$c]->{bits} %><br>

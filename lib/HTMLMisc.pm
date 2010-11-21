@@ -20,15 +20,12 @@ sub Make_Nums {
 #	  $num_string .= "$count";
 	  push(@nums, $count);
 	  $count = $count + 10;
-	}
-	elsif ($c == 1) {
+	} elsif ($c == 1) {
 	  push(@nums, '&nbsp;');
 #	  $num_string .= "&nbsp;";
-	}
-	elsif ((($c - 1) % 10) == 0) {
+	} elsif ((($c - 1) % 10) == 0) {
 	  next;
-	}
-	else {
+	} else {
 	  push(@nums, '&nbsp;');
 #	  $num_string .= "&nbsp;";
 	}
@@ -37,17 +34,13 @@ sub Make_Nums {
   foreach my $n (@nums) {
 	if ($n eq '&nbsp;') {
 	    $len++;
-	} 
-	elsif ($n > 9) {
+	} elsif ($n > 9) {
 	    $len = $len + 2;
-	}
-	elsif ($n > 99) {
+	} elsif ($n > 99) {
 	    $len = $len + 3;
-	}
-	elsif ($n == 0) {
+	} elsif ($n == 0) {
 	    $len++;
 	}
-
   }
   my $spacer;
   $spacer = scalar(@seq) - $len;
@@ -81,13 +74,12 @@ sub Make_Minus {
 	    if ($codon eq 'UAG' or $codon eq 'UAA' or $codon eq 'UGA' or
 		$codon eq 'uag' or $codon eq 'uaa' or $codon eq 'uga') {
 		$minus_string .= $codon;
-	    }
-	    else {
+	    } else {
 		$minus_string .= '...';
 	    }
 	    $codon = $char;
-	}  ## if on a third base of the -1 frame
-	else {
+	## if on a third base of the -1 frame
+	} else {
 	    $codon .= $char;
 	}
     } ## End foreach character of the sequence
@@ -109,8 +101,7 @@ sub Color_Stems {
 	if ($pa[$t] eq '.') {
 	    $br[$t] = '.' if (!defined($br[$t]));
 	    $bracket_string .= $br[$t];
-	}
-	else {
+	} else {
 	    my $color_code = $pa[$t] % @colors;
 	    next if (!defined($br[$t]));
 	    my $append = qq(<font color="$colors[$color_code]">$br[$t]</font>);

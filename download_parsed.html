@@ -1,6 +1,7 @@
 <%init>
  $r->content_type('application/octet-stream');
- my $stmt = qq"SELECT genome.comment,mfe.accession,mfe.parens,mfe.start FROM genome,mfe WHERE mfe.id = ? and mfe.genome_id=genome.id";
+ my $mt = "mfe_$species";
+ my $stmt = qq"SELECT genome.comment, $mt.accession, $mt.parens, $mt.start FROM genome, $mt WHERE $mt.id = ? and $mt.genome_id=genome.id";
  my $seq = $db->MySelect(statement =>$stmt, vars =>[$mfeid], type =>'row');
  my $filename = qq"$seq->[1]_$seq->[3].parens";
  $filename =~ s/SGDID://g;
@@ -11,4 +12,5 @@ $seq->[2]
 </%init>
 <%args>
  $mfeid => undef;
+ species => "saccharomyces_cerevisiae";
 </%args>

@@ -13,8 +13,10 @@
  <tr align="left" valign="top">
  </tr>
 </table>
+% my $sp = $db->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", vars => [$accession], type => 'single');
 % my $in = $db->MySelect(statement => "SELECT orf_start, orf_stop, mrna_seq, direction, id FROM genome WHERE accession = ?", vars =>[$accession], type => 'row');
-% my $slips = $db->MySelect(statement =>"SELECT DISTINCT(start), bp_mstop FROM mfe WHERE accession = ? ORDER BY start", vars => [$accession],);
+% my $mt = "mfe_$sp";
+% my $slips = $db->MySelect(statement =>"SELECT DISTINCT(start), bp_mstop FROM $mt WHERE accession = ? ORDER BY start", vars => [$accession],);
 % my (@slipsites, @minus);
 % foreach my $s (@{$slips}) {
 %   push (@slipsites, $s->[0]);
@@ -53,11 +55,11 @@ Showing minus <% $show_frame %> reading frame(s).
 </form>
 </table>
 <p>The minimum free energy 'landscape' for <% $accession %>, black vertical lines delineate the positions of slippery heptamers, the horizontal green line shows the mean Vienna RNAfold value over the ORF, the horizontal red line shows the mean pknots value over the ORF, the horzontal blue line shows the mean nupack value.  green, red, and blue lines delineate the MFE over a sliding 105bp window.</p>
-<& print_landscape.html, accession => "$accession", species => "$species" &>
+<& print_landscape.html, accession => "$accession", species => "$sp" &>
 </form>   </tr>
 
 <%init>
- my $statement = "SELECT species,genename FROM genome WHERE accession = ?";
+ my $statement = "SELECT species, genename FROM gene_info WHERE accession = ?";
  my $fun = $db->MySelect(statement => $statement, vars => [$accession,]);
  my $species = $fun->[0][0];
  my $genename = $fun->[0][1];

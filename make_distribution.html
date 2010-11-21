@@ -24,20 +24,21 @@ my $cloud_output_filename = $cloud->Picture_Filename(type => 'cloud', species =>
 my $cloud_url = $cloud->Picture_Filename(type => 'cloud', species => $species, url => 'url', suffix => $suffix,);
 $cloud_url = $config->{base} . '/' . $cloud_url;
 my ($points_stmt, $averages_stmt, $points, $averages);    
+my $mt = "mfe_$species";
 if (!-f $cloud_output_filename) {
-  $points_stmt = qq/SELECT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND /;
-  $averages_stmt = qq(SELECT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $vars->{seqlength} AND mfe.id = $boot_table.mfe_id AND );
+  $points_stmt = qq"SELECT $mt.mfe, $boot_table.zscore, $mt.accession, $mt.knotp, $mt.slipsite, $mt.start, genome.genename FROM $mt, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND ";
+  $averages_stmt = qq"SELECT avg($mt.mfe), avg($boot_table.zscore), stddev($mt.mfe), stddev($boot_table.zscore) FROM $mt, $boot_table WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = $vars->{seqlength} AND $mt.id = $boot_table.mfe_id AND ";
   foreach my $filter (@filters) {
     if ($filter eq 'pseudoknots only') {
-      $points_stmt .= "mfe.knotp = '1' AND ";
-      $averages_stmt .= "mfe.knotp = '1' AND ";
+      $points_stmt .= "$mt.knotp = '1' AND ";
+      $averages_stmt .= "$mt.knotp = '1' AND ";
     }
     elsif ($filter eq 'coding sequence only') {
       $points_stmt .= "";
       $averages_stmt .= "";
     }
   }
-  $points_stmt .= " mfe.genome_id = genome.id";
+  $points_stmt .= " $mt.genome_id = genome.id";
   $averages_stmt =~ s/AND $//g;
   $points = $db->MySelect(statement => $points_stmt, vars => [$species]);
   $averages = $db->MySelect(statement => $averages_stmt, vars => [$species], type => 'row',);

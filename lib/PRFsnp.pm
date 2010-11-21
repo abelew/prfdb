@@ -163,14 +163,14 @@ sub Create_Table_snp {
 					 INDEX(gene_gi),
 					 INDEX(gene_acc),
 					 PRIMARY KEY (id))/;
-    my ($cp, $cf, $cl) = caller();
-    $me->MyExecute(statement => $statement, caller => "$cp, $cf, $cl",);
+    $me->MyExecute(statement => $statement,);
 }
 
 sub Compute_Frameshift {
     my $me = shift;
     my $args = shift;
-    my $statement = 'SELECT id, accession, start, seqlength, parsed FROM mfe WHERE species = ?';
+    my $mt = qq"mfe_$species";
+    my $statement = 'SELECT id, accession, start, seqlength, parsed FROM $mt WHERE species = ?';
     my $mfe_data = $db->MySelect(statement => $statement, vars => [$me->{species}], type => 'list_of_hashes',);
     foreach my $mfe_row (@{$mfe_data}) {
 	my $mfe_id = $mfe_row->{id};
@@ -229,7 +229,7 @@ sub Compute_Frameshift {
 		$frameshift = $f if ($f < 1000000);
 	    }
 	    if ($frameshift eq 's' or $frameshift =~ /\d+/ or $frameshift eq 'f') {
-		my $statement = 'UPDATE IGNORE mfe SET has_snp = TRUE WHERE id = ?';
+		my $statement = 'UPDATE IGNORE $mt SET has_snp = TRUE WHERE id = ?';
 		$db->MyExecute(statement => $statement, vars => [$mfe_id],);
 	    }
 	    $statement = 'UPDATE IGNORE snp SET frameshift = ?, mfe_ids = ? WHERE id = ?';

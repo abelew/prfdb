@@ -5,7 +5,7 @@ use lib "$ENV{PRFDB_HOME}/usr/lib/perl5";
 use lib "$ENV{PRFDB_HOME}/lib";
 die("Could not load PRFConfig.\n$@\n") unless (eval "use PRFConfig; 1");
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
-die("Could not load PRFdb.\n$@\n") unless (eval "use PRFdb qw'AddOpen RemoveFile callstack'; 1");
+die("Could not load PRFdb.\n$@\n") unless (eval "use PRFdb qw'AddOpen RemoveFile Callstack Cleanup'; 1");
 $db = new PRFdb(config => $config);
 die("Could not load RNAMotif.\n$@\n") unless (eval "use RNAMotif; 1");
 die("Could not load RNAFolders.\n$@\n") unless (eval "use RNAFolders; 1");
@@ -16,12 +16,12 @@ die("Could not load PRFBlast.\n$@\n") unless (eval "use PRFBlast; 1");
 die("Could not load Agree.\n$@\n") unless (eval "use Agree; 1");
 my $load_return = eval("use PRFGraph; 1");
 warn("Could not load PRFGraph, disabling graphing routines.\n$@\n") unless($load_return);
-$SIG{INT} = 'CLEANUP';
-$SIG{BUS} = 'CLEANUP';
-$SIG{SEGV} = 'CLEANUP';
-$SIG{PIPE} = 'CLEANUP';
-$SIG{ABRT} = 'CLEANUP';
-$SIG{QUIT} = 'CLEANUP';
+$SIG{INT} = \&PRFdb::Cleanup;
+$SIG{BUS} = \&PRFdb::Cleanup;
+$SIG{SEGV} = \&PRFdb::Cleanup;
+$SIG{PIPE} = \&PRFdb::Cleanup;
+$SIG{ABRT} = \&PRFdb::Cleanup;
+$SIG{QUIT} = \&PRFdb::Cleanup;
 
 setpriority(0,0,$config->{niceness});
 $ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}" if(defined($config->{ENV_LIBRARY_PATH}));
@@ -68,7 +68,7 @@ if (defined($config->{makeblast})) {
     exit(0);
 }
 if (defined($config->{resync})) {
-    ReSync();
+    $db->ReSync();
     exit(0);
 }
 if (defined($config->{zscore})) {
@@ -209,15 +209,15 @@ sub Read_Accessions {
     my $retries = 10;
     ## Rewrite the list of things to do removing the ones which are done
     system("touch ${accession_file}.done");
-    open(D, "<${accession_file}.done") or die "Could not open the done file.";
+    open(D, "<${accession_file}.done") or Callstack(die => 1, message => "Could not open the done file.");
     my @done_list = ();
     while (my $line = <D>) {
 	chomp $line;
 	push(@done_list, $line);
     }
     close(D);
-    open(A, ">${accession_file}.new") or die "Could not open the accession file.";
-    open(AA, "<$accession_file") or die "Could niot open the accession file.";
+    open(A, ">${accession_file}.new") or Callstack(die => 1, message => "Could not open the accession file.");
+    open(AA, "<$accession_file") or Callstack(die => 1, message => "Could niot open the accession file.");
   AA: while (my $line = <AA>) {
       chomp $line;
       my $num_left = scalar(@done_list);
@@ -232,14 +232,14 @@ sub Read_Accessions {
     close(AA);
     system("rm $accession_file.done");
     system("mv ${accession_file}.new $accession_file");
-    open(DONE, ">${accession_file}.done") or die "Could not open the done file.";
-    open(AC, "<$accession_file") or die "Could not open the file of accessions $!";
+    open(DONE, ">${accession_file}.done") or Callstack(die => 1, message => "Could not open the done file.");
+    open(AC, "<$accession_file") or Callstack(die => 1, message => "Could not open the file of accessions");
     OUTER: while (my $accession = <AC>) {
 	sleep(2);
 	my $attempts = 0;
 	while ($attempts < $retries) {
 	    if ($attempts >= $retries) {
-		die("Unable to acquire sequence for $accession after $retries attempts.");
+		Callstack(die => 1, message => "Unable to acquire sequence for $accession after $retries attempts.");
 	    }
 	    chomp $accession;
 	    print "Importing Accession: $accession\n";
@@ -271,6 +271,7 @@ sub Gather {
     $state->{species} = $ref->{species};
     $db->Create_Landscape("landscape_$state->{species}") unless($db->Tablep("landscape_$state->{species}"));
     $db->Create_Boot("boot_$state->{species}") unless($db->Tablep("boot_$state->{species}")); 
+    $db->Create_MFE("mfe_$state->{species}") unless($db->Tablep("mfe_$state->{species}"));
     my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
     my $message = "${hour}:${min}.${sec} $mon/$mday id:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
     print $message;
@@ -333,6 +334,7 @@ sub PRF_Gatherer {
   STARTSITE: foreach my $slipsite_start (keys %{$rnamotif_information}) {
       print "PRF_Gatherer: $current $slipsite_start\n" if (defined($config->{debug}));
       $num_slipsites++;
+      my $mt = "mfe_$state->{species}";
       if ($config->{do_utr} == 0) {
 	  my $end_of_orf = $db->MySelect(statement => "SELECT orf_stop FROM genome WHERE accession = ?", vars => [$state->{accession}], type =>'row',);
 	  if ($end_of_orf->[0] < $slipsite_start) {
@@ -393,15 +395,15 @@ sub PRF_Gatherer {
           print "Vienna was undefined in do_comparison\n" if (!defined($pk));
 	  my $comparison_string = "$pk,$nu,$vi";
 	  $comparison_string =~ s/\s+//g;
-	  my $update_string = qq(UPDATE mfe SET compare_mfes = '$comparison_string' WHERE accession = '$state->{accession}' AND seqlength = '$state->{seqlength}' AND start = '$slipsite_start');
+	  my $update_string = qq"UPDATE $mt SET compare_mfes = '$comparison_string' WHERE accession = '$state->{accession}' AND seqlength = '$state->{seqlength}' AND start = '$slipsite_start'";
 	  $db->MyExecute($update_string);
       }
       if ($config->{do_agree}) {
-	  my $stmt = qq"(SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ?)
+	  my $stmt = qq"(SELECT sequence, slipsite, parsed, output, algorithm FROM $mt WHERE id = ?)
 UNION
-(SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ?)
+(SELECT sequence, slipsite, parsed, output, algorithm FROM $mt WHERE id = ?)
 UNION
-(SELECT sequence, slipsite, parsed, output, algorithm FROM mfe WHERE id = ?)";
+(SELECT sequence, slipsite, parsed, output, algorithm FROM $mt WHERE id = ?)";
 	  my $info = $db->MySelect(statement => $stmt, vars => [$pknots_mfe_id, $nupack_mfe_id, $hotknots_mfe_id],);
 	  my $agree = new Agree();
 	  my $agree_datum = $agree->Do(info => $info);
@@ -409,9 +411,9 @@ UNION
 	  undef $agree;
       }
       if ($config->{do_boot}) {
-          my $tmp_nupack_mfe_id = $db->MySelect(statement => qq"SELECT id FROM mfe WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'nupack'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
-          my $tmp_pknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM mfe WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'pknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
-          my $tmp_hotknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM mfe WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'hotknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
+          my $tmp_nupack_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'nupack'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
+          my $tmp_pknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'pknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
+          my $tmp_hotknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'hotknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
 
 	  my $boot = new Bootlace(genome_id => $state->{genome_id},
 				  nupack_mfe_id => (defined($state->{nupack_mfe_id})) ?
@@ -487,7 +489,9 @@ sub Landscape_Gatherer {
 $sequence_string
 ";
 	$state->{fasta_file} = $db->Sequence_to_Fasta($individual_sequence);
-	if (!defined($state->{accession})) {die("The accession is no longer defined. This cannot be allowed.")};
+	if (!defined($state->{accession})) {
+	    Callstack(die => 1, message => "The accession is no longer defined. This cannot be allowed.");
+	}
 	my $landscape_table = qq/landscape_$state->{species}/;
 	my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
 					 species => $state->{species}, accession => $state->{accession},
@@ -624,9 +628,9 @@ sub Check_Boot_Connectivity {
     my $slipsite_start = shift;
     my $genome_id = $state->{genome_id};
     my $species = $state->{species};
-    
+    my $mt = "mfe_$species";
     my $boot_table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
-    my $check_statement = qq/SELECT mfe_id, mfe_method, id, genome_id FROM $boot_table WHERE genome_id = ? and start = ?/;
+    my $check_statement = qq"SELECT mfe_id, mfe_method, id, genome_id FROM $boot_table WHERE genome_id = ? and start = ?";
     my $answer = $db->MySelect(statement => $check_statement, vars =>[$genome_id, $slipsite_start],);
     my $num_fixed = 0;
     foreach my $boot (@{$answer}) {
@@ -636,15 +640,15 @@ sub Check_Boot_Connectivity {
 	my $genome_id = $boot->[3];
 	if (!defined($mfe_id) or $mfe_id == '0') {
 	    ## Then reconnect it using $mfe_method and $boot_id and $genome_id
-	    my $new_mfe_id_stmt = qq(SELECT id FROM mfe where genome_id = ? and start = ? and algorithm = ?);
+	    my $new_mfe_id_stmt = qq"SELECT id FROM $mt where genome_id = ? and start = ? and algorithm = ?";
 	    my $new_mfe_id_arrayref = $db->MySelect(statement => $new_mfe_id_stmt, vars => [$genome_id, $slipsite_start, $mfe_method],);
 	    my $new_mfe_id = $new_mfe_id_arrayref->[0]->[0];
 	    if ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'nupack') {
 		### Then there is no nupack information :(
 		#print "No Nupack information!\n";
 		if (!defined($state->{accession})) {
-		    die("The accession is no longer defined. This cannot be allowed.")
-		    };
+		    Callstack(die => 1, message => "The accession is no longer defined. This cannot be allowed.");
+		}
 		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
 						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
@@ -652,16 +656,15 @@ sub Check_Boot_Connectivity {
 	    } elsif ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'pknots') {
 		### Then there is no pknots information :(
 		if (!defined($state->{accession})) {
-		    die("The accession is no longer defined. This cannot be allowed.")
-		    };
+		    Callstack(die => 1, message => "The accession is no longer defined. This cannot be allowed.");
+		}
 		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
 						 species => $state->{species}, accession => $state->{accession},
 						 start => $slipsite_start,);
 		$new_mfe_id = Check_Pknots($fold_search, $slipsite_start);
 	    } ### End if there is no mfe_id and pknots was the algorithm
 	    my $update_mfe_id_statement = qq(UPDATE $boot_table SET mfe_id = ? WHERE id = ?);
-	    my ($cp,$cf, $cl) = caller(0);
-	    $db->MyExecute(statement => $update_mfe_id_statement, vars =>[$new_mfe_id, $boot_id], caller =>"$cp $cf $cl",);
+	    $db->MyExecute(statement => $update_mfe_id_statement, vars =>[$new_mfe_id, $boot_id],);
 	    $num_fixed++;
 	}    ### End if there is no mfe_id
     }    ### End foreach boot in the list
@@ -674,7 +677,7 @@ sub Check_Folds {
     my $fold_search = shift;
     my $slipsite_start = shift;
     my $mfe_id;
-    my $mfe_varname = qq(${type}_mfe_id);
+    my $mfe_varname = qq"${type}_mfe_id";
     my $folds = $db->Get_Num_RNAfolds($type, $state->{genome_id}, $slipsite_start, $state->{seqlength});
     if ($folds > 0) { ### If there ARE existing folds...
 	print "$state->{genome_id} has $folds > 0 pknots_folds at position $slipsite_start\n" if (defined($config->{debug}));
@@ -701,7 +704,7 @@ sub Check_Folds {
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Hotknots and returned $mfe_id\n" if (defined($config->{debug}));
 	} else {
-	    die("Non existing type in Check_Folds");
+	    Callstack(die => 1, message => "Non existing type in Check_Folds");
 	}
     }    ### Done checking for pknots folds
     return ($mfe_id);
@@ -722,7 +725,7 @@ sub Check_Sequence_Length {
     my @seqarray = split(//, $sequence);
     my $sequence_length = $#seqarray + 1;
     my $wanted_sequence_length = $state->{seqlength};
-    open(IN, "<$filename") or die("Check_Sequence_Length: Couldn't open $filename $!");
+    open(IN, "<$filename") or Callstack(die => 1, message => "Check_Sequence_Length: Couldn't open $filename");
     ## OPEN IN in Check_Sequence_Length
     my $output = '';
     my @out = ();
@@ -798,17 +801,22 @@ sub Make_Landscape_Tables {
 
 sub Zscore {
     my $tables = $db->MySelect("show tables");
+    my $mt;
     foreach my $t (@{$tables}) {
 	my $table = $t->[0];
 	next unless ($table =~ /^boot_/);
-	my $all_boot_stmt = qq"SELECT id, mfe_id, mfe_mean, mfe_sd FROM $table WHERE zscore is NULL";
+	my $species = $table;
+	$species =~ s/^boot_//g;
+	my $all_boot_stmt = qq"SELECT id, mfe_id, mfe_mean, mfe_sd, FROM $table WHERE zscore is NULL";
+	$mt = qq"mfe_$species";
 	my $all_boot = $db->MySelect($all_boot_stmt);
 	foreach my $boot (@{$all_boot}) {
 	    my $id = $boot->[0];
 	    my $mfe_id = $boot->[1];
 	    my $mfe_mean = $boot->[2];
 	    my $mfe_sd = $boot->[3];
-	    my $mfe_stmt = qq"SELECT mfe FROM mfe WHERE id = '$mfe_id'";
+	    my $species = $boot->[4];
+	    my $mfe_stmt = qq"SELECT mfe FROM $mt WHERE id = '$mfe_id'";
 	    my $mfe = $db->MySelect(statement => $mfe_stmt, type =>'single');
 	    $mfe_sd = 1 if (!defined($mfe_sd) or $mfe_sd == 0);
 	    $mfe = 0 if (!defined($mfe));
@@ -818,36 +826,8 @@ sub Zscore {
 	    $db->MyExecute($update_stmt);
 	}
     }
-    my $cleaning = qq(DELETE FROM mfe WHERE mfe > '10');
+    my $cleaning = qq"DELETE FROM $mt WHERE mfe > '10'";
     $db->MyExecute($cleaning);
-}
-
-sub ReSync {
-    my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
-    my $local_dbd = qq"dbi:$config->{database_type}:database=mysql;host=localhost";
-    my $statement = "SHOW MASTER STATUS";
-    my $other_dbh = $db->MyConnect($statement, $other_dbd, 'root', 'rsoqolt');
-    my $local_dbh = $db->MyConnect($statement, $local_dbd, 'root', 'rsoqolt');
-    my $o_sth = $other_dbh->prepare($statement);
-    my $l_sth = $local_dbh->prepare($statement);
-    my $o_rv = $o_sth->execute();
-    my $l_rv = $l_sth->execute();
-    my $o_return = $o_sth->fetchrow_arrayref();
-    my $l_return = $l_sth->fetchrow_arrayref();
-    my $o_file = $o_return->[0];
-    my $l_file = $l_return->[0];
-    my $o_pos = $o_return->[1];
-    my $l_pos = $l_return->[1];
-    my $l_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$o_file', MASTER_LOG_POS=$o_pos";
-    my $o_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$l_file', MASTER_LOG_POS=$l_pos";
-    print "Local log file and position is: $l_file $l_pos\n";
-    print "Changing remote master with: $o_reset\n";
-    print "Remote log file and position is: $o_file $o_pos\n";
-    print "Changing local master with: $l_reset\n";
-    $o_sth = $other_dbh->prepare($o_reset);
-    $l_sth = $local_dbh->prepare($l_reset);
-    $o_rv = $o_sth->execute();
-    $l_rv = $l_sth->execute();
 }
 
 sub Maintenance {
@@ -889,24 +869,24 @@ sub Maintenance {
     unless ($config->{maintenance_skip_index}) {
 	my $test = $db->Tablep('index_stats');
 	$db->Create_Index_Stats() unless($test);
-	my ($num_genome, $num_mfe_entries, $num_mfe_knotted);
+	my ($num_genome, $num_mfe_entries, $num_mfe_knotted, $mt);
       OUT: foreach my $species (@{$config->{index_species}}) {
 	  foreach my $sp (@{$finished_species}) {
 	      next OUT if ($sp eq $species);
 	  }
 	  print "Filling index_stats for $species\n";
 	  next if ($species =~ /^virus-/);
+	  $mt = "mfe_$species";
 	  $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species,]);
-	  $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species = ?",type=>'single', vars => [$species,]);
-	  $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species = ?",type=>'single', vars => [$species],);
-	  my ($cp,$cf,$cl) = caller();
-	  my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = ?", caller => "$cp,$cf,$cl", vars => [$species],);
+	  $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM $mt WHERE species = ?",type=>'single', vars => [$species,]);
+	  $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM $mt WHERE knotp = '1' and species = ?",type=>'single', vars => [$species],);
+	  my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = ?", vars => [$species],);
 	  $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('',?,?,?,?)", vars => [$species, $num_genome, $num_mfe_entries, $num_mfe_knotted],);
-      }
+      }  ## End foreach species...
 	my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = 'virus'");
 	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species like 'virus-%'", type=>'single');
-	$num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe WHERE species like 'virus-%'",type=>'single');
-	$num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe WHERE knotp = '1' and species like 'virus-%'",type=>'single');
+	$num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe_virus",type=>'single');
+	$num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe_virus WHERE knotp = '1'",type=>'single');
 	$rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('', 'virus',?,?,?)", vars => [$num_genome, $num_mfe_entries, $num_mfe_knotted],);
 	## End index_stats
     }
@@ -938,6 +918,7 @@ sub Maintenance {
 			      $suffix .= "-${slip}";
 			  }
 			  $suffix .= "-${seqlength}";
+			  my $mt = "mfe_$species";
 			  my $cloud_output_filename = $cloud->Picture_Filename(type => 'cloud',
 									       species => $species,
 									       suffix => $suffix,);
@@ -948,14 +929,14 @@ sub Maintenance {
 			  $cloud_url = $config->{base} . '/' . $cloud_url;
 			  my ($points_stmt, $averages_stmt, $points, $averages);
 			  if (!-f $cloud_output_filename) {
-			      $points_stmt = qq"SELECT SQL_BUFFER_RESULT mfe.mfe, $boot_table.zscore, mfe.accession, mfe.knotp, mfe.slipsite, mfe.start, genome.genename FROM mfe, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
-			      $averages_stmt = qq"SELECT SQL_BUFFER_RESULT avg(mfe.mfe), avg($boot_table.zscore), stddev(mfe.mfe), stddev($boot_table.zscore) FROM mfe, $boot_table WHERE $boot_table.zscore IS NOT NULL AND mfe.mfe > -80 AND mfe.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND mfe.species = ? AND mfe.seqlength = $seqlength AND mfe.id = $boot_table.mfe_id AND ";
+			      $points_stmt = qq"SELECT SQL_BUFFER_RESULT $mt.mfe, $boot_table.zscore, $mt.accession, $mt.knotp, $mt.slipsite, $mt.start, genome.genename FROM $mt, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.species = ? AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND ";
+			      $averages_stmt = qq"SELECT SQL_BUFFER_RESULT avg($mt.mfe), avg($boot_table.zscore), stddev($mt.mfe), stddev($boot_table.zscore) FROM $mt, $boot_table WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND ";
 			      
 			      if ($pk eq 'yes') {
-				  $points_stmt .= "mfe.knotp = '1' AND ";
-				  $averages_stmt .= "mfe.knotp = '1' AND ";
+				  $points_stmt .= "$mt.knotp = '1' AND ";
+				  $averages_stmt .= "$mt.knotp = '1' AND ";
 			      }
-			      $points_stmt .= " mfe.genome_id = genome.id";
+			      $points_stmt .= " $mt.genome_id = genome.id";
 			      $averages_stmt =~ s/AND $//g;
 			      $points = $db->MySelect(statement => $points_stmt, vars => [$species]);
 			      $averages = $db->MySelect(statement => $averages_stmt, vars => [$species], type => 'row',);
@@ -1035,8 +1016,9 @@ sub Import_Genbank {
 	my $full_species = qq(${genus}_${species});
 	$full_species =~ tr/[A-Z]/[a-z]/;
 	$config->{species} = $full_species;
-	$db->Create_Landscape(qq/landscape_$full_species/);
-	$db->Create_Boot(qq/boot_$full_species/);
+	$db->Create_Landscape(qq"landscape_$full_species");
+	$db->Create_Boot(qq"boot_$full_species");
+	$db->Create_MFE(qq"mfe_$full_species");
 	my $full_comment = $seq->desc();
 	my $defline = "lcl||gb|$accession|species|$full_comment\n";
 	my ($genename, $desc) = split(/\,/, $full_comment);
@@ -1112,13 +1094,6 @@ sub Import_Genbank {
     }
 }
 
-sub CLEANUP {
-    $db->Disconnect() if (defined($db));
-    PRFdb::RemoveFile('all') if (defined($config->{remove_end}));
-    print "\n\nCaught Fatal signal.\n\n";
-    exit(0);
-}
-
 sub Make_Queue_Jobs {
     ## copying out of the perl script make_jobs.pl
     die("Could not load Template.\n$@\n") unless (eval "use Template; 1");
@@ -1160,7 +1135,7 @@ sub Make_Queue_Jobs {
 		job_num => $daemon,
 		base => $config->{base},
 	    };
-	    $template->process($input_file, $vars, $output_file) or die $template->error();
+	    $template->process($input_file, $vars, $output_file) or Callstack(die => 1, message => $template->error());
 #	    system("/usr/local/bin/qsub $output_file");
 #	    print "Going to run /usr/local/bin/qsub $output_file\n";
 	}

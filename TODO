@@ -1,10 +1,57 @@
-No.
+General:
+--------
+1.  Implement try: blocks more fully
+2.  Make use of Log::Log4perl and Sys::SigAction to make this more robust
+3.  Make the installation self-explanatory
 
-New TODO:
+Importing:
+----------
+1.  Swissprot, EMBL support are untested
+2.  Better generic fasta support
+3.  Import my Blast->Import function into prf_daemon
 
-Fix things.  Everything.
-1) Compartmentalize things.  Get_PPCC doesn't belong in PRFGraph.pm for instance.
-2) Go through old code and make it readable.
-3) Test new PRFGraph system in a functioning server sort of way
-4) Trey wants to modify landscape_daemon.pl.  Add it into the main executable.
-5) Update the web templates to make a nicer webpage (more trendy).  Cause we are trendy.
+BLAST:
+------
+1.  Make a pretty graphical BLAST output like NCBI's
+
+Folding algorithms:
+-------------------
+1.  Maybe pknotsRG
+2.  The new java algorithm from the Korean lab
+3.  ilm?
+
+PBS:
+----
+1.  PBS support is pretty awesome right now, I think this is done.
+
+Randomization:
+--------------
+1.  Make it so users can pick and choose the randomization algorithms
+2.  Make it possible to regenerate randomization data
+
+Http interface:
+---------------
+1.  Make further use of the javascript, AJAX, and jquery
+2.  Failover to other database nodes works great, but document it.
+3.  General cleanups, and get someone with some aesthetic sense to look at it.
+
+Command Line interface:
+-----------------------
+1. Document Document Document that shit.
+
+Database Access:
+----------------
+1.  Recently split genome into genome and gene_info, this means there needs to be a 
+    careful audit of the code to make sure selects are going to the correct places
+2.  I am making a lot of redundant select statements when joins would be smarter
+    Start fixing that.
+
+Graphing:
+---------
+1.  SVG::TT::Graph is so pretty, move some to that.
+2.  Document it!
+
+Configuration system:
+---------------------
+1.  Cut out redundant options
+2.  Document how awesome that configuration system is!

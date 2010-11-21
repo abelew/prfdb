@@ -2,6 +2,7 @@ package SeqMisc;
 use strict;
 use PRFConfig;
 use File::Temp qw / tmpnam /;
+use PRFdb qw" Callstack ";
 ## Every function here should take as input an array reference
 ## containing the sequence to be shuffled.
 my $config = $PRFConfig::config;
@@ -459,7 +460,7 @@ sub Translate {
     my $sequence = $me->{seqstring};
     $sequence =~ tr/atgcT/AUGCU/;
     if ((!$me->{sequence}) and (!defined($sequence))) {
-	die("Nothing to work with");
+	Callstack(message => "Nothing to work with.", die => 1);
     } elsif (defined($sequence)) {
 	my @seqtmp = split(//, $sequence);
 	my $t = new SeqMisc(sequence => \@seqtmp);
@@ -586,7 +587,7 @@ $inseq
 ";
 	my $infile = $fh->filename;
 	my $command = "$shuffle_exe $infile";
-	open(CMD, "$command |") or die("Could not execute shuffle. $!");
+	open(CMD, "$command |") or Callstack(message => "Could not execute shuffle.", die => 1);
 	## OPEN CMD in Squid
 	while (my $line = <CMD>) {
 	    chomp $line;
@@ -617,7 +618,7 @@ $inseq
 ";
 	my $infile = $fh->filename;
 	my $command = qq($shuffle_exe -d $infile);
-	open(CMD, "$command |") or die("Could not execute shuffle $command. $!");
+	open(CMD, "$command |") or Callstack(die => 1, message => "Could not execute shuffle $command.");
 	## OPEN CMD in Squid_Dinuc
 	while (my $line = <CMD>) {
 	    chomp $line;
