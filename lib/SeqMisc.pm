@@ -138,12 +138,13 @@ sub new {
 	    ANN => '?', UNN => '?', GNN => '?', CNN => '?',
 	    AAN => '?', AUN => '?', AGN => '?', ACN => '?',
 	    UAN => '?', UUN => '?', UGN => '?', UCN => '?',
-	    GAN => '?', GUN => '?', GCN => '?', GCN => '?',
+	    GAN => '?', GUN => '?', GCN => '?', GGN => '?',
 	    CAN => '?', CUN => '?', CCN => '?', CCN => '?',
 	    ANA => '?', ANU => '?', ANC => '?', ANG => '?',
 	    UNA => '?', UNU => '?', UNC => '?', UNG => '?',
 	    CNA => '?', CNU => '?', CNC => '?', CNG => '?',
 	    GNA => '?', GNU => '?', GNC => '?', GNG => '?',
+	    
 	},
     }, $class;
     my @ntseq = @{$me->{sequence}};
