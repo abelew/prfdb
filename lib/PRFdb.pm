@@ -1,9 +1,3 @@
-=head1 NAME
-
-PRFdb - The database routines of the Programmed Ribosomal Frameshift Database
-
-=cut
-
 package PRFdb;
 use strict;
 use DBI;
@@ -31,14 +25,6 @@ our $log = Log::Log4perl->get_logger('stack'),
 my $config;
 my $dbh;
 ###
-
-=head1 SYNOPSIS
-
-  use PRFdb qw" Callstack AddOpen RemoveFile Cleanup ";
-  my $db = new PRFdb(config => $config);
-  my $lots_of_information = $db->MySelect("SELECT * FROM gene_info");
-
-=cut
 
 sub new {
     my ($class, %arg) = @_;
@@ -322,8 +308,7 @@ sub MyGet {
 	    $criteria_count++;
 	    if ($vars->{$criterion} =~ /\s+/) {
 		$final_statement .= "$criterion $vars->{$criterion} AND ";
-	    }
-	    else {
+	    } else {
 		$final_statement .= "$criterion = '$vars->{$criterion}' AND ";
 	    }
 	}
@@ -1136,13 +1121,11 @@ sub Import_Genbank_Flatfile {
 		$direction = 'undefined';
 		$start = $orf_start;
 		$stop = $orf_stop;
-	    }
-	    elsif ($feature->{_location}{_strand} == 1) {
+	    } elsif ($feature->{_location}{_strand} == 1) {
 		$direction = 'forward';
 		$start = $orf_start;
 		$stop = $orf_stop;
-	    }
-	    elsif ($feature->{_location}{_strand} == -1) {
+	    } elsif ($feature->{_location}{_strand} == -1) {
 		$direction = 'reverse';
 		$start = $orf_stop;
 		$stop = $orf_start;
@@ -1346,11 +1329,12 @@ VALUES(?,?,?,?,?,?,?,?)";
 (genome_id, accession, species, genename, comment)
 VALUES(?,?,?,?,?)";
     my $gene_info = $me->MyExecute(statement => $gene_info_stmt,
-                                   vars => [$last_id,$datum->{accession},$datum->{species},$datum->{genename},$datum->{comment}]);
+                                   vars => [$last_id,$datum->{accession},$datum->{species},
+                                            $datum->{genename},$datum->{comment}]);
 
-## The following line is very important to ensure that multiple
-## calls to this don't end up with
-## Increasingly long sequences
+    ## The following line is very important to ensure that multiple
+    ## calls to this don't end up with
+    ## Increasingly long sequences
     foreach my $k (keys %{$datum}) {$datum->{$k} = undef;}
     return ($last_id);
 }
@@ -1504,3 +1488,82 @@ sub AUTOLOAD {
 }
 
 1;
+
+
+__END__
+
+=head1 NAME
+
+PRFdb - The database routines of the Programmed Ribosomal Frameshift Database
+
+=head1 SYNOPSIS
+
+  use PRFdb qw" Callstack AddOpen RemoveFile Cleanup ";
+  my $db = new PRFdb(config => $config);
+  my $lots_of_information = $db->MySelect("SELECT * FROM gene_info");
+
+=head1 DESCRIPTION
+
+The B<PRFdb> module pretty much requires a functional B<PRFConfig>
+object in order to find its myriad of configurable variables.
+It attempts to create an easy and fast environment for performing
+SQL queries/inserts/updates across the PRFdb, including automatic
+failover between database nodes, the ability to request specific
+datatypes from select statements without having to remember the
+various function names from DBI, and pretty reasonable error
+reporting functionality.
+All tables which are used in the PRFdb may be found in PRFdb::Create,
+Functions which perform common selects from the database are in
+PRFdb::Get and those which perform common inserts are in
+PRFdb::Put; these are most commonly accessed via AUTOLOAD.
+
+=head2 MyConnect
+
+MyConnect is called early by prf_daemon as well as the apache handler.
+It in turn makes use of DBI::connect_cached and Sys::SigAction in order
+to skip between multiple database nodes in the event one is not
+responding.  Every time it makes a successful connection, it appends a
+new handle onto the PRFdb->{handles} list.
+Finally, it returns the cached DBI database handle.
+
+=head2 MySelect
+
+MySelect attempts to make SQL select statements via DBI quick and flexible
+in an environment where at any time one or more database nodes might not be
+responding.
+MySelect can take either a raw select statement or a raw hash which looks
+like "statement => 'some select statement', type => 'single'"
+If it receives a string, it will return an array reference with one element
+per row of the database returned.  Otherwise it will return the following:
+type => 'hash', descriptor => ['id','accession']  : returns a hash reference
+with the names of each key as defined by the descriptor.
+type => 'row' : returns a single row as an array reference.
+type => 'single' : returns a scalar with a single value.
+type => 'flat'  : flattens an array reference returned by fetchall_arrayref
+type => 'list_of_hashes' : a list of hashes with the names of the columns in the table
+type => undef : a list of array references
+
+=head2 MyExecute
+Performs arbitrary executes on the database with failover and relatively decent
+error reporting.  returns how many rows were changed in the table affected.
+
+=head2 MyGet
+Little used because it is too clever.  Takes args in the following format:
+table => 'mfe_saccharomyces_cerevisiae', order => 'column_to_sort_by',
+criterion => [column1, =, column2, = ],
+Thus one could use it to quickly generate SELECT statements by just
+feeding a hash of the things you actually want.
+
+=head2 Miscellaneous
+Pretty much the rest of PRFdb.pm works to convert from one format
+(fasta, the database, bpseq) to another (Ibid).  Because it handles
+both flat files and database connections, it makes extensive use of
+File::Temp and uses AddOpen and RemoveFile to keep track of the number
+of temporary files created on disk.  These two functions are very
+important to ensure that we don't end up filling the disk of
+the HPCC cluster with millions of small temporary files created by
+MakeFasta and friends.
+In addition, this holds the importing code, and so makes use of
+Bio::DB::Universal to download and import new sequences.
+
+=cut
