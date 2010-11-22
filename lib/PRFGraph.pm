@@ -617,7 +617,7 @@ sub Make_SlipBars {
 	$y_label = 'percent';
 	$title = 'Percent significant of each slipsite'
     }
-    $bargraph->set(x_label => 'slipsite', y_label => $number, title => $title,
+    $bargraph->set(x_label => 'slipsite', y_label => $y_label, title => $title,
 		   dclrs => [ qw"blue black red green" ], cycle_clrs => 1, dclrs => \@colors,
 		   show_values => 1, values_vertical => 1, x_labels_vertical => 1,
 		   y_max_value => $values[0],);
