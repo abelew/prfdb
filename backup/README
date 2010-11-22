@@ -1,0 +1,2 @@
+This directory should contain mysqldump backups for the local database.
+For each new prfdb.* file which is created, a new backup will get generated.

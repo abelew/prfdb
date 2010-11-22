@@ -4,3 +4,15 @@ images/*
 *#
 prfdb.conf
 work/*
+mysqldump.out
+backup/prfdb_*
+data/*
+failed_sql_statements.txt
+crontab.out
+sessions
+pm_to_blib
+Makefile*
+obj
+*/params
+blib
+folds/*fasta

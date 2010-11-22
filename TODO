@@ -13,6 +13,8 @@ Importing:
 BLAST:
 ------
 1.  Make a pretty graphical BLAST output like NCBI's
+2.  I have a tonne of BLAST data showing potentially extended ORFs
+    This needs to find a real home and a way to efficiently examine it.
 
 Folding algorithms:
 -------------------
