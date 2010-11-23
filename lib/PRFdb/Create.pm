@@ -374,7 +374,7 @@ complement int,
 vars text,
 frameshift char(1),
 note text,
-INDEX(dbSNP),
+FULLTEXT(dbSNP),
 INDEX(accession),
 PRIMARY KEY(id))\;
     $me->MyExecute(statement => $statement,);
@@ -390,24 +390,24 @@ sub Wait {
 sub Tables {
     my $me = shift;
     my $config = $me->{config};
-    $me->Create_Agree();
-    $me->Create_Boot("boot_saccharomyces_cerevisiae");
-    $me->Create_Errors();
-    $me->Create_Evaluate();
-    $me->Create_Gene_Info();
-    $me->Create_Genome();
-    $me->Create_Import_Queue(); 
-    $me->Create_Index_Stats();
-    $me->Create_Landscape("landscape_saccharomyces_cerevisiae");
-    $me->Create_MFE("mfe_saccharomyces_cerevisiae");
-    $me->Create_MFE_Utr();
-    $me->Create_Nosy();
-    $me->Create_NumSlipsite();
-    $me->Create_Overlap();
-    $me->Create_Queue();
-    $me->Create_Stats();
-    $me->Create_Variations();
-    $me->Create_Wait();
+    $me->Create_Agree() if (!$me->Tablep("agree"));
+    $me->Create_Boot("boot_saccharomyces_cerevisiae") if (!$me->Tablep("boot_saccharomyces_cerevisiae"));
+    $me->Create_Errors() if (!$me->Tablep("errors"));
+    $me->Create_Evaluate() if (!$me->Tablep("evaluate"));
+    $me->Create_Gene_Info() if (!$me->Tablep("gene_info"));
+    $me->Create_Genome() if (!$me->Tablep("genome"));
+    $me->Create_Import_Queue() if (!$me->Tablep("import_queue"));
+    $me->Create_Index_Stats() if (!$me->Tablep("index_stats"));
+    $me->Create_Landscape("landscape_saccharomyces_cerevisiae") if (!$me->Tablep("landscape_saccharomyces_cerevisiae"));
+    $me->Create_MFE("mfe_saccharomyces_cerevisiae") if (!$me->Tablep("mfe_saccharomyces_cerevisiae"));
+    $me->Create_MFE_Utr() if (!$me->Tablep("mfe_utr"));
+    $me->Create_Nosy() if (!$me->Tablep("nosy"));
+    $me->Create_NumSlipsite() if (!$me->Tablep("numslipsite"));
+    $me->Create_Overlap() if (!$me->Tablep("overlap"));
+    $me->Create_Queue() if (!$me->Tablep("queue"));
+    $me->Create_Stats() if (!$me->Tablep("stats"));
+    $me->Create_Variations() if (!$me->Tablep("variations"));
+    $me->Create_Wait() if (!$me->Tablep("wait"));
 }
 
 sub AUTOLOAD {
