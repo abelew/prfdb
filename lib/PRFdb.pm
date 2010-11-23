@@ -1404,42 +1404,62 @@ sub Tablep {
     return (scalar(@{$info}));
 }
 
+sub StartSlave {
+    my $me = shift;
+    my $grant_replication = shift;
+    if ($grant_replication) {
+	my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
+	my $stmt = qq"GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '$config->{database_user}'\@'$ENV{PRFDB_IP}' IDENTIFIED BY '$config->{database_password}'";
+	my $other_dbh_num = $me->MyConnect($stmt, $other_dbd, 'root', $config->{database_root_password});
+	my $other_dbh = $me->{handles}->[$other_dbh_num];
+	print "Granting replication privileges with:\n
+$stmt\n";
+	my $o_sth = $other_dbh->prepare($stmt);
+	my $o_rv = $o_sth->execute();
+    }
+    $me->ReSync('slave');
+}
+
 sub ReSync {
     my $me = shift;
+    my $slave = shift;
     my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
     my $local_dbd = qq"dbi:$config->{database_type}:database=mysql;host=localhost";
-    print "TESTME: $other_dbd\n";
     my $statement = "SHOW MASTER STATUS";
-    my $other_dbh_num = $me->MyConnect($statement, $other_dbd, 'root', 'rsoqolt');
-    my $local_dbh_num = $me->MyConnect($statement, $local_dbd, 'root', 'rsoqolt');
+    my $other_dbh_num = $me->MyConnect($statement, $other_dbd, 'root', $me->{database_root_password});
+    my $local_dbh_num = $me->MyConnect($statement, $local_dbd, 'root', $me->{database_root_password});
     my $other_dbh = $me->{handles}->[$other_dbh_num];
     my $local_dbh = $me->{handles}->[$local_dbh_num];
-    my $o_sth = $other_dbh->prepare($statement);
-    my $l_sth = $local_dbh->prepare($statement);
-    my $o_rv = $o_sth->execute();
-    my $l_rv = $l_sth->execute();
-    my $o_return = $o_sth->fetchrow_arrayref();
-    my $l_return = $l_sth->fetchrow_arrayref();
-    my $o_file = $o_return->[0];
-    my $l_file = $l_return->[0];
-    my $o_pos = $o_return->[1];
-    my $l_pos = $l_return->[1];
-    my $l_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$o_file', MASTER_LOG_POS=$o_pos";
-    my $o_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$l_file', MASTER_LOG_POS=$l_pos";
-    print "Local log file and position is: $l_file $l_pos\n";
-    print "Changing remote master with: $o_reset\n";
-    print "Remote log file and position is: $o_file $o_pos\n";
-    print "Changing local master with: $l_reset\n";
-    $o_sth = $other_dbh->prepare($o_reset);
-    $l_sth = $local_dbh->prepare($l_reset);
-    $o_rv = $o_sth->execute();
-    $l_rv = $l_sth->execute();
-    $l_reset = "START SLAVE";
-    $o_reset = "START SLAVE";
-    $o_sth = $other_dbh->prepare($o_reset);
-    $l_sth = $local_dbh->prepare($l_reset);
-    $o_rv = $o_sth->execute();
-    $l_rv = $l_sth->execute();
+
+    if ($slave) {
+	my $o_sth = $other_dbh->prepare($statement);
+	my $o_rv = $o_sth->execute();
+	my $o_return = $o_sth->fetchrow_arrayref();
+	my $o_file = $o_return->[0];
+	my $o_pos = $o_return->[1];
+	my $l_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$o_file', MASTER_LOG_POS=$o_pos";
+	print "Remote log file and position is: $o_file $o_pos\n";
+	print "Changing local master with:\n$l_reset\n";
+	my $l_sth = $local_dbh->prepare($l_reset);
+	my $l_rv = $l_sth->execute();
+	$l_reset = "START SLAVE";
+	$l_sth = $local_dbh->prepare($l_reset);
+	$l_rv = $l_sth->execute();
+    } else {
+	my $l_sth = $local_dbh->prepare($statement);
+	my $l_rv = $l_sth->execute();
+	my $l_return = $l_sth->fetchrow_arrayref();
+	my $l_file = $l_return->[0];
+	my $l_pos = $l_return->[1];
+	my $o_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$l_file', MASTER_LOG_POS=$l_pos";
+	print "Local log file and position is: $l_file $l_pos\n";
+	print "Changing remote master with: $o_reset\n";
+	my $o_sth = $other_dbh->prepare($o_reset);
+	my $o_rv = $o_sth->execute();
+	$o_reset = "START SLAVE";
+	$o_sth = $other_dbh->prepare($o_reset);
+	$o_rv = $o_sth->execute();
+    }
 }
 
 sub Cleanup {
