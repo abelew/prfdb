@@ -58,5 +58,5 @@ cd ../Kinfold
 make ; make install
 cd ../../
 
-
-
+touch backup/prfdb_test_1
+touch backup/prfdb_test_2
