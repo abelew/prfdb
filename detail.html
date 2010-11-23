@@ -72,7 +72,7 @@ $information->{sequence}
 			     randomizers => $config->{boot_randomizers},);
 	my $bootlaces = $boot->Go();
 	$db->Put_Boot($bootlaces);
-	chdir($config->{base});
+	chdir($ENV{PRFDB_HOME});
     }
     ## Theoretically we should now have the randomized distribution set,
     ## But for weird data this will not be, so after we make the feynman we
@@ -121,7 +121,7 @@ $information->{sequence}
 	$information->{ppcc} = sprintf("%.4f", $ppcc_values);
     } else {  ##Boot is not defined!
 	$information->{chart} = "undef";
-	$information->{charturl} = qq"$config->{base}/html/no_data.gif";
+	$information->{charturl} = qq"$ENV{PRFDB_HOME}/html/no_data.gif";
 	$information->{mfe_mean} = "undef";
 	$information->{mfe_sd} = "undef";
 	$information->{mfe_se} = "undef";

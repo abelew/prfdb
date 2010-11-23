@@ -80,7 +80,7 @@ sub Search {
 	if ($@) {
 	    return(undef);
 	}
-	chdir("$config->{base}");
+	chdir("$ENV{PRFDB_HOME}");
 	$result = $blast_output->next_result;
     } elsif ($location eq 'remote') {
 	my @params = (-readmethod => 'SearchIO',

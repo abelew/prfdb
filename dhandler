@@ -1,2 +1,3 @@
 Your request for <% $r->uri %> did not exist.
+<& index.html &>
 

@@ -1,6 +1,6 @@
 add_to_path = "/usr/bin:/usr/local/prfdb/work:/usr/local/bin"
 LD_LIBRARY_PATH="/a/f20-fs1/export/home/deepthought/abelew/usr/lib"
-prefix = "$(base)"
 database_host = ['first.host.in.mysql_replication','second.host.in.mysql_replication']
 database_user = 'prfdb'
 database_pass = 'PASSWORD'
+database_name = 'prfdb'

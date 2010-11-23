@@ -149,7 +149,7 @@ Return: $nupack_return\n");
     $parsed = PkParse::ReOrder_Stems($parsed);
     $return->{parsed} = $parsed;
     $return->{barcode} = $barcode;
-    chdir($config->{base});
+    chdir($ENV{PRFDB_HOME});
     if (!defined($return->{sequence})) {
 	Callstack();
 	print STDERR "The full output from nupack was: $nupack_output\n";
@@ -328,7 +328,7 @@ command: $command\n" if (defined($config->{debug}));
     if ($return->{parens} =~ /\{/) {
 	$return->{knotp} = 1;
     }
-    chdir($config->{base});
+    chdir($ENV{PRFDB_HOME});
     if (!defined($return->{sequence})) {
 	Callstack(message => "Sequence is not defined in RNAFolders");
     }
@@ -580,7 +580,7 @@ command: $command\n" if (defined($config->{debug}));
     } else {
 	$ret->{knotp} = 1;
     }
-    chdir($config->{base});
+    chdir($ENV{PRFDB_HOME});
     if (!defined($ret->{sequence})) {
 	Callstack(message => "Sequence is not defined for accession: $accession start: $start\n");
     }
@@ -678,7 +678,7 @@ command: $command\n" if (defined($config->{debug}));
     } else {
         $ret->{knotp} = 1;
     }
-    chdir($config->{base});
+    chdir($ENV{PRFDB_HOME});
     $ret->{sequence} = Sequence_T_U($ret->{sequence});
     return($ret);
 }

@@ -31,23 +31,23 @@
 % }    
 <tr>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/index.html") ? "#366e6d" : "white" %>">
- <b><a href="./"><% ($r->uri eq "$path/index.html") ? qq(<font color="white">) : "" %>Home</font></a></b></td>
+ <b><a href="/"><% ($r->uri eq "$path/index.html") ? qq(<font color="white">) : "" %>Home</font></a></b></td>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/search.html") ? "#366e6d" : "white" %>">
- <b><a href="search.html"><% ($r->uri eq "$path/search.html") ? qq(<font color="white">) : "" %>Search</a></b></td>
+ <b><a href="/search.html"><% ($r->uri eq "$path/search.html") ? qq(<font color="white">) : "" %>Search</a></b></td>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/distribution.html") ? "#366e6d" : "white" %>">
- <b><a href="distribution.html"><% ($r->uri eq "$path/distribution.html") ? qq(<font color="white">) : "" %>Distribution</a></b></td>
+ <b><a href="/distribution.html"><% ($r->uri eq "$path/distribution.html") ? qq(<font color="white">) : "" %>Distribution</a></b></td>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/filter.html") ? "#366e6d" : "white" %>">
- <b><a href="filter.html"><% ($r->uri eq "$path/filter.html") ? qq(<font color="white">) : "" %>Filter</a></b></td>
+ <b><a href="/filter.html"><% ($r->uri eq "$path/filter.html") ? qq(<font color="white">) : "" %>Filter</a></b></td>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/snp.html") ? "#366e6d" : "white" %>">
- <b><a href="snp.html"><% ($r->uri eq "$path/snp.html") ? qq(<font color="white">) : "" %>SNP</a></b></td>
+ <b><a href="/snp.html"><% ($r->uri eq "$path/snp.html") ? qq(<font color="white">) : "" %>SNP</a></b></td>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/download.html") ? "#366e6d" : "white" %>">
- <b><a href="download.html"><% ($r->uri eq "$path/download.html") ? qq(<font color="white">) : "" %>Download</a></b></td>
+ <b><a href="/download.html"><% ($r->uri eq "$path/download.html") ? qq(<font color="white">) : "" %>Download</a></b></td>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/import.html") ? "#366e6d" : "white" %>">
- <b><a href="import.html"><% ($r->uri eq "$path/import.html") ? qq(<font color="white">) : "" %>Import</a></b></td>
+ <b><a href="/import.html"><% ($r->uri eq "$path/import.html") ? qq(<font color="white">) : "" %>Import</a></b></td>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/fold.html") ? "#366e6d" : "white" %>">
- <b><a href="fold.html"><% ($r->uri eq "$path/fold.html") ? qq(<font color="white">) : "" %>Fold</a></b></td>
+ <b><a href="/fold.html"><% ($r->uri eq "$path/fold.html") ? qq(<font color="white">) : "" %>Fold</a></b></td>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/help/help.html") ? "#366e6d" : "white" %>">
- <b><a href="help/help.html"><% ($r->uri eq "$path/help/help.html") ? qq(<font color="white">) : "" %>Help</a></b></td>
+ <b><a href="/help/help.html"><% ($r->uri eq "$path/help/help.html") ? qq(<font color="white">) : "" %>Help</a></b></td>
  </tr>
 
  <tr align="left" valign="top">

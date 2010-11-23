@@ -6,7 +6,7 @@
 % my $query_statement = qq"SELECT $mt.mfe, $boot_table.zscore, $mt.start, $mt.algorithm FROM $mt,$boot_table WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = 100 AND $mt.id = $boot_table.mfe_id AND $mt.accession = '$new_accession'";
 % my $overlay_points = $db->MySelect(statement => $query_statement,);
 % my $cloud_url = qq"images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
-% my $image_dir = "$config->{base}/images/tmp";
+% my $image_dir = "$ENV{PRFDB_HOME}/images/tmp";
 % my $overlay_output = PRFdb::MakeTempfile(directory => $image_dir, SUFFIX => '.png', template => 'cloud_XXXXX',);
 % my $overlay_map = qq"${overlay_output}.map";
 % my @t = split(/\//, $overlay_output);

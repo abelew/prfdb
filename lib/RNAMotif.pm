@@ -133,7 +133,7 @@ sub Descriptor {
     my $template_config = $config;
     $template_config->{PRE_PROCESS} = undef;
     my $template = new Template($template_config);
-    my $rnamotif_template_file = qq"$config->{base}/descr/$config->{exe_rnamotif_template}";
+    my $rnamotif_template_file = qq"$ENV{PRFDB_HOME}/descr/$config->{exe_rnamotif_template}";
     if (!-r $rnamotif_template_file) {
 	Callstack(die => 1, message => "Need an rnamotif template");
     }

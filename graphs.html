@@ -5,7 +5,7 @@ of each slippery site.  PRF signals which start with 'AAA' are red, 'UUU' are
 green, 'GGG' are blue, and 'CCC' are black.
 </p>
 <center>
-% if (!-f "$config->{base}/images/cloud/$species/cloud-all-bar.png") {
+% if (!-f "$ENV{PRFDB_HOME}/images/cloud/$species/cloud-all-bar.png") {
 Generating new bar graphs now.
 <& generate_bar_graphs.html, species => $species &>
 % } 
@@ -28,10 +28,10 @@ And percentage.
 Below is a chart of extended reading frames, x axis percentage ORF, y axis percentage extended.
 </p>
 <center>
-% if (!-f "$config->{base}/images/cloud/$species/extension-percent.png") {
+% if (!-f "$ENV{PRFDB_HOME}/images/cloud/$species/extension-percent.png") {
 Generating new extensions now.
-% $pic->Make_Extension($species, "$config->{base}/images/cloud/$species/extension-percent.png", 'percent', $config->{base});
-% $pic->Make_Extension($species, "$config->{base}/images/cloud/$species/extension-codons.png", 'codons', $config->{base});
+% $pic->Make_Extension($species, "$ENV{PRFDB_HOME}/images/cloud/$species/extension-percent.png", 'percent', $ENV{PRFDB_HOME});
+% $pic->Make_Extension($species, "$ENV{PRFDB_HOME}/images/cloud/$species/extension-codons.png", 'codons', $ENV{PRFDB_HOME});
 % } 
  <img src="images/cloud/<% $species %>/extension-percent.png" usemap="#percent_extension">
 </center>
@@ -42,10 +42,10 @@ Below is the same with the number of codons on the y axis.
 </center>
 
 %## Dump the percent map to STDOUT
-% open(PERCENT_MAP, "<$config->{base}/images/cloud/$species/extension-percent.png.map");
+% open(PERCENT_MAP, "<$ENV{PRFDB_HOME}/images/cloud/$species/extension-percent.png.map");
 % while (my $line = <PERCENT_MAP>) { print $line; }
 % close(PERCENT_MAP);
-% open(CODONS_MAP, "<$config->{base}/images/cloud/$species/extension-codons.png.map");
+% open(CODONS_MAP, "<$ENV{PRFDB_HOME}/images/cloud/$species/extension-codons.png.map");
 % while (my $line = <CODONS_MAP>) { print $line; }
 % close(CODONS_MAP);
 

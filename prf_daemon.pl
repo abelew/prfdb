@@ -46,7 +46,7 @@ our $state = { time_to_die => undef,
 	       done_count => 0, };
 
 ### START DOING WORK NOW
-chdir($config->{base});
+chdir($ENV{PRFDB_HOME});
 if ($config->{checks}) {
     Check_Environment();
     Check_Blast();
@@ -551,12 +551,12 @@ sub Check_Environment {
 	      die("Unable to read the rnamotif descriptor file: $!");
 	  }
       }
-    unless (-r "$config->{base}/.htaccess") {
+    unless (-r "$ENV{PRFDB_HOME}/.htaccess") {
 	my $copy_command;
 	if ($config->{has_modperl}) {
-	    $copy_command = qq(cp $config->{base}/html/htaccess.modperl $config->{base}/.htaccess);
+	    $copy_command = qq(cp $ENV{PRFDB_HOME}/html/htaccess.modperl $ENV{PRFDB_HOME}/.htaccess);
 	} else {
-	    $copy_command = qq(cp $config->{base}/html/htaccess.cgi $config->{base}/.htaccess);
+	    $copy_command = qq(cp $ENV{PRFDB_HOME}/html/htaccess.cgi $ENV{PRFDB_HOME}/.htaccess);
 	}
 	system($copy_command);
     }
@@ -776,8 +776,8 @@ sub Check_Sequence_Length {
 sub Make_Blast {
     my @sp = @{$config->{index_species}};
     my $outputfile = 'blast_prfdb.fasta.gz';
-    system("rm $config->{base}/blast/$outputfile");
-    system("touch $config->{base}/blast/$outputfile");
+    system("rm $ENV{PRFDB_HOME}/blast/$outputfile");
+    system("touch $ENV{PRFDB_HOME}/blast/$outputfile");
     foreach my $s (@sp) {
 	next if ($s =~ /virus/);
 	print "Getting $s\n";
@@ -785,7 +785,7 @@ sub Make_Blast {
     }
     my $blast = new PRFBlast;
     print "Formatting Database\n";
-    $blast->Format_Db($config->{base}, $outputfile);
+    $blast->Format_Db($ENV{PRFDB_HOME}, $outputfile);
 }
 
 sub Make_Landscape_Tables {
@@ -926,7 +926,7 @@ sub Maintenance {
 								   species => $species,
 								   url => 'url',
 								   suffix => $suffix,);
-			  $cloud_url = $config->{base} . '/' . $cloud_url;
+			  $cloud_url = $ENV{PRFDB_HOME} . '/' . $cloud_url;
 			  my ($points_stmt, $averages_stmt, $points, $averages);
 			  if (!-f $cloud_output_filename) {
 			      $points_stmt = qq"SELECT SQL_BUFFER_RESULT $mt.mfe, $boot_table.zscore, $mt.accession, $mt.knotp, $mt.slipsite, $mt.start, genome.genename FROM $mt, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.species = ? AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND ";
@@ -949,7 +949,7 @@ sub Maintenance {
 				      points => $points,
 				      averages => $averages,
 				      filename => $cloud_output_filename,
-				      url => $config->{base},
+				      url => $ENV{PRFDB_HOME},
 				      pknot => 1,
 				      slipsites => $slip,
 				      );
@@ -960,7 +960,7 @@ sub Maintenance {
 				      points => $points,
 				      averages => $averages,
 				      filename => $cloud_output_filename,
-				      url => $config->{base},
+				      url => $ENV{PRFDB_HOME},
 				      slipsites => $slip,
 				      );
 			      }
@@ -976,10 +976,10 @@ sub Maintenance {
 			  my $codons_map_file = $extension_codons_filename . '.map';
 			  
 			  if (!-f $extension_codons_filename) {
-			      $cloud->Make_Extension($species, $extension_codons_filename, 'codons', $config->{base});
+			      $cloud->Make_Extension($species, $extension_codons_filename, 'codons', $ENV{PRFDB_HOME});
 			  }
 			  if (!-f $extension_percent_filename) {
-			      $cloud->Make_Extension($species, $extension_percent_filename, 'percent', $config->{base});
+			      $cloud->Make_Extension($species, $extension_percent_filename, 'percent', $ENV{PRFDB_HOME});
 			  }
 		      }
 		} ## Foreach slipsite
@@ -1106,9 +1106,8 @@ sub Make_Queue_Jobs {
     $template_config->{INTERPOLATE} = 0;
     $template_config->{POST_CHOMP} = 0;
     $template_config->{ABSOLUTE} = 1;
-    $template_config->{base} = $config->{base};
     my $template = new Template($template_config);
-    my $input_file = "$template_config->{base}/descr/job_template";
+    my $input_file = "$ENV{PRFDB_HOME}/descr/job_template";
     my @arches = split(/ /, $config->{pbs_arches});
     foreach my $arch (@arches) {
 	system("mkdir -p jobs/$arch") unless (-d "jobs/$arch");
@@ -1120,7 +1119,7 @@ sub Make_Queue_Jobs {
 	    unlink($output_file);
 	    my $name = $template_config->{pbs_partialname};
 	    my $pbs_fullname = "${name}_${archchar}_${daemon}";
-	    my $incdir = "$config->{base}/usr/perl.${arch}/lib";
+	    my $incdir = "$ENV{PRFDB_HOME}/usr/perl.${arch}/lib";
 	    my $vars = {
 		pbs_shell => $template_config->{pbs_shell},
 		pbs_memory => $template_config->{pbs_memory},
@@ -1133,7 +1132,6 @@ sub Make_Queue_Jobs {
 		incdir => $incdir,
 		daemon_name => $template_config->{daemon_name},
 		job_num => $daemon,
-		base => $config->{base},
 	    };
 	    $template->process($input_file, $vars, $output_file) or Callstack(die => 1, message => $template->error());
 #	    system("/usr/local/bin/qsub $output_file");

@@ -72,11 +72,11 @@ sub Make_Extension {
     $graph->set(marker_size => 0);
     $graph->set(bgclr => 'white');
     $graph->set(dclrs => [qw(black black)]);
-    $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", 12);
-    $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", 12);
-    $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}",12);
-    $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", 12);
-    $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}",12);
+    $graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 12);
+    $graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 12);
+    $graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}",12);
+    $graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 12);
+    $graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}",12);
 #    my $fun = [[0,0,0,[0,0,0]];
     my $fun = [[0,0,0],[0,100,0]];
     my $gd = $graph->plot($fun) or Callstack(die => 1, message => $graph->error);
@@ -254,11 +254,11 @@ sub Make_Cloud {
 		y_ticks => 1, y_label => 'Zscore', y_label_skip => 0,
 		y_number_format => "%.2f", y_tick_number => 20, y_all_ticks => 1,
 		dclrs => ['black','black'], marker_size => 0,);
-    $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $fun = [[-100,-100,-100],[0,0,0]];
     my $gd = $graph->plot($fun,) or Callstack(die => 1, message => $graph->error);
     my $black = $gd->colorResolve(0,0,0);
@@ -542,11 +542,11 @@ sub Make_Overlay {
 		y_ticks => 1, y_label => 'Zscore', y_label_skip => 0,
 		y_number_format => "%.2f", y_tick_number => 20, y_all_ticks => 1,
 		dclrs => ['black','black'], marker_size => 0,);
-    $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $fun = [[-100,-100,-100],[0,0,0]];
     my $gd = $graph->plot($fun,) or Callstack(die => 1, message => $graph->error);
     my $black = $gd->colorResolve(0,0,0);
@@ -623,11 +623,11 @@ sub Make_SlipBars {
 		   y_max_value => $values[0],);
     #dclrs => [ qw"blue black red green" ],
     #dclrs => [ qw($color_string) ],
-    $bargraph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $bargraph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $bargraph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $bargraph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $bargraph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $bargraph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $bargraph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $bargraph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $bargraph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $bargraph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $image = $bargraph->plot(\@data);
     open(IMG, ">$filename");
     print IMG $image->png if (defined($image));
@@ -702,11 +702,11 @@ sub Make_Landscape {
 		y_label_skip => 2, y_number_format => "%.2f", x_labels_vertical => 1,
 		x_label_skip => 100, line_width => 2, dclrs => [qw(blue red green blue red green)],
 		default_type => 'lines', types => [qw(lines lines lines lines lines lines)],) or Callstack(die => 1, message => $graph->error);
-    $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $gd = $graph->plot(\@mfe_data) or Callstack(die => 1, message => $graph->error);
     
     my $axes_coords = $graph->get_feature_coordinates('axes');
@@ -840,11 +840,11 @@ sub Make_Distribution {
 		x_labels_vertical => 1, x_label_skip => 1, line_width => 3,
 		dclrs => [qw(blue red green black)], borderclrs => [qw(black)]) or Callstack(message => $graph->error, die => 1);
     
-    $graph->set_legend_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_x_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_x_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_y_axis_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $graph->set_y_label_font("$config->{base}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     
     my $gd = $graph->plot(\@data) or Callstack(die => 1, message => $graph->error);
     
@@ -1620,7 +1620,7 @@ sub Picture_Filename {
     }
     
     if (defined($species)) {
-	my $tmpdir = qq"$config->{base}/images/$type/$species";
+	my $tmpdir = qq"$ENV{PRFDB_HOME}/images/$type/$species";
 	my $command = qq"/bin/mkdir -p $tmpdir";
 	my $output = '';
 	if (!-d $tmpdir) {
@@ -1639,9 +1639,9 @@ Make sure that user $< and/or group $( has write permissions.", die => 1);
 	    }
 	} else {
 	    if (defined($suffix)) {
-		return(qq"$config->{base}/images/${type}/${species}/cloud${suffix}$extension");
+		return(qq"$ENV{PRFDB_HOME}/images/${type}/${species}/cloud${suffix}$extension");
 	    } else {
-		return(qq"$config->{base}/images/${type}/${species}/cloud$extension");
+		return(qq"$ENV{PRFDB_HOME}/images/${type}/${species}/cloud$extension");
 	    }
 	}
     } ## End if defined $species
@@ -1695,9 +1695,9 @@ sub Make_Directory {
     
     my $directory;
     if (defined($species)) {
-	$directory = qq($config->{base}/images/$type/$species);
+	$directory = qq($ENV{PRFDB_HOME}/images/$type/$species);
     } else {
-	$directory = qq"$config->{base}/images/$type/";
+	$directory = qq"$ENV{PRFDB_HOME}/images/$type/";
 	my @cheat_again = split(//, $nums);
 	foreach my $n (@cheat_again) {
 	    $directory .= "$n/";

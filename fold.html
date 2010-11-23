@@ -23,7 +23,7 @@ my $upload = $req->upload("input_fasta");
 my $upload_filename = $upload->filename();
 my $contents;
 my $size = $upload->slurp($contents);
-my $tempfile_fh = new File::Temp(SUFFIX => "fasta", DIR => "$config->{base}/folds", UNLINK=>0);
+my $tempfile_fh = new File::Temp(SUFFIX => "fasta", DIR => "$ENV{PRFDB_HOME}/folds", UNLINK=>0);
 my $new_filename = $tempfile_fh->filename();
 my $short_filename = $new_filename;
 my @fun = split(/\//, $short_filename);
@@ -41,7 +41,7 @@ sub tmp_fold {
   my $config = shift;
   my $new_filename = shift;
   my $function = shift;
-  my $input_path = "$config->{base}/folds/$new_filename";
+  my $input_path = "$ENV{PRFDB_HOME}/folds/$new_filename";
   my $fold = new RNAFolders(config => $config, file => $input_path, genome_id => 0, species => 'saccharomyces_cerevisiae', accession => 2, start => 0,);
   my $mfe_info;
   if ($function eq 'nupack') {
@@ -62,7 +62,7 @@ sub tmp_fold {
   my $output = $mfe_info->{output};
   my $pairs = $mfe_info->{pairs};
   my $sequence = $mfe_info->{sequence};
-  my $pic_output = "$config->{base}/folds/$new_filename.svg";
+  my $pic_output = "$ENV{PRFDB_HOME}/folds/$new_filename.svg";
   my $feynman_pic = new PRFGraph(sequence=>$sequence, parsed => $parsed, output => $output);
   my $dimensions = $feynman_pic->Make_Feynman($pic_output, 0);
   open (HANDLE, ">$input_path.html") or Callstack(message => "Cannot open HANDLE $new_filename.html");

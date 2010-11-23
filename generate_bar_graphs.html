@@ -13,8 +13,8 @@ my $cloud_data = $cloud->Make_Cloud(seqlength => $seqlength,
 				    species => $species,
 				    points => $points,
 				    averages => $averages,
-				    filename => qq"$config->{base}/images/cloud/$species/cloud-all-AAAAAAA-100.png",
-				    url => $config->{base},
+				    filename => qq"$ENV{PRFDB_HOME}/images/cloud/$species/cloud-all-AAAAAAA-100.png",
+				    url => $ENV{PRFDB_HOME},
 				    slipsites => 'AAAAAAA',);
 </%perl>
 

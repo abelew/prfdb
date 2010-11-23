@@ -60,3 +60,5 @@ cd ../../
 
 touch backup/prfdb_test_1
 touch backup/prfdb_test_2
+echo "Please run:
+sudo chown -R www-data:www-data $PRFDB_HOME"

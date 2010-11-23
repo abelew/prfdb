@@ -11,14 +11,14 @@
 % my $long_species = HTMLMisc::Make_Species($species);
 <p>This is the <i><% $long_species %></i> distribution for <% $slipsites %> slipsites.
 <br>
-% my $filename = qq"$config->{base}/images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
+% my $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
 % if ($cloud_filters =~ /pseudo/) {
-%  $filename = qq"$config->{base}/images/cloud/${species}/cloud-pknot-${slipsites}-${seqlength}.png";
+%  $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-pknot-${slipsites}-${seqlength}.png";
 %   if (-f $filename) {
 <img src="images/cloud/<% $species %>/cloud-pknot-<% $slipsites %>-<% $seqlength %>.png" usemap="#map">
 %   } ## End if -f $filename
 % } else {
-%  $filename = qq"$config->{base}/images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
+%  $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
 %   if (-f $filename) {
 <img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $seqlength %>.png" usemap="#map">
 %   }

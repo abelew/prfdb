@@ -22,7 +22,7 @@ else {
 $suffix .= "-${seqlength}";
 my $cloud_output_filename = $cloud->Picture_Filename(type => 'cloud', species => $species, suffix => $suffix,);
 my $cloud_url = $cloud->Picture_Filename(type => 'cloud', species => $species, url => 'url', suffix => $suffix,);
-$cloud_url = $config->{base} . '/' . $cloud_url;
+$cloud_url = $ENV{PRFDB_HOME} . '/' . $cloud_url;
 my ($points_stmt, $averages_stmt, $points, $averages);    
 my $mt = "mfe_$species";
 if (!-f $cloud_output_filename) {
@@ -51,7 +51,7 @@ if (!-f $cloud_output_filename) {
 	     points => $points,
 	     averages => $averages,
 	     filename => $cloud_output_filename,
-	     url => $base,
+	     url => $ENV{PRFDB_HOME},
 	     pknot => 1,
 	     slipsites => $slipsites
 	    );
@@ -63,7 +63,7 @@ if (!-f $cloud_output_filename) {
 	     points => $points,
 	     averages => $averages,
 	     filename => $cloud_output_filename,
-	     url => $base,
+	     url => $ENV{PRFDB_HOME},
 	     slipsites => $slipsites,
 	    );
   }
@@ -81,16 +81,16 @@ $vars->{percent_map_file} = $extension_percent_filename . '.map';
 $vars->{codons_map_file} = $extension_codons_filename . '.map';
 
 if (!-f $extension_codons_filename) {
-  $cloud->Make_Extension($species, $extension_codons_filename, 'codons', $basedir);
+  $cloud->Make_Extension($species, $extension_codons_filename, 'codons', $ENV{PRFDB_HOME});
 }
 if (!-f $extension_percent_filename) {
-  $cloud->Make_Extension($species, $extension_percent_filename, 'percent', $basedir);
+  $cloud->Make_Extension($species, $extension_percent_filename, 'percent', $ENV{PRFDB_HOME});
 }
-my $bargraphs = qq"$config->{base}/images/cloud/$species/cloud-bar-percentsig.png";
+my $bargraphs = qq"$ENV{PRFDB_HOME}/images/cloud/$species/cloud-bar-percentsig.png";
 if (!-f $bargraphs) {
   my $cloud_data = $cloud->Make_Cloud(seqlength => $seqlength, species => $species, points => $points,
-	averages => $averages, filename => qq"$config->{base}/images/cloud/$species/cloud-all-AAAAAAA-100.png",
-	url => $base, slipsites => 'AAAAAAA',);
+	averages => $averages, filename => qq"$ENV{PRFDB_HOME}/images/cloud/$species/cloud-all-AAAAAAA-100.png",
+	url => $ENV{PRFDB_HOME}, slipsites => 'AAAAAAA',);
 }
 </%perl>
 

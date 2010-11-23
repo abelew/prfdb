@@ -3,6 +3,11 @@ General:
 1.  Implement try: blocks more fully
 2.  Make use of Log::Log4perl and Sys::SigAction to make this more robust
 3.  Make the installation self-explanatory
+4.  perldoc autodie
+6.  perldoc Moose
+7.  perldoc DBIx::Class
+8.  DBIC::Schema::Loader
+9.  Catalyst
 
 Importing:
 ----------

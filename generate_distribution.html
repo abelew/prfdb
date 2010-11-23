@@ -50,7 +50,7 @@ sub tmp_cloud {
 	points => $points,
 	averages => $averages,
 	filename => $cloud_output_filename,
-	url => $config->{base},
+	url => $ENV{PRFDB_HOME},
 	pknot => 1,
 	slipsites => $slipsites
 	);
@@ -61,7 +61,7 @@ sub tmp_cloud {
 	points => $points,
 	averages => $averages,
 	filename => $cloud_output_filename,
-	url => $config->{base},
+	url => $ENV{PRFDB_HOME},
 	slipsites => $slipsites,
        );
     }
