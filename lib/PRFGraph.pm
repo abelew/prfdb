@@ -38,6 +38,16 @@ sub Make_Extension {
     ## UNDEF VALUES this statement is pulling up undefined values...
     my $averages = qq"SELECT avg_mfe, avg_zscore, stddev_mfe, stddev_zscore FROM stats WHERE species = '$species' AND seqlength = '100' AND algorithm = 'nupack'";
     my $averages_fun = $db->MySelect(statement => $averages, type => 'row');
+    if (!defined($averages_fun->[0])) {
+	my $data = {
+	    species => [ $species ,],
+	    seqlength => $config->{seqlength},
+	    max_mfe => [ $config->{max_mfe} ],
+	    algorithm => $config->{algorithms},
+	};
+	$db->Put_Stats($data);
+	$averages_fun = $db->MySelect(statement => $averages, type => 'row');
+    }
     my $avg_mfe = $averages_fun->[0];
     my $avg_zscore = $averages_fun->[1];
     my $mfe_minus_stdev = $avg_mfe - $averages_fun->[2];
@@ -220,6 +230,61 @@ sub Make_Extension {
     system("/usr/bin/uniq ${filename}.map > ${filename}.tmp  ;  /bin/mv ${filename}.tmp ${filename}.map");
 }
 
+sub Make_Summary_Pie {
+    my $me = shift;
+    my $filename = shift;
+    my $width = shift;
+    my $height = shift;
+    my $species = shift;
+    my $slipsite = shift;
+    my $seqlength = shift;
+    my $mfe_method = shift;
+    my $info_stmt = '';
+    my $db = new PRFdb(config=>$config);
+#    if ($slipsite eq 'all') {
+    $info_stmt = qq"SELECT * FROM stats WHERE species = '$species' AND seqlength = '$seqlength' AND algorithm = '$mfe_method'";
+    my $info = $db->MySelect(type => 'list_of_hashes', statement => $info_stmt);
+    foreach my $datum (@{$info}) {
+	my %inf = %{$datum};
+	use SVG::TT::Graph::Pie;
+	my @fields = ('No match', 'Insignificant', 'Significant');
+	my $no_match = $inf{total_genes} - $inf{genes_hits};
+	my $insignificant = $inf{total_genes} - $inf{genes_1both_knotted};
+	my $significant = $inf{genes_1both_knotted};
+	my @data = ($no_match, $insignificant, $significant);
+	my $graph = SVG::TT::Graph::Pie->new({
+           height => '800',
+           width  => '800',
+           fields => \@fields,
+	   tidy => 1,
+	   show_shadow => 1,
+	   shadow_size => 10,
+	   shadow_offset => 15,
+	   show_data_labels => 1,
+	   show_actual_values => 1,
+	   show_percent => 1,
+	   rollover_values => 1,
+	   # data on key:
+	   show_key_data_labels => 1,
+	   show_key_actual_values => 1,
+	   show_key_percent => 1,
+	   expanded => 0,
+	   expand_smallest => 1,
+	   key => 1,
+	   key_placement => 'R',
+       });
+	$graph->compress(0);
+	$graph->add_data({
+           'data'  => \@data,
+           'title' => 'Significant hits',
+       });
+	open(OUT, ">$filename");
+#	print OUT "Content-type: image/svg+xml\n\n";
+	print OUT $graph->burn();
+	close OUT;
+    }
+}
+
 sub Make_Cloud {
     my $me = shift;
     my %args = @_;
@@ -262,7 +327,8 @@ sub Make_Cloud {
     $graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $fun = [[-100,-100,-100],[0,0,0]];
-    my $gd = $graph->plot($fun,) or Callstack(die => 1, message => $graph->error);
+#    my $gd = $graph->plot($fun,) or Callstack(die => 1, message => $graph->error);
+    my $gd = $graph->plot($fun,) or Callstack(die => 0, message => $graph->error);
     my $black = $gd->colorResolve(0,0,0);
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);

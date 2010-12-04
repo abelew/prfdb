@@ -93,7 +93,7 @@ if (defined($config->{do_stats})) {
 	species => $config->{index_species},
 	seqlength => $config->{seqlength},
 	max_mfe => [$config->{max_mfe}],
-	algorithm => ['pknots','nupack','hotknots'],
+	algorithm => $config->{algorithms},
     };
     $db->Put_Stats($data);
     exit(0);

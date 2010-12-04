@@ -1,0 +1,64 @@
+<%perl>
+use GO::AppHandle;
+my $apph = GO::AppHandle->connect(-dbname => 'go',
+				  -dbhost => 'localhost',
+				  -dbuser => 'go',
+				  -dbauth => 'drevil');
+#  Doing it this way is foolish as you lose the names
+#  my $terms = $apph->get_terms({products=>["EST2", "STN1"]});
+my $interesting = $genename;
+my @t = split(/ /, $interesting);
+$interesting = $t[1];
+print "Lets learn about $interesting\n<br><br><br>";
+my $terms = $apph->get_terms({products => ["$interesting"]});
+## Returns a list of GO::Model::Term objects
+my $c = 0;
+my @processes;
+my @components;
+my @funtions;
+my %tmp;
+foreach $c (0 .. $#$terms) {
+    my $term = $terms->[$c];
+    my $name = $term->name;
+    my $namespace = $term->namespace;
+    my $comment = $term->comment;
+    my $definition = $term->definition;
+    my $synonyms = join(", ", @{$term->synonym_list});
+
+    next if ($name eq 'biological_process');
+    next if ($name eq 'cellular_component');
+    print "Namespace: $namespace\n<br>";
+    print "Name: $name\n<br>";
+    print "Comment: $comment<br>\n" if ($comment);
+    print "Definition: $definition<br>\n";
+    print "Synonyms $synonyms<br>\n" if ($synonyms);
+#    if ($namespace eq 'biological_process') {
+#	$tmp{name} = $name;
+#	$tmp{comment} = $comment;
+#	$tmp{definition} = $definition;
+#    }
+#    push(@processes, \%tmp);
+#}
+#foreach my $process (@processes) {
+#    print "Name: $process->{name}\n<br>";
+#    print "Comment: $process->{comment}<br>\n" if ($process->{comment});
+#    print "Definition: $process->{definition}<br>\n";
+    print "\n\n\n<br><br>";
+}
+
+sub Learn_Terms {
+    my $term = shift;
+    print "Ok what are in these terms...\n<br>";
+    foreach my $k (sort keys %{$term}) {
+        print "TESTME key: $k  value: $term->{$k}\n<br>";
+    }
+    
+}
+</%perl>
+
+
+
+
+<%args>
+  $genename => 'EST2'
+</%args>
