@@ -4,5 +4,5 @@ BEGIN {
 }
 use Test::More qw(no_plan);
 use MyDeps;
-MyDeps::Resolve();
+MyDeps::Test();
 

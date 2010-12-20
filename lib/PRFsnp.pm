@@ -169,7 +169,7 @@ sub Create_Table_snp {
 sub Compute_Frameshift {
     my $me = shift;
     my $args = shift;
-    my $mt = qq"mfe_$species";
+    my $mt = qq"mfe_$me->{species}";
     my $statement = 'SELECT id, accession, start, seqlength, parsed FROM $mt WHERE species = ?';
     my $mfe_data = $db->MySelect(statement => $statement, vars => [$me->{species}], type => 'list_of_hashes',);
     foreach my $mfe_row (@{$mfe_data}) {

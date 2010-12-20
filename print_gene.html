@@ -17,12 +17,28 @@
 % my $in = $db->MySelect(statement => "SELECT orf_start, orf_stop, mrna_seq, direction, id FROM genome WHERE accession = ?", vars =>[$accession], type => 'row');
 % my $mt = "mfe_$sp";
 % my $slips = $db->MySelect(statement =>"SELECT DISTINCT(start), bp_mstop FROM $mt WHERE accession = ? ORDER BY start", vars => [$accession],);
+% my $snp_struct = {};
+% if ($sp eq 'homo_sapiens') {
+%   my $snp_data = $db->MySelect(statement =>"SELECT id, cluster_id, location, alleles FROM snp WHERE gene_acc = ?", vars => [$accession], type => 'list_of_hashes');
+%  foreach my $snp_row (@{$snp_data}) {
+%#      my $snp_start = $snp_row->{location} + $in->[0];
+%      my $snp_start = $snp_row->{location};
+%      my $snp_end = '';
+%      if ($snp_start =~ /\.\./) {
+%          ($snp_start, $snp_end) = split(/\.\./, $snp_start);
+%          $snp_struct->{$snp_start} = $snp_end;
+%          $snp_struct->{$snp_end} = $snp_row;  ## This is when a position evaluates to HASH
+%      } else {
+%          $snp_struct->{$snp_start} = $snp_row;
+%      }
+%  }
+% }
 % my (@slipsites, @minus);
 % foreach my $s (@{$slips}) {
 %   push (@slipsites, $s->[0]);
 %   push (@minus, $s->[1]);
 %  }
-% my $str = HTMLMisc::Create_Pretty_mRNA(show_frame => $show_frame, accession => $accession, mrna_seq => $in->[2], orf_start => $in->[0], orf_stop => $in->[1], slipsites => \@slipsites, minus_bp => \@minus);
+% my $str = HTMLMisc::Create_Pretty_mRNA(show_frame => $show_frame, accession => $accession, mrna_seq => $in->[2], orf_start => $in->[0], orf_stop => $in->[1], slipsites => \@slipsites, minus_bp => \@minus, snps => $snp_struct,);
 
 <table bgcolor="#E8E8E8" align="center">
   <tr>

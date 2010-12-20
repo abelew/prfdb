@@ -1,0 +1,70 @@
+% unless ($species) {
+<form 
+<form name="pie_charts" method="post" action="pie_charts.html" enctype="application/x-www-form-urlencoded">
+<p>Choose parameters for a pie chart of significant hits.</p>
+Choose how many bases to examine:<br>
+<select name="seqlength">
+  <option selected="selected" value="100">100</option>
+  <option value="75">75</option>
+  <option value="50">50</option>
+</select>
+  Choose a species to examine:<br>
+  <& species_selector.html, select_name => "species", skip_species => 'all' &>
+<select name="mfe_method">
+%# <option selected="selected" value="all">all</option>
+ <option value="hotknots">hotknots</option>
+ <option value="nupack">nupack</option>
+ <option value="pknots">pknots</option>
+</select>
+<br> 
+<select name="slipsites">
+ <option selected="selected" value="all">all</option>
+ <option value="AAAUUUA">AAAUUUA</option>
+ <option value="UUUAAAU">UUUAAAU</option>
+ <option value="AAAAAAA">AAAAAAA</option>
+ <option value="UUUAAAA">UUUAAAA</option>
+ <option value="UUUUUUA">UUUUUUA</option>
+ <option value="AAAUUUU">AAAUUUU</option>
+ <option value="UUUUUUU">UUUUUUU</option>
+ <option value="UUUAAAC">UUUAAAC</option>
+ <option value="AAAAAAU">AAAAAAU</option>
+ <option value="AAAUUUC">AAAUUUC</option>
+ <option value="AAAAAAC">AAAAAAC</option>
+ <option value="GGGUUUA">GGGUUUA</option>
+ <option value="UUUUUUC">UUUUUUC</option>
+ <option value="GGGAAAA">GGGAAAA</option>
+ <option value="CCCUUUA">CCCUUUA</option>
+ <option value="CCCAAAC">CCCAAAC</option>
+ <option value="CCCAAAA">CCCAAAA</option>
+ <option value="GGGAAAU">GGGAAAU</option>
+ <option value="GGGUUUU">GGGUUUU</option>
+ <option value="GGGAAAC">GGGAAAC</option>
+ <option value="CCCUUUC">CCCUUUC</option>
+ <option value="CCCUUUU">CCCUUUU</option>
+ <option value="GGGAAAG">GGGAAAG</option>
+ <option value="GGGUUUC">GGGUUUC</option>
+</select><br>
+<input type="submit" name="pie" value="pie"></form>
+
+% } else {
+% my $url = qq"/images/pie/${species}_${slipsites}_${seqlength}_${mfe_method}.svg";
+% my $filename = qq"$ENV{PRFDB_HOME}${url}";
+% my $height = 600;
+% my $width = 600;
+% if (!-r $filename) {
+%  my $pie = new PRFGraph(config => $config);
+%  $pie->Make_Summary_Pie($filename,$width,$height,$species,$slipsites,$seqlength,$mfe_method);
+% }
+  <p>The url is:<br>
+  <% $url %>
+  </p>
+  <embed id="pie" src="<% $url %>" align="bottom" width="<% $width %>" height="<% $height %>" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
+
+% }
+
+<%args>
+ $species => undef
+ $seqlength => 100
+ $slipsites => 'all'
+ $mfe_method => 'hotknots'
+</%args>

@@ -249,7 +249,7 @@ sub Stats {
 	    next OUT if ($sp eq $species);
 	}
 	print "Starting Put_Stats for $species.  Number $st_count of $st_total.\n";
-	my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
+	my $boot_table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
 	$me->MyExecute(statement => qq"DELETE FROM stats WHERE species = '$species'");
 	foreach my $seqlength (@{$data->{seqlength}}) {
 	    foreach my $max_mfe (@{$data->{max_mfe}}) {
@@ -260,30 +260,93 @@ sub Stats {
 		    my $timestring = "$mon/$mday $hour:$min.$sec";
 #		    print "$timestring  Now doing $species $seqlength $max_mfe $algorithm\n";
 		    my $weedout_string = qq"WHERE algorithm = '$algorithm' AND seqlength = '$seqlength'";
- 		    my $max_mfe = $me->MySelect(type => 'single', statement => "/* 1 of 19 */ SELECT max(mfe) FROM $mfe_table $weedout_string");
-		    my $min_mfe = $me->MySelect(type => 'single', statement => "/* 2 of 19 */ SELECT min(mfe) FROM $mfe_table $weedout_string");
-		    my $num_sequences = $me->MySelect(type => 'single', statement => "/* 3 of 19 */ SELECT count(id) FROM $mfe_table $weedout_string AND mfe <= '$max_mfe'");
-		    my $avg_mfe = $me->MySelect(type => 'single', statement => "/* 4 of 19 */ SELECT avg(mfe) FROM $mfe_table $weedout_string AND mfe <= '$max_mfe'");
-		    my $stdev_mfe = $me->MySelect(type => 'single', statement => "/* 5 of 19 */ SELECT stddev(mfe) FROM $mfe_table $weedout_string AND mfe <= '$max_mfe'");
-		    my $avg_pairs = $me->MySelect(type => 'single', statement => "/* 6 of 19 */ SELECT avg(pairs) FROM $mfe_table $weedout_string AND mfe <= '$max_mfe'");
-		    my $stdev_pairs = $me->MySelect(type => 'single', statement => "/* 7 of 19 */ SELECT stddev(pairs) FROM $mfe_table $weedout_string AND mfe <= '$max_mfe'");
-		    my $num_sequences_noknot = $me->MySelect(type => 'single', statement => "/* 8 of 19 */ SELECT count(id) FROM $mfe_table $weedout_string AND knotp = '0' AND mfe <= '$max_mfe'");
-		    my $avg_mfe_noknot = $me->MySelect(type => 'single', statement => "/* 9 of 19 */ SELECT avg(mfe) FROM $mfe_table $weedout_string AND knotp = '0' AND mfe <= '$max_mfe'");
-		    my $stdev_mfe_noknot = $me->MySelect(type => 'single', statement => "/* 10 of 19 */ SELECT stddev(mfe) FROM $mfe_table $weedout_string AND knotp = '0' AND mfe <= '$max_mfe'");
-		    my $avg_pairs_noknot = $me->MySelect(type => 'single', statement => "/* 11 of 19 */ SELECT avg(pairs) FROM $mfe_table $weedout_string AND knotp = '0' AND mfe <= '$max_mfe'");
-		    my $stdev_pairs_noknot = $me->MySelect(type => 'single', statement => "/* 12 of 19 */ SELECT stddev(pairs) FROM $mfe_table $weedout_string AND knotp = '0' AND mfe <= '$max_mfe'");
-		    my $num_sequences_knotted = $me->MySelect(type => 'single', statement => "/* 13 of 19 */ SELECT count(id) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$max_mfe'");
-		    my $avg_mfe_knotted = $me->MySelect(type => 'single', statement => "/* 14 of 19 */ SELECT avg(mfe) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$max_mfe'");
-		    my $stdev_mfe_knotted = $me->MySelect(type => 'single', statement => "/* 15 of 19 */ SELECT stddev(mfe) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$max_mfe'");
-		    my $avg_pairs_knotted = $me->MySelect(type => 'single', statement => "/* 16 of 19 */ SELECT avg(pairs) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$max_mfe'");
-		    my $stdev_pairs_knotted = $me->MySelect(type => 'single', statement => "/* 17 of 19 */ SELECT stddev(pairs) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$max_mfe'");
-		    my $avg_zscore = $me->MySelect(type => 'single', statement => "/* 18 of 19 */ SELECT avg(zscore) FROM $table WHERE mfe_method = '$algorithm' AND seqlength = '$seqlength'");
-		    my $stdev_zscore = $me->MySelect(type => 'single', statement => "/* 19 of 19 */SELECT stddev(zscore) FROM $table WHERE mfe_method = '$algorithm' AND seqlength = '$seqlength'");
+		    my $mfe_weed = qq" AND mfe > -80 AND mfe < 5 ";
+		    my $z_weed = qq" AND zscore IS NOT NULL AND zscore > -10 AND zscore < 10 ";
+		    my $num_statements = 27;
+		    my $stmt;
+ 		    my $max_mfe = $me->MySelect(type => 'single',
+ statement => "/* 1 of $num_statements */ SELECT max(mfe) FROM $mfe_table $weedout_string");
+		    my $min_mfe = $me->MySelect(type => 'single',
+ statement => "/* 2 of $num_statements */ SELECT min(mfe) FROM $mfe_table $weedout_string");
+		    my $num_sequences = $me->MySelect(type => 'single',
+ statement => "/* 3 of $num_statements */ SELECT count(id) FROM $mfe_table $weedout_string $mfe_weed AND mfe <= '$max_mfe'");
+		    my $avg_mfe = $me->MySelect(type => 'single',
+ statement => "/* 4 of $num_statements */ SELECT avg(mfe) FROM $mfe_table $weedout_string $mfe_weed AND mfe <= '$max_mfe'");
+		    my $stdev_mfe = $me->MySelect(type => 'single',
+ statement => "/* 5 of $num_statements */ SELECT stddev(mfe) FROM $mfe_table $weedout_string $mfe_weed AND mfe <= '$max_mfe'");
+		    my $avg_pairs = $me->MySelect(type => 'single',
+ statement => "/* 6 of $num_statements */ SELECT avg(pairs) FROM $mfe_table $weedout_string $mfe_weed AND mfe <= '$max_mfe'");
+		    my $stdev_pairs = $me->MySelect(type => 'single',
+ statement => "/* 7 of $num_statements */ SELECT stddev(pairs) FROM $mfe_table $weedout_string $mfe_weed AND mfe <= '$max_mfe'");
+		    my $num_sequences_noknot = $me->MySelect(type => 'single',
+ statement => "/* 8 of $num_statements */ SELECT count(id) FROM $mfe_table $weedout_string $mfe_weed AND knotp = '0' AND mfe <= '$max_mfe'");
+		    my $avg_mfe_noknot = $me->MySelect(type => 'single',
+ statement => "/* 9 of $num_statements */ SELECT avg(mfe) FROM $mfe_table $weedout_string $mfe_weed AND knotp = '0' AND mfe <= '$max_mfe'");
+		    my $stdev_mfe_noknot = $me->MySelect(type => 'single',
+ statement => "/* 10 of $num_statements */ SELECT stddev(mfe) FROM $mfe_table $weedout_string $mfe_weed AND knotp = '0' AND mfe <= '$max_mfe'");
+		    my $avg_pairs_noknot = $me->MySelect(type => 'single',
+ statement => "/* 11 of $num_statements */ SELECT avg(pairs) FROM $mfe_table $weedout_string $mfe_weed AND knotp = '0' AND mfe <= '$max_mfe'");
+		    my $stdev_pairs_noknot = $me->MySelect(type => 'single',
+ statement => "/* 12 of $num_statements */ SELECT stddev(pairs) FROM $mfe_table $weedout_string $mfe_weed AND knotp = '0' AND mfe <= '$max_mfe'");
+		    my $num_sequences_knotted = $me->MySelect(type => 'single',
+ statement => "/* 13 of $num_statements */ SELECT count(id) FROM $mfe_table $weedout_string $mfe_weed AND knotp = '1' AND mfe <= '$max_mfe'");
+		    my $avg_mfe_knotted = $me->MySelect(type => 'single',
+ statement => "/* 14 of $num_statements */ SELECT avg(mfe) FROM $mfe_table $weedout_string $mfe_weed AND knotp = '1' AND mfe <= '$max_mfe'");
+		    my $stdev_mfe_knotted = $me->MySelect(type => 'single',
+ statement => "/* 15 of $num_statements */ SELECT stddev(mfe) FROM $mfe_table $weedout_string $mfe_weed AND knotp = '1' AND mfe <= '$max_mfe'");
+		    my $avg_pairs_knotted = $me->MySelect(type => 'single',
+ statement => "/* 16 of $num_statements */ SELECT avg(pairs) FROM $mfe_table $weedout_string $mfe_weed AND knotp = '1' AND mfe <= '$max_mfe'");
+		    my $stdev_pairs_knotted = $me->MySelect(type => 'single',
+ statement => "/* 17 of $num_statements */ SELECT stddev(pairs) FROM $mfe_table $weedout_string $mfe_weed AND knotp = '1' AND mfe <= '$max_mfe'");
+		    my $avg_zscore = $me->MySelect(type => 'single',
+ statement => "/* 18 of $num_statements */ SELECT avg(zscore) FROM $boot_table WHERE mfe_method = '$algorithm' AND seqlength = '$seqlength' $z_weed");
+		    my $stdev_zscore = $me->MySelect(type => 'single',
+ statement => "/* 19 of $num_statements */ SELECT stddev(zscore) FROM $boot_table WHERE mfe_method = '$algorithm' AND seqlength = '$seqlength' $z_weed");
+ $stmt = "/* 20 of $num_statements */ SELECT count(accession) FROM gene_info WHERE species = '$species'";
+		    print "$stmt\n";
+		    my $total_genes = $me->MySelect(type => 'single', statement => $stmt);
+ $stmt = "/* 21 of $num_statements */ SELECT count(distinct(accession)) FROM $mfe_table $weedout_string";
+		    print "$stmt\n";
+		    my $genes_hits = $me->MySelect(type => 'single', statement => $stmt);
+		    my $std_one = $avg_mfe - $stdev_mfe;
+ $stmt = "/* 22 of $num_statements */ SELECT count(distinct(accession)) FROM $mfe_table $weedout_string AND mfe <= '$std_one'";
+		    print "$stmt\n";
+		    my $genes_1mfe = $me->MySelect(type => 'single', statement => $stmt);
+ $stmt = "/* 22a of $num_statements */ SELECT count(distinct(accession)) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$std_one'";
+		    my $genes_1mfe_knotted = $me->MySelect(type => 'single', statement => $stmt);
+		    my $std_two = $std_one - $stdev_mfe;
+ $stmt = "/* 23 of $num_statements */ SELECT count(distinct(accession)) FROM $mfe_table $weedout_string AND mfe <= '$std_two'";
+		    print "$stmt\n";
+		    my $genes_2mfe =  $me->MySelect(type => 'single', statement => $stmt);
+ $stmt = "/* 23 of $num_statements */ SELECT count(distinct(accession)) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$std_two'";
+		    my $genes_2mfe_knotted =  $me->MySelect(type => 'single', statement => $stmt);
+		    my $z_one = $avg_zscore - $stdev_zscore;
+		    my $tmp_weed = $weedout_string;
+		    $tmp_weed =~ s/algorithm/$boot_table\.mfe_method/g;
+ $stmt = "/* 24 of $num_statements */ SELECT count(distinct(accession)) FROM $boot_table $tmp_weed AND zscore <= '$z_one'";
+		    print "$stmt\n";
+		    my $genes_1z = $me->MySelect(type => 'single', statement => $stmt);
+		    my $z_two = $z_one - $stdev_zscore;
+ $stmt = "/* 25 of $num_statements */ SELECT count(distinct(accession)) FROM $boot_table $tmp_weed AND zscore <= '$z_two'";
+		    print "$stmt\n";
+		    my $genes_2z = $me->MySelect(type => 'single', statement => $stmt);
+		    $weedout_string =~ s/algorithm =/$mfe_table\.algorithm =/g;
+		    $weedout_string =~ s/seqlength =/$mfe_table\.seqlength =/g;
+ $stmt = "/* 26 of $num_statements */ SELECT count(distinct($mfe_table.accession)) FROM ${mfe_table},${boot_table} $weedout_string AND ${mfe_table}.accession=${boot_table}.accession AND ${mfe_table}.mfe <= '$std_one' AND ${boot_table}.zscore <= '$z_one'";
+		    print "$stmt\n";
+		    my $genes_1both = $me->MySelect(type => 'single', statement => $stmt);
+ $stmt = "/* 26a of $num_statements */ SELECT count(distinct($mfe_table.accession)) FROM ${mfe_table},${boot_table} $weedout_string AND $mfe_table.knotp = '1' AND ${mfe_table}.accession=${boot_table}.accession AND ${mfe_table}.mfe <= '$std_one' AND ${boot_table}.zscore <= '$z_one'";
+		    my $genes_1both_knotted = $me->MySelect(type => 'single', statement => $stmt);
+ $stmt = "/* 27 of $num_statements */ SELECT count(distinct($mfe_table.accession)) FROM ${mfe_table},${boot_table} $weedout_string AND ${mfe_table}.accession=${boot_table}.accession AND ${mfe_table}.mfe <= '$std_two' AND ${boot_table}.zscore <= '$z_two'";
+		    print "$stmt\n";
+		    my $genes_2both = $me->MySelect(type => 'single', statement => $stmt);
+ $stmt = "/* 27a of $num_statements */ SELECT count(distinct($mfe_table.accession)) FROM ${mfe_table},${boot_table} $weedout_string AND $mfe_table.knotp = '1' AND ${mfe_table}.accession=${boot_table}.accession AND ${mfe_table}.mfe <= '$std_two' AND ${boot_table}.zscore <= '$z_two'";
+		    my $genes_2both_knotted = $me->MySelect(type => 'single', statement => $stmt);
 #		    print "species:$species  seqlength:$seqlength  max_mfe:$max_mfe  min_mfe:$min_mfe  algorithm:$algorithm  num_seq:$num_sequences  avg_mfe:$avg_mfe  stdev_mfe:$stdev_mfe  avg_pairs:$avg_pairs  stdev_pairs:$stdev_pairs  num_nokn:$num_sequences_noknot  avg_mfe_no:$avg_mfe_noknot  stdev_mfe_no:$stdev_mfe_noknot  avg_pairs_no:$avg_pairs_noknot  stdev_pairs_no:$stdev_pairs_noknot  num_knot:$num_sequences_knotted  avg_mfe_knot:$avg_mfe_knotted  stdev_mfe_knotted:$stdev_mfe_knotted  avg_pairs_knot:$avg_pairs_knotted  stdev_pairs:kno:$stdev_pairs_knotted  avg_z:$avg_zscore  stdev_zscore:$stdev_zscore\n";
 		    my $statement = qq"INSERT DELAYED INTO stats
-(species, seqlength, max_mfe, min_mfe, algorithm, num_sequences, avg_mfe, stddev_mfe, avg_pairs, stddev_pairs, num_sequences_noknot, avg_mfe_noknot, stddev_mfe_noknot, avg_pairs_noknot, stddev_pairs_noknot, num_sequences_knotted, avg_mfe_knotted, stddev_mfe_knotted, avg_pairs_knotted, stddev_pairs_knotted, avg_zscore, stddev_zscore)
+(species, seqlength, max_mfe, min_mfe, algorithm, num_sequences, avg_mfe, stddev_mfe, avg_pairs, stddev_pairs, num_sequences_noknot, avg_mfe_noknot, stddev_mfe_noknot, avg_pairs_noknot, stddev_pairs_noknot, num_sequences_knotted, avg_mfe_knotted, stddev_mfe_knotted, avg_pairs_knotted, stddev_pairs_knotted, avg_zscore, stddev_zscore, total_genes, genes_hits, genes_1mfe, genes_2mfe, genes_1z, genes_2z, genes_1both, genes_2both, genes_1mfe_knotted, genes_2mfe_knotted, genes_1both_knotted, genes_2both_knotted)
     VALUES
-('$species', '$seqlength', '$max_mfe', '$min_mfe', '$algorithm', '$num_sequences', '$avg_mfe', '$stdev_mfe', '$avg_pairs', '$stdev_pairs', '$num_sequences_noknot', '$avg_mfe_noknot', '$stdev_mfe_noknot', '$avg_pairs_noknot', '$stdev_pairs_noknot', '$num_sequences_knotted', '$avg_mfe_knotted', '$stdev_mfe_knotted', '$avg_pairs_knotted', '$stdev_pairs_knotted', '$avg_zscore', '$stdev_zscore')";
+('$species', '$seqlength', '$max_mfe', '$min_mfe', '$algorithm', '$num_sequences', '$avg_mfe', '$stdev_mfe', '$avg_pairs', '$stdev_pairs', '$num_sequences_noknot', '$avg_mfe_noknot', '$stdev_mfe_noknot', '$avg_pairs_noknot', '$stdev_pairs_noknot', '$num_sequences_knotted', '$avg_mfe_knotted', '$stdev_mfe_knotted', '$avg_pairs_knotted', '$stdev_pairs_knotted', '$avg_zscore', '$stdev_zscore', '$total_genes', '$genes_hits', '$genes_1mfe', '$genes_2mfe', '$genes_1z', '$genes_2z', '$genes_1both', '$genes_2both', '$genes_1mfe_knotted', '$genes_2mfe_knotted', '$genes_1both_knotted', '$genes_2both_knotted')";
 #                  print "STATEMENT: $statement\n";
                   my $rows = $me->MyExecute(statement => $statement,);
                   if (defined($me->{errors}->{errstr})) {

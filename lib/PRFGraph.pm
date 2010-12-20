@@ -8,6 +8,8 @@ use GD::Graph::mixed;
 use GD::SVG;
 use Statistics::Basic qw(:all);
 use Statistics::Distributions;
+use SVG::TT::Graph::Line;
+
 my $config;
 
 sub new {
@@ -36,6 +38,16 @@ sub Make_Extension {
     ## UNDEF VALUES this statement is pulling up undefined values...
     my $averages = qq"SELECT avg_mfe, avg_zscore, stddev_mfe, stddev_zscore FROM stats WHERE species = '$species' AND seqlength = '100' AND algorithm = 'nupack'";
     my $averages_fun = $db->MySelect(statement => $averages, type => 'row');
+    if (!defined($averages_fun->[0])) {
+	my $data = {
+	    species => [ $species ,],
+	    seqlength => $config->{seqlength},
+	    max_mfe => [ $config->{max_mfe} ],
+	    algorithm => $config->{algorithms},
+	};
+	$db->Put_Stats($data);
+	$averages_fun = $db->MySelect(statement => $averages, type => 'row');
+    }
     my $avg_mfe = $averages_fun->[0];
     my $avg_zscore = $averages_fun->[1];
     my $mfe_minus_stdev = $avg_mfe - $averages_fun->[2];
@@ -218,6 +230,61 @@ sub Make_Extension {
     system("/usr/bin/uniq ${filename}.map > ${filename}.tmp  ;  /bin/mv ${filename}.tmp ${filename}.map");
 }
 
+sub Make_Summary_Pie {
+    my $me = shift;
+    my $filename = shift;
+    my $width = shift;
+    my $height = shift;
+    my $species = shift;
+    my $slipsite = shift;
+    my $seqlength = shift;
+    my $mfe_method = shift;
+    my $info_stmt = '';
+    my $db = new PRFdb(config=>$config);
+#    if ($slipsite eq 'all') {
+    $info_stmt = qq"SELECT * FROM stats WHERE species = '$species' AND seqlength = '$seqlength' AND algorithm = '$mfe_method'";
+    my $info = $db->MySelect(type => 'list_of_hashes', statement => $info_stmt);
+    foreach my $datum (@{$info}) {
+	my %inf = %{$datum};
+	use SVG::TT::Graph::Pie;
+	my @fields = ('No match', 'Insignificant', 'Significant');
+	my $no_match = $inf{total_genes} - $inf{genes_hits};
+	my $insignificant = $inf{total_genes} - $inf{genes_1both_knotted};
+	my $significant = $inf{genes_1both_knotted};
+	my @data = ($no_match, $insignificant, $significant);
+	my $graph = SVG::TT::Graph::Pie->new({
+           height => '800',
+           width  => '800',
+           fields => \@fields,
+	   tidy => 1,
+	   show_shadow => 1,
+	   shadow_size => 10,
+	   shadow_offset => 15,
+	   show_data_labels => 1,
+	   show_actual_values => 1,
+	   show_percent => 1,
+	   rollover_values => 1,
+	   # data on key:
+	   show_key_data_labels => 1,
+	   show_key_actual_values => 1,
+	   show_key_percent => 1,
+	   expanded => 0,
+	   expand_smallest => 1,
+	   key => 1,
+	   key_placement => 'R',
+       });
+	$graph->compress(0);
+	$graph->add_data({
+           'data'  => \@data,
+           'title' => 'Significant hits',
+       });
+	open(OUT, ">$filename");
+#	print OUT "Content-type: image/svg+xml\n\n";
+	print OUT $graph->burn();
+	close OUT;
+    }
+}
+
 sub Make_Cloud {
     my $me = shift;
     my %args = @_;
@@ -260,7 +327,8 @@ sub Make_Cloud {
     $graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $fun = [[-100,-100,-100],[0,0,0]];
-    my $gd = $graph->plot($fun,) or Callstack(die => 1, message => $graph->error);
+#    my $gd = $graph->plot($fun,) or Callstack(die => 1, message => $graph->error);
+    my $gd = $graph->plot($fun,) or Callstack(die => 0, message => $graph->error);
     my $black = $gd->colorResolve(0,0,0);
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);
@@ -632,6 +700,89 @@ sub Make_SlipBars {
     open(IMG, ">$filename");
     print IMG $image->png if (defined($image));
     close IMG;
+}
+
+sub Make_Landscape_TT {
+    my $me = shift;
+    my $species = shift;
+    my $accession = $me->{accession};
+    my $filename = $me->Picture_Filename(type => 'landscape',);
+    my $table = "landscape_$species";
+    $filename =~ s/\.png/\.svg/g;
+    my $db = new PRFdb(config => $config);
+    my $mt = "mfe_$species";
+    my $data =  $db->MySelect("SELECT start, algorithm, pairs, mfe FROM $table WHERE accession='$accession' ORDER BY start, algorithm");
+    return(undef) if (!defined($data));
+    my $slipsites = $db->MySelect("SELECT distinct(start) FROM $mt WHERE accession='$accession' ORDER BY start");
+    my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession'");
+    my $info = {};
+    my @x_axis = ();
+    my ($mean_nupack, $mean_pknots, $mean_vienna) = 0;
+    my $position_counter = 0;
+    
+    
+    foreach my $datum (@{$data}) {
+	$position_counter++;
+	my $place = $datum->[0];
+	push(@x_axis, $place);
+	$info->{$place}->{$datum->[1]} = $datum->[3];
+    }   
+    ## End foreach spot
+    if ($position_counter == 0) {  ## There is no data!?
+	return(undef);
+	Callstack(message => "There is no data.");
+    }
+    $position_counter = $position_counter / 3;
+    $mean_pknots = $mean_pknots / $position_counter;
+    $mean_nupack = $mean_nupack / $position_counter;
+    $mean_vienna = $mean_vienna / $position_counter;
+    my (@axis_x, @nupack_y, @pknots_y, @vienna_y, @m_nupack, @m_pknots, @m_vienna);
+#    my $end_spot = $points[$#points] + 105;
+    my $current  = 0;
+    my $height = 200;
+    my $width = 600;
+    my $svg_graph = new SVG::TT::Graph::Line({
+	height => $height,
+	width => $width + 400,
+	fields => \@x_axis,
+	show_data_points => 1,
+	show_data_values => 0,
+	show_x_labels => 0,
+	show_y_labels => 1,
+	show_x_title => 1,
+	x_title => 'Position',
+	show_y_title => 1,
+	y_title => 'MFE',
+	show_graph_title => 0,
+	key => 1,
+	key_position => 'right',
+	tidy => 1,
+    });
+    $svg_graph->compress(0);
+    $svg_graph->style_sheet("/graph.css");
+    
+    ## Fill the id list with everything if it is null
+    ## When adding data to the graph it is sent as a
+    ## 2d array, by program then position (I think)
+    my @lines = ('pknots','nupack','vienna');
+    #	$info->{$place}->{$datum->[1]} = $datum->[3];
+    ##  We have a hash keyed by position, then algorithm, leading to MFE
+    ##  Our goal is to do an add_data(\@all_points_for_one_algorithm, $name_of_algorithm);
+    my @line_datum = ();
+    my @mean_line_datum = ();
+    foreach my $line (@lines) {
+#	foreach my $pos (sort $a<=>$b keys %{$info}) {
+	foreach my $pos (sort keys %{$info}) {
+	    push(@line_datum, $info->{$pos}->{$line});
+	    my $var_name = "mean_$line";
+	    push(@mean_line_datum, $$var_name);
+	}
+	$svg_graph->add_data({data => \@line_datum, title => $line});
+	$svg_graph->add_data({data => \@mean_line_datum, title => "$line mean"});
+    }
+    open(OUT, ">$filename");
+    print OUT $svg_graph->burn();
+    close OUT;
 }
 
 sub Make_Landscape {

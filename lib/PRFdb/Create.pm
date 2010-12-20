@@ -192,24 +192,6 @@ PRIMARY KEY (id))";
     $me->MyExecute(statement => $statement,);
 }
 
-sub Overlap {
-    my $me = shift;
-    my $config = $me->{config};
-    my $statement = qq(CREATE table overlap (
-id $config->{sql_id},
-genome_id int,
-species $config->{sql_species},
-accession $config->{sql_accession},
-start int,
-plus_length int,
-plus_orf text,
-minus_length int,
-minus_orf text,
-lastupdate $config->{sql_timestamp},
-PRIMARY KEY (id)));
-    $me->MyExecute(statement => $statement,);
-}
-
 sub Landscape {
     my $me = shift;
     my $table = shift;
@@ -308,6 +290,24 @@ PRIMARY KEY(ip))\;
     print "Created nosy\n" if (defined($config->{debug}));
 }
 
+sub Overlap {
+    my $me = shift;
+    my $config = $me->{config};
+    my $statement = qq(CREATE table overlap (
+id $config->{sql_id},
+genome_id int,
+species $config->{sql_species},
+accession $config->{sql_accession},
+start int,
+plus_length int,
+plus_orf text,
+minus_length int,
+minus_orf text,
+lastupdate $config->{sql_timestamp},
+PRIMARY KEY (id)));
+    $me->MyExecute(statement => $statement,);
+}
+
 sub Queue {
     my $me = shift;
     my $table = shift;
@@ -339,8 +339,10 @@ id $config->{sql_id},
 species $config->{sql_species},
 seqlength int,
 max_mfe float,
+min_mfe float,
 algorithm varchar(10),
 num_sequences int,
+slipsite char(7),
 avg_mfe float,
 stddev_mfe float,
 avg_pairs float,
@@ -357,6 +359,18 @@ avg_pairs_knotted float,
 stddev_pairs_knotted float,
 avg_zscore float,
 stddev_zscore float,
+total_genes int,
+genes_hits int,
+genes_1mfe int,
+genes_2mfe int,
+genes_1z int,
+genes_2z int,
+genes_1both int,
+genes_2both int,
+genes_1mfe_knotted int,
+genes_2mfe_knotted int,
+genes_1both_knotted int,
+genes_2both_knotted int,
 PRIMARY KEY (id)));
     $me->MyExecute(statement => $statement,);
 }
