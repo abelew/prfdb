@@ -43,7 +43,7 @@ sub Boot {
 	    my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
 	    my $seqlength = $data->{$mfe_method}->{$rand_method}->{stats}->{seqlength};
 	    my @boot = ('genome_id');
-	    my $errorstring = Check_Insertion(\@boot, $data);
+	    my $errorstring = $me->Check_Insertion(\@boot, $data);
 	    if (defined($errorstring)) {
 		$errorstring = "Undefined value(s) in Put_Boot: $errorstring";
 		$config->PRF_Error($errorstring, $species, $accession);
@@ -54,7 +54,7 @@ sub Boot {
 (genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
     VALUES
 (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-            my $undefined_values = Check_Defined(genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values);
+            my $undefined_values = $me->Check_Defined(genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values);
             if ($undefined_values) {
               $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
               $config->PRF_Error( $errorstring, $species, $accession );
@@ -93,7 +93,7 @@ sub MFE {
     my $config = $me->{config};
     ## What fields do we want to fill in this MFE table?
     my @pknots = ('genome_id', 'accession', 'start', 'slipsite', 'seqlength', 'sequence', 'output', 'parsed', 'parens', 'mfe', 'pairs', 'knotp', 'barcode');
-    my $errorstring = Check_Insertion(\@pknots, $data);
+    my $errorstring = $me->Check_Insertion(\@pknots, $data);
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_MFE: $errorstring";
 	$config->PRF_Error($errorstring, $data->{species}, $data->{accession});
@@ -101,9 +101,9 @@ sub MFE {
     my $species = $data->{species};
     my $table = qq"mfe_$species";
     $data->{sequence} =~ tr/actgun/ACTGUN/;
-    my $statement = qq(INSERT INTO $table (genome_id, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?));
+    my $statement = qq(INSERT INTO $table (genome_id, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
     
-    $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{slipsite}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],);
+    $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $algo, $data->{accession}, $data->{start}, $data->{slipsite}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],);
     
     my $put_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
     return ($put_id);
@@ -124,7 +124,7 @@ sub MFE_Landscape {
     } else {
 	@filled = ('genome_id', 'species', 'accession', 'start', 'seqlength', 'sequence', 'output', 'parsed', 'parens', 'mfe', 'pairs', 'knotp', 'barcode');
     }
-    my $errorstring = Check_Insertion(\@filled, $data);
+    my $errorstring = $me->Check_Insertion(\@filled, $data);
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_MFE_Landscape: $errorstring";
 	$config->PRF_Error($errorstring, $data->{accession});
@@ -206,7 +206,7 @@ sub Single_Boot {
     my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
     my $seqlength = $data->{$mfe_method}->{$rand_method}->{stats}->{seqlength};
     my @boot = ('genome_id');
-    my $errorstring = Check_Insertion(\@boot, $data);
+    my $errorstring = $me->Check_Insertion(\@boot, $data);
     
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_Boot: $errorstring";
@@ -215,16 +215,16 @@ sub Single_Boot {
     my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
 #    my $statement = qq"INSERT INTO $table
     my $statement = qq"INSERT DELAYED INTO $table
-(genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
+(genome_id, mfe_id, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
     VALUES
-('$data->{genome_id}','$mfe_id','$species','$accession','$start','$seqlength','$iterations','$rand_method','$mfe_method','$mfe_mean','$mfe_sd','$mfe_sd','$pairs_mean','$pairs_sd','$pairs_se','$mfe_values')";
+('$data->{genome_id}','$mfe_id','$accession','$start','$seqlength','$iterations','$rand_method','$mfe_method','$mfe_mean','$mfe_sd','$mfe_sd','$pairs_mean','$pairs_sd','$pairs_se','$mfe_values')";
 
-    my $undefined_values = Check_Defined(genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values);
+    my $undefined_values = $me->Check_Defined(genome_id => $data->{genome_id}, mfe_id => $mfe_id, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values);
 
     if ($undefined_values) {
         $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
-        $config->PRF_Error($errorstring, $species, $accession);
-        print "$errorstring, $species, $accession\n";
+        $config->PRF_Error($errorstring, $accession);
+        print "$errorstring, $accession\n";
     }
     my $rows = $me->MyExecute(statement => $statement,);
 
@@ -378,12 +378,15 @@ sub Vienna {
 
 sub AUTOLOAD {
     my $me = shift;
+    my $type = ref($me) or die "$me is not an object";
+
     my $name = $AUTOLOAD;
     $name =~ s/.*://;   # strip fully-qualified portion
+    print "TESTME: $name\n";
     if (@_) {
 	return $me->{$name} = shift;
     } else {
-	return $me->{$name};
+       return $me->{$name};
     }
 }
 

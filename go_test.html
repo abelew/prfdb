@@ -5,7 +5,7 @@ my $apph = GO::AppHandle->connect(-dbname => 'go',
 				  -dbuser => 'go',
 				  -dbauth => 'drevil');
 #  Doing it this way is foolish as you lose the names
-#  my $terms = $apph->get_terms({products=>["EST2", "STN1"]});
+#my $terms = $apph->get_terms({products=>["EST2", "STN1"]});
 my $interesting = $genename;
 my @t = split(/ /, $interesting);
 $interesting = $t[1];

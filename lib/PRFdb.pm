@@ -104,7 +104,7 @@ sub Disconnect {
     if (@_) {
 	foreach my $num (@_) {
 	    $num_disconnected++;
-	    print "Disconnecting $num now\n";
+#	    print "Disconnecting $num now\n";
 	    my $handle = $PRFdb::handles->[$num];
 	    my $rc = $handle->disconnect();
 	    Callstack() unless ($rc);
@@ -115,7 +115,7 @@ sub Disconnect {
 	}
 	foreach my $num (@handles) {
 	    $num_disconnected++;
-	    print "Disconnecting $num_disconnected now\n";
+#	    print "Disconnecting $num_disconnected now\n";
 	    my $handle = $PRFdb::handles->[$num_disconnected];
 	    my $rc = $handle->disconnect() if (defined($handle));
 	}
@@ -742,7 +742,7 @@ sub Id_to_AccessionSpecies {
     my $id = shift;
     my $start = shift;
     Callstack(message => "Undefined value in Id_to_AccessionSpecies") unless (defined($id));
-    my $statement = qq"SELECT accession, species from gene_info where id = ?";
+    my $statement = qq"SELECT accession, species from gene_info where genome_id = ?";
     my $data = $me->MySelect(statement => $statement, vars => [$id], type => 'row');
     my $accession = $data->[0];
     my $species = $data->[1];
@@ -1368,6 +1368,7 @@ sub Write_SQL {
 }
 
 sub Check_Insertion {
+    my $me = shift;
     my $list = shift;
     my $data = shift;
     my $errorstring = undef;
@@ -1378,6 +1379,7 @@ sub Check_Insertion {
 }
 
 sub Check_Defined {
+    my $me = shift;
     my %args = @_;
     my $return = '';
     foreach my $k (keys %args) {
