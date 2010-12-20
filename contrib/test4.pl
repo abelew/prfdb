@@ -9,4 +9,4 @@ $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
 $db = new PRFdb(config => $config);
 $SIG{INT} = \&PRFdb::Cleanup;
 $db->MySelect("SELECT * FROM wait");
-$db->StartSlave();
+$db->Disconnect();
