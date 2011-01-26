@@ -31,7 +31,7 @@ sub Boot {
     my $config = $me->{config};
     my $table = shift;
     $table = 'boot_virus' if ($table =~ /virus/);
-    my $statement = qq\CREATE TABLE $table (
+    my $statement = qq"CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,
 mfe_id int,
@@ -54,7 +54,7 @@ lastupdate $config->{sql_timestamp},
 INDEX(genome_id),
 INDEX(mfe_id),
 INDEX(accession),
-PRIMARY KEY(id))\;
+PRIMARY KEY(id))";
     $me->MyExecute(statement => $statement,);
     print "Created $table\n" if (defined($config->{debug}));
 }
@@ -62,19 +62,19 @@ PRIMARY KEY(id))\;
 sub Errors {
     my $me = shift;
     my $config = $me->{config};
-    my $statement = qq\CREATE table errors (
+    my $statement = qq"CREATE table errors (
 					    id $config->{sql_id},
 					    time $config->{sql_timestamp},
 					    message blob,
 					    accession $config->{sql_accession},
-					    PRIMARY KEY(id))\;
+					    PRIMARY KEY(id))";
     $me->MyExecute(statement => $statement,);
 }
 
 sub Evaluate {
     my $me = shift;
     my $config = $me->{config};
-    my $statement = qq(CREATE table evaluate (
+    my $statement = qq"CREATE table evaluate (
 id $config->{sql_id},
 species $config->{sql_species},
 accession $config->{sql_accession},
@@ -82,14 +82,14 @@ start int,
 length int,
 pseudoknot bool,
 min_mfe float,
-PRIMARY KEY (id)));
+PRIMARY KEY (id))";
     $me->MyExecute(statement => $statement,)
 }
 
 sub Gene_Info {
    my $me = shift;
    my $config = $me->{config};
-   my $statement = qq/CREATE table gene_info (
+   my $statement = qq"CREATE table gene_info (
 genome_id bigint,
 accession $config->{sql_accession},
 species $config->{sql_species},
@@ -100,7 +100,7 @@ INDEX(accession),
 FULLTEXT(comment),
 FULLTEXT(defline),
 FULLTEXT(genename),
-PRIMARY KEY (genome_id))/;
+PRIMARY KEY (genome_id))";
    $me->MyExecute(statement =>$statement,);
    my $insert_stmt = qq"INSERT IGNORE INTO gene_info (genome_id, accession, species, genename, comment, defline) SELECT id, accession, species, genename, comment, defline FROM genome";
    $me->MyExecute(statement => $insert_stmt,);
@@ -109,7 +109,7 @@ PRIMARY KEY (genome_id))/;
 sub Genome {
     my $me = shift;
     my $config = $me->{config};
-    my $statement = qq/CREATE table genome (
+    my $statement = qq"CREATE table genome (
 id $config->{sql_id},
 accession $config->{sql_accession},
 gi_number $config->{sql_gi_number},
@@ -132,7 +132,7 @@ average_mfe text,
 snp_lastupdate TIMESTAMP DEFAULT '00:00:00',
 lastupdate $config->{sql_timestamp},
 INDEX(genename),
-PRIMARY KEY (id))/;
+PRIMARY KEY (id))";
     $me->MyExecute(statement =>$statement,);
 }
 
@@ -150,25 +150,25 @@ PRIMARY KEY (id))";
 sub Index_Stats {
     my $me = shift;
     my $config = $me->{config};
-    my $statement = qq/CREATE table index_stats (
+    my $statement = qq"CREATE table index_stats (
 id $config->{sql_id},
 species $config->{sql_species},
 num_genome int,
 num_mfe_entries int,
 num_mfe_knotted int,
-PRIMARY KEY (id))/;
+PRIMARY KEY (id))";
     $me->MyExecute(statement =>$statement,);
 }
 
 sub NumSlipsite {
     my $me = shift;
     my $config = $me->{config};
-    my $statement = qq/CREATE table numslipsite (
+    my $statement = qq"CREATE table numslipsite (
 id $config->{sql_id},
 accession $config->{sql_accession},
 num_slipsite int,
 lastupdate $config->{sql_timestamp},
-PRIMARY KEY (id))/;
+PRIMARY KEY (id))";
     $me->MyExecute(statement => $statement,);
 }
 
@@ -197,7 +197,7 @@ sub Landscape {
     my $table = shift;
     my $config = $me->{config};
     $table = 'landscape_virus' if ($table =~ /virus/);
-    my $statement = qq\CREATE TABLE $table (
+    my $statement = qq"CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,
 species $config->{sql_species},
@@ -216,7 +216,7 @@ barcode text,
 lastupdate $config->{sql_timestamp},
 INDEX(genome_id),
 INDEX(accession),
-PRIMARY KEY(id))\;
+PRIMARY KEY(id))";
     $me->MyExecute(statement =>$statement,);
     print "Created $table\n" if (defined($config->{debug}));
 }
@@ -226,7 +226,7 @@ sub MFE {
     my $table = shift;
     my $config = $me->{config};
     $table = 'mfe_virus' if ($table =~ /virus/);
-    my $statement = qq\CREATE TABLE $table (
+    my $statement = qq"CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,
 accession $config->{sql_accession},
@@ -248,14 +248,14 @@ bp_mstop int,
 lastupdate $config->{sql_timestamp},
 INDEX(genome_id),
 INDEX(accession),
-PRIMARY KEY(id))\;
+PRIMARY KEY(id))";
     $me->MyExecute(statement => $statement,);
 }
 
 sub MFE_Utr {
     my $me = shift;
     my $config = $me->{config};
-    my $statement = qq\CREATE TABLE mfe_utr (
+    my $statement = qq"CREATE TABLE mfe_utr (
 id $config->{sql_id},
 genome_id int,
 species $config->{sql_species},
@@ -275,17 +275,17 @@ barcode text,
 lastupdate $config->{sql_timestamp},
 INDEX(genome_id),
 INDEX(accession),
-PRIMARY KEY(id))\;
+PRIMARY KEY(id))";
     $me->MyExecute(statement => $statement,);
 }
 
 sub Nosy {
     my $me = shift;
     my $config = $me->{config};
-    my $statement = qq\CREATE TABLE nosy (
+    my $statement = qq"CREATE TABLE nosy (
 ip char(15),
 visited $config->{sql_timestamp},
-PRIMARY KEY(ip))\;
+PRIMARY KEY(ip))";
     $me->MyExecute(statement =>$statement,);
     print "Created nosy\n" if (defined($config->{debug}));
 }
@@ -293,7 +293,7 @@ PRIMARY KEY(ip))\;
 sub Overlap {
     my $me = shift;
     my $config = $me->{config};
-    my $statement = qq(CREATE table overlap (
+    my $statement = qq"CREATE table overlap (
 id $config->{sql_id},
 genome_id int,
 species $config->{sql_species},
@@ -304,7 +304,7 @@ plus_orf text,
 minus_length int,
 minus_orf text,
 lastupdate $config->{sql_timestamp},
-PRIMARY KEY (id)));
+PRIMARY KEY (id))";
     $me->MyExecute(statement => $statement,);
 }
 
@@ -320,21 +320,21 @@ sub Queue {
 	    $table = 'queue';
 	}
     }
-    my $statement = qq\CREATE TABLE $table (
+    my $statement = qq"CREATE TABLE $table (
 id $config->{sql_id},
 genome_id int,
 checked_out bool,
 checked_out_time timestamp default 0,
 done bool,
 done_time timestamp default 0,
-PRIMARY KEY (id))\;
+PRIMARY KEY (id))";
     $me->MyExecute(statement =>$statement,);
 }
 
 sub Stats {
     my $me = shift;
     my $config = $me->{config};
-    my $statement = qq(CREATE table stats (
+    my $statement = qq"CREATE table stats (
 id $config->{sql_id},
 species $config->{sql_species},
 seqlength int,
@@ -371,14 +371,14 @@ genes_1mfe_knotted int,
 genes_2mfe_knotted int,
 genes_1both_knotted int,
 genes_2both_knotted int,
-PRIMARY KEY (id)));
+PRIMARY KEY (id))";
     $me->MyExecute(statement => $statement,);
 }
 
 sub Variations {
     my $me = shift;
     my $config = $me->{config};
-    my $statement = qq\CREATE TABLE variations (
+    my $statement = qq"CREATE TABLE variations (
 id $config->{sql_id},
 dbSNP text,
 accession $config->{sql_accession},
@@ -390,7 +390,7 @@ frameshift char(1),
 note text,
 FULLTEXT(dbSNP),
 INDEX(accession),
-PRIMARY KEY(id))\;
+PRIMARY KEY(id))";
     $me->MyExecute(statement => $statement,);
 }
 
