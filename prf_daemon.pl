@@ -71,6 +71,18 @@ if (defined($config->{resync})) {
     $db->ReSync();
     exit(0);
 }
+if (defined($config->{revcomp})) {
+    die("Need a sequence.") if (!$config->{revcomp});
+    my $tmp = new SeqMisc(sequence => $config->{revcomp});
+    print "$tmp->{revcomp}\n";
+    exit(0);
+}
+if (defined($config->{reverse})) {
+    die("Need a sequence.") if (!$config->{reverse});
+    my $tmp = new SeqMisc(sequence => $config->{reverse});
+    print "$tmp->{reverse}\n";
+    exit(0);
+}
 if (defined($config->{zscore})) {
     Zscore();
     exit(0);

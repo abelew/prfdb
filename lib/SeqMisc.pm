@@ -9,10 +9,11 @@ my $config = $PRFConfig::config;
 
 sub new {
     my ($class, %arg) = @_;
-    $arg{sequence} = [] if (!defined($arg{sequence}));
+#    $arg{sequence} = [] if (!defined($arg{sequence}));
     srand();
     my $seqstring = '';
-    if (ref($arg{sequence}) eq 'ARRAY') {
+    my $seq_type = ref($arg{sequence});
+    if ($seq_type eq 'ARRAY') {
 	foreach my $char (@{$arg{sequence}}) {
 	    $char = 'U' if ($char eq 'T');
 	    $char = 'u' if ($char eq 't');
@@ -28,6 +29,9 @@ sub new {
 	nt => {0 => 'A', 1 => 'U', 2 => 'C', 3 => 'G',},
 	sequence => $arg{sequence},
 	seqstring => $seqstring,
+	revcomp => $seqstring,
+	reverse => $seqstring,
+	complement => $seqstring,
 	length => scalar(@{$arg{sequence}}),
 	aaseq => [],
 	aaminusone => [],
@@ -148,6 +152,10 @@ sub new {
 	    
 	},
     }, $class;
+    $me->{revcomp} = scalar reverse $me->{revcomp};
+    $me->{reverse} = scalar reverse $me->{reverse};
+    $me->{revcomp} =~ tr/ACGTUacgtu/UGCAAugcaa/;
+    $me->{complement} =~ tr/ACGTUacgtu/UGCAAugcaa/;
     my @ntseq = @{$me->{sequence}};
     $me->{gc_content} = $me->Get_GC(\@ntseq);    
     my (@aaseq, @aaminusone, @aaminustwo, @codonseq, @dint12seq, @dint23seq, @dint31seq, @dint13seq);
@@ -155,7 +163,6 @@ sub new {
 	my @init = ('A', 'T', 'G');
 	next until (splice(@ntseq, 0, 3) eq @init);
     }
-    
     my $finished = 0;
     my $count = 0;
     my ($one, $two, $three, $last_one, $last_two, $last_three);
