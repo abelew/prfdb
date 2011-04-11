@@ -149,7 +149,7 @@ sub Fill_Table_snp {
 
 sub Create_Table_snp {
     my $me = shift;
-    my $statement = qq/CREATE table snp (
+    my $statement = qq"CREATE table snp (
 					 id $config->{sql_id},
 					 gene_acc $config->{sql_accession},
 					 gene_gi $config->{gi_number},
@@ -162,14 +162,14 @@ sub Create_Table_snp {
 					 INDEX(cluster_id),
 					 INDEX(gene_gi),
 					 INDEX(gene_acc),
-					 PRIMARY KEY (id))/;
+					 PRIMARY KEY (id))";
     $me->MyExecute(statement => $statement,);
 }
 
 sub Compute_Frameshift {
     my $me = shift;
     my $args = shift;
-    my $mt = qq"mfe_$species";
+    my $mt = qq"mfe_$me->{species}";
     my $statement = 'SELECT id, accession, start, seqlength, parsed FROM $mt WHERE species = ?';
     my $mfe_data = $db->MySelect(statement => $statement, vars => [$me->{species}], type => 'list_of_hashes',);
     foreach my $mfe_row (@{$mfe_data}) {
@@ -232,7 +232,7 @@ sub Compute_Frameshift {
 		my $statement = 'UPDATE IGNORE $mt SET has_snp = TRUE WHERE id = ?';
 		$db->MyExecute(statement => $statement, vars => [$mfe_id],);
 	    }
-	    $statement = 'UPDATE IGNORE snp SET frameshift = ?, mfe_ids = ? WHERE id = ?';
+	    $statement = qq"UPDATE IGNORE snp SET frameshift = ?, mfe_ids = ? WHERE id = ?";
 	    $me->report("Now Executing: $statement With Vars: $frameshift, $snp_mfe_ids, $snp_id\n");
 	    $db->MyExecute(statement => $statement, vars => [$frameshift, $snp_mfe_ids, $snp_id],);
 	}

@@ -120,6 +120,7 @@ sub Create_Pretty_mRNA {
     my $slipsites = $args{slipsites};
     my $minus_bp = $args{minus_bp};
     my $show_frame = $args{show_frame};
+    my $snps = $args{snps};
     my @s = split(//, $mrna_seq);
 
     use SeqMisc;
@@ -140,6 +141,7 @@ sub Create_Pretty_mRNA {
 	$stop_position++;
 	$startstop_count++;
     }
+
     my $slipcount = 0;
     for my $count (0 .. $#$slipsites) {
 	my $slip = $slipsites->[$count];
@@ -150,6 +152,8 @@ sub Create_Pretty_mRNA {
 	    $s[$num_bp] = qq(<a href="detail.html?accession=$accession&slipstart=$slip" title="View the details for $accession at position $slip"><font color="Blue">$s[$num_bp]</font></a>);
 	    $slipcount++;
 	}
+
+
 	my $minuscount = 6;
 	while ($minuscount < 9) {
 	    my $num = $slip + $minus + $minuscount;
@@ -157,6 +161,23 @@ sub Create_Pretty_mRNA {
 	    $minuscount++;
 	}
     }
+
+
+    foreach my $snp_position (keys %{$snps}) {
+	if ($snps->{$snp_position} !~ /HASH/) {
+	    my $snp_end = $snps->{$snp_position};
+	    my $link = qq(http://www.ncbi.nlm.nih.gov/sites/entrez?db=snp&cmd=search&term=$snps->{$snp_end}->{cluster_id});
+	    $s[$snp_position] = qq(<a class="snp" href=$link title="Position:$snp_position, view dbSNP:$snps->{$snp_end}->{cluster_id} with alleles $snps->{$snp_end}->{alleles} at NCBI" rel="external" target="_blank">$s[$snp_position]);
+	    $s[$snps->{$snp_position} - 1] = qq($s[$snps->{$snp_position}]</a>);
+	    delete $snps->{$snp_end};
+	    delete $snps->{$snp_position};
+	} else {
+	    my $link = qq"http://www.ncbi.nlm.nih.gov/sites/entrez?db=snp&cmd=search&term=$snps->{$snp_position}->{cluster_id}";
+	    $s[$snp_position - 1] = qq(<a class="snp" href=$link title="Position: $snp_position, view dbSNP:$snps->{$snp_position}->{cluster_id} with alleles $snps->{$snp_position}->{alleles} at NCBI" rel="external" target="_blank">$s[$snp_position - 1]</a>);
+	    delete($snps->{$snp_position});
+	}
+    }
+
 
     ## Last filter is to shift the frame so it reads evenly on the screen
     my $start_pad = $orf_start - 1;

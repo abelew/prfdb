@@ -24,8 +24,6 @@ anything from the configuration file if you desire.
 Make sure that apache has libapreq running.  On a Debian installation this
 may be done by symlinking /etc/apache2/mods-available/libapred to ../mods-enabled
 
-Make sure that apache has libapreq running.  On a Debian installation this
-may be done by symlinking /etc/apache2/mods-available/libapred to ../mods-enabled
 Make sure the $PRFDB_HOME/sessions symlink points somewhere real and is apache
 writeable.
 

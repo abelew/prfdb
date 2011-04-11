@@ -65,7 +65,7 @@ sub new {
 	}
     }
     $me->{errors} = undef;
-    return ($me);
+    return($me);
 }
 
 sub Callstack {
@@ -104,7 +104,7 @@ sub Disconnect {
     if (@_) {
 	foreach my $num (@_) {
 	    $num_disconnected++;
-	    print "Disconnecting $num now\n";
+#	    print "Disconnecting $num now\n";
 	    my $handle = $PRFdb::handles->[$num];
 	    my $rc = $handle->disconnect();
 	    Callstack() unless ($rc);
@@ -115,7 +115,7 @@ sub Disconnect {
 	}
 	foreach my $num (@handles) {
 	    $num_disconnected++;
-	    print "Disconnecting $num_disconnected now\n";
+#	    print "Disconnecting $num_disconnected now\n";
 	    my $handle = $PRFdb::handles->[$num_disconnected];
 	    my $rc = $handle->disconnect() if (defined($handle));
 	}
@@ -742,7 +742,7 @@ sub Id_to_AccessionSpecies {
     my $id = shift;
     my $start = shift;
     Callstack(message => "Undefined value in Id_to_AccessionSpecies") unless (defined($id));
-    my $statement = qq"SELECT accession, species from gene_info where id = ?";
+    my $statement = qq"SELECT accession, species from gene_info where genome_id = ?";
     my $data = $me->MySelect(statement => $statement, vars => [$id], type => 'row');
     my $accession = $data->[0];
     my $species = $data->[1];
@@ -758,7 +758,7 @@ sub Error_Db {
     $species = '' if (!defined($species));
     $accession = '' if (!defined($accession));
     print "Error: '$message'\n";
-    my $statement = qq(INSERT into errors (message, accession) VALUES(?,?));
+    my $statement = qq"INSERT into errors (message, accession) VALUES(?,?)";
     ## Don't call Execute here or you may run into circular crazyness
     $me->MyConnect($statement,);
     my $sth = $dbh->prepare($statement);
@@ -795,7 +795,7 @@ sub Set_Queue {
 	return ($last_id);
     }
     else {
-	my $id_existing_stmt = qq(SELECT id FROM $table WHERE genome_id = '$id');
+	my $id_existing_stmt = qq"SELECT id FROM $table WHERE genome_id = '$id'";
 	my $id_existing = $me->MySelect(statement => $id_existing_stmt, type => 'single');
 	return($id_existing);
     }
@@ -1368,6 +1368,7 @@ sub Write_SQL {
 }
 
 sub Check_Insertion {
+    my $me = shift;
     my $list = shift;
     my $data = shift;
     my $errorstring = undef;
@@ -1378,6 +1379,7 @@ sub Check_Insertion {
 }
 
 sub Check_Defined {
+    my $me = shift;
     my %args = @_;
     my $return = '';
     foreach my $k (keys %args) {
@@ -1469,6 +1471,9 @@ sub Cleanup {
     exit(0);
 }
 
+sub DESTROY {
+}
+
 sub AUTOLOAD {
     my $me = shift;
     my $type = ref($me) or Callstack(), warn("$me is not an object");
@@ -1499,6 +1504,8 @@ sub AUTOLOAD {
 	    no strict 'refs';
 	    &$newname($me, @_);
 	}
+    } else {
+	print "Unable to find the function $name in PRFdb.pm\n";
     }
 #    if (@_) {
 #	return $me->{$name} = shift;

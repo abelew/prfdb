@@ -7,7 +7,7 @@ our $AUTOLOAD;
 sub GenomeId_From_Accession {
     my $me = shift;
     my $accession = shift;
-    my $info = $me->MySelect(statement => qq"SELECT id FROM gene_info WHERE accession = ?", vars => [$accession], type => 'single');
+    my $info = $me->MySelect(statement => qq"SELECT id FROM genome WHERE accession = ?", vars => [$accession], type => 'single');
     return ($info);
 }
 
@@ -279,7 +279,7 @@ sub Num_RNAfolds {
     my $slipsite_start = shift;
     my $seqlength = shift;
     my $table = shift;
-    my $species = $me->MySelect(statement => "SELECT species FROM gene_info WHERE id = ?", type => 'single', vars => [$genome_id]);
+    my $species = $me->MySelect(statement => "SELECT species FROM gene_info WHERE genome_id = ?", type => 'single', vars => [$genome_id]);
     my $mfe_table = "mfe_$species";
     $table = $mfe_table unless (defined($table));
     $table = "boot_virus" if ($table =~ /boot/ and $table =~ /virus/);
@@ -372,6 +372,7 @@ sub Slippery_From_RNAMotif {
 sub AUTOLOAD {
     my $me = shift;
     my $name = $AUTOLOAD;
+    print "Unable to find the function: $name in PRFdb::Get\n";
     $name =~ s/.*://;   # strip fully-qualified portion
     if (@_) {
 	return $me->{$name} = shift;

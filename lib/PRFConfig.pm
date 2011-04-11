@@ -57,6 +57,7 @@ sub new {
     ## which will in turn be passed to GetOpts
     ## As a result, _all_ of these variables may be overridden on the command line.
     $me->{ABSOLUTE} = 1 if (!defined($me->{ABSOLUTE}));
+    $me->{algorithms} = ['hotknots','pknots','nupack'] if (!defined($me->{algorithms}));
     $me->{add_to_path} = "/usr/bin:/usr/local/bin" if (!defined($me->{add_to_path}));
     $me->{arch_specific_exe} = 0 if (!defined($me->{arch_specific_exe}));
     $me->{base} = $ENV{PRFDB_HOME} if (!defined($me->{base}));
@@ -168,6 +169,7 @@ sub new {
     $me->{window_space} = 15 if (!defined($me->{window_space}));
     $me->{workdir} = 'work' if (!defined($me->{workdir}));
     $me->{z_test} = 'z_test' if (!defined($me->{z_test}));
+
     my ($open, %data, $config_option);
     if (-r $me->{config_file}) {
 	$open = $me->{appconfig}->file($me->{config_file});
@@ -190,6 +192,7 @@ sub new {
 	'blast:s' => \$conf{blast},
 	'boot:i' => \$conf{do_boot},
 	'clear_queue' => \$conf{clear_queue},
+	'complement:s' => \$conf{complement},
 	'copyfrom:s' => \$conf{copyfrom},
 	'create_tables' => \$conf{create_tables},
 	'dbexec:s' => \$conf{dbexec},
@@ -221,6 +224,8 @@ sub new {
 	'randomize' => \$conf{randomize_id},
 	'reconnect' => \$conf{reconnect},
 	'resetqueue' => \$conf{resetqueue},
+	'revcomp:s' => \$conf{revcomp},
+	'reverse:s' => \$conf{reverse},
 	'setup_db' => \$conf{setup_db},
 	'shell' => \$conf{shell},
 	'species:s' => \$conf{species},
@@ -238,8 +243,11 @@ sub new {
 	$conf_specification{$name} = $conf_specification_temp{$name};
     }
     undef(%conf_specification_temp);
-    GetOptions(%conf_specification);
-
+    ## This next line pulls in the command line options.
+    my $argv_result = GetOptions(%conf_specification);
+    unless ($argv_result) {
+	Help();
+    }
     ## This puts every option defined above into the PRFConfig namespace.
     foreach my $opt (keys %conf) {
 	if (defined($conf{$opt})) {
