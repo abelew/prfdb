@@ -65,7 +65,7 @@ sub new {
 	}
     }
     $me->{errors} = undef;
-    return ($me);
+    return($me);
 }
 
 sub Callstack {
@@ -758,7 +758,7 @@ sub Error_Db {
     $species = '' if (!defined($species));
     $accession = '' if (!defined($accession));
     print "Error: '$message'\n";
-    my $statement = qq(INSERT into errors (message, accession) VALUES(?,?));
+    my $statement = qq"INSERT into errors (message, accession) VALUES(?,?)";
     ## Don't call Execute here or you may run into circular crazyness
     $me->MyConnect($statement,);
     my $sth = $dbh->prepare($statement);
@@ -795,7 +795,7 @@ sub Set_Queue {
 	return ($last_id);
     }
     else {
-	my $id_existing_stmt = qq(SELECT id FROM $table WHERE genome_id = '$id');
+	my $id_existing_stmt = qq"SELECT id FROM $table WHERE genome_id = '$id'";
 	my $id_existing = $me->MySelect(statement => $id_existing_stmt, type => 'single');
 	return($id_existing);
     }
@@ -1471,6 +1471,9 @@ sub Cleanup {
     exit(0);
 }
 
+sub DESTROY {
+}
+
 sub AUTOLOAD {
     my $me = shift;
     my $type = ref($me) or Callstack(), warn("$me is not an object");
@@ -1501,6 +1504,8 @@ sub AUTOLOAD {
 	    no strict 'refs';
 	    &$newname($me, @_);
 	}
+    } else {
+	print "Unable to find the function $name in PRFdb.pm\n";
     }
 #    if (@_) {
 #	return $me->{$name} = shift;

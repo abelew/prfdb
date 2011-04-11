@@ -372,6 +372,7 @@ sub Slippery_From_RNAMotif {
 sub AUTOLOAD {
     my $me = shift;
     my $name = $AUTOLOAD;
+    print "Unable to find the function: $name in PRFdb::Get\n";
     $name =~ s/.*://;   # strip fully-qualified portion
     if (@_) {
 	return $me->{$name} = shift;
