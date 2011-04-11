@@ -47,8 +47,8 @@ sub Resolve {
 	diag("Testing for $d\n");
 	if ($response != 1) {
 	    diag("$d appears to be missing, building in $ENV{PRFDB_HOME}/src/perl\n");
-	    CPAN->mkmyconfig;
-	    CPAN::Shell->o('autocommit', 1);
+#	    CPAN->mkmyconfig;
+	    CPAN::Shell->o('conf', 'autocommit', 1);
 	    CPAN::Shell->o('conf', 'prerequisites_policy', 'follow');
 	    CPAN::Shell->o('conf', 'urllist', [q[ ], q[ftp://carroll.cac.psu.edu/pub/CPAN/], q[ftp://cpan-du.viaverio.com/pub/CPAN/], q[ftp://cpan-sj.viaverio.com/pub/CPAN/], q[ftp://cpan.calvin.edu/pub/CPAN], q[ftp://cpan.cs.utah.edu/pub/CPAN/], q[ftp://cpan.cse.msu.edu/], q[ftp://cpan.erlbaum.net/CPAN/], q[ftp://cpan.glines.org/pub/CPAN/], q[ftp://cpan.hexten.net/]]);
 	    CPAN::Shell->o('conf', 'connect_to_internet_ok', 1);
@@ -58,6 +58,7 @@ sub Resolve {
 	    CPAN::Shell->o('conf', 'make_install_arg', "PREFIX=$ENV{PRFDB_HOME}/usr");
 	    CPAN::Shell->o('conf', 'mbuild_install_arg', "PREFIX=$ENV{PRFDB_HOME}/usr");
 	    CPAN::Shell->o('conf', 'make_install', "PREFIX=$ENV{PRFDB_HOME}/usr make install ");
+#	    CPAN::Shell->o('conf', 'commit', "$ENV{HOME}/.cpan/CPAN/MyConfig.pm");
 	    CPAN::Shell->install($d);
 	}
     }
