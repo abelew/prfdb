@@ -71,6 +71,18 @@ if (defined($config->{resync})) {
     $db->ReSync();
     exit(0);
 }
+if (defined($config->{revcomp})) {
+    die("Need a sequence.") if (!$config->{revcomp});
+    my $tmp = new SeqMisc(sequence => $config->{revcomp});
+    print "$tmp->{revcomp}\n";
+    exit(0);
+}
+if (defined($config->{reverse})) {
+    die("Need a sequence.") if (!$config->{reverse});
+    my $tmp = new SeqMisc(sequence => $config->{reverse});
+    print "$tmp->{reverse}\n";
+    exit(0);
+}
 if (defined($config->{zscore})) {
     Zscore();
     exit(0);
@@ -125,8 +137,7 @@ if (defined($config->{copyfrom})) {
 if (defined($config->{input_file})) {
     if (defined($config->{startpos})) {
 	Read_Accessions($config->{input_file}, $config->{startpos});
-    } 
-    else {
+    } else {
 	Read_Accessions($config->{input_file});
     }
 }
@@ -137,8 +148,7 @@ if (defined($config->{accession})) {
     $state->{genome_id} = $db->Get_GenomeId_From_Accession($config->{accession});
     if (defined($config->{startpos})) {
 	Gather($state, $config->{startpos});
-    }
-    else {
+    } else {
 	Gather($state);
     }
     exit(0);
@@ -147,8 +157,7 @@ if (defined($config->{input_fasta})) {
     my $queue_ids;
     if (defined($config->{startpos})) {
 	$queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style}, $config->{startpos});
-    } 
-    else {
+    } else {
 	$queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style});
     }
     exit(0);
@@ -414,7 +423,6 @@ UNION
           my $tmp_nupack_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'nupack'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
           my $tmp_pknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'pknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
           my $tmp_hotknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'hotknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
-
 	  my $boot = new Bootlace(genome_id => $state->{genome_id},
 				  nupack_mfe_id => (defined($state->{nupack_mfe_id})) ?
 				  $state->{nupack_mfe_id} : $nupack_mfe_id,
@@ -649,18 +657,14 @@ sub Check_Boot_Connectivity {
 		if (!defined($state->{accession})) {
 		    Callstack(die => 1, message => "The accession is no longer defined. This cannot be allowed.");
 		}
-		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
-						 species => $state->{species}, accession => $state->{accession},
-						 start => $slipsite_start,);
+		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config, species => $state->{species}, accession => $state->{accession}, start => $slipsite_start,);
 		$new_mfe_id = Check_Nupack($fold_search, $slipsite_start);
 	    } elsif ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'pknots') {
 		### Then there is no pknots information :(
 		if (!defined($state->{accession})) {
 		    Callstack(die => 1, message => "The accession is no longer defined. This cannot be allowed.");
 		}
-		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config,
-						 species => $state->{species}, accession => $state->{accession},
-						 start => $slipsite_start,);
+		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config, species => $state->{species}, accession => $state->{accession}, start => $slipsite_start,);
 		$new_mfe_id = Check_Pknots($fold_search, $slipsite_start);
 	    } ### End if there is no mfe_id and pknots was the algorithm
 	    my $update_mfe_id_statement = qq(UPDATE $boot_table SET mfe_id = ? WHERE id = ?);
@@ -744,23 +748,6 @@ sub Check_Sequence_Length {
     $sequence = uc($sequence);
     if (!defined($sequence) or $sequence eq '') {
 	return ('null');
-    }
-    if ($sequence =~ /^A+$/) {
-	return ('polya');
-    } elsif ($sequence =~ /^A+C+UCG+$/) {
-	return('polya');
-    } elsif ($sequence =~ /^A+U+$/) {
-	return('polya');
-    } elsif ($sequence =~ /^A+C+UGAG$/) {
-	return('polya');
-    } elsif ($sequence =~ /^A+U+A+$/) {
-	return('polya');
-    } elsif ($sequence =~ /^A+C{3,}G+$/) {
-	return('polya');
-    } elsif ($sequence =~ /^A+CCCUCG+$/) {
-	return('polya');
-    } elsif ($sequence =~ /AAAAAAAA$/ and $sequence_length < $wanted_sequence_length) {
-	return ('polya');
     } elsif ($sequence_length > $wanted_sequence_length) {
 	return ('longer than wanted');
     } elsif ($sequence_length == $wanted_sequence_length) {
