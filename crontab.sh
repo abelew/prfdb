@@ -7,6 +7,7 @@ if [ $1 ]; then
 else
   cd $PRFDB_HOME && ./prf_daemon --mysql_backup 2>mysql_backup.out 1>&2 &
   cd $PRFDB_HOME/folds && rm -f *.err *.svg *.html *.seq *.fasta *.ct *.bpseq 2>/dev/null 1>&2
+  cd $PRFDB_HOME/sessions && find $PRFDB_HOME/sessions -mtime -7 -exec rm {} ';'
 #  cd $PRFDB_HOME && ./prf_daemon --maintain 2>>crontab.out 1>&2
 fi
   

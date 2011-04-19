@@ -379,10 +379,9 @@ sub Vienna {
 sub AUTOLOAD {
     my $me = shift;
     my $type = ref($me) or die "$me is not an object";
-
     my $name = $AUTOLOAD;
     $name =~ s/.*://;   # strip fully-qualified portion
-    print "TESTME: $name\n";
+    print "Unable to find the function: $name in PRFdb::Put\n";
     if (@_) {
 	return $me->{$name} = shift;
     } else {

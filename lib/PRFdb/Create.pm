@@ -96,6 +96,14 @@ species $config->{sql_species},
 genename $config->{sql_genename},
 comment $config->{sql_comment},
 defline text not null,
+publications text,  /* a list of pubmed IDs */
+db_xrefs text, /* a list of pubmed/etc cross references */
+map text, /* position in the genome where this gene lives */
+gene_synonyms text, /* a list of the gene names for this */
+gene_note text, /* a string describing the gene in short */
+product text, /* the name of the protein product, perhaps should be in gene_note? */
+protein_id text, /* the genenames.org ID for this */
+refseq_comment text, /* the COMMENT field from refseq */
 INDEX(accession),
 FULLTEXT(comment),
 FULLTEXT(defline),
@@ -279,6 +287,27 @@ PRIMARY KEY(id))";
     $me->MyExecute(statement => $statement,);
 }
 
+sub MicroRNA {
+    my $me = shift;
+    my $config = $me->{config};
+    my $statement = qq"CREATE TABLE microrna (
+id $config->{sql_id},
+species $config->{sql_species},
+micro_name text,
+hairpin_accession $config->{sql_accession},
+hairpin text,
+mature_accession $config->{sql_accession},
+mature text,
+star_accession $config->{sql_accession},
+mature_star text,
+fivep_accession $config->{sql_accession},
+mature_5p text,
+threep_accession $config->{sql_accession},
+mature_3p text,
+PRIMARY KEY (id))";
+    $me->MyExecute(statement => $statement,);
+}
+
 sub Nosy {
     my $me = shift;
     my $config = $me->{config};
@@ -427,6 +456,7 @@ sub Tables {
 sub AUTOLOAD {
     my $me = shift;
     my $name = $AUTOLOAD;
+    print "Unable to find the function: $name in PRFdb::Create\n";
     $name =~ s/.*://;   # strip fully-qualified portion
     if (@_) {
 	return $me->{$name} = shift;
