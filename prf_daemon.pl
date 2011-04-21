@@ -60,6 +60,14 @@ if (defined($config->{dbexec})) {
     $db->MyExecute(statement => "$config->{dbexec}");
     exit(0);
 }
+if (defined($config->{dbselect})) {
+    my $answer = $db->MySelect($config->{dbselect});
+    foreach my $row (@{$answer}) {
+	my @r = @{$row};
+	print @r;
+    }
+    exit(0);
+}
 if (defined($config->{import_genbank_accession})) {
     Import_Genbank_Accession($config->{import_genbank_accession});
 }

@@ -196,6 +196,7 @@ sub new {
 	'copyfrom:s' => \$conf{copyfrom},
 	'create_tables' => \$conf{create_tables},
 	'dbexec:s' => \$conf{dbexec},
+	'dbselect:s' => \$conf{dbselect},
 	'fasta_style:s' => \$conf{fasta_style},
 	'fillqueue' => \$conf{fillqueue},
 	'help|version' => \$conf{help},
