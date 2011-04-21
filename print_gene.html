@@ -74,6 +74,43 @@ Showing minus <% $show_frame %> reading frame(s).
 <& print_landscape.html, accession => "$accession", species => "$sp" &>
 </form>   </tr>
 
+% my $aux_info = $db->MySelect(statement => "SELECT publications, db_xrefs, gene_synonyms FROM gene_info WHERE accession = ?", vars => [$accession]);
+% my $publications = $aux_info->[0]->[0];
+% my @pubs = split(/\t/, $publications);
+% my $xrefs = $aux_info->[0]->[1];
+% my @xr = split(/\s+/, $xrefs);
+% my $synon = $aux_info->[0]->[2];
+% if (defined($synon)) {
+<p>This gene is also known as: <% $synon %><br>
+% }
+% if (defined($xrefs)) {
+This gene is referenced as:
+<ul>
+% foreach my $x (@xr) {
+%  if ($x =~ /GeneID/) {
+   <a href="http://www.ncbi.nlm.nih.gov/gene?term=<% $x %>"><% $x %></a>
+%  } elsif ($x =~ /HGNC/) {
+   <a href="http://genenames.org/data/hgnc_data.php?hgnc_id=<% $x %>"><% $x %></a>
+%  } elsif ($x =~ /HPRD/) {
+   <a href="http://www.hprd.org/"><% $x %></a>
+%  } elsif ($x =~ /MIM/) {
+   <a href="http://www.ncbi.nlm.nih.gov/omim/<% $x %>"><% $x %></a>
+%  } else {
+  <% $x %>
+%  }
+% }
+</p>
+% }
+% if (scalar(@pubs) > 0) {
+<p>Below is a listing of publications associated with the refseq entry for this gene.</p>
+<ul>
+% foreach my $p (@pubs) {
+  <li><% $p %></li>
+% }
+</ul>
+% }
+
+
 <%init>
  my $statement = "SELECT species, genename FROM gene_info WHERE accession = ?";
  my $fun = $db->MySelect(statement => $statement, vars => [$accession,]);
