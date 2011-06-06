@@ -28,7 +28,7 @@ foreach my $entry_count (0 .. $#$info) {
     }
     $information->{pk_input} =~ tr/atgcu/ATGCU/;
     $information->{parsed} =~ s/\s+//g;
-    my @in = split(//, $information->{pk_input});
+    my @in = split(//, $information->{sequence});
     my @par = split(//, $information->{parsed});
     my $misc = new SeqMisc(sequence => \@in);
     $information->{gc_content} = $misc->{gc_content};

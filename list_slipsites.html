@@ -41,7 +41,11 @@
 <tr>
  <td width="33%">
   <div align="center"><strong><font face="Courier New, Courier, mono">
-   <a href="/detail.html?accession=<% $accession %>&slipstart=<% $slipstart %>" title="View the detailed information for <% $accession %> at position <% $slipstart %>"><% $slipstart %></a>
+%  my $relative_slipstart = $slipstart - $orf_start;
+%  $orf_stop = 1 if (!defined($orf_stop) or !$orf_stop);
+%  my $relative_pct = ($relative_slipstart / $orf_stop) * 100.0;
+%  $relative_pct = sprintf("%.1f", $relative_pct);
+   <a href="/detail.html?accession=<% $accession %>&slipstart=<% $slipstart %>" title="View the detailed information for <% $accession %> at position <% $slipstart %>"><% $slipstart %> (<% $relative_slipstart %>, <% $relative_pct %>%)</a>
   </font></strong></div>
  </td>
  <td width="33%">

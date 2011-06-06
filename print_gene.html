@@ -87,14 +87,15 @@ Showing minus <% $show_frame %> reading frame(s).
 This gene is referenced as:
 <ul>
 % foreach my $x (@xr) {
-%  if ($x =~ /GeneID/) {
-   <a href="http://www.ncbi.nlm.nih.gov/gene?term=<% $x %>"><% $x %></a>
-%  } elsif ($x =~ /HGNC/) {
-   <a href="http://genenames.org/data/hgnc_data.php?hgnc_id=<% $x %>"><% $x %></a>
-%  } elsif ($x =~ /HPRD/) {
+%  my ($name, $info) = split(/:/, $x);
+%  if ($name =~ /GeneID/) {
+   <a href="http://www.ncbi.nlm.nih.gov/gene?term=<% $info %>"><% $x %></a>
+%  } elsif ($name =~ /HGNC/) {
+   <a href="http://genenames.org/data/hgnc_data.php?hgnc_id=<% $info %>"><% $x %></a>
+%  } elsif ($name =~ /HPRD/) {
    <a href="http://www.hprd.org/"><% $x %></a>
-%  } elsif ($x =~ /MIM/) {
-   <a href="http://www.ncbi.nlm.nih.gov/omim/<% $x %>"><% $x %></a>
+%  } elsif ($name =~ /MIM/) {
+   <a href="http://www.ncbi.nlm.nih.gov/omim/<% $info %>"><% $x %></a>
 %  } else {
   <% $x %>
 %  }

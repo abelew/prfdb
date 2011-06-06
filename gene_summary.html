@@ -3,7 +3,12 @@
    <td width="50%">
     <strong>
      <a href="/help_genome#help_genename" title="The gene name is provided by genbank or the SGD" rel="external" target="_blank">Gene Name:</a>
-    </strong> <a href="/go_test.html?genename=<% $genename %>"><% $genename %></a>
+    </strong> <a href="/go_test.html?genename=<% $genename %>">
+      <% $genename %>
+%   if ($hgnc_name) {
+&nbsp;&nbsp;HGNC Name: <% $hgnc_name %>
+%   }
+    </a>
    <br>
    <strong>
     <a href="/help_detail#help_accession" title="Check the help for accession" rel="external" target="_blank">Accession:</a>
@@ -46,4 +51,5 @@
   $long_species => 'Sacchamroyces cerevisiae'
   $comment => 'my comment'
   $omim_id => '1'
+  $hgnc_name => undef
 </%args>

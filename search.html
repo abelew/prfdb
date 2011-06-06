@@ -1,13 +1,18 @@
-% if ($short or $accession or $query) {
+% if ($short or $accession or $query or $hgnc_name) {
 <%perl>
 my $query_statement;
 my $entries;
 my $question = '';
 my $species;
-if ($short or $accession) {
-    $species = $db->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", type => 'single', vars => [$accession]);
-  $query_statement = qq"SELECT * FROM genome WHERE accession = ?";
-  $question = $accession;
+if ($short or $accession or $hgnc_name) {
+    if ($accession) {
+      $species = $db->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", type => 'single', vars => [$accession]);
+      $query_statement = qq"SELECT * FROM genome WHERE accession = ?";
+      $question = $accession;
+    } elsif ($hgnc_name) {
+      $query_statement = qq"SELECT * FROM gene_info WHERE hgnc_name = ?";
+      $question = $hgnc_name;
+    }
 } else {
   $query_statement = qq"SELECT * FROM gene_info WHERE ";
   if ($search_species_limit ne 'all') {
@@ -36,7 +41,17 @@ foreach my $c (keys %{$entries}) {
 } ## End foreach
 </%perl>
 % if ($entries_count == 0) {
-  <p>No entry was found for the search term: '<% $query %>'.</p><br>
+% my $term = '';
+% if ($query) {
+%   $term .= $query;
+% } if ($accession) {
+%   $term .= $accession;
+% } if ($short) {
+%   $term .= $short;
+% } if ($hgnc_name) {
+%   $term .= $hgnc_name;
+% }
+  <p>No entry was found for the search term: '<% $term %>'.</p><br>
 % } elsif ($entries_count == 1) {
 %   my $long_species = HTMLMisc::Make_Species($species);
 %   my $genename = $entries->{$entries_keys[0]}->{genename};
@@ -45,8 +60,7 @@ foreach my $c (keys %{$entries}) {
 %   my $omim_id = $entries->{$entries_keys[0]}->{omim_id};
 %   my $orf_start = $entries->{$entries_keys[0]}->{orf_start};
 %   my $orf_stop = $entries->{$entries_keys[0]}->{orf_stop};
-
-<& gene_summary.html, accession => $accession, genename => $genename, accession => $accession, long_species => $long_species, species => $species, comment => $comment, omim_id => $omim_id &>
+<& gene_summary.html, accession => $accession, genename => $genename, accession => $accession, long_species => $long_species, species => $species, comment => $comment, omim_id => $omim_id, hgnc_name => $hgnc_name &>
 <& list_slipsites.html, accession => $accession, species => $species, comment => $comment, omim_id => $omim_id, orf_start => $orf_start, orf_stop => $orf_stop &>
 <& print_gene.html, accession => $accession, translate => $translate &>
 
@@ -93,6 +107,7 @@ $(document).ready(function()
 % $entries->{$entry}->{slipsite_count} = $slipsite_structure_count->[0];
 % }  ## End foreach my $entry
 % foreach my $id (sort { $entries->{$b}->{slipsite_count} <=> $entries->{$a}->{slipsite_count} } keys %{$entries}) {
+% my $hgnc_name = $entries->{$id}->{hgnc_name};
 % my $genename = $entries->{$id}->{genename};
 % my $accession = $entries->{$id}->{accession};
 % my $species = $entries->{$id}->{species};
@@ -154,7 +169,8 @@ $(document).ready(function()
   <input type="text" name="query"  size="20">
   <& species_selector.html, select_name => "search_species_limit" &>
 <br>
-  Or choose a particular accession:  <input type="text" name="accession"  size="20">
+  Or choose a particular accession:  <input type="text" name="accession"  size="20"><br>
+  Or an HGNC gene name (in humans only): <input type="text" name="hgnc_name" size="10"><br>
   <input type="submit" name="search submit" value="Search"><a href="help_search_suggestions.html">Searching Suggestions</a></form>
 
 </center>
@@ -183,6 +199,7 @@ Search the <select name="location">
 <%args>
   $short => 0
   $accession => undef
+  $hgnc_name => undef
   $query => undef
   $search_species_limit => 'all'
   $blastsearch => undef
