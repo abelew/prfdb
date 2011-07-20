@@ -533,7 +533,7 @@ sub Genome_to_Fasta {
     my $statement = qq"SELECT DISTINCT genome_id, accession, comment, FROM gene_info";
     my $info;
     system("mkdir $ENV{PRFDB_HOME}/blast") if (!-r  "$ENV{PRFDB_HOME}/blast");
-    open(OUTPUT, " | gzip --stdout -f - >> $ENV{PRFDB_HOME}/blast/$output") or Callstack(die => 1, message => "Could not open the fasta output file.");
+    open(OUTPUT, "| gzip --stdout -f - >> $ENV{PRFDB_HOME}/blast/$output") or Callstack(die => 1, message => "Could not open the fasta output file.");
     if (defined($species)) {
 	$statement .= " WHERE species = \'$species\'";
     }

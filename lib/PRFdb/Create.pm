@@ -98,11 +98,9 @@ comment $config->{sql_comment},
 defline text not null,
 publications text,  /* a list of pubmed IDs */
 db_xrefs text, /* a list of pubmed/etc cross references */
-map text, /* position in the genome where this gene lives */
+hgnc_id text, /* The canonical gene name's id at genenames.org */
+hgnc_name text, /* The canonical gene name at genenames.org */
 gene_synonyms text, /* a list of the gene names for this */
-gene_note text, /* a string describing the gene in short */
-product text, /* the name of the protein product, perhaps should be in gene_note? */
-protein_id text, /* the genenames.org ID for this */
 refseq_comment text, /* the COMMENT field from refseq */
 INDEX(accession),
 FULLTEXT(comment),
