@@ -71,6 +71,9 @@ if (defined($config->{dbselect})) {
 if (defined($config->{import_genbank_accession})) {
     Import_Genbank_Accession($config->{import_genbank_accession});
 }
+if (defined($config->{import_genbank_flatfile})) {
+    Import_Genbank_Flatfile($config->{import_genbank_flatfile});
+}
 if (defined($config->{makeblast})) {
     Make_Blast();
     exit(0);
@@ -992,7 +995,7 @@ sub Import_Genbank_Accession {
     exit(0);
 }
 
-sub Import_Genbank {
+sub Import_Genbank_Flatfile {
     my $import_genbank = shift;
     my $accession = shift;
     die("Could not load Bio::DB::Universal.\n $@\n") unless (eval "use Bio::DB::Universal; 1");

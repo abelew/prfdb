@@ -106,7 +106,10 @@ This gene is referenced as:
 <p>Below is a listing of publications associated with the refseq entry for this gene.</p>
 <ul>
 % foreach my $p (@pubs) {
-  <li><% $p %></li>
+%  my $q = $p;
+%  $q =~ s/Reference: //g;
+%  $q =~ s/ /\+/g;
+  <li><a href="http://scholar.google.com/scholar?q=<% $q %>"><% $p %></a></li>
 % }
 </ul>
 % }

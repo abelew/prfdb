@@ -24,7 +24,9 @@ sub Miranda_PRF {
     my $seq = $me->{db}->MySelect(type => 'single', statement => "SELECT sequence FROM mfe_homo_sapiens WHERE accession = ? AND start = ?", vars => [$accession, $position]);
     my $data = ">tmp\n$seq\n";
     my $filename = $me->{db}->Sequence_to_Fasta($data);
-    my $command = qq(miranda $filename "$ENV{PRFDB_HOME}/work/homo_sapiens_microrna.fasta" -sc 100 -en -15);
+    my $command = qq(miranda "$ENV{PRFDB_HOME}/work/homo_sapiens_microrna.fasta" $filename -en -24);
+    print "TESTME: $command\n";
+    sleep(5);
     open(MIR, "$command |");
     my $line_num = 0;
     my $miranda_data = {};
@@ -39,40 +41,49 @@ sub Miranda_PRF {
 	    next;
 	}
 	if ($line =~ /^Performing/) {
+	    print "PERFORMING: $line\n";
 	    my ($performing, $scan, $library_entry, $scanned_name) = split(/ /, $line);
 	    $skip_lines = 2;
 	}
-	if ($line =~ /^\s+Forward\:) {
-	    my ($forward, $sc, $score, $q, $to, $num, $r, $to, $r2, $align, $len, $len_num, $per1, $per2) = split(/\s+/, $line);
+	if ($line =~ /^\s+Forward\:/) {
+	    print "FORWARD: $line\n";
+	    my ($forward, $sc, $score, $q, $to, $num, $r, $to_two, $r2, $align, $len, $len_num, $per1, $per2) = split(/\s+/, $line);
 	    $skip_lines = 1;
 	}
-	if ($line =~ /^\s+Query/
+	if ($line =~ /^\s+Query/) {
+	    print "QUERY: $line\n";
 	    my ($qu, $threep, $top_align_seq, $fivep) = split(/\s+/, $line);
 	    $alignment_line_num = $line_num + 1;
 	}
 	if ($alignment_line_num == $line_num) {
+	    print "ALIGN: $line\n";
 	    my $align = $line;
 	    $align =~ s/\s{15}//g;
 	}
 	if ($line =~ /^\s+Ref/) {
+	    print "REF: $line\n";
 	    my ($ref, $fivep, $bottom_align_seq, $threep) = split(/\s+/, $line);
 	    $skip_lines = 1;
 	}
 	if ($line =~ /^\s+Energy/) {
+	    print "ENERGY: $line\n";
 	    my ($ene, $energy_value, $kcal) = split(/\s+/, $line);
 	    $skip_lines = 2;
 	}
 	if ($line =~ /^Scores for this hit/) {
+	    print "SCORES: $line\n";
 	    $last_line = 'Scores for this hit';
 	} elsif ($last_line eq 'Scores for this hit') {
 	    my ($fasta_comment, $lib_hit, $hit_score, $hit_energy, $num1, $num2, $num3, $num4, $num5, $per1, $per2) = split(/\s+/, $line);
 	}
 	if ($line =~ /^Score for this Scan/) {
+	    print "SCANSCORE: $line\n";
 	    $last_line = 'Scores for this scan';
 	} elsif ($last_line eq 'Scores for this scan') {
 	    my ($fasta_comment, $lib_hit, $hit_score, $hit_energy, $num1, $num2, $num3, $num4, $num5, $per1, $per2) = split(/\s+/, $line);
 	}
     }
+    close(MIR);
 }
 
 sub Micro_Fasta {
