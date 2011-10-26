@@ -1,5 +1,6 @@
 package PRFConfig;
 use strict;
+use local::lib "$ENV{PRFDB_HOME}/usr/perl";
 use AppConfig qw/:argcount :expand/;
 use Getopt::Long;
 use PRFdb qw" Callstack ";

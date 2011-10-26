@@ -1,8 +1,8 @@
 #!/usr/local/bin/perl -w 
 use strict;
+use local::lib "$ENV{PRFDB_HOME}/usr/perl";
+use lib "lib";
 use vars qw"$db $config";
-use lib "$ENV{PRFDB_HOME}/usr/lib/perl5";
-use lib "$ENV{PRFDB_HOME}/lib";
 die("Could not load PRFConfig.\n$@\n") unless (eval "use PRFConfig; 1");
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
 die("Could not load PRFdb.\n$@\n") unless (eval "use PRFdb qw'AddOpen RemoveFile Callstack Cleanup'; 1");
@@ -831,6 +831,18 @@ sub Zscore {
     $db->MyExecute($cleaning);
 }
 
+sub Optimize {
+    my $tables = $db->MySelect("show tables");
+    unless ($config->{maintenance_skip_optimize}) {
+	foreach my $t (@{$tables}) {
+            print "Performing OPTIMIZE TABLE $t->[0]\n";
+	    $db->MyExecute("OPTIMIZE TABLE $t->[0]");
+            print "Performing ANALYZE TABLE $t->[0]\n";
+	    $db->MyExecute("ANALYZE TABLE $t->[0]");
+	}
+    }
+}
+
 sub Maintenance {
     my $finished_species = $db->MySelect(statement => "SELECT species FROM finished", type => 'flat');
     $finished_species = [] if (!defined($finished_species));
@@ -839,6 +851,7 @@ sub Maintenance {
 	sleep(10);
     }
     ## Optimize the tables
+    Optimize();
     my $tables = $db->MySelect("show tables");
     unless ($config->{maintenance_skip_optimize}) {
 	foreach my $t (@{$tables}) {
