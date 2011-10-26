@@ -8,8 +8,19 @@
 
 %  }
 <center>
+ <form name="distribution" action="distribution.html?species=<% $species %>&seqlength=<% $seqlength %>&slipsites=<% $slipsites %>" enctype="multipart/form-data" method="POST">
 % my $long_species = HTMLMisc::Make_Species($species);
-<p>This is the <i><% $long_species %></i> distribution for <% $slipsites %> slipsites.
+<p>This is the <i><% $long_species %></i> distribution for <% $slipsites %> slipsites using <% $algorithms %>.
+  Change it to:
+  <select name="algorithms" onchange="this.form.submit(); return true;">
+   <option selected="selected" value="all">all</option>
+   <option value="pknots" value="pknots">pknots</option>
+   <option value="nupack" value="nupack">nupack</option>
+   <option value="hotknots" value="hotknots">hotknots</option>
+   <option value="nupack+hotknots" value="nupack+hotknots">nupack and hotknots</option>
+  </select>
+ </form>
+
 <br>
 % my $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-${slipsites}-${algorithms}-${seqlength}.png";
 % if ($cloud_filters =~ /pseudo/) {
@@ -145,5 +156,5 @@ graph in one minute.</p>
  $slipsites => undef
  $cloud_filters => undef
  $overlayquery => undef
- $algorithms => "all"
+ $algorithms => "hotknots"
 </%args>
