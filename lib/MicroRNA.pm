@@ -17,6 +17,67 @@ sub new {
     return($me);
 }
 
+
+sub RNAHybrid {
+    my $me = shift;
+    my $accession = shift;
+    my $position = shift;
+    my $output = {};
+    my $seq = $me->{db}->MySelect(type => 'single', statement => "SELECT sequence FROM mfe_homo_sapiens WHERE accession = ? AND start = ?", vars => [$accession, $position]);
+    my $data = ">tmp\n$seq\n";
+    my $filename = $me->{db}->Sequence_to_Fasta($data);
+    my $command = qq"$ENV{PRFDB_HOME}/work/RNAhybrid -d -s 3utr_human -q $ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta -t $filename";
+    open(MIR, "$command |") or warn("Could not run $command $!");
+    my ($key, $junk, $inner_hash, $miRNA, $mfe, $target_mismatch, $target_match, $miRNA_mismatch, $miRNA_match);
+##  Each result from rnahybrid is 11 lines of text with some blanks.
+##  If I put a next in front of every line starting with 'target:' or blank, or  then 
+##  there remain... 7 lines of interest
+##  I can count the rest of the lines and do a mod 7 of them
+##  The 1st: miRNA name, 2nd: mfe, 3rd: position, 4th: target_mis, 5th: target_match, 6th: miRNA_match, 7th miRNA_mis
+    my $count = 0;
+    while (my $line = <MIR>) {
+	chomp $line;
+	next if ($line =~ /^\s*$/);
+	next if ($line =~ /^target:/);
+	next if ($line =~ /^length/);
+	next if ($line =~ /^p-value/);
+	$line =~ s/^mfe:\s+//g;
+	$line =~ s/^miRNA ://g;
+	$line =~ s/^position //g;
+	$line =~ s/^target //g;
+	$line =~ s/^\s+//g;
+	$line =~ s/^miRNA //g;
+	$count++;
+	$count = 1 if ($count == 8);
+	if ($count == 1) {
+	    $miRNA = $line;
+	} elsif ($count == 2) {
+	    $mfe = $line;
+	    $mfe =~ s/\"//g;
+	    $mfe =~ s/ kcal\/mol//g;
+	} elsif ($count == 3) {
+	    $position = $line;
+	} elsif ($count == 4) {
+	    $target_mismatch = $line;
+	} elsif ($count == 5) {
+	    $target_match = $line;
+	} elsif ($count == 6) {
+	    $miRNA_match = $line;
+	} else {
+	    $miRNA_mismatch = $line;
+	}
+	$output->{$miRNA}->{$position}->{mfe} = $mfe;
+	$output->{$miRNA}->{$position}->{target_mismatch} = $target_mismatch;
+	$output->{$miRNA}->{$position}->{target_match} = $target_match;
+	$output->{$miRNA}->{$position}->{miRNA_match} = $miRNA_match;
+	$output->{$miRNA}->{$position}->{miRNA_mismatch} = $miRNA_mismatch;
+	$output->{$miRNA}->{$position}->{target} = $accession;
+	$output->{$miRNA}->{$position}->{target_position} = $position;
+    }
+#    close(MIR);
+    return($output);
+}
+
 sub Miranda_PRF {
     my $me = shift;
     my $accession = shift;
@@ -24,9 +85,7 @@ sub Miranda_PRF {
     my $seq = $me->{db}->MySelect(type => 'single', statement => "SELECT sequence FROM mfe_homo_sapiens WHERE accession = ? AND start = ?", vars => [$accession, $position]);
     my $data = ">tmp\n$seq\n";
     my $filename = $me->{db}->Sequence_to_Fasta($data);
-    my $command = qq(miranda "$ENV{PRFDB_HOME}/work/homo_sapiens_microrna.fasta" $filename -en -24);
-    print "TESTME: $command\n";
-    sleep(5);
+    my $command = qq(miranda "$ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta" $filename -en -20);
     open(MIR, "$command |");
     my $line_num = 0;
     my $miranda_data = {};

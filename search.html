@@ -10,6 +10,7 @@ if ($short or $accession or $hgnc_name) {
       $query_statement = qq"SELECT * FROM genome WHERE accession = ?";
       $question = $accession;
     } elsif ($hgnc_name) {
+      $hgnc_name =~ s/^\s+//g;
       $query_statement = qq"SELECT * FROM gene_info WHERE hgnc_name = ?";
       $question = $hgnc_name;
     }

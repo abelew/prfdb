@@ -1312,9 +1312,11 @@ sub Insert_Genome_Entry {
     $datum->{comment} = "" if (!defined($datum->{comment}));
     ## Check that the boot, landscape, and mfe tables exist
     my $species = $datum->{species};
-    $me->Create_MFE("mfe_$species") unless ($me->Tablep("mfe_$species"));
-    $me->Create_Landscape("landscape_$species") unless ($me->Tablep("landscape_$species"));
-    $me->Create_Boot("boot_$species") unless ($me->Tablep("boot_$species"));
+    unless ($species =~ /[V|v]irus/) {
+      $me->Create_MFE("mfe_$species") unless ($me->Tablep("mfe_$species"));
+      $me->Create_Landscape("landscape_$species") unless ($me->Tablep("landscape_$species"));
+      $me->Create_Boot("boot_$species") unless ($me->Tablep("boot_$species"));
+    }
 #    my $statement = qq(INSERT INTO genome
 #(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
 #    VALUES('$datum->{accession}', '$datum->{species}', '$datum->{genename}', '$datum->{version}', '$datum->{comment}', '$datum->{mrna_seq}', '$datum->{protein_seq}', '$datum->{orf_start}', '$datum->{orf_stop}', '$datum->{direction}'));
@@ -1322,7 +1324,7 @@ sub Insert_Genome_Entry {
 (accession, genename, version, comment, mrna_seq, orf_start, orf_stop, direction)
 VALUES(?,?,?,?,?,?,?,?)";
     $me->MyExecute(statement => $statement,
-               vars => [$datum->{accession}, $datum->{species}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
+               vars => [$datum->{accession}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
     my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
     my $queue_id = $me->Set_Queue(id => $last_id,);
     my $gene_info_stmt = qq"INSERT INTO gene_info

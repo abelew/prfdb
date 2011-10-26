@@ -11,16 +11,16 @@
 % my $long_species = HTMLMisc::Make_Species($species);
 <p>This is the <i><% $long_species %></i> distribution for <% $slipsites %> slipsites.
 <br>
-% my $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
+% my $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-${slipsites}-${algorithms}-${seqlength}.png";
 % if ($cloud_filters =~ /pseudo/) {
-%  $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-pknot-${slipsites}-${seqlength}.png";
+%  $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-pknot-${slipsites}-${algorithms}-${seqlength}.png";
 %   if (-f $filename) {
-<img src="images/cloud/<% $species %>/cloud-pknot-<% $slipsites %>-<% $seqlength %>.png" usemap="#map">
+<img src="images/cloud/<% $species %>/cloud-pknot-<% $slipsites %>-<% $algorithms %>-<% $seqlength %>.png" usemap="#map">
 %   } ## End if -f $filename
 % } else {
-%  $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
+%  $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-${slipsites}-${algorithms}-${seqlength}.png";
 %   if (-f $filename) {
-<img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $seqlength %>.png" usemap="#map">
+<img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $algorithms %>-<% $seqlength %>.png" usemap="#map">
 %   }
 % }
 % if (-f $filename) {
@@ -60,8 +60,8 @@ coordinates wihch share more than 1 sequence window.
 These graphs take about a minute to generate, this page will refresh with the freshly generated
 graph in one minute.</p>
 
-<& /js/refresh.html, refresh_url=>"distribution.html?species=$species&seqlength=$seqlength&slipsites=$slipsites", seconds => 30 &>
-<& generate_distribution.html, species=>$species, slipsites=>$slipsites, seqlength=>$seqlength &>
+<& /js/refresh.html, refresh_url=>"distribution.html?species=$species&algorithms=$algorithms&seqlength=$seqlength&slipsites=$slipsites", seconds => 30 &>
+<& generate_distribution.html, species => $species, slipsites => $slipsites, algorithms => $algorithms, seqlength => $seqlength &>
 %  }
 % }  ## If the parameters are not defined, print the html form to get them
 % else {
@@ -91,9 +91,19 @@ graph in one minute.</p>
   Choose a species to examine:<br>
   <& species_selector.html, select_name => "species", skip_species => 'all' &>
 
-<label><input type="checkbox" name="cloud_filters" value="pseudoknots only" />pseudoknots only</label><br>
+<label><input type="checkbox" name="cloud_filters" value="pseudoknots only" />pseudoknots only</label>
+<br>
+  Choose an algorithm (or set) to examine:<br>
+  <select name="algorithms">
+<option selected="selected" value="all">all</option>
+<option value="pknots" value="pknots">pknots</option>
+<option value="nupack" value="nupack">nupack</option>
+<option value="hotknots" value="hotknots">hotknots</option>
+<option value="nupack+hotknots" value="nupack+hotknots">nupack and hotknots</option>
+</select><br>
+<br>
   Choose a slippery site to examine(listed in order of frequency):<br>
-  <select name="slipsites" >
+  <select name="slipsites">
 <option selected="selected" value="all">all</option>
 <option value="AAAUUUA">AAAUUUA</option>
 <option value="UUUAAAU">UUUAAAU</option>
@@ -135,4 +145,5 @@ graph in one minute.</p>
  $slipsites => undef
  $cloud_filters => undef
  $overlayquery => undef
+ $algorithms => "all"
 </%args>

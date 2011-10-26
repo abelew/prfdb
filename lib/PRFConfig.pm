@@ -204,6 +204,7 @@ sub new {
 	'import:s' => \$conf{import_accession},
 	'import_genbank:s' => \$conf{import_genbank},
 	'import_genbank_accession:s' => \$conf{import_genbank_accession},
+	'import_genbank_flatfile:s' => \$conf{import_genbank_flatfile},
 	'index_stats' => \$conf{index_stats},
 	'input' => \$conf{input},
 	'input_fasta:s' => \$conf{input_fasta},

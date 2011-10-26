@@ -9,7 +9,11 @@ sub new {
       pseudoknot => 0,
       positions_remaining => 0,
   }, $class;
-  if (defined($args{debug})) { $me->{debug} = $args{debug} }
+  if (defined($args{debug})) {
+      if ($args{debug} > 1) {
+	  $me->{debug} = 1;
+      }
+  }
   return ($me);
 }
 
@@ -86,7 +90,7 @@ sub UnWind {
 @{$in_pattern}
 __________________________
 @{$out_pattern}\n";
-	print <STDIN>;
+#	print <STDIN>;
     }
     while ($front_pos < $back_pos) {
 	if ($me->{debug}) {
@@ -242,7 +246,7 @@ __________________________
     }    ## End facing the back
     if ($me->{debug}) {
 	print "$next,$in_pattern->[$next],$out_pattern->[$current]\n";
-	print <STDIN>;
+#	print <STDIN>;
     }
     $three_back = $two_back;
     $two_back   = $last;

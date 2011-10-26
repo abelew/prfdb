@@ -51,16 +51,16 @@ sub Boot {
 	    my $boot_table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
 #	    my $statement = qq"INSERT INTO $boot_table
 	    my $statement = qq"INSERT DELAYED INTO $boot_table
-(genome_id, mfe_id, species, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
+(genome_id, mfe_id, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
     VALUES
-(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-            my $undefined_values = $me->Check_Defined(genome_id => $data->{genome_id}, mfe_id => $mfe_id, species => $species, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values);
+(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            my $undefined_values = $me->Check_Defined(genome_id => $data->{genome_id}, mfe_id => $mfe_id, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values);
             if ($undefined_values) {
               $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
               $config->PRF_Error( $errorstring, $species, $accession );
               print "$errorstring, $species, $accession\n";
             }
-            my $inserted_rows = $me->MyExecute(statement => $statement, vars => [ $data->{genome_id}, $mfe_id, $species, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ],);
+            my $inserted_rows = $me->MyExecute(statement => $statement, vars => [ $data->{genome_id}, $mfe_id, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ],);
             $rows = $rows + $inserted_rows;
 
 #            my $boot_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
@@ -120,9 +120,9 @@ sub MFE_Landscape {
 	
     my @filled;
     if ($algo eq 'vienna') {
-	@filled = ('genome_id','species','accession','start','seqlength','sequence','parens','mfe');
+	@filled = ('genome_id','accession','start','seqlength','sequence','parens','mfe');
     } else {
-	@filled = ('genome_id', 'species', 'accession', 'start', 'seqlength', 'sequence', 'output', 'parsed', 'parens', 'mfe', 'pairs', 'knotp', 'barcode');
+	@filled = ('genome_id','accession','start','seqlength','sequence','output','parsed','parens','mfe','pairs','knotp','barcode');
     }
     my $errorstring = $me->Check_Insertion(\@filled, $data);
     if (defined($errorstring)) {
@@ -135,8 +135,8 @@ sub MFE_Landscape {
 	Callstack(message => qq"Sequence is not defined for Species:$data->{species}, Accession:$data->{accession}, Start:$data->{start}, Seqlength:$data->{seqlength}");
 	return(undef);
     }
-    my $statement = qq"INSERT DELAYED INTO $table (genome_id, species, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-    my $rows = $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $data->{species}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],);
+    my $statement = qq"INSERT DELAYED INTO $table (genome_id, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    my $rows = $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],);
     return ($rows);
 }    ## End put_mfe_landscape
 

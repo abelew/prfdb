@@ -70,7 +70,11 @@ Showing minus <% $show_frame %> reading frame(s).
     </td></tr>
 </form>
 </table>
-<p>The minimum free energy 'landscape' for <% $accession %>, black vertical lines delineate the positions of slippery heptamers, the horizontal green line shows the mean Vienna RNAfold value over the ORF, the horizontal red line shows the mean pknots value over the ORF, the horzontal blue line shows the mean nupack value.  green, red, and blue lines delineate the MFE over a sliding 105bp window.</p>
+<p>The minimum free energy 'landscape' for <% $accession %>, black vertical lines delineate
+the positions of slippery heptamers, the horizontal green line shows the mean Vienna RNAfold
+value over the ORF, the horizontal red line shows the mean pknots value over the ORF,
+the horzontal blue line shows the mean nupack value.  green, red, and blue lines delineate
+the MFE over a sliding 105bp window.</p>
 <& print_landscape.html, accession => "$accession", species => "$sp" &>
 </form>   </tr>
 

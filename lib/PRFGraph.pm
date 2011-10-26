@@ -294,6 +294,7 @@ sub Make_Cloud {
     my $filename = $args{filename};
     my $url = $args{url};
     my $args_slipsites = $args{slipsites};
+    my $args_algorithms = $args{algorithms};
     my $seqlength;
     if (defined($args{seqlength})) {
 	$seqlength = $args{seqlength};
@@ -308,8 +309,25 @@ sub Make_Cloud {
     my $graph = new GD::Graph::points('800','800');
     my $db = new PRFdb(config => $config);
     my ($mfe_min_value, $mfe_max_value);
-    $mfe_min_value = $db->MySelect(statement => qq"SELECT min(mfe) FROM $mt", type => 'single');
-    $mfe_max_value = $db->MySelect(statement => qq"SELECT max(mfe) FROM $mt", type => 'single');
+    my $min_stmt = qq"SELECT min(mfe) FROM $mt ";
+    my $max_stmt = qq"SELECT max(mfe) FROM $mt ";
+    if ($args_algorithms ne 'all') {
+	if ($args_algorithms eq 'nupack+hotknots') {
+	    $min_stmt .= " WHERE algorithm = 'nupack' OR algorithm = 'hotknots'";
+	    $max_stmt .= " WHERE algorithm = 'nupack' OR algorithm = 'hotknots'";
+	} elsif ($args_algorithms eq 'nupack') {
+	    $min_stmt .= " WHERE algorithm = 'nupack'";
+	    $max_stmt .= " WHERE algorithm = 'nupack'";
+	} elsif ($args_algorithms eq 'hotknots') {
+	    $min_stmt .= " WHERE algorithm = 'hotknots'";
+	    $max_stmt .= " WHERE algorithm = 'hotknots'";
+	} elsif ($args_algorithms eq 'pknots') {
+	    $min_stmt .= " WHERE algorithm = 'pknots'";
+	    $max_stmt .= " WHERE algorithm = 'pknots'";
+	}
+    }
+    $mfe_min_value = $db->MySelect(statement => $min_stmt, type => 'single');
+    $mfe_max_value = $db->MySelect(statement => $max_stmt, type => 'single');
     $mfe_min_value -= 3.0;
     $mfe_max_value += 3.0;
     my $z_min_value = -10;
@@ -1753,9 +1771,12 @@ sub Picture_Filename {
     my $url = $args{url};
     my $species = $args{species};
     my $suffix = $args{suffix};
-    my $extension;    
+    my $extension;
+    my $algorithms = $args{algorithms};
     my $accession = $me->{accession};
     my $mfe_id = $me->{mfe_id};
+
+    $algorithms = 'all' unless ($algorithms);
 
     if ($type eq 'extension_percent') {
 	return(qq"images/cloud/$species/extension-percent.png");

@@ -154,6 +154,7 @@ if (defined($config->{input_file})) {
 }
 if (defined($config->{accession})) {
     $state->{queue_id} = 0;
+    $config->{debug} = 1;
     ## Dumb hack lives on
     $state->{accession} = $config->{accession};
     $state->{genome_id} = $db->Get_GenomeId_From_Accession($config->{accession});
@@ -291,7 +292,9 @@ sub Gather {
     $state->{species} = $ref->{species};
     $db->Create_Landscape("landscape_$state->{species}") unless($db->Tablep("landscape_$state->{species}"));
     $db->Create_Boot("boot_$state->{species}") unless($db->Tablep("boot_$state->{species}")); 
-    $db->Create_MFE("mfe_$state->{species}") unless($db->Tablep("mfe_$state->{species}"));
+    unless ($state->{species} =~ /^virus/) {
+	$db->Create_MFE("mfe_$state->{species}") unless($db->Tablep("mfe_$state->{species}"));
+    }
     my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
     my $message = "${hour}:${min}.${sec} $mon/$mday id:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
     print $message;
@@ -1007,6 +1010,12 @@ sub Import_Genbank_Flatfile {
     while (my $seq = $in->next_seq()) {
 	#my $seq = $uni->get_Seq_by_id($accession);
 	my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
+	if (!defined($accession)) {
+	    print "TESTME: ACCESSION UNDEF.\n";
+	    $accession = $seq->accession_number();
+	    print "TESTME: ACCESSION $accession\n";
+	    sleep(5);
+	}
 	
 	my ($protein_sequence, $orf_start, $orf_stop);
 	my $binomial_species = $seq->species->binomial();
@@ -1014,9 +1023,11 @@ sub Import_Genbank_Flatfile {
 	my $full_species = qq(${genus}_${species});
 	$full_species =~ tr/[A-Z]/[a-z]/;
 	$config->{species} = $full_species;
-	$db->Create_Landscape(qq"landscape_$full_species");
-	$db->Create_Boot(qq"boot_$full_species");
-	$db->Create_MFE(qq"mfe_$full_species");
+	unless ($full_species =~ /virus/) {
+	    $db->Create_Landscape(qq"landscape_$full_species");
+	    $db->Create_Boot(qq"boot_$full_species");
+	    $db->Create_MFE(qq"mfe_$full_species");
+	}
 	my $full_comment = $seq->desc();
 	my $defline = "lcl||gb|$accession|species|$full_comment\n";
 	my ($genename, $desc) = split(/\,/, $full_comment);

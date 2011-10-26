@@ -1,0 +1,100 @@
+<form method="post" action="micro.html">
+<input type="hidden" name="species" value="<% $species %>">
+<input type="hidden" name="accession" value="<% $accession %>">
+<input type="hidden" name="start" value="<% $start %>">
+% my $mfe_cutoff_new = $mfe_cutoff + $mfe_cutoff_change;
+<p>The current mfe cutoff is: <% $mfe_cutoff_new %> and change is <% $mfe_cutoff_change %> <br>
+Change the mfe cutoff value by
+<select name="mfe_cutoff_change" onchange="this.form.submit()">
+  <option value="0.0">0 kcal/mol</option>
+  <option value="-1.0">-1 kcal/mol</option>
+  <option value="-2.0">-2 kcal/mol</option>
+  <option value="-5.0">-5 kcal/mol</option>
+  <option value="-10.0">-10 kcal/mol</option>
+  <option value="-20.0">-20 kcal/mol</option>
+  <option value="1.0">1 kcal/mol</option>
+  <option value="2.0">2 kcal/mol</option>
+  <option value="5.0">5 kcal/mol</option>
+  <option value="10.0">10 kcal/mol</option>
+  <option value="20.0">20 kcal/mol</option>
+</select>
+<input type="hidden" name="mfe_cutoff" value="<% $mfe_cutoff_new %>">
+</form>
+
+<br>
+
+Attempting to match <% $accession %>, <% $start %> against homo_sapiens miRNA sequences.<br>
+% my $table = qq"mfe_${species}";
+% my $sequence = $db->MySelect(type => 'single', statement => qq"SELECT sequence from $table WHERE accession = ? AND start = ?", vars => [$accession, $start]);
+% use MicroRNA;
+% my $micro = new MicroRNA;
+% my $output =  $micro->RNAHybrid($accession, $start);
+% my $mi_counter = 0;
+% OUTER: foreach my $mir (sort keys %{$output}) {
+%  INNER: foreach my $pos (sort keys %{$output->{$mir}}) {
+%  next INNER if $output->{$mir}->{$pos}->{mfe} > $mfe_cutoff_new;
+%   $mi_counter++;
+%   
+%   my $target_lead_chars = $output->{$mir}->{$pos}->{target_mismatch};
+%   $target_lead_chars =~ s/^.*5\' //g;
+%   $target_lead_chars =~ s/^(\w+)\s+.*/$1/g;
+%   my $target_lead_count;
+%   if ($target_lead_chars =~ /^\s/) {
+%    $target_lead_count = 0;
+%   } else {
+%    $target_lead_count = $target_lead_chars =~ tr/AGCU//;
+%   }
+%   my $mi_lead_chars = $output->{$mir}->{$pos}->{miRNA_mismatch};
+%   $mi_lead_chars =~ s/^.*3\' //g;
+%   $mi_lead_chars =~ s/^(\w+)\s+.*/$1/g;
+%   my $mi_lead_count;
+%   if ($mi_lead_chars =~ /^\s/) {
+%    $mi_lead_count = 0;
+%   } else {
+%    $mi_lead_count = $mi_lead_chars =~ tr/AGCU//;
+%   }
+%   my $char_dif = $mi_lead_count - $target_lead_count;
+%   my $spacer_modify = 0;
+%   if ($char_dif == -1) {
+%    $spacer_modify = 2;
+%   } elsif ($char_dif == 4) {
+%    $spacer_modify = -1;
+%   } elsif ($char_dif == 2) {
+%    $spacer_modify = 1;
+%   } elsif ($char_dif == 0) {
+%    $spacer_modify = 2;
+%   } elsif ($char_dif == 5) {
+%    $spacer_modify = -2;
+%   } elsif ($char_dif == 6) {
+%    $spacer_modify = -3;
+%   } elsif ($char_dif == 7) {
+%    $spacer_modify = -4;
+%   }
+%   my $target_mis_spacer = '&nbsp;' x ($pos - 6);
+%   my $spacer = '&nbsp;' x ($pos - $spacer_modify);
+%   my $mi_mis_spacer = '&nbsp;' x ($pos - 7);
+<p>miRNA: <% $mir %>, position: <% $pos %> <br>
+MFE: <% $output->{$mir}->{$pos}->{mfe} %><br>
+<pre>
+<% $sequence %>
+<% $target_mis_spacer %><% $output->{$mir}->{$pos}->{target_mismatch} %>
+<% $spacer %><% $output->{$mir}->{$pos}->{target_match} %>
+<% $spacer %><% $output->{$mir}->{$pos}->{miRNA_match} %>
+<% $mi_mis_spacer %><% $output->{$mir}->{$pos}->{miRNA_mismatch} %>
+</pre>
+%#Mir    match: <% $output->{$mir}->{$pos}->{miRNA_match} %><br>
+%#Mir mismatch: <% $output->{$mir}->{$pos}->{miRNA_mismatch} %><br>
+%  }
+% }
+
+
+</p>
+<p>There are <% $mi_counter %> hits.</p>
+
+<%args>
+  $accession => undef;
+  $start => undef;
+  $species => 'homo_sapiens';
+  $mfe_cutoff => '-22.0';
+  $mfe_cutoff_change => '0.0';
+</%args>

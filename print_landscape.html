@@ -11,7 +11,9 @@
  my $url;
  my $height;
  my $width;
+ $species = 'virus' if ($species =~ /virus/);
  $picture_status = 1;
+# print "TESTME: $filename<br>\n";
  if (!-r $filename) {
   $picture_status = $pic->Make_Landscape($species);
   $height = $picture_status->{height};
