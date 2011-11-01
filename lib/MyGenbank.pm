@@ -14,9 +14,53 @@ sub new {
 #    print Dumper($me->{seq});
 
     $me->Gather();
+
+    ## Split out the database cross references if they exist.
+    if ($me->{cds_xrefs}) {
+	$me->Split_Data($me->{cds_xrefs});
+    }
+    if ($me->{gene_xrefs}) {
+	$me->Split_Data($me->{gene_xrefs});
+    }
+    if ($me->{misc_features_synonyms} and $me->{gene_synonyms}) {
+	my @misc = @{$me->{misc_features_synonyms}};
+#	print "TESTME: GOT $me->{misc_features_synonyms} AND $me->{gene_synonyms} MISC:@misc GENE:@gene \n";
+    }
+
     return($me);
 }
 
+sub Merge_Data {
+    my $me = shift;
+    my $datum_1 = shift;
+    my $datum_2 = shift;
+    my @dat_1 = @{$datum_1};
+    my @dat_2 = @{$datum_2};
+    return($me);
+}
+
+sub Split_Data {
+    my $me = shift;
+    my $datum = shift;
+    my @dat = @{$datum};
+    foreach my $ref (@dat) {
+	next if (!defined($ref));
+	if ($ref =~ /^MIM\:/) {
+	    $me->{omim_id} = "" if (!defined($me->{omim_id}));
+	    $ref =~ s/^MIM\://g;
+	    $me->{omim_id} .= "$ref ";
+	} elsif ($ref =~ /^HGNC\:/) {
+	    $me->{hgnc_id} = "" if (!defined($me->{hgnc_id}));
+	    $ref =~ s/^HGNC\://g;
+	    $me->{hgnc_id} .= "$ref ";
+	} elsif ($ref =~ /^GeneID\:/) {
+	    $me->{gene_id} = "" if (!defined($me->{gene_id}));
+	    $ref =~ s/^GeneID\://g;
+	    $me->{gene_id} .= "$ref ";
+	}
+    }
+    return($me);
+}
 
 sub Gather {
     my $me = shift;
@@ -56,7 +100,12 @@ sub Gather {
 	foreach my $value (@annotation_values) {
 	    my $tree = $value->hash_tree();
 	    if ($type eq 'comment') {
-		push(@{$me->{annotation_comments}},  $value->as_text);
+		my $comment_text = $value->as_text;
+		$comment_text =~ s/REVIEWED REFSEQ: This record has been curated by NCBI staff.//g;
+		$comment_text =~ s/This sequence is a reference standard in the RefSeqGene project.//g;
+		$comment_text =~ s/VALIDATED REFSEQ: This record has undergone validation or preliminary review.//g;
+		$comment_text =~ s/\[provided by RefSeq, .+\]\.//g;
+		push(@{$me->{annotation_comments}}, $comment_text);
 	    } elsif ($type eq 'reference') {
 		push(@{$me->{annotation_reference_titles}}, $tree->{title});
 		push(@{$me->{annotation_reference_authors}}, $tree->{authors});
@@ -94,12 +143,12 @@ sub Gather {
 	#	print "MRNA!KEY: $k VAL: $feature->{$k}\n";
 	    #}
 	    #print Dumper $gsf_seq;
-	    print Dumper $location;
+	    #print Dumper $location;
 	} elsif ($tag eq 'gene') {
 	    my $gsf = $feature->{_gsf_tag_hash};
 	    $me->{gene_xrefs} = $gsf->{db_xref};
-	    $me->{gene_synonym} = $gsf->{gene_synonym};
-	    $me->{gene_name} = $gsf->{gene};
+	    $me->{gene_synonyms} = $gsf->{gene_synonym};
+	    $me->{gene_name} = "@{$gsf->{gene}}";
 	    $me->{gene_note} = $gsf->{note};
 	} elsif ($tag eq 'CDS') {
 	    my $gsf = $feature->{_gsf_tag_hash};

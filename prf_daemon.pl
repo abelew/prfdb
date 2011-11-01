@@ -997,11 +997,11 @@ sub Maintenance {
 			      $cloud->Make_Extension($species, $extension_percent_filename, 'percent', $ENV{PRFDB_HOME});
 			  }
 		      }
-		} ## Foreach slipsite
-	    } ## foreach species
-	}  ## if pknotted
+		  } ## Foreach slipsite
+	      } ## foreach species
+	    }  ## if pknotted
+	}
     } ## seqlengths
-    }
     ## End generating all clouds
 #    $db->MyExecute("UPDATE wait set wait = '0'");
 }
@@ -1053,7 +1053,6 @@ sub Import_Genbank_Flatfile {
 			  species => $full_species,
 			  defline => $defline,
 			  );
-	
 	foreach my $feature (@cds) {
 	    $counter++;
 	    my $primary_tag = $feature->primary_tag();
@@ -1101,7 +1100,8 @@ sub Import_Genbank_Flatfile {
 	    my $omim_id = "";
 	    my $hgnc_id = "";
 	    if (defined($feature->{_gsf_tag_hash}->{db_xref}->[0])) {
-		foreach my $db (@{$db_xref_list}) {
+		my @features = @{$feature->{_gsf_tag_hash}->{db_xref}};
+		foreach my $db (@features) {
 		    $db_xrefs .= "$db ";
 		    if ($db =~ /^MIM\:/) {
 			$db =~ s/^MIM\://g;
@@ -1111,6 +1111,7 @@ sub Import_Genbank_Flatfile {
 			$db =~ s/^HGNC\://g;
 			$hgnc_id .= "$db ";
 		    }
+		} ## Foreach $db
 	    }
 	    if ($config->{genome}) {  ## Check to see if this is a viral or bacterial genome file
 		## In which case there is a single accession for many ORFs
@@ -1129,11 +1130,12 @@ sub Import_Genbank_Flatfile {
 			 comment => $feature->{_gsf_tag_hash}->{note}->[0],
 			 db_xrefs => $db_xrefs,
 			 omim_id => $omim_id,
-			 defline => qq/$defline, $feature->{_gsf_tag_hash}->{gene}->[0], $feature->{_gsf_tag_hash}->{product}->[0]/);
+			 defline => qq"$defline, $feature->{_gsf_tag_hash}->{gene}->[0], $feature->{_gsf_tag_hash}->{product}->[0]",
+		);
 	    $db->Insert_Genome_Entry(\%datum);
 	    $accession = undef;
-	} ## End of foreach @cds
-    }
+	    }
+      }
 }
 
 sub Make_Queue_Jobs {

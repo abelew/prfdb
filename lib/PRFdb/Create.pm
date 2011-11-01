@@ -107,6 +107,7 @@ defline text not null,
 publications text,  /* a list of pubmed IDs */
 db_xrefs text, /* a list of pubmed/etc cross references */
 hgnc_id text, /* The canonical gene name's id at genenames.org */
+omim_id varchar(30),
 hgnc_name text, /* The canonical gene name at genenames.org */
 gene_synonyms text, /* a list of the gene names for this */
 refseq_comment text, /* the COMMENT field from refseq */
@@ -140,7 +141,6 @@ protein_seq text,
 orf_start int,
 orf_stop int,
 direction char(7) DEFAULT 'forward',
-omim_id varchar(30),
 found_snp bool,
 average_mfe text,
 snp_lastupdate TIMESTAMP DEFAULT '00:00:00',
