@@ -10,12 +10,37 @@ use autodie qw":all";
 use Bio::DB::Universal;
 use Bio::SeqIO;
 
+## Currently required fields.
+
+## genome table		## gene_info
+# accession		# accession
+# gi_number		# species
+# genename		# genename
+# locus			# comment
+# ontology_function	# defline
+# ontology_component	# publications
+# ontology_process	# hgnc_id
+# version		# omim_id
+# comment		# db_xrefs
+# defline		# hgnc_name
+# mrna_seq		# gene_synonyms
+# protein_seq		# refseq_comment
+# orf_start
+# orf_stop
+# direction
+# omim_id
+
+
+
+
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
 $db = new PRFdb(config => $config);
 $SIG{INT} = \&PRFdb::Cleanup;
 my $uni = new Bio::DB::Universal();
 my $in = new Bio::SeqIO(-file => "tmp_sequence.gb", -format => 'genbank');
 while (my $seq = $in->next_seq()) {
+    my $insert_data = {};
+
     my $info = new MyGenbank(seq => $seq);
     my $publications = $info->{annotation_reference_titles};
     my @publications_array = @{$publications};
