@@ -200,6 +200,7 @@ sub new {
 	'dbselect:s' => \$conf{dbselect},
 	'fasta_style:s' => \$conf{fasta_style},
 	'fillqueue' => \$conf{fillqueue},
+	'genome' => \$conf{genome},
 	'help|version' => \$conf{help},
 	'hotknots:i' => \$conf{do_hotknots},
 	'import:s' => \$conf{import_accession},

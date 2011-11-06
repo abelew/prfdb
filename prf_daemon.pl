@@ -14,6 +14,7 @@ die("Could not load Overlap.\n$@\n") unless (eval "use Overlap; 1");
 die("Could not load SeqMisc.\n$@\n") unless (eval "use SeqMisc; 1");
 die("Could not load PRFBlast.\n$@\n") unless (eval "use PRFBlast; 1");
 die("Could not load Agree.\n$@\n") unless (eval "use Agree; 1");
+die("Could not load MyGenbank.\n$@\n") unless (eval "use MyGenbank; 1");
 my $load_return = eval("use PRFGraph; 1");
 warn("Could not load PRFGraph, disabling graphing routines.\n$@\n") unless($load_return);
 $SIG{INT} = \&PRFdb::Cleanup;
@@ -996,11 +997,11 @@ sub Maintenance {
 			      $cloud->Make_Extension($species, $extension_percent_filename, 'percent', $ENV{PRFDB_HOME});
 			  }
 		      }
-		} ## Foreach slipsite
-	    } ## foreach species
-	}  ## if pknotted
+		  } ## Foreach slipsite
+	      } ## foreach species
+	    }  ## if pknotted
+	}
     } ## seqlengths
-    }
     ## End generating all clouds
 #    $db->MyExecute("UPDATE wait set wait = '0'");
 }
@@ -1014,6 +1015,7 @@ sub Import_Genbank_Accession {
 sub Import_Genbank_Flatfile {
     my $import_genbank = shift;
     my $accession = shift;
+    my $genome = shift;
     die("Could not load Bio::DB::Universal.\n $@\n") unless (eval "use Bio::DB::Universal; 1");
     die("Could not load Bio::Index::GenBank.\n $@\n") unless (eval "use Bio::Index::GenBank; 1");
     
@@ -1024,12 +1026,9 @@ sub Import_Genbank_Flatfile {
 	#my $seq = $uni->get_Seq_by_id($accession);
 	my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
 	if (!defined($accession)) {
-	    print "TESTME: ACCESSION UNDEF.\n";
 	    $accession = $seq->accession_number();
-	    print "TESTME: ACCESSION $accession\n";
-	    sleep(5);
 	}
-	
+	print "About to import: $accession.\n";
 	my ($protein_sequence, $orf_start, $orf_stop);
 	my $binomial_species = $seq->species->binomial();
 	my ($genus, $species) = split(/ /, $binomial_species);
@@ -1054,7 +1053,6 @@ sub Import_Genbank_Flatfile {
 			  species => $full_species,
 			  defline => $defline,
 			  );
-	
 	foreach my $feature (@cds) {
 	    $counter++;
 	    my $primary_tag = $feature->primary_tag();
@@ -1098,8 +1096,29 @@ sub Import_Genbank_Flatfile {
 	    if (defined($feature->{_gsf_tag_hash}->{product}->[0])) {
 		$genename .= ", $feature->{_gsf_tag_hash}->{product}->[0]";
 	    }
+	    my $db_xrefs = "";
+	    my $omim_id = "";
+	    my $hgnc_id = "";
+	    if (defined($feature->{_gsf_tag_hash}->{db_xref}->[0])) {
+		my @features = @{$feature->{_gsf_tag_hash}->{db_xref}};
+		foreach my $db (@features) {
+		    $db_xrefs .= "$db ";
+		    if ($db =~ /^MIM\:/) {
+			$db =~ s/^MIM\://g;
+			$omim_id .= "$db ";
+		    }    ## Is it in omim?
+		    if ($db =~ /^HGNC\:/) {
+			$db =~ s/^HGNC\://g;
+			$hgnc_id .= "$db ";
+		    }
+		} ## Foreach $db
+	    }
+	    if ($config->{genome}) {  ## Check to see if this is a viral or bacterial genome file
+		## In which case there is a single accession for many ORFs
+		$accession = qq"${accession}-${orf_start}";
+	    }
 	    my %datum = (### FIXME
-			 accession => qq/$accession-$orf_start/,
+			 accession => $accession,
 			 mrna_seq => $tmp_mrna_sequence,
 			 protein_seq => $protein_sequence,
 			 orf_start => 301,
@@ -1109,11 +1128,14 @@ sub Import_Genbank_Flatfile {
 			 genename => $genename,
 			 version => $seq->{_seq_version},
 			 comment => $feature->{_gsf_tag_hash}->{note}->[0],
-			 defline => qq/$defline, $feature->{_gsf_tag_hash}->{gene}->[0], $feature->{_gsf_tag_hash}->{product}->[0]/);
+			 db_xrefs => $db_xrefs,
+			 omim_id => $omim_id,
+			 defline => qq"$defline, $feature->{_gsf_tag_hash}->{gene}->[0], $feature->{_gsf_tag_hash}->{product}->[0]",
+		);
 	    $db->Insert_Genome_Entry(\%datum);
-	    print "Done this CDS\n\n\n";
-	} ## End of foreach @cds
-    }
+	    $accession = undef;
+	    }
+      }
 }
 
 sub Make_Queue_Jobs {

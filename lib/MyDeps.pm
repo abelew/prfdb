@@ -27,6 +27,7 @@ our @use_deps = (
     'HTML::Mason',
     'HTMLMisc',
     'IO::Handle',
+    'IPC::System::Simple',
     'Log::Any::Test',
     'Log::Log4perl',
     'Math::Stat',
