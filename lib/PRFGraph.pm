@@ -5,6 +5,7 @@ use DBI;
 use PRFConfig qw / PRF_Error PRF_Out /;
 use PRFdb qw / Callstack /;
 use GD::Graph::mixed;
+use GD::Graph::lines;
 use GD::SVG;
 use Statistics::Basic qw(:all);
 use Statistics::Distributions;
@@ -119,6 +120,12 @@ sub Make_Extension {
 	$map_string = "uhh what?\n";
     }
     print MAP $map_string;
+    ## $extension_distribution is intended to hold a distribution of how many -1 frame extensions
+    ## reach to x codons
+    ## $orf_distribution counts how many are found at each x percent down the orf from 0 to 100
+    my $extension_distribution = [];
+    my $orf_distribution = [];
+
     foreach my $datum (@{$stuff}) {
 	my $mfeid = $datum->[0];
 	my $accession = $datum->[1];
@@ -147,33 +154,54 @@ sub Make_Extension {
 	my $minus_start = $start + 4;
 	my $codon = '';
 #	print "Working on $accession: orf start: $orf_start prf_start: $start at $minus_start\n";	
-      LOOP: for my $c ($minus_start .. $#seq) {
-	  next if ($c == 3);  ## Hack to make it work
-	  if (($c % 3) == $stop_count) {
-	      if ($codon eq 'UAG' or $codon eq 'UAA' or $codon eq 'UGA' or
-		  $codon eq 'uag' or $codon eq 'uaa' or $codon eq 'uga') {
-		  $minus_string .= $codon;
-		  last LOOP;
-	      } else {
-		  $minus_string .= $codon;
-	      }
-	      $codon = $seq[$c];
-	      ## if on a third base of the -1 frame
-	  } else {
-	      $codon .= $seq[$c];
-	  }
-      } ## End foreach character of the sequence
+        LOOP: for my $c ($minus_start .. $#seq) {
+	    next if ($c == 3);  ## Hack to make it work
+	    if (($c % 3) == $stop_count) {
+		if ($codon eq 'UAG' or $codon eq 'UAA' or $codon eq 'UGA' or
+		    $codon eq 'uag' or $codon eq 'uaa' or $codon eq 'uga') {
+		    $minus_string .= $codon;
+		    last LOOP;
+		} else {
+		    $minus_string .= $codon;
+		}
+		$codon = $seq[$c];
+		## if on a third base of the -1 frame
+	    } else {
+		$codon .= $seq[$c];
+	    }
+	} ## Foreach character of the sequence
 	my $x_percentage = sprintf("%.2f", 100.0 * ($start - $orf_start) / ($orf_stop - $orf_start));
+
 	## start is mfe.start orf_start is genome.orf_start
 #	print "x_percentage:$x_percentage $accession 100 * ($start - $orf_start) / ($orf_stop - $orf_start))<br>\n";
-
 	my $x_coord = sprintf("%.2f", ((($x_range / 100) * $x_percentage) + $left_x_coord));
 
 	my $extension_length = length($minus_string);
 	my $minus_codons = ($extension_length / 3);
+
+	## Fill out $orf_distribution here
+	my $x_percent_int = int($x_percentage);
+	if ($orf_distribution->[$x_percent_int]) {
+	    my $tmp = $orf_distribution->[$x_percent_int];
+	    $tmp++;
+	    $orf_distribution->[$x_percent_int] = $tmp;
+	} else {
+	    $orf_distribution->[$x_percent_int] = 1;
+	}
+	## Make a graph of the distribution of these extensions right quick...
+	my $minus_modified = $minus_codons / 5;
+	$minus_modified = int($minus_codons);
+	if ($extension_distribution->[$minus_modified]) {
+	    my $tmp = $extension_distribution->[$minus_modified];
+	    $tmp++;
+	    $extension_distribution->[$minus_modified] = $tmp;
+	} else {
+	    $extension_distribution->[$minus_modified] = 1;
+	}
+	## That fills out the $extension_distribution array
+
 	my $minus_codons_pixels = $minus_codons * 4;
 	my $codons_y_coord = sprintf("%.2f", ($y_range - $minus_codons_pixels) + $bottom_y_coord);
-
 	my $y_percentage = sprintf("%.2f", 100.0 * (($extension_length + $start) - $orf_start) / ($orf_stop - $orf_start));
 	$y_percentage = 150 if ($y_percentage > 150);
 	my $percent_y_coord = sprintf("%.2f", ((($y_range / 150) * (150 - $y_percentage)) + $bottom_y_coord));
@@ -204,6 +232,8 @@ sub Make_Extension {
 	    $color = $gd->colorResolve(165,165,165);
 	}
 	my $url = qq"/search.html?short=1&accession=$accession";
+
+	
 	if ($type eq 'percent') {
 #	    if (!defined($zscore)) {
 #		print "TESTME: $zscore_stmt\n";
@@ -220,7 +250,56 @@ sub Make_Extension {
 	    Callstack(message => "Type is not specified", die => 1);
 	}
 	print MAP $map_string;
-    }  ## End foreach stuff
+    }  ## End foreach datum in stuff
+
+
+    if ($type eq 'codons') {
+	my @ext_axis = ();
+	my @ext_vals = ();
+	foreach my $c (0 .. $#$extension_distribution) {
+	    last if ($c == 100);
+	    if ($extension_distribution->[$c]) {
+		$ext_vals[$c] = $extension_distribution->[$c];
+	    } else {
+		$ext_vals[$c] = 1;
+	    }
+	    push(@ext_axis, $c);
+	}
+	my @e_data = (\@ext_axis, \@ext_vals);
+	my $egraph = new GD::Graph::mixed('400','400');
+	$egraph->set(bgclr => 'white', y_label => 'number_extensions', x_label_skip => 5, x_label => 'length x 5 codons', default_type => 'lines', types => [qw(lines)],) or Callstack(die => 0, message => $egraph->error);
+	my $ext_gd = $egraph->plot(\@e_data) or Callstack(die => 1, message => $egraph->error);
+	my $extension_filename = $filename;
+	$extension_filename =~ s/\.png/_extension\.png/g;
+	open(EXTIMG, ">$extension_filename") or Callstack(message => qq"error opening file to write extension distribution.", die => 0);
+	binmode EXTIMG;
+	print EXTIMG $ext_gd->png;
+	close EXTIMG;
+    }
+    else {
+	my @orf_axis = ();
+	my @orf_vals = ();
+	foreach my $c (0 .. $#$orf_distribution) {
+	    if ($orf_distribution->[$c]) {
+		$orf_vals[$c] = $orf_distribution->[$c];
+	    } else {
+		$orf_vals[$c] = 1;
+	    }
+	    push(@orf_axis, $c);
+	}
+	my @o_data = (\@orf_axis, \@orf_vals);
+	my $ograph = new GD::Graph::mixed('400','400');
+	$ograph->set(bgclr => 'white', y_label => 'number_extensions', x_label_skip => 5, x_label => 'percent_orf', default_type => 'lines', types => [qw(lines)],) or Callstack(die => 1, message => $ograph->error);
+	my $orf_gd = $ograph->plot(\@o_data) or Callstack(die => 1, message => $ograph->error);
+	my $extension_filename = $filename;
+	$extension_filename =~ s/\.png/_orf\.png/g;
+	print "TESTME ORF_FILENAME: $extension_filename\n";
+	open(ORFIMG, ">$extension_filename") or Callstack(message => qq"error opening file to write orf distribution.", die => 0);
+	binmode ORFIMG;
+	print ORFIMG $orf_gd->png;
+	close ORFIMG;
+    }
+
     open(IMG, ">$filename") or Callstack(message => qq"error opening file to write image", die => 1);
     binmode IMG;
     print IMG $gd->png;

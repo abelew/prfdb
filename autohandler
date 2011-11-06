@@ -1,5 +1,5 @@
 % my $path_name = $r->uri;
-% if ($path_name =~ /^\/download_/) {
+% if ($path_name =~ /^\/download\//) {
 % $m->call_next;
 % } else {
 <HTML>

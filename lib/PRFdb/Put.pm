@@ -248,7 +248,7 @@ sub Stats {
 	foreach my $sp (@{$finished}) {
 	    next OUT if ($sp eq $species);
 	}
-	print "Starting Put_Stats for $species.  Number $st_count of $st_total.\n";
+#	print "Starting Put_Stats for $species.  Number $st_count of $st_total.\n";
 	my $boot_table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
 	$me->MyExecute(statement => qq"DELETE FROM stats WHERE species = '$species'");
 	foreach my $seqlength (@{$data->{seqlength}}) {
@@ -303,20 +303,20 @@ sub Stats {
 		    my $stdev_zscore = $me->MySelect(type => 'single',
  statement => "/* 19 of $num_statements */ SELECT stddev(zscore) FROM $boot_table WHERE mfe_method = '$algorithm' AND seqlength = '$seqlength' $z_weed");
  $stmt = "/* 20 of $num_statements */ SELECT count(accession) FROM gene_info WHERE species = '$species'";
-		    print "$stmt\n";
+#		    print "$stmt\n";
 		    my $total_genes = $me->MySelect(type => 'single', statement => $stmt);
  $stmt = "/* 21 of $num_statements */ SELECT count(distinct(accession)) FROM $mfe_table $weedout_string";
-		    print "$stmt\n";
+#		    print "$stmt\n";
 		    my $genes_hits = $me->MySelect(type => 'single', statement => $stmt);
 		    my $std_one = $avg_mfe - $stdev_mfe;
  $stmt = "/* 22 of $num_statements */ SELECT count(distinct(accession)) FROM $mfe_table $weedout_string AND mfe <= '$std_one'";
-		    print "$stmt\n";
+#		    print "$stmt\n";
 		    my $genes_1mfe = $me->MySelect(type => 'single', statement => $stmt);
  $stmt = "/* 22a of $num_statements */ SELECT count(distinct(accession)) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$std_one'";
 		    my $genes_1mfe_knotted = $me->MySelect(type => 'single', statement => $stmt);
 		    my $std_two = $std_one - $stdev_mfe;
  $stmt = "/* 23 of $num_statements */ SELECT count(distinct(accession)) FROM $mfe_table $weedout_string AND mfe <= '$std_two'";
-		    print "$stmt\n";
+#		    print "$stmt\n";
 		    my $genes_2mfe =  $me->MySelect(type => 'single', statement => $stmt);
  $stmt = "/* 23 of $num_statements */ SELECT count(distinct(accession)) FROM $mfe_table $weedout_string AND knotp = '1' AND mfe <= '$std_two'";
 		    my $genes_2mfe_knotted =  $me->MySelect(type => 'single', statement => $stmt);
@@ -324,21 +324,21 @@ sub Stats {
 		    my $tmp_weed = $weedout_string;
 		    $tmp_weed =~ s/algorithm/$boot_table\.mfe_method/g;
  $stmt = "/* 24 of $num_statements */ SELECT count(distinct(accession)) FROM $boot_table $tmp_weed AND zscore <= '$z_one'";
-		    print "$stmt\n";
+#		    print "$stmt\n";
 		    my $genes_1z = $me->MySelect(type => 'single', statement => $stmt);
 		    my $z_two = $z_one - $stdev_zscore;
  $stmt = "/* 25 of $num_statements */ SELECT count(distinct(accession)) FROM $boot_table $tmp_weed AND zscore <= '$z_two'";
-		    print "$stmt\n";
+#		    print "$stmt\n";
 		    my $genes_2z = $me->MySelect(type => 'single', statement => $stmt);
 		    $weedout_string =~ s/algorithm =/$mfe_table\.algorithm =/g;
 		    $weedout_string =~ s/seqlength =/$mfe_table\.seqlength =/g;
  $stmt = "/* 26 of $num_statements */ SELECT count(distinct($mfe_table.accession)) FROM ${mfe_table},${boot_table} $weedout_string AND ${mfe_table}.accession=${boot_table}.accession AND ${mfe_table}.mfe <= '$std_one' AND ${boot_table}.zscore <= '$z_one'";
-		    print "$stmt\n";
+#		    print "$stmt\n";
 		    my $genes_1both = $me->MySelect(type => 'single', statement => $stmt);
  $stmt = "/* 26a of $num_statements */ SELECT count(distinct($mfe_table.accession)) FROM ${mfe_table},${boot_table} $weedout_string AND $mfe_table.knotp = '1' AND ${mfe_table}.accession=${boot_table}.accession AND ${mfe_table}.mfe <= '$std_one' AND ${boot_table}.zscore <= '$z_one'";
 		    my $genes_1both_knotted = $me->MySelect(type => 'single', statement => $stmt);
  $stmt = "/* 27 of $num_statements */ SELECT count(distinct($mfe_table.accession)) FROM ${mfe_table},${boot_table} $weedout_string AND ${mfe_table}.accession=${boot_table}.accession AND ${mfe_table}.mfe <= '$std_two' AND ${boot_table}.zscore <= '$z_two'";
-		    print "$stmt\n";
+#		    print "$stmt\n";
 		    my $genes_2both = $me->MySelect(type => 'single', statement => $stmt);
  $stmt = "/* 27a of $num_statements */ SELECT count(distinct($mfe_table.accession)) FROM ${mfe_table},${boot_table} $weedout_string AND $mfe_table.knotp = '1' AND ${mfe_table}.accession=${boot_table}.accession AND ${mfe_table}.mfe <= '$std_two' AND ${boot_table}.zscore <= '$z_two'";
 		    my $genes_2both_knotted = $me->MySelect(type => 'single', statement => $stmt);
