@@ -2,7 +2,8 @@
  $r->content_type('application/octet-stream');
  my $mt = "mfe_$species";
  my $stmt = qq"SELECT genome.comment, $mt.accession, $mt.parens, $mt.start FROM genome, $mt WHERE $mt.id = ? and $mt.genome_id=genome.id";
- my $seq = $db->MySelect(statement =>$stmt, vars =>[$mfeid], type =>'row');
+ print STDERR "TESTME: $stmt and $mfeid <br>\n";
+ my $seq = $db->MySelect(statement => $stmt, vars =>[$mfeid], type =>'row') or Callstack();
  my $filename = qq"$seq->[1]_$seq->[3].parens";
  $filename =~ s/SGDID://g;
  $r->headers_out->add('Content-disposition' => ("attachment; filename=$filename"));
@@ -10,6 +11,7 @@
 $seq->[2]
 ";
 </%init>
+
 <%args>
  $mfeid => undef;
  $species => undef;

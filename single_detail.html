@@ -174,7 +174,7 @@
 	<td text-align="right"><span style="whitespace: nowrap">
 	  <div class="fixedfont"><b><font face="Courier New, Courier, mono"><u><% $information->{slipsite} %></u><% $information->{pk_input_colored} %></font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download/subseq.html?mfeid=<% $information->{id} %>">Download&nbsp;subsequence</a>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download/subseq.html?species=<% $information->{species} %>&mfeid=<% $information->{id} %>">Download&nbsp;subsequence</a>
 	  </font></div>
          </span>
         </td>
@@ -184,7 +184,7 @@
 	<td text-align="right"><span style="whitespace: nowrap">
 	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{brackets_colored} %></font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download/parens.html?mfeid=<% $information->{id} %>">Download&nbsp;brackets</a>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download/parens.html?species=<% $information->{species} %>&mfeid=<% $information->{id} %>">Download&nbsp;brackets</a>
 	  </font></div>
          </span>
 	</td>
@@ -194,7 +194,7 @@
         <td text-align="right"><span style="whitespace: nowrap">
     	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{parsed_colored} %></font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
-	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download/parsed.html?mfeid=<% $information->{id} %>">Download&nbsp;parsed</a>
+	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download/parsed.html?species=<% $information->{species} %>&mfeid=<% $information->{id} %>">Download&nbsp;parsed</a>
 	  </font></div>
          </span>
 	</td>
@@ -203,7 +203,7 @@
       <tr>
         <td text-align="right"><span style="whitespace: nowrap">
 	  <embed id="feynman" src="<% $information->{feynman_url} %>" align="bottom" width="<% $information->{feynman_width} %>" height="<% $information->{feynman_height} %>" border="0" pluginspage="http://www.adobe.com/svg/viewer/install/"></embed>
-	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;&nbsp;<a href="/download/bpseq.html?mfeid=<% $information->{id} %>">Download&nbsp;bpseq</a><br>&nbsp;&nbsp;&nbsp;Download
+	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;&nbsp;<a href="/download/bpseq.html?species=<% $information->{species} %>&mfeid=<% $information->{id} %>">Download&nbsp;bpseq</a><br>&nbsp;&nbsp;&nbsp;Download
 <a href="/download/png.html?accession=<% $information->{accession} %>&format=png&mfeid=<% $information->{id} %>&species=<% $information->{species} %>">&nbsp;png,</a>
 <a href="/download/png.html?accession=<% $information->{accession} %>&format=pdf&mfeid=<% $information->{id} %>&species=<% $information->{species} %>">pdf,</a>
 <a href="/download/png.html?accession=<% $information->{accession} %>&format=ps&mfeid=<% $information->{id} %>&species=<% $information->{species} %>">ps</a>, View

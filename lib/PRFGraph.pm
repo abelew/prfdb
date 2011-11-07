@@ -125,6 +125,7 @@ sub Make_Extension {
     ## $orf_distribution counts how many are found at each x percent down the orf from 0 to 100
     my $extension_distribution = [];
     my $orf_distribution = [];
+    my $long_orf_distribution = [];
 
     foreach my $datum (@{$stuff}) {
 	my $mfeid = $datum->[0];
@@ -181,6 +182,16 @@ sub Make_Extension {
 
 	## Fill out $orf_distribution here
 	my $x_percent_int = int($x_percentage);
+	if ($minus_codons > 30) {
+	    if ($long_orf_distribution->[$x_percent_int]) {
+		my $tmp = $long_orf_distribution->[$x_percent_int];
+		$tmp++;
+		$long_orf_distribution->[$x_percent_int] = $tmp;
+	    } else {
+		$long_orf_distribution->[$x_percent_int] = 1;
+	    }
+	}
+
 	if ($orf_distribution->[$x_percent_int]) {
 	    my $tmp = $orf_distribution->[$x_percent_int];
 	    $tmp++;
@@ -279,21 +290,30 @@ sub Make_Extension {
     else {
 	my @orf_axis = ();
 	my @orf_vals = ();
+	my @long_orf_percent = ();
 	foreach my $c (0 .. $#$orf_distribution) {
 	    if ($orf_distribution->[$c]) {
 		$orf_vals[$c] = $orf_distribution->[$c];
+		$long_orf_percent[$c] = (($long_orf_distribution->[$c] / $orf_distribution->[$c]) * 100.0);
 	    } else {
 		$orf_vals[$c] = 1;
+		$long_orf_percent[$c] = 0;
 	    }
 	    push(@orf_axis, $c);
 	}
-	my @o_data = (\@orf_axis, \@orf_vals);
+	my @o_data = (\@orf_axis, \@orf_vals, \@long_orf_percent);
 	my $ograph = new GD::Graph::mixed('400','400');
-	$ograph->set(bgclr => 'white', y_label => 'number_extensions', x_label_skip => 5, x_label => 'percent_orf', default_type => 'lines', types => [qw(lines)],) or Callstack(die => 1, message => $ograph->error);
+#	$ograph->set_legend([qw"Num ORFs, Pct long"]);
+	$ograph->set(bgclr => 'white',
+		     y_label => 'number_extensions',
+		     x_label_skip => 5,
+		     x_label => 'percent_orf',
+		     default_type => 'lines',
+		     types => [qw"lines, lines"],
+		     ) or Callstack(die => 1, message => $ograph->error);
 	my $orf_gd = $ograph->plot(\@o_data) or Callstack(die => 1, message => $ograph->error);
 	my $extension_filename = $filename;
 	$extension_filename =~ s/\.png/_orf\.png/g;
-	print "TESTME ORF_FILENAME: $extension_filename\n";
 	open(ORFIMG, ">$extension_filename") or Callstack(message => qq"error opening file to write orf distribution.", die => 0);
 	binmode ORFIMG;
 	print ORFIMG $orf_gd->png;
