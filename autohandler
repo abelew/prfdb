@@ -9,11 +9,11 @@
   <META NAME="ROBOTS" CONTENT="NOFOLLOW">
   <META NAME="ROBOTS" CONTENT="NOINDEX">
   <link rel="stylesheet" href="/style.css" type="text/css">
-  <body bgcolor="white" text="black" link="#009933" vlink="#009900">
 <!---
-  <body bgcolor="white" text="black" link="#009933" vlink="#009900" onload="doLoad()"> 
+  <body bgcolor="white" text="black" link="#009933" vlink="#009900">
   <script type="text/javascript" src="/js/refresh.html"></script>
  --->
+  <body bgcolor="white" text="black" link="#009933" vlink="#009900" onload="doLoad()"> 
   <table width="100%" border="0" cellspacing="0" cellpadding="0">
     <tr>
       <td align = "center"><a href="./" target="_top">

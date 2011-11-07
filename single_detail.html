@@ -5,7 +5,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_genename"><strong>Gene Name: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#genename"><strong>Gene Name: </strong></a></div>
 	</td>
 	<td>
         <% $information->{genename} %>,
@@ -20,7 +20,7 @@
      </colgroup>
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_species"><strong>Species: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#species"><strong>Species: </strong></a></div>
 	</td>
 	<td>
 	<i>
@@ -28,13 +28,13 @@
 	</i>
 	</td>
 	<td rowspan="12" valign="top">
-	  <div align="left"><a href="/help_detail.html#help_graph"><img alt="Plot of occurences vs. MFE" title="Plot of occurences vs. MFE" src="<% $information->{charturl} %>" border="2"></a></div>
+	  <div align="left"><a href="/help/detail.html#graph"><img alt="Plot of occurences vs. MFE" title="Plot of occurences vs. MFE" src="<% $information->{charturl} %>" border="2"></a></div>
 	</td>
       </tr>
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_accession"><strong>Accession: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#accession"><strong>Accession: </strong></a></div>
 	</td>
 	<td>
 	  <a href="/search.html?short=1&accession=<% $information->{accession} %>"><% $information->{accession} %></a>
@@ -43,7 +43,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_position"><strong>Position: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#position"><strong>Position: </strong></a></div>
 	</td>
 	<td>
 	  <% $information->{slipstart} %>
@@ -52,7 +52,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_algorithm"><strong>Algorithm: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#algorithm"><strong>Algorithm: </strong></a></div>
 	</td>
 	<td>
 	  <% $information->{algorithm} %>
@@ -61,7 +61,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_barcode"><strong>Barcode: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#barcode"><strong>Barcode: </strong></a></div>
 	</td>
 	<td>
 	  <% $information->{barcode} %>
@@ -70,7 +70,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_seqlength"><strong>Sequence Length: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#seqlength"><strong>Sequence Length: </strong></a></div>
 	</td>
 	<td>
 	  <% $information->{seqlength} %>
@@ -79,7 +79,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_slipsite"><strong>Slippery Site: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#slipsite"><strong>Slippery Site: </strong></a></div>
 	</td>
 	<td>
 	  <% $information->{slipsite} %>
@@ -88,7 +88,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_gc"><strong>GC Content: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#gc"><strong>GC Content: </strong></a></div>
 	</td>
 	<td>
 	  <% $information->{gc_content} %>% and <% $information->{gc_stems} %>% in stems.
@@ -97,7 +97,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_bp"><strong>Base Pairs: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#bp"><strong>Base Pairs: </strong></a></div>
 	</td>
 	<td>
 	  <% $information->{pairs} %>
@@ -107,7 +107,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_mfe"><strong>MFE: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#mfe"><strong>MFE: </strong></a></div>
 	</td>
 	<td>
 	  <% $information->{mfe} %> kcal/mol
@@ -116,7 +116,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_z"><strong>Z Score: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#z"><strong>Z Score: </strong></a></div>
 	</td>
 	<td>
 % if ($information->{boot_db}) { 
@@ -129,7 +129,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_rand_mfe"><strong>Randomized Mean MFE: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#rand_mfe"><strong>Randomized Mean MFE: </strong></a></div>
 	</td>
 	<td>
 	  <% $information->{randmean} %> &plusmn; <% $information->{randse} %> kcal/mol
@@ -138,7 +138,7 @@
 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
-	  <div align="right"><a href="/help_detail.html#help_ppcc"><strong>PPCC: </strong></a></div>
+	  <div align="right"><a href="/help/detail.html#ppcc"><strong>PPCC: </strong></a></div>
 	</td>
 	<td>
 	  <% $information->{ppcc} %>
