@@ -543,8 +543,8 @@ sub Make_Cloud {
 			 'GGGAAAA','GGGAAAU','GGGAAAC','GGGUUUA','GGGUUUU','GGGUUUC',
 			 'CCCAAAA','CCCAAAU','CCCAAAC','AAAUUUA','CCCUUUU','CCCUUUC',
 			 ## Theoretically non-allowed slipsites here
-			 'AAAAAAG','UUUUUUG','AAAUUUG','UUUAAAG','GGGAAAG','GGGUUUG',
-			 'CCCAAAG','CCCUUUG'
+#			 'AAAAAAG','UUUUUUG','AAAUUUG','UUUAAAG','GGGAAAG','GGGUUUG',
+#			 'CCCAAAG','CCCUUUG'
 			 );
     my %slipsites_numbers = ();
     foreach my $s (@all_slipsites) { $slipsites_numbers{$s}{num} = 0; }
