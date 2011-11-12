@@ -263,22 +263,30 @@ sub Make_Extension {
 	print MAP $map_string;
     }  ## End foreach datum in stuff
 
-
+    my ($max_exts, $max_orfs) = 0;
     if ($type eq 'codons') {
 	my @ext_axis = ();
 	my @ext_vals = ();
 	foreach my $c (0 .. $#$extension_distribution) {
 	    last if ($c == 100);
 	    if ($extension_distribution->[$c]) {
+		$max_exts = $extension_distribution->[$c] if ($max_exts < $extension_distribution->[$c]);
 		$ext_vals[$c] = $extension_distribution->[$c];
 	    } else {
 		$ext_vals[$c] = 1;
 	    }
 	    push(@ext_axis, $c);
 	}
+	$max_exts = 100 if ($max_exts < 100);
 	my @e_data = (\@ext_axis, \@ext_vals);
 	my $egraph = new GD::Graph::mixed('400','400');
-	$egraph->set(bgclr => 'white', y_label => 'number_extensions', x_label_skip => 5, x_label => 'length x 5 codons', default_type => 'lines', types => [qw(lines)],) or Callstack(die => 0, message => $egraph->error);
+	$egraph->set(bgclr => 'white',
+		     y_max_value => ($max_exts + 10),
+		     y_label => 'number_extensions',
+		     x_label_skip => 5,
+		     x_label => 'length x 5 codons',
+		     default_type => 'lines',
+		     types => [qw(lines)],) or Callstack(die => 0, message => $egraph->error);
 	my $ext_gd = $egraph->plot(\@e_data) or Callstack(die => 1, message => $egraph->error);
 	my $extension_filename = $filename;
 	$extension_filename =~ s/\.png/_extension\.png/g;
@@ -293,6 +301,7 @@ sub Make_Extension {
 	my @long_orf_percent = ();
 	foreach my $c (0 .. $#$orf_distribution) {
 	    if ($orf_distribution->[$c]) {
+		$max_orfs = $orf_distribution->[$c] if ($max_orfs < $orf_distribution->[$c]);
 		$orf_vals[$c] = $orf_distribution->[$c];
 		$long_orf_percent[$c] = (($long_orf_distribution->[$c] / $orf_distribution->[$c]) * 100.0);
 	    } else {
@@ -300,6 +309,7 @@ sub Make_Extension {
 		$long_orf_percent[$c] = 0;
 	    }
 	    push(@orf_axis, $c);
+	    $max_orfs = 100 if ($max_orfs < 100);
 	}
 	my @o_data = (\@orf_axis, \@orf_vals, \@long_orf_percent);
 	my $ograph = new GD::Graph::mixed('400','400');
@@ -309,6 +319,7 @@ sub Make_Extension {
 		     x_label_skip => 5,
 		     x_label => 'percent_orf',
 		     default_type => 'lines',
+		     y_max_value => ($max_orfs + 10),
 		     types => [qw"lines, lines"],
 		     ) or Callstack(die => 1, message => $ograph->error);
 	my $orf_gd = $ograph->plot(\@o_data) or Callstack(die => 1, message => $ograph->error);
