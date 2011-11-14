@@ -28,6 +28,58 @@ sub new {
 
 sub deg2rad {PI * $_[0] / 180}
 
+sub Graph_Agreement {
+    my $me = shift;
+    my $db = new PRFdb(config => $config);
+    my $data = $db->MySelect(statement => qq"SELECT all_agree,no_agree,n_alone,h_alone,p_alone,hplusn,nplusp,hplusp,hnp FROM agree WHERE length = '100'");
+    my (@all_agree, @no_agree, @n_alone, @h_alone, @p_alone, @hplusn, @nplusp, @hplusp, @hnp_arr);
+    my @axis = ();
+    foreach my $n (0 .. 100) {
+	push(@axis, $n);
+    }
+    foreach my $datum (@{$data}) {
+	my ($all, $no, $n, $h, $p, $hn, $np, $hp, $hnp) = @{$datum};
+	foreach my $num (0 .. 100) {
+	    if ($all == $num) {
+		($all_agree[$num]) ? $all_agree[$num] = $all_agree[$num]++ : $all_agree[$num] = 1;
+	    } elsif ($no == $num) {
+		($no_agree[$num]) ? $no_agree[$num] = $no_agree[$num]++ : $no_agree[$num] = 1;
+	    } elsif ($n == $num) {
+		($n_alone[$num]) ? $n_alone[$num] = $n_alone[$num]++ : $n_alone[$num] = 1;
+	    } elsif ($p == $num) {
+		($p_alone[$num]) ? $p_alone[$num] = $p_alone[$num]++ : $p_alone[$num] = 1;
+	    } elsif ($h == $num) {
+		($h_alone[$num]) ? $h_alone[$num] = $h_alone[$num]++ : $h_alone[$num] = 1;
+	    } elsif ($hn == $num) {
+		($hplusn[$num]) ? $hplusn[$num] = $hplusn[$num]++ : $hplusn[$num] = 1;
+	    } elsif ($np == $num) {
+		($nplusp[$num]) ? $nplusp[$num] = $nplusp[$num]++ : $nplusp[$num] = 1;
+	    } elsif ($hp == $num) {
+		($hplusp[$num]) ? $hplusp[$num] = $hplusp[$num]++ : $hplusp[$num] = 1;
+	    } elsif ($hnp == $num) {
+		($hnp_arr[$num]) ? $hnp_arr[$num] = $hnp_arr[$num]++ : $hnp_arr[$num] = 1;
+	    }
+	}
+    }
+    print "TESTME:
+ALL: @all_agree
+NO: @no_agree
+N: @n_alone
+H: @h_alone
+P: @p_alone
+HN: @hplusn
+HP: @hplusp
+NP: @nplusp
+";
+    my $g = new GD::Graph::mixed('400','400');
+    $g->set(bgclr => 'white', y_label => 'Accessions Agreed', x_label_skip => 5, x_label => 'Number Agreed', default_type => 'lines',) or Callstack(die => 0, message => $g->error);
+    my $ext_g = $g->plot(\@axis, \@all_agree, \@n_alone, \@h_alone, \@p_alone, \@hplusn, \@hplusp, \@hnp_arr) or Callstack(die => 1, message => $g->error);
+    open(IMG, ">/tmp/test.png");
+    binmode IMG;
+    print IMG $ext_g->png;
+    close IMG;
+}
+
 sub Make_Extension {
     my $me = shift;
     my $species = shift;
@@ -309,7 +361,7 @@ sub Make_Extension {
 		     x_label_skip => 5,
 		     x_label => 'percent_orf',
 		     default_type => 'lines',
-		     types => [qw"lines, lines"],
+		     types => [qw(lines lines)],
 		     ) or Callstack(die => 1, message => $ograph->error);
 	my $orf_gd = $ograph->plot(\@o_data) or Callstack(die => 1, message => $ograph->error);
 	my $extension_filename = $filename;
@@ -429,15 +481,28 @@ sub Make_Cloud {
     $mfe_max_value = $db->MySelect(statement => $max_stmt, type => 'single');
     $mfe_min_value -= 3.0;
     $mfe_max_value += 3.0;
-    my $z_min_value = -10;
-    my $z_max_value = 5;
-    $graph->set(bgclr => 'white', x_min_value => $mfe_min_value, x_max_value => $mfe_max_value,
-		x_ticks => 1, x_label => 'MFE', x_labels_vertical => 1,
-		x_label_skip => 0, x_number_format => "%.1f", x_tick_number => 20,
-		x_all_ticks => 1, y_min_value => $z_min_value, y_max_value => $z_max_value,
-		y_ticks => 1, y_label => 'Zscore', y_label_skip => 0,
-		y_number_format => "%.2f", y_tick_number => 20, y_all_ticks => 1,
-		dclrs => ['black','black'], marker_size => 0,);
+    my $z_min_value = -10.0;
+    my $z_max_value = 5.0;
+    $graph->set(bgclr => 'white',
+		x_min_value => $mfe_min_value,
+		x_max_value => $mfe_max_value,
+		x_ticks => 1,
+		x_label => 'MFE',
+		x_labels_vertical => 1,
+		x_label_skip => 0,
+		x_number_format => "%.1f",
+		x_tick_number => 20,
+		x_all_ticks => 1,
+		y_min_value => $z_min_value,
+		y_max_value => $z_max_value,
+		y_ticks => 1,
+		y_label => 'Zscore',
+		y_label_skip => 0,
+		y_number_format => "%.2f",
+		y_tick_number => 20,
+		y_all_ticks => 1,
+		dclrs => ['black','black'],
+		marker_size => 0,);
     $graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -476,10 +541,29 @@ sub Make_Cloud {
     
     my $points = {};
     my $max_counter = 1;
+
+    my (%mfe_distribution, %z_distribution) = ();
     
     foreach my $point (@{$data}) {
 	my $x_point = sprintf("%.1f",$point->[0]);
 	my $y_point = sprintf("%.2f",$point->[1]);
+
+	if (defined($mfe_distribution{$x_point})) {
+	    my $t = $mfe_distribution{$x_point};
+	    $t++;
+	    $mfe_distribution{$x_point} = $t;
+	} else {
+	    $mfe_distribution{$x_point} = 1;
+	}
+
+	if (defined($z_distribution)) {
+	    my $t = $z_distribution{$y_point};
+	    $t++;
+	    $z_distribution{$y_point} = $t;
+	} else {
+	    $z_distribution{$y_point} = 1;
+	}
+
 	#print "MFE_value: $x_point Zscore: $y_point<br>\n";
 	if (defined($points->{$x_point}->{$y_point})) {
 	    $points->{$x_point}->{$y_point}->{count}++;
@@ -497,7 +581,68 @@ sub Make_Cloud {
 	    $points->{$x_point}->{$y_point}->{start} = $point->[5];
 	}
     }
-    
+
+    ## Created %z_distribution and %mfe_distribution above, now to make them a graph...
+    ## The Z graph should be tall and thin (200x800 perhaps)
+    ## MFE graph should be the opposite (800x200)
+    my $z_filename = $filename;
+    my $mfe_filename = $filename;
+    $z_filename =~ s/\.png/\-z_dist\.png/g;
+    $mfe_filename =~ s/\.png/\-mfe_dist\.png/g;
+    my $z_graph = new GD::Graph::mixed('200','800');
+    my $mfe_graph = new GD::Graph::mixed('800','200');
+    $z_graph->set(bgclr => 'white',
+		  x_label => 'Number',
+		  y_label_skip => 2,
+		  y_number_format => "%.2f",
+		  x_labels_vertical => 1,
+		  line_width => 2,
+		  dclrs => [qw(blue)],
+		  default_type => 'lines',
+		  types => [qw(lines)],) or Callstack(die => 1, message => $z_graph->error);
+    $mfe_graph->set(bgclr => 'white',
+		  x_label => 'MFE',
+		  y_label_skip => 2,
+		  x_number_format => "%.2f",
+		  y_labels_vertical => 1,
+		  line_width => 2,
+		  dclrs => [qw(blue)],
+		  default_type => 'lines',
+		  types => [qw(lines)],) or Callstack(die => 1, message => $mfe_graph->error);
+    $z_graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $z_graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $z_graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $z_graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $z_graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $mfe_graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $mfe_graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $mfe_graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $mfe_graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+    $mfe_graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
+
+    my (@z_keys, @z_values, @mfe_keys, @mfe_values);
+    foreach my $k (sort { $z_distribution{$b} <=> $z_distribution{$a} } keys %z_distribution) {
+	push(@z_keys, $k);
+	push(@z_values, $z_distribution{$k});
+    }
+    foreach my $k (sort { $mfe_distribution{$b} <=> $mfe_distribution{$a} } keys %mfe_distribution) {
+	push(@mfe_keys, $k);
+	push(@mfe_values, $mfe_distribution{$k});
+    }
+    my @z_dist = (\@z_keys, \@z_values);
+    my @mfe_dist = (\@mfe_keys, \@mfe_values);
+
+    my $zgd = $z_graph->plot(\@z_dist) or Callstack(die => 1, message => $z_graph->error);    
+    my $mgd = $mfe_graph->plot(\@mfe_dist) or Callstack(die => 1, message => $mfe_graph->error);
+    open(ZDIST, ">$z_filename") or Callstack(die => 1, message => qq"error opening $z_filename to write image.");
+    open(MFEDIST, ">$mfe_filename") or Callstack(die => 1, message => qq"error opening $mfe_filename to write image.");
+    binmode ZDIST;
+    binmode MFEDIST;
+    print ZDIST $zgd->png;
+    print MFEDIST $mgd->png;
+    close ZDIST;
+    close MFEDIST;
+
     my $tmp_filename = $filename;
     
     foreach my $x_point (keys %{$points}) {
@@ -605,7 +750,7 @@ sub Make_Cloud {
 		    $slips_significant{$slipsite}{color} = 'black';
 		} else {
 #		    print "TESTME: slipsite must be something different: $slipsite\n";
-		    $slips_significant{$slipsite}{color} = 'yellow';
+		    #$slips_significant{$slipsite}{color} = 'yellow';
 		    #warn("This sucks. $slipsite doesn't match");
 		    next;
 		}
@@ -675,10 +820,10 @@ sub Make_Cloud {
 	## UNDEF VALUES HERE, DIVISION BY ZERO
 #	print "TESTME: $slip $slipsites_numbers{$slip}{num}\n";
 	if (!defined($slipsites_numbers{$slip}{num})) {
-	    $percent_sig{$slip}{num} = 0;
-	    $percent_sig{$slip}{color} = 'yellow';
-	    $slipsites_numbers{$slip}{num} = 0;
-	    $slipsites_numbers{$slip}{color} = 'yellow';
+	    #$percent_sig{$slip}{num} = 0;
+	    #$percent_sig{$slip}{color} = 'yellow';
+	    #$slipsites_numbers{$slip}{num} = 0;
+	    #$slipsites_numbers{$slip}{color} = 'yellow';
 	} else {
 	    if ($slipsites_numbers{$slip}{num} == 0) {
 		$percent_sig{$slip}{num} = 0;
@@ -720,13 +865,26 @@ sub Make_Overlay {
     $mfe_max_value += 3.0;
     my $z_min_value = -10;
     my $z_max_value = 5;
-    $graph->set(transparent => 1,x_min_value => $mfe_min_value, x_max_value => $mfe_max_value,
-		x_ticks => 1, x_label => 'MFE', x_labels_vertical => 1,
-		x_label_skip => 0, x_number_format => "%.1f", x_tick_number => 20,
-		x_all_ticks => 1, y_min_value => $z_min_value, y_max_value => $z_max_value,
-		y_ticks => 1, y_label => 'Zscore', y_label_skip => 0,
-		y_number_format => "%.2f", y_tick_number => 20, y_all_ticks => 1,
-		dclrs => ['black','black'], marker_size => 0,);
+    $graph->set(transparent => 1,
+		x_min_value => $mfe_min_value,
+		x_max_value => $mfe_max_value,
+		x_ticks => 1,
+		x_label => 'MFE',
+		x_labels_vertical => 1,
+		x_label_skip => 0,
+		x_number_format => "%.1f",
+		x_tick_number => 20,
+		x_all_ticks => 1,
+		y_min_value => $z_min_value,
+		y_max_value => $z_max_value,
+		y_ticks => 1,
+		y_label => 'Zscore',
+		y_label_skip => 0,
+		y_number_format => "%.2f",
+		y_tick_number => 20,
+		y_all_ticks => 1,
+		dclrs => ['black','black'],
+		marker_size => 0,);
     $graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -800,11 +958,17 @@ sub Make_SlipBars {
     my $title = 'How many of each slipsite';
     if ($filename =~ /percent/) {
 	$y_label = 'percent';
-	$title = 'Percent significant of each slipsite'
+	$title = 'Percent significant of each slipsite';
     }
-    $bargraph->set(x_label => 'slipsite', y_label => $y_label, title => $title,
-		   dclrs => [ qw"blue black red green" ], cycle_clrs => 1, dclrs => \@colors,
-		   show_values => 1, values_vertical => 1, x_labels_vertical => 1,
+    $bargraph->set(x_label => 'slipsite',
+		   y_label => $y_label,
+		   title => $title,
+		   dclrs => [ qw"blue black red green" ],
+		   cycle_clrs => 1,
+		   dclrs => \@colors,
+		   show_values => 1,
+		   values_vertical => 1,
+		   x_labels_vertical => 1,
 		   y_max_value => $values[0],);
     #dclrs => [ qw"blue black red green" ],
     #dclrs => [ qw($color_string) ],
@@ -966,10 +1130,17 @@ sub Make_Landscape {
     my $width = $end_spot;
     my $height = 400;
     my $graph = new GD::Graph::mixed($width,$height);
-    $graph->set(bgclr => 'white', x_label => 'Distance on ORF', y_label => 'kcal/mol',
-		y_label_skip => 2, y_number_format => "%.2f", x_labels_vertical => 1,
-		x_label_skip => 100, line_width => 2, dclrs => [qw(blue red green blue red green)],
-		default_type => 'lines', types => [qw(lines lines lines lines lines lines)],) or Callstack(die => 1, message => $graph->error);
+    $graph->set(bgclr => 'white',
+		x_label => 'Distance on ORF',
+		y_label => 'kcal/mol',
+		y_label_skip => 2,
+		y_number_format => "%.2f",
+		x_labels_vertical => 1,
+		x_label_skip => 100,
+		line_width => 2,
+		dclrs => [qw(blue red green blue red green)],
+		default_type => 'lines',
+		types => [qw(lines lines lines lines lines lines)],) or Callstack(die => 1, message => $graph->error);
     $graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
