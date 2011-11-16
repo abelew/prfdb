@@ -9,11 +9,19 @@
   <META NAME="ROBOTS" CONTENT="NOFOLLOW">
   <META NAME="ROBOTS" CONTENT="NOINDEX">
   <link rel="stylesheet" href="/style.css" type="text/css">
+  <script type="text/javascript" language="javascript" src="/js/jquery.js"></script>
+  <script type="text/javascript" language="javascript" src="/js/jquery.flot.js"></script>
+  <script type="text/javascript" language="javascript" src="/js/jquery.flot.stack.js"></script>
+  <script type="text/javascript" language="javascript" src="/js/jquery.flot.fillbetween.js"></script>
 <!---
   <body bgcolor="white" text="black" link="#009933" vlink="#009900">
+  <script type="text/javascript" src="/js/jquery.js"></script>
+  <script type="text/javascript" src="/js/jquery_flot.js"></script>
   <script type="text/javascript" src="/js/refresh.html"></script>
- --->
+
   <body bgcolor="white" text="black" link="#009933" vlink="#009900" onload="doLoad()"> 
+ --->
+  <body bgcolor="white" text="black" link="#009933" vlink="#009900"> 
   <table width="100%" border="0" cellspacing="0" cellpadding="0">
     <tr>
       <td align = "center"><a href="./" target="_top">
