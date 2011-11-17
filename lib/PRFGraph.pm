@@ -6,10 +6,13 @@ use PRFConfig qw / PRF_Error PRF_Out /;
 use PRFdb qw / Callstack /;
 use GD::Graph::mixed;
 use GD::Graph::lines;
+use GD::Graph::bars;
+use GD::Graph::hbars;
 use GD::SVG;
 use Statistics::Basic qw(:all);
 use Statistics::Distributions;
 use SVG::TT::Graph::Line;
+use JSON;
 
 my $config;
 
@@ -144,7 +147,7 @@ sub Make_Extension {
     $graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}",12);
 #    my $fun = [[0,0,0,[0,0,0]];
     my $fun = [[0,0,0],[0,100,0]];
-    my $gd = $graph->plot($fun) or Callstack(die => 1, message => $graph->error);
+    my $gd = $graph->plot($fun) or Callstack(die => 0, message => "Line 149" , $graph->error);
     my $black = $gd->colorResolve(0,0,0);
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);
@@ -506,14 +509,14 @@ sub Make_Cloud {
 		x_all_ticks => 1,
 		y_min_value => $z_min_value,
 		y_max_value => $z_max_value,
-		y_ticks => 1,
 		y_label => 'Zscore',
 		y_label_skip => 0,
 		y_number_format => "%.2f",
 		y_tick_number => 20,
-		y_all_ticks => 1,
-		dclrs => ['black','black'],
-		marker_size => 0,);
+		dclrs => [qw(black black)],
+		marker_size => 0,) or Callstack(die => 0, message =>  $graph->error . " Line 518");
+#    $graph->set_y_ticks(1);
+#    $graph->set_y_all_ticks(1);
     $graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -521,7 +524,7 @@ sub Make_Cloud {
     $graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     my $fun = [[-100,-100,-100],[0,0,0]];
 #    my $gd = $graph->plot($fun,) or Callstack(die => 1, message => $graph->error);
-    my $gd = $graph->plot($fun,) or Callstack(die => 0, message => $graph->error);
+    my $gd = $graph->plot($fun,) or Callstack(die => 0, message => $graph->error . " Line 526");
     my $black = $gd->colorResolve(0,0,0);
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);
@@ -558,16 +561,24 @@ sub Make_Cloud {
     foreach my $point (@{$data}) {
 	my $x_point = sprintf("%.1f",$point->[0]);
 	my $y_point = sprintf("%.2f",$point->[1]);
-
+	my $slipsite = $point->[4];
 	if (defined($mfe_distribution{$x_point})) {
-	    my $t = $mfe_distribution{$x_point};
+	    my $t = $mfe_distribution{$x_point}{total};
 	    $t++;
-	    $mfe_distribution{$x_point} = $t;
+	    $mfe_distribution{$x_point}{total} = $t;
+	    if (defined($mfe_distribution{$x_point})) {
+		my $s = $mfe_distribution{$x_point}{$slipsite};
+		$s++;
+		$mfe_distribution{$x_point}{$slipsite} = $s;
+	    } else {
+		$mfe_distribution{$x_point}{$slipsite} = 1;
+	    }
 	} else {
-	    $mfe_distribution{$x_point} = 1;
+	    $mfe_distribution{$x_point}{total} = 1;
+	    $mfe_distribution{$x_point}{$slipsite} = 1;
 	}
 
-	if (defined($z_distribution)) {
+	if (defined($z_distribution{$y_point})) {
 	    my $t = $z_distribution{$y_point};
 	    $t++;
 	    $z_distribution{$y_point} = $t;
@@ -600,26 +611,24 @@ sub Make_Cloud {
     my $mfe_filename = $filename;
     $z_filename =~ s/\.png/\-z_dist\.png/g;
     $mfe_filename =~ s/\.png/\-mfe_dist\.png/g;
-    my $z_graph = new GD::Graph::mixed('200','800');
-    my $mfe_graph = new GD::Graph::mixed('800','200');
+    my $z_graph = new GD::Graph::hbars(200,800);
     $z_graph->set(bgclr => 'white',
-		  x_label => 'Number',
+		  x_label => "Zscore",
+		  y_label => 'Number',
+		  x_label_skip => 5,
 		  y_label_skip => 2,
-		  y_number_format => "%.2f",
-		  x_labels_vertical => 1,
-		  line_width => 2,
-		  dclrs => [qw(blue)],
-		  default_type => 'lines',
-		  types => [qw(lines)],) or Callstack(die => 1, message => $z_graph->error);
+		  x_number_format => "%.1f",
+		  x_labels_vertical => 0,
+#		  y_labels_vertical => 1,
+		  dclrs => [qw(blue)],) or Callstack(die => 0, message => $z_graph->error . " Line 615");
+    my $mfe_graph = new GD::Graph::bars(800,200);
     $mfe_graph->set(bgclr => 'white',
-		  x_label => 'MFE',
-		  y_label_skip => 2,
-		  x_number_format => "%.2f",
-		  y_labels_vertical => 1,
-		  line_width => 2,
-		  dclrs => [qw(blue)],
-		  default_type => 'lines',
-		  types => [qw(lines)],) or Callstack(die => 1, message => $mfe_graph->error);
+		    x_label => 'MFE',
+		    y_label => "Number\n",
+		    x_label_skip => 12,
+		    x_number_format => "%.1f",
+		    x_labels_vertical => 1,
+		    dclrs => [qw(blue)],) or Callstack(die => 0, message => $mfe_graph->error . " Line 624");
     $z_graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $z_graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $z_graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
@@ -631,22 +640,98 @@ sub Make_Cloud {
     $mfe_graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
     $mfe_graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
 
-    my (@z_keys, @z_values, @mfe_keys, @mfe_values);
-    foreach my $k (sort { $z_distribution{$b} <=> $z_distribution{$a} } keys %z_distribution) {
-	push(@z_keys, $k);
-	push(@z_values, $z_distribution{$k});
-    }
-    foreach my $k (sort { $mfe_distribution{$b} <=> $mfe_distribution{$a} } keys %mfe_distribution) {
-	push(@mfe_keys, $k);
-	push(@mfe_values, $mfe_distribution{$k});
-    }
-    my @z_dist = (\@z_keys, \@z_values);
-    my @mfe_dist = (\@mfe_keys, \@mfe_values);
+    my (@z_keys, @z_values, @mfe_keys, @mfe_values_total, @z_subset, @mfe_subset);
+    my (@mfe_aaa, @mfe_uuu, @mfe_ccc, @mfe_ggg);
+    my $current_z = $z_max_value;
+    my $next_z;
+    while ($current_z >= $z_min_value) {
+	$next_z = $current_z - 0.1;
+	push(@z_keys, sprintf("%.1f", $current_z));
+	my $val = 0;
+	foreach my $k (keys %z_distribution) {
+	    if ($k >= $next_z and $k < $current_z) {
+		$val = $val + $z_distribution{$k};
+	    }
+	}
+	push(@z_values, $val);
+	$current_z = $next_z;
+    } ## End while
 
-    my $zgd = $z_graph->plot(\@z_dist) or Callstack(die => 1, message => $z_graph->error);    
-    my $mgd = $mfe_graph->plot(\@mfe_dist) or Callstack(die => 1, message => $mfe_graph->error);
-    open(ZDIST, ">$z_filename") or Callstack(die => 1, message => qq"error opening $z_filename to write image.");
-    open(MFEDIST, ">$mfe_filename") or Callstack(die => 1, message => qq"error opening $mfe_filename to write image.");
+
+    my $current_mfe = $mfe_min_value;
+    my $next_mfe;
+    while ($current_mfe <= $mfe_max_value) {
+	$next_mfe = $current_mfe + 0.3;
+	push(@mfe_keys, sprintf("%.1f", $current_mfe));
+	my $val = 0;
+	my $aaa_val = 0;
+	my $uuu_val = 0;
+	my $ccc_val = 0;
+	my $ggg_val = 0;
+	foreach my $k (keys %mfe_distribution) {
+	    if ($k <= $next_mfe and $k > $current_mfe) {
+		$val = $val + $mfe_distribution{$k}{total};
+		foreach my $slips (keys %{$mfe_distribution{$k}}) {
+		    if ($slips =~ /^AAA/) {
+			$aaa_val = $aaa_val + $mfe_distribution{$k}{$slips};
+		    } elsif ($slips =~ /^UUU/) {
+			$uuu_val = $uuu_val + $mfe_distribution{$k}{$slips};
+		    } elsif ($slips =~ /^CCC/) {
+			$ccc_val = $ccc_val + $mfe_distribution{$k}{$slips};
+		    } elsif ($slips =~ /^GGG/) {
+			$ggg_val = $ggg_val + $mfe_distribution{$k}{$slips};
+		    }
+		}  ## End foreach slips
+	    }
+	}
+	push(@mfe_values_total, $val);
+	push(@mfe_aaa, $aaa_val);
+	push(@mfe_uuu, $uuu_val);
+	push(@mfe_ccc, $ccc_val);
+	push(@mfe_ggg, $ggg_val);
+	$current_mfe = $next_mfe;
+    }
+    
+    my @z_dist = (\@z_keys, \@z_values);
+    my @mfe_dist = (\@mfe_keys, \@mfe_values_total, \@mfe_aaa, \@mfe_uuu, \@mfe_ggg, \@mfe_ccc);
+    
+    my $json = JSON->new->allow_nonref;
+    my @mfe_json = ();
+    my (@mfe_json_aaa, @mfe_json_uuu, @mfe_json_ggg, @mfe_json_ccc) = ();
+    for my $c (0 .. $#mfe_keys) {
+	push(@mfe_json, [$mfe_keys[$c], $mfe_values_total[$c], $mfe_aaa[$c], $mfe_uuu[$c], $mfe_ggg[$c], $mfe_ccc[$c]]);
+	push(@mfe_json_aaa, [$mfe_keys[$c], $mfe_aaa[$c]]);
+	push(@mfe_json_uuu, [$mfe_keys[$c], $mfe_uuu[$c]]);
+	push(@mfe_json_ccc, [$mfe_keys[$c], $mfe_ccc[$c]]);
+	push(@mfe_json_ggg, [$mfe_keys[$c], $mfe_ggg[$c]]);
+    }
+    my @z_json = ();
+    for my $c (0 .. $#z_keys) {
+	push(@z_json, [$z_values[$c], $z_keys[$c]]);
+    }
+#    my $mfe_json_text = $json->eyncode({label => "MFE", data => \@mfe_json});
+    my @full_json = ({label => "AAA", data => \@mfe_json_aaa},
+		     {label => "UUU", data => \@mfe_json_uuu},
+		     {label => "CCC", data => \@mfe_json_ccc},
+		     {label => "GGG", data => \@mfe_json_ggg},
+		     );
+    my $mfe_json_text = to_json(\@full_json, {utf8 => 1, pretty => 0});
+
+    my $z_json_text = $json->encode({label => "Z", data => \@z_json});
+    my $mfe_json_filename = $mfe_filename;
+    $mfe_json_filename =~ s/\.png/\.json/g;
+    my $z_json_filename = $z_filename;
+    $z_json_filename =~ s/\.png/\.json/g;
+    open(MFE_JSON, ">$mfe_json_filename") or Callstack(die=> 0, message => qq"error opening $mfe_json_filename. $!");
+    open(Z_JSON, ">$z_json_filename") or Callstack(die => 0, message => qq"error opening $z_json_filename. $!");
+    print MFE_JSON $mfe_json_text;
+    print Z_JSON $z_json_text;
+    close MFE_JSON;
+    close Z_JSON;
+    my $zgd = $z_graph->plot(\@z_dist) or Callstack(die => 0, message => $z_graph->error . "ZGD");
+    my $mgd = $mfe_graph->plot(\@mfe_dist) or Callstack(die => 0, message => $mfe_graph->error . "ZGD");
+    open(ZDIST, ">$z_filename") or Callstack(die => 0, message => qq"error opening $z_filename to write image.");
+    open(MFEDIST, ">$mfe_filename") or Callstack(die => 0, message => qq"error opening $mfe_filename to write image.");
     binmode ZDIST;
     binmode MFEDIST;
     print ZDIST $zgd->png;
@@ -809,8 +894,10 @@ sub Make_Cloud {
     
     $gd->filledRectangle($average_mfe_coord, $bottom_y_coord+1, $average_mfe_coord+1, $top_y_coord-1, $black);
     $gd->filledRectangle($left_x_coord+1, $average_z_coord, $right_x_coord-1, $average_z_coord+1, $black);
-    $gd->filledRectangle($mfe_significant_coord, $z_significant_coord, $mfe_significant_coord, $top_y_coord, $darkslategray);
-    $gd->filledRectangle($left_x_coord, $z_significant_coord, $mfe_significant_coord, $z_significant_coord, $darkslategray);
+    $gd->filledRectangle($mfe_significant_coord, $z_significant_coord, $mfe_significant_coord,
+			 $top_y_coord, $darkslategray);
+    $gd->filledRectangle($left_x_coord, $z_significant_coord, $mfe_significant_coord,
+			 $z_significant_coord, $darkslategray);
     $gd->filledRectangle($mfe_2stds_significant_coord, $z_2stds_significant_coord,
 			 $mfe_2stds_significant_coord, $top_y_coord, $darkslategray);
     $gd->filledRectangle($left_x_coord, $z_2stds_significant_coord, $mfe_2stds_significant_coord,
@@ -850,7 +937,7 @@ sub Make_Cloud {
 	Make_SlipBars(\%slips_significant, $bar_sig_filename);
 	Make_SlipBars(\%percent_sig, $percent_sig_filename);
     }
-    open (IMG, ">$filename") or Callstack(die => 1, message => qq"error opening $filename to write image.");
+    open (IMG, ">$filename") or Callstack(die => 0, message => qq"error opening $filename to write image.");
     binmode IMG;
     print IMG $gd->png;
     close IMG;
