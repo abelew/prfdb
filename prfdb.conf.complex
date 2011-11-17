@@ -1,0 +1,24 @@
+base = "${PRFDB_HOME}"
+add_to_path = "$(base)/work:$(base)/bin"
+blastdb = "$(prefix)/blast"
+queue_table = "queue"
+do_nupack = 1             ## Run nupack on sequences?
+do_pknots = 1            ## Run pknots on sequence?
+do_boot = 1               ## Perform our faux bootstrap
+do_hotknots = 1
+do_overlap = 1            ## Check on overlapping orfs
+seqlength = ['100','75','50']
+nupack_nopairs_hack = 1   ## For the NCI systems I hacked nupack
+arch_specific_exe = 0     ## Architecture specific executables (used for a pbs environment)
+boot_iterations = 100
+boot_mfe_algorithms = { pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot_NOPAIRS, hotknots => \&RNAFolders::Hotknots_Boot, }
+boot_randomizers = { array => \&SeqMisc::ArrayShuffle, }
+errorfile = "$(prefix)/prfdb.err"            ## Error file
+logfile = "$(prefix)/prfdb.log"           ## Location of output file
+nupack = "Fold.out.nopairs"
+nupack_boot = "Fold.out.boot.nopairs"
+index_species = ['streptococcus_pyogenes', 'saccharomyces_cerevisiae', 'homo_sapiens', 'mus_musculus', 'danio_rerio', 'bos_taurus','rattus_norvegicus','xenopus_tropicalis', 'xenopus_laevis', 'haloarcula_marismortui', 'escherichia_coli', 'gallus_gallus', 'saccharomyces_paradoxus', 'saccharomyces_bayanus', 'saccharomyces_castellii', 'saccharomyces_kluyveri', 'saccharomyces_kudriavzevii', 'saccharomyces_mikatae', 'schizosaccharomyces_pombe', 'kluyveromyces_polysporous', 'virus']
+maintenance_skip_optimize = 1
+maintenance_skip_zscore = 1
+maintenance_skip_stats = 1
+maintenance_skip_index = 1

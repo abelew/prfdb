@@ -3,8 +3,9 @@
 $PRFDB_HOME/fixdeps.pl
 mkdir -p bin/params
 cd src/
-SOURCE_FILES="HotKnots_v2.0.tar.gz NUPACK1.2_pseudoknot_nopairs.tar.gz pknots.tar.gz NUPACK1.2_nopseudoknot_nopairs.tar.gz  rnamotif-3.0.7.tar.gz squid.tar.gz ViennaRNA-1.7.2.tar.gz"
-for source in $SOURCE_FILES
+CONFIGURE_CMD="./configure --prefix=$PRFDB_HOME --bindir=$PRFDB_HOME/work"
+SOURCE_FILES="HotKnots_v2.0.tar.gz NUPACK1.2_pseudoknot_nopairs.tar.gz pknots.tar.gz NUPACK1.2_nopseudoknot_nopairs.tar.gz  rnamotif-3.0.7.tar.gz squid.tar.gz ViennaRNA-1.7.2.tar.gz miRanda-aug2010.tar.gz rnahybrid-2.1-src.tar.gz mfold_util-4.6.tar.gz"
+for source in `cat $PRFDB_HOME/src/MANIFEST`
   do
   tar zxf $source
 done
@@ -32,7 +33,8 @@ for i in $EXECS
 done
 
 cd $PRFDB_HOME/src/squid-1.9g
-./configure ; make
+$CONFIGURE_CMD
+make
 EXECS="afetch alistat compalign compstruct revcomp seqsplit seqstat sfetch shuffle sindex sreformat translate weight"
 for i in $EXECS
   do
@@ -48,13 +50,25 @@ make
 cp pknots $PRFDB_HOME/work
 
 cd $PRFDB_HOME/src/ViennaRNA-1.7.2
-./configure --prefix=$PRFDB_HOME --bindir=$PRFDB_HOME/work
+$CONFIGURE_CMD
 make
 cd Progs
 make ; make install
 cd ../Readseq
 cp readseq ../../../work
 cd ../Kinfold
+make ; make install
+
+cd $PRFDB_HOME/src/miRanda-3.3a
+$CONFIGURE_CMD
+make ; make install
+
+cd $PRFDB_HOME/src/RNAHybrid-2.1
+$CONFIGURE_CMD
+make ; make install
+
+cd $PRFDB_HOME/src/mfold_util-4.6
+$CONFIGURE_CMD
 make ; make install
 
 touch $PRFDB_HOME/backup/prfdb_test_1

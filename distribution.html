@@ -8,19 +8,55 @@
 
 %  }
 <center>
- <form name="distribution" action="distribution.html?species=<% $species %>&seqlength=<% $seqlength %>&slipsites=<% $slipsites %>" enctype="multipart/form-data" method="POST">
+%# <form name="distribution" id="distribution" action="distribution.html?species=<% $species %>&seqlength=<% $seqlength %>&slipsites=<% $slipsites %>" enctype="multipart/form-data" method="POST">
+ <form name="distribution" id="distribution" action="distribution.html?species=<% $species %>&seqlength=<% $seqlength %>" enctype="multipart/form-data" method="POST">
 % my $long_species = HTMLMisc::Make_Species($species);
 <p>This is the <i><% $long_species %></i> distribution for <% $slipsites %> slipsites using <% $algorithms %>.
-  Change it to:
-  <select name="algorithms" onchange="this.form.submit(); return true;">
-   <option selected="selected" value="all">all</option>
-   <option value="pknots" value="pknots">pknots</option>
-   <option value="nupack" value="nupack">nupack</option>
-   <option value="hotknots" value="hotknots">hotknots</option>
-   <option value="nupack+hotknots" value="nupack+hotknots">nupack and hotknots</option>
+
+<script type='text/javascript'>
+function selection_option() {
+  document.forms["distribution"].elements["algorithms"].options["<% $algorithms %>"].selected = true;
+  document.forms["distribution"].elements["slipsites"].options["<% $slipsites %>"].selected = true;
+}
+window.onload = selection_option;
+</script>
+
+  Change the algorithms:
+  <select name="algorithms" id="algorithms" onchange="this.form.submit(); return true;">
+   <option name="all" value="all">all</option>
+   <option name="pknots" value="pknots">pknots</option>
+   <option name="nupack" value="nupack">nupack</option>
+   <option name="hotknots" value="hotknots">hotknots</option>
+   <option name="nupack+hotknots" value="nupack+hotknots">nupack and hotknots</option>
+  </select>&nbsp;and slipsites:
+  <select name="slipsites" id="slipsites" onchange="this.form.submit(); return true;">
+   <option name="all" value="all">all</option>
+   <option name="AAAUUUA" value="AAAUUUA">AAAUUUA</option>
+   <option name="UUUAAAU" value="UUUAAAU">UUUAAAU</option>
+   <option name="AAAAAAA" value="AAAAAAA">AAAAAAA</option>
+   <option name="UUUAAAA" value="UUUAAAA">UUUAAAA</option>
+   <option name="UUUUUUA" value="UUUUUUA">UUUUUUA</option>
+   <option name="AAAUUUU" value="AAAUUUU">AAAUUUU</option>
+   <option name="UUUUUUU" value="UUUUUUU">UUUUUUU</option>
+   <option name="UUUAAAC" value="UUUAAAC">UUUAAAC</option>
+   <option name="AAAAAAU" value="AAAAAAU">AAAAAAU</option>
+   <option name="AAAUUUC" value="AAAUUUC">AAAUUUC</option>
+   <option name="AAAAAAC" value="AAAAAAC">AAAAAAC</option>
+   <option name="GGGUUUA" value="GGGUUUA">GGGUUUA</option>
+   <option name="UUUUUUC" value="UUUUUUC">UUUUUUC</option>
+   <option name="GGGAAAA" value="GGGAAAA">GGGAAAA</option>
+   <option name="CCCUUUA" value="CCCUUUA">CCCUUUA</option>
+   <option name="CCCAAAC" value="CCCAAAC">CCCAAAC</option>
+   <option name="CCCAAAA" value="CCCAAAA">CCCAAAA</option>
+   <option name="GGGAAAU" value="GGGAAAU">GGGAAAU</option>
+   <option name="GGGUUUU" value="GGGUUUU">GGGUUUU</option>
+   <option name="GGGAAAC" value="GGGAAAC">GGGAAAC</option>
+   <option name="CCCUUUC" value="CCCUUUC">CCCUUUC</option>
+   <option name="CCCUUUU" value="CCCUUUU">CCCUUUU</option>
+   <option name="GGGAAAG" value="GGGAAAG">GGGAAAG</option>
+   <option name="GGGUUUC" value="GGGUUUC">GGGUUUC</option>
   </select>
  </form>
-
 <br>
 
 <table width="1000" border="0" cellspacing="0" cellpadding="0">
@@ -88,48 +124,90 @@ coordinates wihch share more than 1 sequence window.
 % my $mfe_json_filename = qq"/images/cloud/$species/cloud-${slipsites}-${algorithms}-${seqlength}-mfe_dist.json";
 % my $z_json_filename = qq"/images/cloud/$species/cloud-${slipsites}-${algorithms}-${seqlength}-z_dist.json";
 
+
 <script type="text/javascript" id="mfe">
-
 $(function() {
-    var options = {
-	colors: [ "darkred", "darkgreen", "black", "darkblue" ],
-        series:
-	 { stack: 1,
-	   lines: { show:false },
-	   bars: { fill:1, lineWidth:0, show:true, barWidth:0.4 },
-	 },
-    };
+  var options = {
+    colors: [ "black", "darkblue" ],
+    series: {
+      stack: 1,
+      lines: { show:false },
+      bars: { fill:1, lineWidth:0, show:true, barWidth:0.4 } },
+    yaxis: {
+      axisLabel: 'Predictions',
+      axisLabelUseCanvas: true },
+    xaxis: {
+      axisLabel: 'Minimum Free Energy',
+      axisLabelUseCanvas: true }
+  };
     
-    $.getJSON('<% $mfe_json_filename %>', function(series) {
-		  var dat =  series;
-		  $.plot($("#mfe"), dat, options);
-	      });
+  $.getJSON('<% $mfe_json_filename %>', function(series) {
+    var dat =  series;
+    $.plot($("#mfe"), dat, options);
   });
+});
 </script>
-
 <script type="text/javascript" id="z">
-
 $(function() {
-    var options = {
-%#	series: { bars: { fillColor: "black" } },
-	lines: { show: false, steps: false },
-	bars: { fill:1.0, show: true, barWidth: 0.1, horizontal: true },
-	colors: [ "darkblue" ],
-    };
-    
-    $.getJSON('<% $z_json_filename %>', function(series) {
-		  var dat = [ series ];
-		  $.plot($("#z"), dat, options);
-	      });
+  var options = {
+    colors: [ "darkred", "darkgreen", "black", "darkblue" ],
+    series: {
+      stack: 1,
+      lines: { show:false },
+      bars: { horizontal:1, fill:1, lineWidth:0, show:true, barWidth:0.15 } },
+    yaxis: {
+      min: -10.0,
+      max: 5.0,
+      axisLabel: 'Z-score',
+      axisLabelUseCanvas: true },
+    xaxis: {
+      axisLabel: 'Predictions',
+      axisLabelUseCanvas: true }
+  };
+
+%#  xaxis, yaxis: {
+%#      show: null or true/false
+%#      position: "bottom" or "top" or "left" or "right"
+%#      mode: null or "time"
+%#      color: null or color spec
+%#      tickColor: null or color spec
+%#      font: null or font spec object
+%#      min: null or number
+%#      max: null or number
+%#      autoscaleMargin: null or number
+%#      transform: null or fn: number -> number
+%#      inverseTransform: null or fn: number -> number
+%#      ticks: null or number or ticks array or (fn: axis -> ticks array)
+%#      tickSize: number or array
+%#      minTickSize: number or array
+%#      tickFormatter: (fn: number, object -> string) or string
+%#      tickDecimals: null or number
+%#      labelWidth: null or number
+%#      labelHeight: null or number
+%#      reserveSpace: null or true
+%#      tickLength: null or number
+%#      alignTicksWithAxis: null or number
+%#  }
+  $.getJSON('<% $z_json_filename %>', function(series) {
+    var dat =  series;
+    $.plot($("#z"), dat, options);
   });
+});
 </script>
+
 
 % } else {
 <p>Generating a new distribution for <i><% HTMLMisc::Make_Species($species) %></i> now.<br>
 These graphs take about a minute to generate, this page will refresh with the freshly generated
 graph in one minute.</p>
 
-<& /js/refresh.html, refresh_url=>"distribution.html?species=$species&algorithms=$algorithms&seqlength=$seqlength&slipsites=$slipsites", seconds => 30 &>
+<& /js/refresh.html, refresh_url=>"distribution.html?species=$species&algorithms=$algorithms&seqlength=$seqlength&slipsites=$slipsites", seconds => 20 &>
+<script>  
+  function load() {  
+  }  
+  window.onload = mydoLoad;  
+</script>  
+
 <& generate_distribution.html, species => $species, slipsites => $slipsites, algorithms => $algorithms, seqlength => $seqlength &>
 %  }
 

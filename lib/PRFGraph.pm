@@ -64,7 +64,7 @@ sub Graph_Agreement {
 	    }
 	}
     }
-    print "TESTME:
+    print "
 ALL: @all_agree
 NO: @no_agree
 N: @n_alone
@@ -272,7 +272,6 @@ sub Make_Extension {
 	$y_percentage = 150 if ($y_percentage > 150);
 	my $percent_y_coord = sprintf("%.2f", ((($y_range / 150) * (150 - $y_percentage)) + $bottom_y_coord));
 	my $map_percent_y_coord = sprintf("%.2f", ((($y_range / 150) * (150 - $y_percentage)) + $bottom_y_coord));
-#	print "BIG TEST: x_percent:$x_percentage x_coord:$x_coord<br>
 #y_codons: minus_codons:$minus_codons  codons_coord:$codons_y_coord<br>
 #y_percent: y_percentage:$y_percentage percent_y_coord:$percent_y_coord<br>\n";
 
@@ -282,7 +281,6 @@ sub Make_Extension {
 	}
 	my $color;
 	## UNDEF VALUES HERE
-#	print "TESTME: MFE:$mfe AVG:$avg_mfe Z:$zscore avg:$avg_zscore<br>\n";
 #	sleep 1;
 	if (($mfe < $avg_mfe) and ($zscore > $avg_zscore)) {
 	    ## Red
@@ -302,7 +300,6 @@ sub Make_Extension {
 	
 	if ($type eq 'percent') {
 #	    if (!defined($zscore)) {
-#		print "TESTME: $zscore_stmt\n";
 #		sleep 10;
 #	    }
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession, mfe:$mfe z:$zscore xpercent:$x_percentage ypercent:$y_percentage">\n/;
@@ -557,33 +554,43 @@ sub Make_Cloud {
     my $max_counter = 1;
 
     my (%mfe_distribution, %z_distribution) = ();
-    
+    #Callstack(message => qq"Go to 560?");  ## This one is ok...
     foreach my $point (@{$data}) {
 	my $x_point = sprintf("%.1f",$point->[0]);
 	my $y_point = sprintf("%.2f",$point->[1]);
 	my $slipsite = $point->[4];
+	my $knotted = $point->[3];
+	if (defined($z_distribution{$y_point})) {
+	    my $t = $z_distribution{$y_point}{total};
+	    $t++;
+	    $z_distribution{$y_point}{total} = $t;
+	    if (defined($z_distribution{$y_point})) {
+		my $s = $z_distribution{$y_point}{$slipsite};
+		$s++;
+		$z_distribution{$y_point}{$slipsite} = $s;
+	    } else {
+		$z_distribution{$y_point}{$slipsite} = 1;
+	    }
+	} else {
+	    $z_distribution{$y_point}{total} = 1;
+	    $z_distribution{$y_point}{$slipsite} = 1;
+	}
+
+
 	if (defined($mfe_distribution{$x_point})) {
 	    my $t = $mfe_distribution{$x_point}{total};
 	    $t++;
 	    $mfe_distribution{$x_point}{total} = $t;
 	    if (defined($mfe_distribution{$x_point})) {
-		my $s = $mfe_distribution{$x_point}{$slipsite};
-		$s++;
-		$mfe_distribution{$x_point}{$slipsite} = $s;
+		my $kn = $mfe_distribution{$x_point}{kno};
+		$kn++ if ($knotted == 1);
+		$mfe_distribution{$x_point}{kno} = $kn;
 	    } else {
-		$mfe_distribution{$x_point}{$slipsite} = 1;
+		$mfe_distribution{$x_point}{kno} = 1 if ($knotted == 1);
 	    }
 	} else {
 	    $mfe_distribution{$x_point}{total} = 1;
-	    $mfe_distribution{$x_point}{$slipsite} = 1;
-	}
-
-	if (defined($z_distribution{$y_point})) {
-	    my $t = $z_distribution{$y_point};
-	    $t++;
-	    $z_distribution{$y_point} = $t;
-	} else {
-	    $z_distribution{$y_point} = 1;
+	    $mfe_distribution{$x_point}{kno} = 1 if ($knotted == 1);
 	}
 
 	#print "MFE_value: $x_point Zscore: $y_point<br>\n";
@@ -611,113 +618,98 @@ sub Make_Cloud {
     my $mfe_filename = $filename;
     $z_filename =~ s/\.png/\-z_dist\.png/g;
     $mfe_filename =~ s/\.png/\-mfe_dist\.png/g;
-    my $z_graph = new GD::Graph::hbars(200,800);
-    $z_graph->set(bgclr => 'white',
-		  x_label => "Zscore",
-		  y_label => 'Number',
-		  x_label_skip => 5,
-		  y_label_skip => 2,
-		  x_number_format => "%.1f",
-		  x_labels_vertical => 0,
-#		  y_labels_vertical => 1,
-		  dclrs => [qw(blue)],) or Callstack(die => 0, message => $z_graph->error . " Line 615");
-    my $mfe_graph = new GD::Graph::bars(800,200);
-    $mfe_graph->set(bgclr => 'white',
-		    x_label => 'MFE',
-		    y_label => "Number\n",
-		    x_label_skip => 12,
-		    x_number_format => "%.1f",
-		    x_labels_vertical => 1,
-		    dclrs => [qw(blue)],) or Callstack(die => 0, message => $mfe_graph->error . " Line 624");
-    $z_graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $z_graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $z_graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $z_graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $z_graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $mfe_graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $mfe_graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $mfe_graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $mfe_graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
-    $mfe_graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $config->{graph_font_size});
 
     my (@z_keys, @z_values, @mfe_keys, @mfe_values_total, @z_subset, @mfe_subset);
-    my (@mfe_aaa, @mfe_uuu, @mfe_ccc, @mfe_ggg);
+    my (@z_aaa, @z_uuu, @z_ccc, @z_ggg);
+    my (@mfe_unk, @mfe_kno);
+    
     my $current_z = $z_max_value;
     my $next_z;
+    #Callstack(message => qq"Go to 625?");
     while ($current_z >= $z_min_value) {
 	$next_z = $current_z - 0.1;
 	push(@z_keys, sprintf("%.1f", $current_z));
 	my $val = 0;
+	my $aaa_val = 0;
+	my $uuu_val = 0;
+	my $ccc_val = 0;
+	my $ggg_val = 0;
 	foreach my $k (keys %z_distribution) {
 	    if ($k >= $next_z and $k < $current_z) {
 		$val = $val + $z_distribution{$k};
+		foreach my $slips (keys %{$z_distribution{$k}}) {
+		    if ($slips =~ /^AAA/) {
+			$aaa_val += $z_distribution{$k}{$slips};
+		    } elsif ($slips =~ /^UUU/) {
+			$uuu_val += $z_distribution{$k}{$slips};
+		    } elsif ($slips =~ /^CCC/) {
+			$ccc_val += $z_distribution{$k}{$slips};
+		    } elsif ($slips =~ /^GGG/) {
+			$ggg_val += $z_distribution{$k}{$slips};
+		    }
+		} ## End foreach slips
 	    }
 	}
+	push(@z_aaa, $aaa_val);
+	push(@z_uuu, $uuu_val);
+	push(@z_ccc, $ccc_val);
+	push(@z_ggg, $ggg_val);
 	push(@z_values, $val);
 	$current_z = $next_z;
     } ## End while
 
-
+    #Callstack(message => qq"Go to 657?");
     my $current_mfe = $mfe_min_value;
     my $next_mfe;
     while ($current_mfe <= $mfe_max_value) {
 	$next_mfe = $current_mfe + 0.3;
 	push(@mfe_keys, sprintf("%.1f", $current_mfe));
 	my $val = 0;
-	my $aaa_val = 0;
-	my $uuu_val = 0;
-	my $ccc_val = 0;
-	my $ggg_val = 0;
+	my $unk = 0;
+	my $kno = 0;
 	foreach my $k (keys %mfe_distribution) {
 	    if ($k <= $next_mfe and $k > $current_mfe) {
-		$val = $val + $mfe_distribution{$k}{total};
-		foreach my $slips (keys %{$mfe_distribution{$k}}) {
-		    if ($slips =~ /^AAA/) {
-			$aaa_val = $aaa_val + $mfe_distribution{$k}{$slips};
-		    } elsif ($slips =~ /^UUU/) {
-			$uuu_val = $uuu_val + $mfe_distribution{$k}{$slips};
-		    } elsif ($slips =~ /^CCC/) {
-			$ccc_val = $ccc_val + $mfe_distribution{$k}{$slips};
-		    } elsif ($slips =~ /^GGG/) {
-			$ggg_val = $ggg_val + $mfe_distribution{$k}{$slips};
-		    }
-		}  ## End foreach slips
+		$val += $mfe_distribution{$k}{total};
+		$kno += $mfe_distribution{$k}{kno};
 	    }
 	}
+	push(@mfe_kno, $kno);
+	push(@mfe_unk, ($val - $kno));
 	push(@mfe_values_total, $val);
-	push(@mfe_aaa, $aaa_val);
-	push(@mfe_uuu, $uuu_val);
-	push(@mfe_ccc, $ccc_val);
-	push(@mfe_ggg, $ggg_val);
 	$current_mfe = $next_mfe;
     }
     
-    my @z_dist = (\@z_keys, \@z_values);
-    my @mfe_dist = (\@mfe_keys, \@mfe_values_total, \@mfe_aaa, \@mfe_uuu, \@mfe_ggg, \@mfe_ccc);
+    my @z_dist = (\@z_keys, \@z_values, \@z_aaa, \@z_uuu, \@z_ggg, \@z_ccc);
+    my @mfe_dist = (\@mfe_keys, \@mfe_values_total, \@mfe_unk, \@mfe_kno);
     
     my $json = JSON->new->allow_nonref;
     my @mfe_json = ();
-    my (@mfe_json_aaa, @mfe_json_uuu, @mfe_json_ggg, @mfe_json_ccc) = ();
-    for my $c (0 .. $#mfe_keys) {
-	push(@mfe_json, [$mfe_keys[$c], $mfe_values_total[$c], $mfe_aaa[$c], $mfe_uuu[$c], $mfe_ggg[$c], $mfe_ccc[$c]]);
-	push(@mfe_json_aaa, [$mfe_keys[$c], $mfe_aaa[$c]]);
-	push(@mfe_json_uuu, [$mfe_keys[$c], $mfe_uuu[$c]]);
-	push(@mfe_json_ccc, [$mfe_keys[$c], $mfe_ccc[$c]]);
-	push(@mfe_json_ggg, [$mfe_keys[$c], $mfe_ggg[$c]]);
-    }
-    my @z_json = ();
-    for my $c (0 .. $#z_keys) {
-	push(@z_json, [$z_values[$c], $z_keys[$c]]);
-    }
-#    my $mfe_json_text = $json->eyncode({label => "MFE", data => \@mfe_json});
-    my @full_json = ({label => "AAA", data => \@mfe_json_aaa},
-		     {label => "UUU", data => \@mfe_json_uuu},
-		     {label => "CCC", data => \@mfe_json_ccc},
-		     {label => "GGG", data => \@mfe_json_ggg},
-		     );
-    my $mfe_json_text = to_json(\@full_json, {utf8 => 1, pretty => 0});
+    my (@z_json_aaa, @z_json_uuu, @z_json_ggg, @z_json_ccc) = ();
 
-    my $z_json_text = $json->encode({label => "Z", data => \@z_json});
+    for my $c (0 .. $#z_keys) {
+	push(@z_json_aaa, [$z_aaa[$c], $z_keys[$c]]);
+	push(@z_json_uuu, [$z_uuu[$c], $z_keys[$c]]);
+	push(@z_json_ccc, [$z_ccc[$c], $z_keys[$c]]);
+	push(@z_json_ggg, [$z_ggg[$c], $z_keys[$c]]);
+    }
+
+    my @full_z_json = ({label => "AAA", data => \@z_json_aaa},
+		       {label => "UUU", data => \@z_json_uuu},
+		       {label => "CCC", data => \@z_json_ccc},
+		       {label => "GGG", data => \@z_json_ggg},
+		       );
+    my $z_json_text = to_json(\@full_z_json, {utf8 => 1, pretty => 0});
+
+    my (@mfe_json_unk, @mfe_json_kno) = ();
+    for my $c (0 .. $#mfe_keys) {
+	push(@mfe_json_kno, [$mfe_keys[$c], $mfe_kno[$c]]);
+	push(@mfe_json_unk, [$mfe_keys[$c], $mfe_unk[$c]]);
+    }
+    my @full_mfe_json = ({label => "Knotted", data => \@mfe_json_kno},
+			 {label => "Unknotted", data => \@mfe_json_unk},
+			 );
+    my $mfe_json_text = to_json(\@full_mfe_json, {utf8 => 1, pretty => 0});
+
     my $mfe_json_filename = $mfe_filename;
     $mfe_json_filename =~ s/\.png/\.json/g;
     my $z_json_filename = $z_filename;
@@ -728,16 +720,6 @@ sub Make_Cloud {
     print Z_JSON $z_json_text;
     close MFE_JSON;
     close Z_JSON;
-    my $zgd = $z_graph->plot(\@z_dist) or Callstack(die => 0, message => $z_graph->error . "ZGD");
-    my $mgd = $mfe_graph->plot(\@mfe_dist) or Callstack(die => 0, message => $mfe_graph->error . "ZGD");
-    open(ZDIST, ">$z_filename") or Callstack(die => 0, message => qq"error opening $z_filename to write image.");
-    open(MFEDIST, ">$mfe_filename") or Callstack(die => 0, message => qq"error opening $mfe_filename to write image.");
-    binmode ZDIST;
-    binmode MFEDIST;
-    print ZDIST $zgd->png;
-    print MFEDIST $mgd->png;
-    close ZDIST;
-    close MFEDIST;
 
     my $tmp_filename = $filename;
     
@@ -845,7 +827,6 @@ sub Make_Cloud {
 		} elsif ($slipsite =~ /^CCC....$/) {
 		    $slips_significant{$slipsite}{color} = 'black';
 		} else {
-#		    print "TESTME: slipsite must be something different: $slipsite\n";
 		    #$slips_significant{$slipsite}{color} = 'yellow';
 		    #warn("This sucks. $slipsite doesn't match");
 		    next;
@@ -916,7 +897,6 @@ sub Make_Cloud {
     my %percent_sig;
     foreach my $slip (keys %slipsites_numbers) {
 	## UNDEF VALUES HERE, DIVISION BY ZERO
-#	print "TESTME: $slip $slipsites_numbers{$slip}{num}\n";
 	if (!defined($slipsites_numbers{$slip}{num})) {
 	    #$percent_sig{$slip}{num} = 0;
 	    #$percent_sig{$slip}{color} = 'yellow';
