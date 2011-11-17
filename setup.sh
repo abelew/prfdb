@@ -1,54 +1,54 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
+$PRFDB_HOME/fixdeps.pl
 mkdir -p bin/params
 cd src/
-SOURCE_FILES="HotKnots_v2.0.tar.gz NUPACK1.2_pseudoknot_nopairs.tar.gz pknots.tar.gz NUPACK1.2_nopseudoknot_nopairs.tar.gz  rnamotif-3.0.4.tar.gz squid.tar.gz ViennaRNA-1.7.2.tar.gz"
-for i in "$SOURCE_FILES" do
-  tar zxf $i
+SOURCE_FILES="HotKnots_v2.0.tar.gz NUPACK1.2_pseudoknot_nopairs.tar.gz pknots.tar.gz NUPACK1.2_nopseudoknot_nopairs.tar.gz  rnamotif-3.0.7.tar.gz squid.tar.gz ViennaRNA-1.7.2.tar.gz"
+for source in $SOURCE_FILES
+  do
+  tar zxf $source
 done
-cd HotKnots_v2.0
-cp bin/HotKnot ../../work
-cp bin/params/* ../../bin/params
-cd ../../
 
-cd NUPACK1.2_pseudoknot/source
+cd $PRFDB_HOME/src/HotKnots_v2.0
+cp bin/HotKnot $PRFDB_HOME/work
+cp bin/params/* $PRFDB_HOME/bin/params
+
+cd $PRFDB_HOME/src/NUPACK1.2_pseudoknot/source
 make clean ; make
-cp Fold.out ../../../work/Fold.out.nopairs
-cd ../../
+cp Fold.out $PRFDB_HOME/work/Fold.out.nopairs
 
-cd NUPACK1.2_no_pseudoknot/source
+cd $PRFDB_HOME/src/NUPACK1.2_no_pseudoknot/source
 make clean ; make
-cp Fold.out ../../../work/Fold.out.boot.nopairs
-cd ../../
+cp Fold.out $PRFDB_HOME/work/Fold.out.boot.nopairs
 
-cd rnamotif-3.0.4
+cd $PRFDB_HOME/src/rnamotif-3.0.7
 make clean ; make
 cd src
 make
 EXECS="efn2_drv efn_drv rm2ct rmfmt rmprune rnamotif"
-for i in "EXECS" do
- cp $i ../../../work
+for i in $EXECS
+  do
+  cp $i $PRFDB_HOME/work
 done
-cd ../../
 
-cd squid-1.9g
+cd $PRFDB_HOME/src/squid-1.9g
 ./configure ; make
 EXECS="afetch alistat compalign compstruct revcomp seqsplit seqstat sfetch shuffle sindex sreformat translate weight"
-for i in "EXECS" do
- cp $i ../../work
+for i in $EXECS
+  do
+  cp $i $PRFDB_HOME/work
 done
-cd ..
 
-cd pknots-1.05
+cd $PRFDB_HOME/src/pknots-1.05
 cd src/squid
 make
 cp libsquid.a ..
 cd ..
 make
-cp pknots ../../../work
-cd ../../
+cp pknots $PRFDB_HOME/work
 
-cd ViennaRNA-1.7.2
-./configure --prefix=`pwd`/../../ --bindir=`pwd`/../../work
+cd $PRFDB_HOME/src/ViennaRNA-1.7.2
+./configure --prefix=$PRFDB_HOME --bindir=$PRFDB_HOME/work
 make
 cd Progs
 make ; make install
@@ -56,9 +56,8 @@ cd ../Readseq
 cp readseq ../../../work
 cd ../Kinfold
 make ; make install
-cd ../../
 
-touch backup/prfdb_test_1
-touch backup/prfdb_test_2
-echo "Please run:
+touch $PRFDB_HOME/backup/prfdb_test_1
+touch $PRFDB_HOME/backup/prfdb_test_2
+echo "Please run something like:
 sudo chown -R www-data:www-data $PRFDB_HOME"
