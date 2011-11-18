@@ -4,6 +4,8 @@ use Bio::Seq;
 use Bio::SeqIO;
 use Bio::DB::Universal;
 use Data::Dumper;
+use vars qw($VERSION);
+$VERSION='20111119';
 
 sub new {
     my ($class, %arg) = @_;

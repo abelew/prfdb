@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
-if ["$PRFDB_HOME" eq ""]; then
+if [ ! -n "$PRFDB_HOME" ]; then
   echo "The environment variable PRFDB_HOME is not set."
-  echo "Please set it.  Temporarily setting it to '.'"
-  export PRFDB_HOME="."
+  echo "Please set it.  Temporarily setting it to $PWD"
+  echo "Unless you set it, future invocations of the prfdb will fail."
+  echo "To set it, type the following two commands:
+
+echo \"export PRFDB_HOME=$PWD\" >> ~/.bashrc
+. ~/.bashrc
+"
+  export PRFDB_HOME=$PWD
+  sleep 5
 fi
 ${PRFDB_HOME}/fixdeps.pl
 mkdir -p bin/params

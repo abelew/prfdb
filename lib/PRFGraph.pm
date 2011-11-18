@@ -13,6 +13,8 @@ use Statistics::Basic qw(:all);
 use Statistics::Distributions;
 use SVG::TT::Graph::Line;
 use JSON;
+use vars qw ($VERSION);
+$VERSION='20111119';
 
 my $config;
 

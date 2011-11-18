@@ -8,7 +8,8 @@ use Bio::Tools::Run::RemoteBlast;
 use Bio::Root::Exception;
 use Error;
 $Error::Debug = 1;
-
+use vars qw($VERSION);
+$VERSION='20111119';
 
 my $config;
 

@@ -4,6 +4,8 @@ use lib '.';
 use PRFdb;
 use Template;
 use PRFConfig qw / PRF_Out /;
+use vars qw($VERSION);
+$VERSION='20111119';
 my $config;
 my %slippery_sites = (aaaaaaa => 'A AAA AAA', aaaaaac => 'A AAA AAC', aaaaaat => 'A AAA AAT',
 		      aaauuua => 'A AAT TTA', aaauuuc => 'A AAT TTC', aaauuuu => 'A AAT TTT',

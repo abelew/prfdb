@@ -1,4 +1,26 @@
 #!/usr/bin/env perl
+use strict;
+use warnings;
+use lib "$ENV{PRFDB_HOME}/lib";
+use local::lib "$ENV{PRFDB_HOME}/usr/perl";
+
+use vars qw"$db $config";
+die("Could not load PRFConfig.\n$@\n") unless (eval "use PRFConfig; 1");
+$config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
+die("Could not load PRFdb.\n$@\n") unless (eval "use PRFdb qw'AddOpen RemoveFile Callstack Cleanup'; 1");
+$db = new PRFdb(config => $config);
+die("Could not load RNAMotif.\n$@\n") unless (eval "use RNAMotif; 1");
+die("Could not load RNAFolders.\n$@\n") unless (eval "use RNAFolders; 1");
+die("Could not load Bootlace.\n$@\n") unless (eval "use Bootlace; 1");
+die("Could not load Overlap.\n$@\n") unless (eval "use Overlap; 1");
+die("Could not load SeqMisc.\n$@\n") unless (eval "use SeqMisc; 1");
+die("Could not load PRFBlast.\n$@\n") unless (eval "use PRFBlast; 1");
+die("Could not load Agree.\n$@\n") unless (eval "use Agree; 1");
+die("Could not load MyGenbank.\n$@\n") unless (eval "use MyGenbank; 1");
+my $load_return = eval("use PRFGraph; 1");
+warn("Could not load PRFGraph, disabling graphing routines.\n$@\n") unless($load_return);
+
+
 our $state = { time_to_die => undef,
 	       queue_table => undef,
 	       queue_id => undef,
@@ -1158,32 +1180,12 @@ sub Make_Queue_Jobs {
 }
 
 BEGIN {
-    use strict;
-    use warnings;
-    use lib ($ENV{PRFDB_HOME} ? "$ENV{PRFDB_HOME}/lib" : "./lib");
-    use local::lib ($ENV{PRFDB_HOME} ? "$ENV{PRFDB_HOME}/usr/perl" : "./usr/perl");
-    use vars qw"$db $config";
-    unless ($ENV{PRFDB_HOME}) {
+    unless (defined($ENV{PRFDB_HOME})) {
         print "These scripts depend widely on the environment variable: PRFDB_HOME.
 It is currently not set.  Setting it to .
 ";
-        $ENV{PRFDB_HOME} = ".";
+        $ENV{PRFDB_HOME} = $ENV{PWD};
     }
-
-    die("Could not load PRFConfig.\n$@\n") unless (eval "use PRFConfig; 1");
-    $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
-    die("Could not load PRFdb.\n$@\n") unless (eval "use PRFdb qw'AddOpen RemoveFile Callstack Cleanup'; 1");
-    $db = new PRFdb(config => $config);
-    die("Could not load RNAMotif.\n$@\n") unless (eval "use RNAMotif; 1");
-    die("Could not load RNAFolders.\n$@\n") unless (eval "use RNAFolders; 1");
-    die("Could not load Bootlace.\n$@\n") unless (eval "use Bootlace; 1");
-    die("Could not load Overlap.\n$@\n") unless (eval "use Overlap; 1");
-    die("Could not load SeqMisc.\n$@\n") unless (eval "use SeqMisc; 1");
-    die("Could not load PRFBlast.\n$@\n") unless (eval "use PRFBlast; 1");
-    die("Could not load Agree.\n$@\n") unless (eval "use Agree; 1");
-    die("Could not load MyGenbank.\n$@\n") unless (eval "use MyGenbank; 1");
-    my $load_return = eval("use PRFGraph; 1");
-    warn("Could not load PRFGraph, disabling graphing routines.\n$@\n") unless($load_return);
     $SIG{INT} = \&PRFdb::Cleanup;
     $SIG{BUS} = \&PRFdb::Cleanup;
     $SIG{SEGV} = \&PRFdb::Cleanup;
@@ -1192,7 +1194,6 @@ It is currently not set.  Setting it to .
     $SIG{QUIT} = \&PRFdb::Cleanup;
     setpriority(0,0,$config->{niceness});
     $ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}" if(defined($config->{ENV_LIBRARY_PATH}));
-
 }
 
 END {

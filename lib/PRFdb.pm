@@ -18,7 +18,7 @@ our @ISA = qw(Exporter);
 # Symbols to be exported by default
 our @EXPORT = qw"AddOpen RemoveFile Callstack Cleanup";
 our $AUTOLOAD;
-$VERSION = '20091101';
+$VERSION = '20111119';
 Log::Log4perl->easy_init($WARN);
 our $log = Log::Log4perl->get_logger('stack'),
 ### Holy crap global variables!

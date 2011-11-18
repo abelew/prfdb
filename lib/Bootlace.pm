@@ -5,6 +5,8 @@ use PRFdb;
 use SeqMisc;
 use Math::Stat;
 use PRFConfig qw / PRF_Out /;
+use vars qw($VERSION);
+$VERSION='20111119';
 
 sub new {
     my ($class, %arg) = @_;

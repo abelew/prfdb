@@ -1,6 +1,5 @@
 package PRFConfig;
 use strict;
-use local::lib "$ENV{PRFDB_HOME}/usr/perl";
 use AppConfig qw/:argcount :expand/;
 use Getopt::Long;
 use PRFdb qw" Callstack ";
@@ -8,6 +7,8 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(PRF_Out PRF_Error config);    # Symbols to be exported by default
 our $AUTOLOAD;
+use vars qw($VERSION);
+$VERSION='20111119';
 
 =head1 NAME
 

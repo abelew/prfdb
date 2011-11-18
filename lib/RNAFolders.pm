@@ -4,7 +4,8 @@ use IO::Handle;
 use lib 'lib';
 use PkParse;
 use PRFdb qw / Callstack AddOpen RemoveFile /;
-
+use vars qw($VERSION);
+$VERSION='20111119';
 sub new {
     my ($class, %arg) = @_;
     my $me = bless {

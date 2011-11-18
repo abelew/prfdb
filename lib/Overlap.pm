@@ -3,6 +3,8 @@ use strict;
 use lib 'lib';
 use SeqMisc;
 use PRFConfig qw / PRF_Out /;
+use vars qw($VERSION);
+$VERSION='20111119';
 
 my $config = $PRFConfig::config;
 

@@ -1,5 +1,4 @@
 package PRFsnp;
-
 use strict;
 use DBI;
 use IO::File;
@@ -10,6 +9,8 @@ use Bio::DB::GenBank;
 #use Bio::DB::EUtilities;
 use LWP;
 use IO::String;
+use vars qw($VERSION);
+$VERSION='20111119';
 
 my $config = $PRFConfig::config;
 my $db = new PRFdb(config=>$config);

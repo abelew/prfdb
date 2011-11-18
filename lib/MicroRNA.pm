@@ -2,6 +2,8 @@ package MicroRNA;
 use strict;
 use autodie qw":all";
 use PRFdb;
+use vars qw($VERSION);
+$VERSION='20111119';
 our $AUTOLOAD;
 
 sub new {

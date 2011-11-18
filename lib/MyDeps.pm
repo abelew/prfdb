@@ -2,6 +2,12 @@ package MyDeps;
 use CPAN;
 use strict;
 use Test::More;
+use lib "$ENV{PRFDB_HOME}/lib";
+use local::lib "$ENV{PRFDB_HOME}/usr/perl";
+
+use vars qw($VERSION);
+$VERSION='20111119';
+
 #use vars qw($VERSION);
 #our @ISA = qw(Exporter);
 #our @EXPORT = qw(deps);    # Symbols to be exported by default
@@ -66,20 +72,12 @@ sub Test {
     }
 }
 
-sub Res_locallib {
-	my $load_return = eval("use local::lib; 1");
-	if (!$load_return) {
-	    CPAN::Shell->install("local::lib");
-	}
-}
 sub Res {
-    Res_locallib();
     $ENV{FTP_PASSIVE}=1;
-    if (!-r "$ENV{HOME}/.cpan/CPAN/MyConfig.pm") {
+#    if (!-r "$ENV{HOME}/.cpan/CPAN/MyConfig.pm") {
 ## Dropped CPAN options here:
 ##  'makepl_arg' => q[PREFIX=$ENV{PRFDB_HOME}/usr],
 ##  'mbuild_install_arg' => q[PREFIX=$ENV{PRFDB_HOME}/usr],
-
 #	system("mkdir -pv $ENV{HOME}/.cpan/CPAN");
 #	system(qq"cat > $ENV{HOME}/.cpan/CPAN/MyConfig.pm <<eof
 #\\\$CPAN::Config = {
@@ -117,17 +115,21 @@ sub Res {
 #	1;
 #__END__
 #eof");
-    }
-    foreach my $d (@use_deps) {
-	print "Loading $d\n";
-	my $load_return = eval("use $d; 1");
+#  }
+    foreach my $module (@use_deps) {
+	print "Loading $module\n";
+	my $load_return = eval("use $module; 1");
+	if (defined($module)) {
+	    my $version = $module->VERSION;
+	    print "Its version is: $version\n";
+	}
 	if (!$load_return) {
 	    my $dep_count = 0;
-	    while ($dep_count <= 5) {
+	    while ($dep_count <= 50) {
 		$dep_count++;
 		my $missing = $@;
 		if ($missing =~ /Global/) {
-		    print "syntax error found in $d.\n";
+		    print "syntax error found in $module.\n";
 		    print "$@";
 		} elsif ($missing =~ /^Can\'t locate/) {
 		    my @response = split(/ /, $missing);
@@ -137,9 +139,6 @@ sub Res {
 		    print "Going to install $missing\n";
 		    CPAN::Shell->force("install", $missing);
 		}
-#	print "TESTME: $d $load_return $@\n";
-#	     diag("$d appears to be missing, building in $ENV{PRFDB_HOME}/src/perl\n");
-#	    CPAN::Shell->install($d);
 	    }
 	}
     }

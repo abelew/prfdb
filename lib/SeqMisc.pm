@@ -3,6 +3,8 @@ use strict;
 use PRFConfig;
 use File::Temp qw / tmpnam /;
 use PRFdb qw" Callstack ";
+use vars qw($VERSION);
+$VERSION='20111119';
 ## Every function here should take as input an array reference
 ## containing the sequence to be shuffled.
 my $config = $PRFConfig::config;

@@ -1,5 +1,6 @@
 package HTMLMisc;
-
+use vars qw($VERSION);
+$VERSION='20111119';
 sub Make_Species {
     my $species = shift;
     $species =~ s/_/ /g;
