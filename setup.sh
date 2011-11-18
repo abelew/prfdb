@@ -71,6 +71,10 @@ cd $PRFDB_HOME/src/mfold_util-4.6
 $CONFIGURE_CMD
 make ; make install
 
+cd $PRFDB_HOME/src/mfold-3.5
+$CONFIGURE_CMD
+make ; make install
+
 touch $PRFDB_HOME/backup/prfdb_test_1
 touch $PRFDB_HOME/backup/prfdb_test_2
 echo "Please run something like:
