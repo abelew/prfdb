@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-
-$PRFDB_HOME/fixdeps.pl
+if ["$PRFDB_HOME" eq ""]; then
+  echo "The environment variable PRFDB_HOME is not set."
+  echo "Please set it.  Temporarily setting it to '.'"
+  export PRFDB_HOME="."
+fi
+${PRFDB_HOME}/fixdeps.pl
 mkdir -p bin/params
 cd src/
 CONFIGURE_CMD="./configure --prefix=$PRFDB_HOME --bindir=$PRFDB_HOME/work"
