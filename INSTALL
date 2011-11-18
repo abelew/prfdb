@@ -1,3 +1,8 @@
+Most of the actions outlined below may be accomplished by simply running:
+./setup.sh from within the PRFdb distribution.
+One will still need to make a prfdb.conf and apache configuration to run a webserver,
+as well as ./prf_daemon --setup_db
+
 Required Software that isn't likely to be in your distribution:
 rnamotif
 pknots
