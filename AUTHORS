@@ -1,0 +1,48 @@
+Some Perl written by Ashton Trey Belew <abelew@gmail.com>
+Jonathan Jacobs wrote the original version
+Nic Hepler wrote the original PRFSNP.pm
+
+
+Nupack:
+  R.M. Dirks, J.S. Bois, J.M. Schaeffer, E. Winfree, and N.A. Pierce. (2007)
+  Thermodynamic analysis of interacting nucleic acid strands. SIAM Rev, 49, 65-88.
+
+Pknots:
+  E. Rivas, S.R. Eddy (1999)
+  A dynamic programming algorithm for RNA structure prediction including pseudoknots. J Mol Biol. Feb 5;285(5):2053-68.
+
+Hotknots:
+  Ren, J., Rastegari, B., Condon, A., and Hoos, H. H. (2005).
+  HotKnots: heuristic prediction of RNA secondary structures including pseudoknots. RNA, 11(10), 1494--1504.
+
+  Andronescu, M., Pop, C., and Condon, A. (2010)
+  Improved energy parameters for RNA pseudoknotted secondary structure prediction, RNA. Jan;16(1):26-42. 
+
+mfold:
+  M. Zuker. (1994)
+  Prediction of RNA Secondary Structure by Energy Minimization. In Computer Analysis of Sequence Data... , 267-294
+  Among many other references...
+
+RNAhybrid:
+  Marc Rehmsmeier, Peter Steffen, Matthias Höchsmann, Robert Giegerich (2004)
+  Fast and effective prediction of microRNA/target duplexes RNA, 10:1507-1517
+
+rnamotif:
+  T. Macke, D. Ecker, R. Gutell, D. Gautheret, D.A. Case and R. Sampath. (2001)
+  RNAMotif -- A new RNA secondary structure definition and discovery algorithm. Nucl. Acids Res. 29, 4724-4735
+
+Vienna:
+  Ivo L. Hofacker, Walter Fontana, Peter F. Stadler, Sebastian Bonhoeffer, Manfred Tacker, and Peter Schuster. (1994)
+  Fast folding and comparison of RNA secondary structures (the Vienna RNA Package). Monatsh. Chem., 125(2):167–188
+
+miRanda
+  John B, Enright AJ, Aravin A, Tuschl T, Sander C, Marks DS., (2008)
+  Human MicroRNA targets.  PLoS Biol. 2005 Jul;3(7):e264. 
+
+BLAST
+  Altschul SF; Gish W; Miller W; Myers EW; Lipman DJ (1990)
+  Basic local alignment search tool. J Mol Biol 215: 403-10 
+
+Bioperl
+Copyright (c) 1996-2009 Georg Fuellen, Richard Resnick, Steven E. Brenner, Chris
+Dagdigian, Steve Chervitz, Ewan Birney, James Gilbert, Elia Stupka, and others.
