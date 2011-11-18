@@ -3,7 +3,6 @@ use strict;
 use warnings;
 use lib "$ENV{PRFDB_HOME}/lib";
 use local::lib "$ENV{PRFDB_HOME}/usr/perl";
-
 use vars qw"$db $config";
 die("Could not load PRFConfig.\n$@\n") unless (eval "use PRFConfig; 1");
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
@@ -19,7 +18,13 @@ die("Could not load Agree.\n$@\n") unless (eval "use Agree; 1");
 die("Could not load MyGenbank.\n$@\n") unless (eval "use MyGenbank; 1");
 my $load_return = eval("use PRFGraph; 1");
 warn("Could not load PRFGraph, disabling graphing routines.\n$@\n") unless($load_return);
-
+$SIG{INT} = \&PRFdb::Cleanup;
+$SIG{BUS} = \&PRFdb::Cleanup;
+$SIG{SEGV} = \&PRFdb::Cleanup;
+$SIG{PIPE} = \&PRFdb::Cleanup;
+$SIG{ABRT} = \&PRFdb::Cleanup;
+$SIG{QUIT} = \&PRFdb::Cleanup;
+setpriority(0,0,$config->{niceness});
 
 our $state = { time_to_die => undef,
 	       queue_table => undef,
@@ -1186,13 +1191,6 @@ It is currently not set.  Setting it to .
 ";
         $ENV{PRFDB_HOME} = $ENV{PWD};
     }
-    $SIG{INT} = \&PRFdb::Cleanup;
-    $SIG{BUS} = \&PRFdb::Cleanup;
-    $SIG{SEGV} = \&PRFdb::Cleanup;
-    $SIG{PIPE} = \&PRFdb::Cleanup;
-    $SIG{ABRT} = \&PRFdb::Cleanup;
-    $SIG{QUIT} = \&PRFdb::Cleanup;
-    setpriority(0,0,$config->{niceness});
     $ENV{LD_LIBRARY_PATH} .= ":$config->{ENV_LIBRARY_PATH}" if(defined($config->{ENV_LIBRARY_PATH}));
 }
 
