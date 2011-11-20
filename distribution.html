@@ -145,6 +145,11 @@ $(function() {
     var dat =  series;
     $.plot($("#mfe"), dat, options);
   });
+  var canvasData = mfe.toDataURL("image/png");
+  var ajax = new XMLHttpRequest();
+  ajax.open("POST", "/flot_save.html?filename=<% $mfe_json_filename %>", false);
+  ajax.setRequestHeader('Content-Type', 'application/upload');
+  ajax.send(canvasData);
 });
 </script>
 <script type="text/javascript" id="z">
@@ -165,33 +170,16 @@ $(function() {
       axisLabelUseCanvas: true }
   };
 
-%#  xaxis, yaxis: {
-%#      show: null or true/false
-%#      position: "bottom" or "top" or "left" or "right"
-%#      mode: null or "time"
-%#      color: null or color spec
-%#      tickColor: null or color spec
-%#      font: null or font spec object
-%#      min: null or number
-%#      max: null or number
-%#      autoscaleMargin: null or number
-%#      transform: null or fn: number -> number
-%#      inverseTransform: null or fn: number -> number
-%#      ticks: null or number or ticks array or (fn: axis -> ticks array)
-%#      tickSize: number or array
-%#      minTickSize: number or array
-%#      tickFormatter: (fn: number, object -> string) or string
-%#      tickDecimals: null or number
-%#      labelWidth: null or number
-%#      labelHeight: null or number
-%#      reserveSpace: null or true
-%#      tickLength: null or number
-%#      alignTicksWithAxis: null or number
-%#  }
   $.getJSON('<% $z_json_filename %>', function(series) {
     var dat =  series;
     $.plot($("#z"), dat, options);
   });
+
+  var canvasData = z.toDataURL("image/png");
+  var ajax = new XMLHttpRequest();
+  ajax.open("POST", "/flot_save.html?filename=<% $z_json_filename %>", false);
+  ajax.setRequestHeader('Content-Type', 'application/upload');
+  ajax.send(canvasData);
 });
 </script>
 

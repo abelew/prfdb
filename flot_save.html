@@ -1,0 +1,20 @@
+<%perl>
+ if (-r $filename) {
+  $filename =~ s/\.json/\.png/g;
+  open(IMG, ">$filename") or Callstack(message => qq"Could not open $filename $!");
+  use Apache2::Upload;
+  my $req = new Apache2::Request($r);
+  my $upload = $req->upload("filename");
+  my $content;
+  binmode IMG;
+  my $size = $upload->slurp($content);
+  print IMG $content;
+  close IMG;
+ } else {
+  print "The filename: $filename was not availble.<br>\n";
+ }
+</%perl>
+
+<%args>
+ $filename => undef
+</%args>
