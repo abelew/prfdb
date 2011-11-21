@@ -1,0 +1,30 @@
+<%perl>
+ my $req = new Apache2::Request($r);
+
+ my $data;
+ my @args = $req->param;
+ foreach my $a (@args) {
+  if ($a =~ /^base64/) {
+   $data = $a;
+  }
+ }
+
+ my $file = $req->param("file");
+ $file =~ s/\.json/\.png/g;
+ my $filename = $ENV{PRFDB_HOME};
+ $filename .= $file;
+ print "FILENAME: $filename\n";
+
+ open(IMG, ">$filename") or print "ERROR $!\n";
+# binmode IMG;
+# print IMG $data;
+# close IMG;
+ use MIME::Base64;
+ my $encoded = MIME::Base64::decode($data);
+ binmode IMG;
+ print IMG $encoded;
+ close IMG; 
+</%perl>
+
+<%args>
+</%args>

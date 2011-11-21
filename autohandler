@@ -1,5 +1,5 @@
 % my $path_name = $r->uri;
-% if ($path_name =~ /^\/download\//) {
+% if ($path_name =~ /^\/download\// or $path_name =~ /^\/upload/) {
 % $m->call_next;
 % } else {
 <HTML>
@@ -15,6 +15,10 @@
   <script type="text/javascript" language="javascript" src="/js/jquery.flot.stack.js"></script>
   <script type="text/javascript" language="javascript" src="/js/jquery.flot.fillbetween.js"></script>
   <script type="text/javascript" language="javascript" src="/js/jquery.flot.axislabels.js"></script>
+<!--
+  <script type="text/javascript" language="javascript" src="/js/canvas2image.js"></script>
+  <script type="text/javascript" language="javascript" src="/js/canvastext.js"></script>
+-->
 
   <body bgcolor="white" text="black" link="#009933" vlink="#009900"> 
   <table width="100%" border="0" cellspacing="0" cellpadding="0">
