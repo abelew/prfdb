@@ -16,10 +16,10 @@ $db->Remove_Duplicates($accession);
 
 my ($detail_stmt, $info);
 if (!defined($slipstart)) {
-  $detail_stmt = qq"SELECT $mt.*, gene_info.genename FROM $mt,gene_info WHERE gene_info.genome_id = ? AND gene_info.genome_id = $mt.genome_id ORDER BY start, seqlength DESC, algorithm DESC";
+  $detail_stmt = qq"SELECT $mt.*, gene_info.genename FROM $mt,gene_info WHERE gene_info.genome_id = ? AND gene_info.genome_id = $mt.genome_id ORDER BY start, seqlength DESC, mfe_method DESC";
   $info = $db->MySelect(statement => $detail_stmt, vars => [$genome_id,], type => 'list_of_hashes');
 } else {
-  $detail_stmt = qq"SELECT $mt.*, gene_info.genename FROM $mt,gene_info WHERE gene_info.genome_id = ? AND gene_info.genome_id = $mt.genome_id AND $mt.start = ? ORDER BY seqlength DESC, algorithm DESC";
+  $detail_stmt = qq"SELECT $mt.*, gene_info.genename FROM $mt,gene_info WHERE gene_info.genome_id = ? AND gene_info.genome_id = $mt.genome_id AND $mt.start = ? ORDER BY seqlength DESC, mfe_method DESC";
   $info = $db->MySelect(statement => $detail_stmt, vars => [$genome_id,$slipstart], type => 'list_of_hashes');
 }
 foreach my $entry_count (0 .. $#$info) {
@@ -68,7 +68,7 @@ $information->{sequence}
 			     start => $information->{start},
 			     seqlength => $information->{seqlength},
 			     iterations => $config->{boot_iterations},
-			     boot_mfe_algorithms => $config->{boot_mfe_algorithms},
+			     boot_mfe_methods => $config->{boot_mfe_methods},
 			     randomizers => $config->{boot_randomizers},);
 	my $bootlaces = $boot->Go();
 	$db->Put_Boot($bootlaces);

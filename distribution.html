@@ -11,18 +11,18 @@
 %# <form name="distribution" id="distribution" action="distribution.html?species=<% $species %>&seqlength=<% $seqlength %>&slipsites=<% $slipsites %>" enctype="multipart/form-data" method="POST">
  <form name="distribution" id="distribution" action="distribution.html?species=<% $species %>&seqlength=<% $seqlength %>" enctype="multipart/form-data" method="POST">
 % my $long_species = HTMLMisc::Make_Species($species);
-<p>This is the <i><% $long_species %></i> distribution for <% $slipsites %> slipsites using <% $algorithms %>.
+<p>This is the <i><% $long_species %></i> distribution for <% $slipsites %> slipsites using <% $mfe_methods %>.
 
 <script type='text/javascript'>
 function selection_option() {
-  document.forms["distribution"].elements["algorithms"].options["<% $algorithms %>"].selected = true;
+  document.forms["distribution"].elements["mfe_methods"].options["<% $mfe_methods %>"].selected = true;
   document.forms["distribution"].elements["slipsites"].options["<% $slipsites %>"].selected = true;
 }
 window.onload = selection_option;
 </script>
 
-  Change the algorithms:
-  <select name="algorithms" id="algorithms" onchange="this.form.submit(); return true;">
+  Change the MFE method:
+  <select name="mfe_methods" id="mfe_methods" onchange="this.form.submit(); return true;">
    <option name="all" value="all">all</option>
    <option name="pknots" value="pknots">pknots</option>
    <option name="nupack" value="nupack">nupack</option>
@@ -62,29 +62,29 @@ window.onload = selection_option;
 <table width="1000" border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td>
-%#      <center><img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $algorithms %>-<% $seqlength %>-mfe_dist.png"></center>
+%#      <center><img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $mfe_methods %>-<% $seqlength %>-mfe_dist.png"></center>
     <div id="mfe" style="width:800px;height:200px;"></div>
     </td>
     <td></td>
   </tr>
   <tr>
     <td>
-% my $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-${slipsites}-${algorithms}-${seqlength}.png";
+% my $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-${slipsites}-${mfe_methods}-${seqlength}.png";
 % if ($cloud_filters =~ /pseudo/) {
-%  $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-pknot-${slipsites}-${algorithms}-${seqlength}.png";
+%  $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-pknot-${slipsites}-${mfe_methods}-${seqlength}.png";
 %   if (-f $filename) {
-<img src="images/cloud/<% $species %>/cloud-pknot-<% $slipsites %>-<% $algorithms %>-<% $seqlength %>.png" usemap="#map">
+<img src="images/cloud/<% $species %>/cloud-pknot-<% $slipsites %>-<% $mfe_methods %>-<% $seqlength %>.png" usemap="#map">
 %   } ## End if -f $filename
 % } else {
-%  $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-${slipsites}-${algorithms}-${seqlength}.png";
+%  $filename = qq"$ENV{PRFDB_HOME}/images/cloud/${species}/cloud-${slipsites}-${mfe_methods}-${seqlength}.png";
 %   if (-f $filename) {
-<img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $algorithms %>-<% $seqlength %>.png" usemap="#map">
+<img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $mfe_methods %>-<% $seqlength %>.png" usemap="#map">
 %   }
 % }
 % if (-f $filename) {
     </td>
     <td>
-%#      <img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $algorithms %>-<% $seqlength %>-z_dist.png">
+%#      <img src="images/cloud/<% $species %>/cloud-<% $slipsites %>-<% $mfe_methods %>-<% $seqlength %>-z_dist.png">
     <div id="z" style="width:200px;height:800px;"></div>
     </td>
   </tr>
@@ -121,8 +121,8 @@ coordinates wihch share more than 1 sequence window.
 % close(MAP);
 
 
-% my $mfe_json_filename = qq"/images/cloud/$species/cloud-${slipsites}-${algorithms}-${seqlength}-mfe_dist.json";
-% my $z_json_filename = qq"/images/cloud/$species/cloud-${slipsites}-${algorithms}-${seqlength}-z_dist.json";
+% my $mfe_json_filename = qq"/images/cloud/$species/cloud-${slipsites}-${mfe_methods}-${seqlength}-mfe_dist.json";
+% my $z_json_filename = qq"/images/cloud/$species/cloud-${slipsites}-${mfe_methods}-${seqlength}-z_dist.json";
 
 
 <script type="text/javascript" id="mfe">
@@ -191,14 +191,14 @@ $(function() {
 These graphs take about a minute to generate, this page will refresh with the freshly generated
 graph in one minute.</p>
 
-<& /js/refresh.html, refresh_url=>"distribution.html?species=$species&algorithms=$algorithms&seqlength=$seqlength&slipsites=$slipsites", seconds => 20 &>
+<& /js/refresh.html, refresh_url=>"distribution.html?species=$species&mfe_methods=${mfe_methods}&seqlength=$seqlength&slipsites=$slipsites", seconds => 20 &>
 <script>  
   function load() {  
   }  
   window.onload = mydoLoad;  
 </script>  
 
-<& generate_distribution.html, species => $species, slipsites => $slipsites, algorithms => $algorithms, seqlength => $seqlength &>
+<& generate_distribution.html, species => $species, slipsites => $slipsites, mfe_methods => $mfe_methods, seqlength => $seqlength &>
 %  }
 
 %  ## If the parameters are not defined, print the html form to get them
@@ -231,8 +231,8 @@ graph in one minute.</p>
 
 <label><input type="checkbox" name="cloud_filters" value="pseudoknots only" />pseudoknots only</label>
 <br>
-  Choose an algorithm (or set) to examine:<br>
-  <select name="algorithms">
+  Choose an MFE method (or set) to examine:<br>
+  <select name="mfe_methods">
 <option selected="selected" value="all">all</option>
 <option value="pknots" value="pknots">pknots</option>
 <option value="nupack" value="nupack">nupack</option>
@@ -283,5 +283,5 @@ graph in one minute.</p>
  $slipsites => undef
  $cloud_filters => undef
  $overlayquery => undef
- $algorithms => "hotknots"
+ $mfe_methods => "hotknots"
 </%args>
