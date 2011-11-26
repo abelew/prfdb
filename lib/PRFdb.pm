@@ -426,7 +426,7 @@ sub Reconnect {
 	my $boots = $me->MySelect(statement => "SELECT * FROM $bt", type => 'list_of_hashes');
 	foreach my $boot (@{$boots}) {
 	    ## Find the correct mfe entry
-	    my $stmt = qq"SELECT id, genome_id FROM $mt WHERE accession = ? AND start =  ? AND seqlength = ? AND algorithm = ?";
+	    my $stmt = qq"SELECT id, genome_id FROM $mt WHERE accession = ? AND start =  ? AND seqlength = ? AND mfe_method = ?";
 	    my $connector_id = $me->MySelect(statement => $stmt, vars => [$boot->{accession}, $boot->{start}, $boot->{seqlength}, $boot->{mfe_method}],);
 	    my @connector = @{$connector_id};
 	    if (scalar(@connector) > 1) {
@@ -603,7 +603,7 @@ sub Remove_Duplicates {
     my $accession = shift;
     my $species = $me->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", vars => [$accession], type => 'single');
     my $mfe_table = "mfe_$species";
-    my $info = $me->MySelect(qq"SELECT id,start,seqlength,algorithm FROM $mfe_table WHERE accession = '$accession'");
+    my $info = $me->MySelect(qq"SELECT id,start,seqlength,mfe_method FROM $mfe_table WHERE accession = '$accession'");
     my @duplicate_ids;
     my $dups = {};
     my $count = 0;

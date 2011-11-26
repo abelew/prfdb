@@ -26,7 +26,7 @@ sub Boot {
     my @boot_ids = ();
     my $rows = 0;
     ## What fields are required?
-    foreach my $mfe_method (keys %{$config->{boot_mfe_algorithms}}) {
+    foreach my $mfe_method (keys %{$config->{boot_mfe_methods}}) {
 	my $mfe_id = $data->{mfe_id};	
 	foreach my $rand_method (keys %{$config->{boot_randomizers}}) {
 	    my $iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{iterations};
@@ -88,7 +88,7 @@ sub Hotknots {
 
 sub MFE {
     my $me = shift;
-    my $algo = shift;
+    my $mfe_method = shift;
     my $data = shift;
     my $config = $me->{config};
     ## What fields do we want to fill in this MFE table?
@@ -101,9 +101,9 @@ sub MFE {
     my $species = $data->{species};
     my $table = qq"mfe_$species";
     $data->{sequence} =~ tr/actgun/ACTGUN/;
-    my $statement = qq(INSERT INTO $table (genome_id, algorithm, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
+    my $statement = qq(INSERT INTO $table (genome_id, mfe_method, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
     
-    $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $algo, $data->{accession}, $data->{start}, $data->{slipsite}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],);
+    $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $mfe_method, $data->{accession}, $data->{start}, $data->{slipsite}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],);
     
     my $put_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
     return ($put_id);
@@ -111,7 +111,7 @@ sub MFE {
 
 sub MFE_Landscape {
     my $me = shift;
-    my $algo = shift;
+    my $mfe_method = shift;
     my $data = shift;
     my $table = shift;
     my $config = $me->{config};
@@ -119,7 +119,7 @@ sub MFE_Landscape {
     $table = 'landscape_virus' if ($table =~ /virus/);
 	
     my @filled;
-    if ($algo eq 'vienna') {
+    if ($mfe_method eq 'vienna') {
 	@filled = ('genome_id','accession','start','seqlength','sequence','parens','mfe');
     } else {
 	@filled = ('genome_id','accession','start','seqlength','sequence','output','parsed','parens','mfe','pairs','knotp','barcode');
@@ -135,8 +135,8 @@ sub MFE_Landscape {
 	Callstack(message => qq"Sequence is not defined for Species:$data->{species}, Accession:$data->{accession}, Start:$data->{start}, Seqlength:$data->{seqlength}");
 	return(undef);
     }
-    my $statement = qq"INSERT DELAYED INTO $table (genome_id, algorithm, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
-    my $rows = $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $algo, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],);
+    my $statement = qq"INSERT DELAYED INTO $table (genome_id, mfe_method, accession, start, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    my $rows = $me->MyExecute(statement => $statement, vars => [$data->{genome_id}, $mfe_method, $data->{accession}, $data->{start}, $data->{seqlength}, $data->{sequence}, $data->{output}, $data->{parsed}, $data->{parens}, $data->{mfe}, $data->{pairs}, $data->{knotp}, $data->{barcode}],);
     return ($rows);
 }    ## End put_mfe_landscape
 
@@ -253,13 +253,13 @@ sub Stats {
 	$me->MyExecute(statement => qq"DELETE FROM stats WHERE species = '$species'");
 	foreach my $seqlength (@{$data->{seqlength}}) {
 	    foreach my $max_mfe (@{$data->{max_mfe}}) {
-		foreach my $algorithm (@{$data->{algorithm}}) {
+		foreach my $mfe_method (@{$data->{mfe_method}}) {
 		    my $mfe_table = ($species =~ /virus/ ? "mfe_virus" : "mfe_$species");
 		    #  0    1    2     3     4    5     6     7     8
 		    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 		    my $timestring = "$mon/$mday $hour:$min.$sec";
-#		    print "$timestring  Now doing $species $seqlength $max_mfe $algorithm\n";
-		    my $weedout_string = qq"WHERE algorithm = '$algorithm' AND seqlength = '$seqlength'";
+#		    print "$timestring  Now doing $species $seqlength $max_mfe $mfe_method\n";
+		    my $weedout_string = qq"WHERE mfe_method = '$mfe_method' AND seqlength = '$seqlength'";
 		    my $mfe_weed = qq" AND mfe > -80 AND mfe < 5 ";
 		    my $z_weed = qq" AND zscore IS NOT NULL AND zscore > -10 AND zscore < 10 ";
 		    my $num_statements = 27;
@@ -299,9 +299,9 @@ sub Stats {
 		    my $stdev_pairs_knotted = $me->MySelect(type => 'single',
  statement => "/* 17 of $num_statements */ SELECT stddev(pairs) FROM $mfe_table $weedout_string $mfe_weed AND knotp = '1' AND mfe <= '$max_mfe'");
 		    my $avg_zscore = $me->MySelect(type => 'single',
- statement => "/* 18 of $num_statements */ SELECT avg(zscore) FROM $boot_table WHERE mfe_method = '$algorithm' AND seqlength = '$seqlength' $z_weed");
+ statement => "/* 18 of $num_statements */ SELECT avg(zscore) FROM $boot_table WHERE mfe_method = '$mfe_method' AND seqlength = '$seqlength' $z_weed");
 		    my $stdev_zscore = $me->MySelect(type => 'single',
- statement => "/* 19 of $num_statements */ SELECT stddev(zscore) FROM $boot_table WHERE mfe_method = '$algorithm' AND seqlength = '$seqlength' $z_weed");
+ statement => "/* 19 of $num_statements */ SELECT stddev(zscore) FROM $boot_table WHERE mfe_method = '$mfe_method' AND seqlength = '$seqlength' $z_weed");
  $stmt = "/* 20 of $num_statements */ SELECT count(accession) FROM gene_info WHERE species = '$species'";
 #		    print "$stmt\n";
 		    my $total_genes = $me->MySelect(type => 'single', statement => $stmt);
@@ -322,7 +322,7 @@ sub Stats {
 		    my $genes_2mfe_knotted =  $me->MySelect(type => 'single', statement => $stmt);
 		    my $z_one = $avg_zscore - $stdev_zscore;
 		    my $tmp_weed = $weedout_string;
-		    $tmp_weed =~ s/algorithm/$boot_table\.mfe_method/g;
+		    $tmp_weed =~ s/mfe_method/$boot_table\.mfe_method/g;
  $stmt = "/* 24 of $num_statements */ SELECT count(distinct(accession)) FROM $boot_table $tmp_weed AND zscore <= '$z_one'";
 #		    print "$stmt\n";
 		    my $genes_1z = $me->MySelect(type => 'single', statement => $stmt);
@@ -330,7 +330,7 @@ sub Stats {
  $stmt = "/* 25 of $num_statements */ SELECT count(distinct(accession)) FROM $boot_table $tmp_weed AND zscore <= '$z_two'";
 #		    print "$stmt\n";
 		    my $genes_2z = $me->MySelect(type => 'single', statement => $stmt);
-		    $weedout_string =~ s/algorithm =/$mfe_table\.algorithm =/g;
+		    $weedout_string =~ s/mfe_method =/$mfe_table\.mfe_method =/g;
 		    $weedout_string =~ s/seqlength =/$mfe_table\.seqlength =/g;
  $stmt = "/* 26 of $num_statements */ SELECT count(distinct($mfe_table.accession)) FROM ${mfe_table},${boot_table} $weedout_string AND ${mfe_table}.accession=${boot_table}.accession AND ${mfe_table}.mfe <= '$std_one' AND ${boot_table}.zscore <= '$z_one'";
 #		    print "$stmt\n";
@@ -342,11 +342,11 @@ sub Stats {
 		    my $genes_2both = $me->MySelect(type => 'single', statement => $stmt);
  $stmt = "/* 27a of $num_statements */ SELECT count(distinct($mfe_table.accession)) FROM ${mfe_table},${boot_table} $weedout_string AND $mfe_table.knotp = '1' AND ${mfe_table}.accession=${boot_table}.accession AND ${mfe_table}.mfe <= '$std_two' AND ${boot_table}.zscore <= '$z_two'";
 		    my $genes_2both_knotted = $me->MySelect(type => 'single', statement => $stmt);
-#		    print "species:$species  seqlength:$seqlength  max_mfe:$max_mfe  min_mfe:$min_mfe  algorithm:$algorithm  num_seq:$num_sequences  avg_mfe:$avg_mfe  stdev_mfe:$stdev_mfe  avg_pairs:$avg_pairs  stdev_pairs:$stdev_pairs  num_nokn:$num_sequences_noknot  avg_mfe_no:$avg_mfe_noknot  stdev_mfe_no:$stdev_mfe_noknot  avg_pairs_no:$avg_pairs_noknot  stdev_pairs_no:$stdev_pairs_noknot  num_knot:$num_sequences_knotted  avg_mfe_knot:$avg_mfe_knotted  stdev_mfe_knotted:$stdev_mfe_knotted  avg_pairs_knot:$avg_pairs_knotted  stdev_pairs:kno:$stdev_pairs_knotted  avg_z:$avg_zscore  stdev_zscore:$stdev_zscore\n";
+#		    print "species:$species  seqlength:$seqlength  max_mfe:$max_mfe  min_mfe:$min_mfe  mfe_method:$mfe_method  num_seq:$num_sequences  avg_mfe:$avg_mfe  stdev_mfe:$stdev_mfe  avg_pairs:$avg_pairs  stdev_pairs:$stdev_pairs  num_nokn:$num_sequences_noknot  avg_mfe_no:$avg_mfe_noknot  stdev_mfe_no:$stdev_mfe_noknot  avg_pairs_no:$avg_pairs_noknot  stdev_pairs_no:$stdev_pairs_noknot  num_knot:$num_sequences_knotted  avg_mfe_knot:$avg_mfe_knotted  stdev_mfe_knotted:$stdev_mfe_knotted  avg_pairs_knot:$avg_pairs_knotted  stdev_pairs:kno:$stdev_pairs_knotted  avg_z:$avg_zscore  stdev_zscore:$stdev_zscore\n";
 		    my $statement = qq"INSERT DELAYED INTO stats
-(species, seqlength, max_mfe, min_mfe, algorithm, num_sequences, avg_mfe, stddev_mfe, avg_pairs, stddev_pairs, num_sequences_noknot, avg_mfe_noknot, stddev_mfe_noknot, avg_pairs_noknot, stddev_pairs_noknot, num_sequences_knotted, avg_mfe_knotted, stddev_mfe_knotted, avg_pairs_knotted, stddev_pairs_knotted, avg_zscore, stddev_zscore, total_genes, genes_hits, genes_1mfe, genes_2mfe, genes_1z, genes_2z, genes_1both, genes_2both, genes_1mfe_knotted, genes_2mfe_knotted, genes_1both_knotted, genes_2both_knotted)
+(species, seqlength, max_mfe, min_mfe, mfe_method, num_sequences, avg_mfe, stddev_mfe, avg_pairs, stddev_pairs, num_sequences_noknot, avg_mfe_noknot, stddev_mfe_noknot, avg_pairs_noknot, stddev_pairs_noknot, num_sequences_knotted, avg_mfe_knotted, stddev_mfe_knotted, avg_pairs_knotted, stddev_pairs_knotted, avg_zscore, stddev_zscore, total_genes, genes_hits, genes_1mfe, genes_2mfe, genes_1z, genes_2z, genes_1both, genes_2both, genes_1mfe_knotted, genes_2mfe_knotted, genes_1both_knotted, genes_2both_knotted)
     VALUES
-('$species', '$seqlength', '$max_mfe', '$min_mfe', '$algorithm', '$num_sequences', '$avg_mfe', '$stdev_mfe', '$avg_pairs', '$stdev_pairs', '$num_sequences_noknot', '$avg_mfe_noknot', '$stdev_mfe_noknot', '$avg_pairs_noknot', '$stdev_pairs_noknot', '$num_sequences_knotted', '$avg_mfe_knotted', '$stdev_mfe_knotted', '$avg_pairs_knotted', '$stdev_pairs_knotted', '$avg_zscore', '$stdev_zscore', '$total_genes', '$genes_hits', '$genes_1mfe', '$genes_2mfe', '$genes_1z', '$genes_2z', '$genes_1both', '$genes_2both', '$genes_1mfe_knotted', '$genes_2mfe_knotted', '$genes_1both_knotted', '$genes_2both_knotted')";
+('$species', '$seqlength', '$max_mfe', '$min_mfe', '$mfe_method', '$num_sequences', '$avg_mfe', '$stdev_mfe', '$avg_pairs', '$stdev_pairs', '$num_sequences_noknot', '$avg_mfe_noknot', '$stdev_mfe_noknot', '$avg_pairs_noknot', '$stdev_pairs_noknot', '$num_sequences_knotted', '$avg_mfe_knotted', '$stdev_mfe_knotted', '$avg_pairs_knotted', '$stdev_pairs_knotted', '$avg_zscore', '$stdev_zscore', '$total_genes', '$genes_hits', '$genes_1mfe', '$genes_2mfe', '$genes_1z', '$genes_2z', '$genes_1both', '$genes_2both', '$genes_1mfe_knotted', '$genes_2mfe_knotted', '$genes_1both_knotted', '$genes_2both_knotted')";
 #                  print "STATEMENT: $statement\n";
                   my $rows = $me->MyExecute(statement => $statement,);
                   if (defined($me->{errors}->{errstr})) {

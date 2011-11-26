@@ -264,17 +264,17 @@ sub MFE_ID {
     my $genome_id = shift;
     my $start = shift;
     my $seqlength = shift;
-    my $algorithm = shift;
+    my $mfe_method = shift;
     my $species = $me->MySelect(statement => "SELECT species FROM gene_info WHERE id = ?", type => 'single', vars => [$genome_id]);
     my $mfe_table = "mfe_$species";
-    my $statement = qq"SELECT id FROM $mfe_table WHERE genome_id = ? AND start = ? AND seqlength = ? AND algorithm = ? LIMIT 1";
-    my $mfe = $me->MySelect(statement =>$statement, vars => [$genome_id, $start, $seqlength, $algorithm], type => 'single');
+    my $statement = qq"SELECT id FROM $mfe_table WHERE genome_id = ? AND start = ? AND seqlength = ? AND mfe_method = ? LIMIT 1";
+    my $mfe = $me->MySelect(statement =>$statement, vars => [$genome_id, $start, $seqlength, $mfe_method], type => 'single');
     return ($mfe);
 }
 
 sub Num_RNAfolds {
     my $me = shift;
-    my $algo = shift;
+    my $mfe_method = shift;
     my $genome_id = shift;
     my $slipsite_start = shift;
     my $seqlength = shift;
@@ -285,8 +285,8 @@ sub Num_RNAfolds {
     $table = "boot_virus" if ($table =~ /boot/ and $table =~ /virus/);
     $table = "landscape_virus" if ($table =~ /landscape/ and $table =~ /virus/);
     my $return = {};
-    my $statement = qq"SELECT count(id) FROM $table WHERE genome_id = ? AND algorithm = ? AND start = ? AND seqlength = ?";
-    my $count = $me->MySelect(statement =>$statement, vars => [$genome_id, $algo, $slipsite_start, $seqlength], type => 'single');
+    my $statement = qq"SELECT count(id) FROM $table WHERE genome_id = ? AND mfe_method = ? AND start = ? AND seqlength = ?";
+    my $count = $me->MySelect(statement =>$statement, vars => [$genome_id, $mfe_method, $slipsite_start, $seqlength], type => 'single');
     if (!defined($count) or $count eq '') {
 	$count = 0;
     }
@@ -300,11 +300,11 @@ sub Num_Bootfolds {
     my $genome_id = $args{genome_id};
     my $start = $args{start};
     my $seqlength = $args{seqlength};
-    my $method = $args{method};
+    my $mfe_method = $args{mfe_method};
     my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
     my $return = {};
     my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? and start = ? and seqlength = ? and mfe_method = ?/;
-    my $count = $me->MySelect(statement => $statement, vars => [$genome_id, $start, $seqlength, $method], type =>'single');
+    my $count = $me->MySelect(statement => $statement, vars => [$genome_id, $start, $seqlength, $mfe_method], type =>'single');
     return ($count);
 }
 

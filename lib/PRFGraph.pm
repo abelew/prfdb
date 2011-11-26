@@ -94,14 +94,14 @@ sub Make_Extension {
     $species = 'saccharomyces_cerevisiae' unless (defined($species));
     my $db = new PRFdb(config => $config);
     ## UNDEF VALUES this statement is pulling up undefined values...
-    my $averages = qq"SELECT avg_mfe, avg_zscore, stddev_mfe, stddev_zscore FROM stats WHERE species = '$species' AND seqlength = '100' AND algorithm = 'nupack'";
+    my $averages = qq"SELECT avg_mfe, avg_zscore, stddev_mfe, stddev_zscore FROM stats WHERE species = '$species' AND seqlength = '100' AND mfe_method = 'nupack'";
     my $averages_fun = $db->MySelect(statement => $averages, type => 'row');
     if (!defined($averages_fun->[0])) {
 	my $data = {
 	    species => [ $species ,],
 	    seqlength => $config->{seqlength},
 	    max_mfe => [ $config->{max_mfe} ],
-	    algorithm => $config->{algorithms},
+	    mfe_method => $config->{mfe_methods},
 	};
 	$db->Put_Stats($data);
 	$averages_fun = $db->MySelect(statement => $averages, type => 'row');
@@ -164,7 +164,7 @@ sub Make_Extension {
     my $x_range = ($right_x_coord - $left_x_coord);
     my $y_range = $top_y_coord - $bottom_y_coord;
     my $mt = "mfe_$species";
-    my $stmt = qq"SELECT DISTINCT ${mt}.id, ${mt}.accession, ${mt}.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, ${mt}.bp_mstop, ${mt}.mfe FROM genome,$mt WHERE genome.id = ${mt}.genome_id AND ${mt}.seqlength='100' AND ${mt}.algorithm = 'nupack'";
+    my $stmt = qq"SELECT DISTINCT ${mt}.id, ${mt}.accession, ${mt}.start, genome.orf_start, genome.orf_stop, genome.mrna_seq, ${mt}.bp_mstop, ${mt}.mfe FROM genome,$mt WHERE genome.id = ${mt}.genome_id AND ${mt}.seqlength='100' AND ${mt}.mfe_method = 'nupack'";
     my $stuff = $db->MySelect(statement => $stmt,);
     
     open(MAP, ">${filename}.map") or Callstack(message => qq"Unable to open the map file ${filename}.map");
@@ -406,7 +406,7 @@ sub Make_Summary_Pie {
     my $info_stmt = '';
     my $db = new PRFdb(config=>$config);
 #    if ($slipsite eq 'all') {
-    $info_stmt = qq"SELECT * FROM stats WHERE species = '$species' AND seqlength = '$seqlength' AND algorithm = '$mfe_method'";
+    $info_stmt = qq"SELECT * FROM stats WHERE species = '$species' AND seqlength = '$seqlength' AND mfe_method = '$mfe_method'";
     my $info = $db->MySelect(type => 'list_of_hashes', statement => $info_stmt);
     foreach my $datum (@{$info}) {
 	my %inf = %{$datum};
@@ -458,7 +458,7 @@ sub Make_Cloud {
     my $filename = $args{filename};
     my $url = $args{url};
     my $args_slipsites = $args{slipsites};
-    my $args_algorithms = $args{algorithms};
+    my $args_mfe_methods = $args{mfe_methods};
     my $seqlength;
     if (defined($args{seqlength})) {
 	$seqlength = $args{seqlength};
@@ -475,19 +475,19 @@ sub Make_Cloud {
     my ($mfe_min_value, $mfe_max_value);
     my $min_stmt = qq"SELECT min(mfe) FROM $mt ";
     my $max_stmt = qq"SELECT max(mfe) FROM $mt ";
-    if ($args_algorithms ne 'all') {
-	if ($args_algorithms eq 'nupack+hotknots') {
-	    $min_stmt .= " WHERE algorithm = 'nupack' OR algorithm = 'hotknots'";
-	    $max_stmt .= " WHERE algorithm = 'nupack' OR algorithm = 'hotknots'";
-	} elsif ($args_algorithms eq 'nupack') {
-	    $min_stmt .= " WHERE algorithm = 'nupack'";
-	    $max_stmt .= " WHERE algorithm = 'nupack'";
-	} elsif ($args_algorithms eq 'hotknots') {
-	    $min_stmt .= " WHERE algorithm = 'hotknots'";
-	    $max_stmt .= " WHERE algorithm = 'hotknots'";
-	} elsif ($args_algorithms eq 'pknots') {
-	    $min_stmt .= " WHERE algorithm = 'pknots'";
-	    $max_stmt .= " WHERE algorithm = 'pknots'";
+    if ($args_mfe_methods ne 'all') {
+	if ($args_mfe_methods eq 'nupack+hotknots') {
+	    $min_stmt .= " WHERE mfe_method = 'nupack' OR mfe_method = 'hotknots'";
+	    $max_stmt .= " WHERE mfe_method = 'nupack' OR mfe_method = 'hotknots'";
+	} elsif ($args_mfe_methods eq 'nupack') {
+	    $min_stmt .= " WHERE mfe_method = 'nupack'";
+	    $max_stmt .= " WHERE mfe_method = 'nupack'";
+	} elsif ($args_mfe_methods eq 'hotknots') {
+	    $min_stmt .= " WHERE mfe_method = 'hotknots'";
+	    $max_stmt .= " WHERE mfe_method = 'hotknots'";
+	} elsif ($args_mfe_methods eq 'pknots') {
+	    $min_stmt .= " WHERE mfe_method = 'pknots'";
+	    $max_stmt .= " WHERE mfe_method = 'pknots'";
 	}
     }
     $mfe_min_value = $db->MySelect(statement => $min_stmt, type => 'single');
@@ -994,13 +994,13 @@ sub Make_Overlay {
 	my $x_point = sprintf("%.1f",$point->[0]);
 	my $y_point = sprintf("%.1f",$point->[1]);
 	my $slipstart = $point->[2];
-	my $algorithm = $point->[3];
+	my $mfe_method = $point->[3];
 	my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 	my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
 	$x_coord = sprintf('%.0f', $x_coord);
 	$y_coord = sprintf('%.0f', $y_coord);
 	$gd->filledArc($x_coord, $y_coord, $radius, $radius, 0, 360, $black, 4);
-	my $map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accession&slipstart=$slipstart" title="Position $slipstart of $accession ($inputstring) using $algorithm">\n);
+	my $map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accession&slipstart=$slipstart" title="Position $slipstart of $accession ($inputstring) using $mfe_method">\n);
         print MAP $map_string;
     }
     print MAP "</map>\n";
@@ -1072,7 +1072,7 @@ sub Make_Landscape_TT {
     $filename =~ s/\.png/\.svg/g;
     my $db = new PRFdb(config => $config);
     my $mt = "mfe_$species";
-    my $data =  $db->MySelect("SELECT start, algorithm, pairs, mfe FROM $table WHERE accession='$accession' ORDER BY start, algorithm");
+    my $data =  $db->MySelect("SELECT start, mfe_method, pairs, mfe FROM $table WHERE accession='$accession' ORDER BY start, mfe_method");
     return(undef) if (!defined($data));
     my $slipsites = $db->MySelect("SELECT distinct(start) FROM $mt WHERE accession='$accession' ORDER BY start");
     my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession'");
@@ -1127,8 +1127,8 @@ sub Make_Landscape_TT {
     ## 2d array, by program then position (I think)
     my @lines = ('pknots','nupack','vienna');
     #	$info->{$place}->{$datum->[1]} = $datum->[3];
-    ##  We have a hash keyed by position, then algorithm, leading to MFE
-    ##  Our goal is to do an add_data(\@all_points_for_one_algorithm, $name_of_algorithm);
+    ##  We have a hash keyed by position, then mfe_method, leading to MFE
+    ##  Our goal is to do an add_data(\@all_points_for_one_mfe_method, $name_of_mfe_method);
     my @line_datum = ();
     my @mean_line_datum = ();
     foreach my $line (@lines) {
@@ -1155,7 +1155,7 @@ sub Make_Landscape {
     system("touch $filename");
     my $db = new PRFdb(config=>$config);
     my $mt = "mfe_$species";
-    my $data = $db->MySelect("SELECT start, algorithm, pairs, mfe FROM $table WHERE accession='$accession' ORDER BY start, algorithm");
+    my $data = $db->MySelect("SELECT start, mfe_method, pairs, mfe FROM $table WHERE accession='$accession' ORDER BY start, mfe_method");
     return(undef) if (!defined($data));
     my $slipsites = $db->MySelect("SELECT distinct(start) FROM $mt WHERE accession='$accession' ORDER BY start");
     my $start_stop = $db->MySelect("SELECT orf_start, orf_stop FROM genome WHERE accession = '$accession'");
@@ -1559,16 +1559,16 @@ sub Make_OFeynman {
     my $mt = "mfe_$me->{species}";
     my $ids = $me->{ids};
     my $db = new PRFdb(config=>$config);
-    my $stmt = qq"SELECT sequence, slipsite, parsed, output, algorithm FROM $mt WHERE id = ? or id = ? or id = ?";
+    my $stmt = qq"SELECT sequence, slipsite, parsed, output, mfe_method FROM $mt WHERE id = ? or id = ? or id = ?";
     my $info = $db->MySelect(statement => $stmt, vars => [$ids->[0], $ids->[1], $ids->[2]],);
     my $sequence = $info->[0]->[0];
     $slipsite = $info->[0]->[1];
-    my (@parsed, @pkout, @algorithm);
+    my (@parsed, @pkout, @mfe_method);
     my @seq = split(//, $sequence);
     foreach my $datum (@{$info}) {
 	push(@parsed, $datum->[2]);
 	push(@pkout, $datum->[3]);
-	push(@algorithm, $datum->[4]);
+	push(@mfe_method, $datum->[4]);
     }
     my $seqlength = length($sequence);
     my $character_size = 10;
@@ -1605,13 +1605,13 @@ sub Make_OFeynman {
 
     my $struct;
     LOOP: for my $c (0 .. 120) {  ## Grossly overshoot the number of basepairs
-	for my $d (0 .. $#pkout) {   ## The 3 or so algorithms available
+	for my $d (0 .. $#pkout) {   ## The 3 or so mfe_methods available
 	    my @pktmp = split(/\s+/, $pkout[$d]);
 	    my @patmp = split(/\s+/, $parsed[$d]);
 	    next LOOP if (!defined($pktmp[$c]));
-	    $struct->{$c}->{$algorithm[$d]}->{partner} = $pktmp[$c];
+	    $struct->{$c}->{$mfe_method[$d]}->{partner} = $pktmp[$c];
 	    $patmp[$c] = '.' if (!defined($patmp[$c]));
-	    $struct->{$c}->{$algorithm[$d]}->{stemnum} = $patmp[$c];
+	    $struct->{$c}->{$mfe_method[$d]}->{stemnum} = $patmp[$c];
 	}
     }
     
@@ -2122,11 +2122,11 @@ sub Picture_Filename {
     my $species = $args{species};
     my $suffix = $args{suffix};
     my $extension;
-    my $algorithms = $args{algorithms};
+    my $mfe_methods = $args{mfe_methods};
     my $accession = $me->{accession};
     my $mfe_id = $me->{mfe_id};
 
-    $algorithms = 'all' unless ($algorithms);
+    $mfe_methods = 'all' unless ($mfe_methods);
 
     if ($type eq 'extension_percent') {
 	return(qq"images/cloud/$species/extension-percent.png");

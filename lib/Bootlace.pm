@@ -20,9 +20,9 @@ sub new {
       ## Expect an array reference of sequence
       iterations => $arg{iterations},    ## How many repetitions
       ## Expect an int
-      boot_mfe_algorithms => $arg{boot_mfe_algorithms},    ## What to calculate mfe from
-      ## Expect a hash ref of algorithms
-      randomizers => $arg{randomizers},                    ## What randomization algorithm to use
+      boot_mfe_mfe_methods => $arg{boot_mfe_mfe_methods},    ## What to calculate mfe from
+      ## Expect a hash ref of mfe_methods
+      randomizers => $arg{randomizers},                    ## What randomization mfe_method to use
       ## Expect a hash ref of randomizers
       fasta_comment => undef,
       species => $arg{species},
@@ -55,7 +55,7 @@ sub new {
 
 sub Go {
     my $me = shift;
-    my $return;    ## hash repetition, ref of algo name, random name, and output of mfe
+    my $return;    ## hash repetition, ref of method name, random name, and output of mfe
     my $randomized_sequence;
     my $inputfile = $me->{inputfile};
     my $species = $me->{species};
@@ -71,11 +71,11 @@ sub Go {
     ## randomizer should be a reference to a function which takes as input
     ## the array reference of the sequence window of interest.  Thus allowing us to
     ## change which function randomizes the sequence
-    my @algos = keys(%{$me->{boot_mfe_algorithms}});
-    foreach my $boot_mfe_algo_name (keys %{$me->{boot_mfe_algorithms}}) {
+    my @methods = keys(%{$me->{boot_mfe_mfe_methods}});
+    foreach my $boot_mfe_method_name (keys %{$me->{boot_mfe_methods}}) {
 	my $mfe_id;
-	if (defined($boot_mfe_algo_name)) {
-	    my $key = "${boot_mfe_algo_name}_mfe_id";
+	if (defined($boot_mfe_method_name)) {
+	    my $key = "${boot_mfe_method_name}_mfe_id";
 	    $mfe_id = $me->{$key};
 	}
 	if (!defined($mfe_id)) {
@@ -111,7 +111,7 @@ sub Go {
 	    my $iteration_count = 1;
 	    while ($iteration_count <= $me->{iterations}) {
 		$iteration_count++;
-		my $boot_mfe_algo = $me->{boot_mfe_algorithms}->{$boot_mfe_algo_name};
+		my $boot_mfe_method = $me->{boot_methods}->{$boot_mfe_method_name};
 		
 		#my $rand_algo = $me->{randomizers}->{$rand_name}($inputfile, $species, $accession);
 		my $rand_algo = $me->{randomizers}->{$rand_name};
@@ -119,10 +119,10 @@ sub Go {
 		my $randomized_sequence = &{$rand_algo}($array_reference);
 		my $new_sequence = $me->Overwrite_Inputfile($randomized_sequence);
 		
-		#	      my $mfe = &{$boot_mfe_algo}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
-		my $mfe = &{$boot_mfe_algo}($me->{inputfile}, $me->{accession}, $me->{start}, $me->{config});
+		#	      my $mfe = &{$boot_mfe_method}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
+		my $mfe = &{$boot_mfe_method}($me->{inputfile}, $me->{accession}, $me->{start}, $me->{config});
 		foreach my $k (keys %{$mfe}) {
-		    $return->{$boot_mfe_algo_name}->{$rand_name}->{$iteration_count}->{$k} = $mfe->{$k};
+		    $return->{$boot_mfe_method_name}->{$rand_name}->{$iteration_count}->{$k} = $mfe->{$k};
 		}
 		
 		if (defined($mfe->{mfe})) {
@@ -151,7 +151,7 @@ sub Go {
 		$ret->{pairs_se} = sprintf("%.2f", $ret->{pairs_sd} / sqrt($ret->{iterations}));
 	    }
 	    
-	    $return->{$boot_mfe_algo_name}->{$rand_name}->{stats} = $ret;
+	    $return->{$boot_mfe_method_name}->{$rand_name}->{stats} = $ret;
 	    $return->{genome_id} = $me->{genome_id};
 	}    ## Foreach randomization
     }    ## Foreach mfe calculator

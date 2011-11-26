@@ -72,7 +72,7 @@ sub Search {
 	$factory = new Bio::Tools::Run::StandAloneBlast(@params);
 	### New versions of Bio::Tools::Run::StandAloneBlast
 	### return Bio::SearchIO::blast objects
-	chdir("$config->{blastdb}");
+	chdir("$config->{blastdir}");
 	my $executable;
         $executable = $factory->executable('blastall', "$config->{blastdir}/blastall");
 	eval {

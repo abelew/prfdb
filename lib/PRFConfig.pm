@@ -59,13 +59,12 @@ sub new {
     ## which will in turn be passed to GetOpts
     ## As a result, _all_ of these variables may be overridden on the command line.
     $me->{ABSOLUTE} = 1 if (!defined($me->{ABSOLUTE}));
-    $me->{algorithms} = ['hotknots','pknots','nupack'] if (!defined($me->{algorithms}));
     $me->{add_to_path} = "/usr/bin:/usr/local/bin" if (!defined($me->{add_to_path}));
     $me->{arch_specific_exe} = 0 if (!defined($me->{arch_specific_exe}));
     $me->{base} = $ENV{PRFDB_HOME} if (!defined($me->{base}));
     $me->{blastdir} = 'blast' if (!defined($me->{blastdir}));
     $me->{boot_iterations} = 100 if (!defined($me->{boot_iterations}));
-    $me->{boot_mfe_algorithms} = {pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, hotknots => \&RNAFolders::Hotknots_Boot,} if (!defined($me->{boot_mfe_algorithms}));
+    $me->{boot_mfe_methods} = {pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, hotknots => \&RNAFolders::Hotknots_Boot,} if (!defined($me->{boot_mfe_methods}));
     $me->{boot_randomizers} = {array => \&SeqMisc::ArrayShuffle,} if (!defined($me->{boot_randomizers}));
     $me->{check_webqueue} = 1 if (!defined($me->{check_webqueue}));
     $me->{checks} = 0 if (!defined($me->{checks}));
@@ -123,6 +122,7 @@ sub new {
     $me->{maintenance_skip_index} = 0 if (!defined($me->{maintenance_skip_index}));
     $me->{maintenance_skip_clouds} = 0 if (!defined($me->{maintenance_skip_clouds}));
     $me->{max_mfe} = 10.0 if (!defined($me->{max_mfe}));
+    $me->{mfe_methods} = ['hotknots','pknots','nupack'] if (!defined($me->{mfe_methods}));
     $me->{niceness} = 20 if (!defined($me->{niceness}));
     $me->{nupack_nopairs_hack} = 1 if (!defined($me->{nupack_nopairs_hack}));
     $me->{open_files} = [] if (!defined($me->{open_files}));
@@ -277,8 +277,8 @@ sub new {
 	$me->{database_host} = eval($me->{database_host});
 	$me->{database_otherhost} = $me->{database_host}->[1];
     }
-    if (ref($me->{boot_mfe_algorithms}) eq '') {
-	$me->{boot_mfe_algorithms} = eval($me->{boot_mfe_algorithms});
+    if (ref($me->{boot_mfe_methods}) eq '') {
+	$me->{boot_mfe_methods} = eval($me->{boot_mfe_methods});
     }
     if (ref($me->{boot_randomizers}) eq '') {
 	$me->{boot_randomizers} = eval($me->{boot_randomizers});

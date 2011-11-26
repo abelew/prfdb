@@ -117,7 +117,7 @@ if (defined($config->{do_stats})) {
 	species => $config->{index_species},
 	seqlength => $config->{seqlength},
 	max_mfe => [$config->{max_mfe}],
-	algorithm => $config->{algorithms},
+	mfe_methods => $config->{mfe_methods},
     };
     $db->Put_Stats($data);
     exit(0);
@@ -423,11 +423,11 @@ sub PRF_Gatherer {
 	  $db->MyExecute($update_string);
       }
       if ($config->{do_agree}) {
-	  my $stmt = qq"(SELECT sequence, slipsite, parsed, output, algorithm FROM $mt WHERE id = ?)
+	  my $stmt = qq"(SELECT sequence, slipsite, parsed, output, mfe_method FROM $mt WHERE id = ?)
 UNION
-(SELECT sequence, slipsite, parsed, output, algorithm FROM $mt WHERE id = ?)
+(SELECT sequence, slipsite, parsed, output, mfe_method FROM $mt WHERE id = ?)
 UNION
-(SELECT sequence, slipsite, parsed, output, algorithm FROM $mt WHERE id = ?)";
+(SELECT sequence, slipsite, parsed, output, mfe_method FROM $mt WHERE id = ?)";
 	  my $info = $db->MySelect(statement => $stmt, vars => [$pknots_mfe_id, $nupack_mfe_id, $hotknots_mfe_id],);
 	  my $agree = new Agree();
 	  my $agree_datum = $agree->Do(info => $info);
@@ -435,9 +435,9 @@ UNION
 	  undef $agree;
       }
       if ($config->{do_boot}) {
-          my $tmp_nupack_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'nupack'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
-          my $tmp_pknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'pknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
-          my $tmp_hotknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND algorithm = 'hotknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
+          my $tmp_nupack_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND mfe_method = 'nupack'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
+          my $tmp_pknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND mfe_method = 'pknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
+          my $tmp_hotknots_mfe_id = $db->MySelect(statement => qq"SELECT id FROM $mt WHERE accession = ? AND start = ? AND seqlength = ? AND mfe_method = 'hotknots'", type => 'single', vars => [$state->{accession}, $slipsite_start, $state->{seqlength}],);
 	  my $boot = new Bootlace(genome_id => $state->{genome_id},
 				  nupack_mfe_id => (defined($state->{nupack_mfe_id})) ?
 				  $state->{nupack_mfe_id} : $nupack_mfe_id,
@@ -451,13 +451,13 @@ UNION
 				  start => $slipsite_start,
 				  seqlength => $state->{seqlength},
 				  iterations => $config->{boot_iterations},
-				  boot_mfe_algorithms => $config->{boot_mfe_algorithms},
+				  boot_mfe_methods => $config->{boot_mfe_methods},
 				  randomizers => $config->{boot_randomizers},
 				  config => $config,
 				  );
-          my @algos = keys(%{$config->{boot_mfe_algorithms}});
+          my @methods = keys(%{$config->{boot_mfe_methods}});
           my $boot_folds;
-          foreach my $method (@algos) {
+          foreach my $method (@methods) {
               $boot_folds = $db->Get_Num_Bootfolds(species => $state->{species},
 						   genome_id =>$state->{genome_id},
 						   start => $slipsite_start,
@@ -616,13 +616,13 @@ sub Print_Config {
     if ($config->{do_boot}) {
 	print "PLEASE CHECK THE prfdb.conf to see if you are using NOPAIRS\n";
 	my $randomizers = $config->{boot_randomizers};
-	my $mfes = $config->{boot_mfe_algorithms};
+	my $mfes = $config->{boot_mfe_methods};
 	my $nu_boot = $config->{exe_nupack_boot};
 	print "I AM doing a boot using the following randomizers\n";
 	foreach my $k (keys %{$randomizers}) {
 	    print "$k\n";
 	}
-	print "and the following mfe algorithms:\n";
+	print "and the following mfe methods:\n";
 	foreach my $k (keys %{$mfes}) {
 	    print "$k\n";
 	}
@@ -663,7 +663,7 @@ sub Check_Boot_Connectivity {
 	my $genome_id = $boot->[3];
 	if (!defined($mfe_id) or $mfe_id == '0') {
 	    ## Then reconnect it using $mfe_method and $boot_id and $genome_id
-	    my $new_mfe_id_stmt = qq"SELECT id FROM $mt where genome_id = ? and start = ? and algorithm = ?";
+	    my $new_mfe_id_stmt = qq"SELECT id FROM $mt where genome_id = ? and start = ? and mfe_method = ?";
 	    my $new_mfe_id_arrayref = $db->MySelect(statement => $new_mfe_id_stmt, vars => [$genome_id, $slipsite_start, $mfe_method],);
 	    my $new_mfe_id = $new_mfe_id_arrayref->[0]->[0];
 	    if ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'nupack') {
@@ -681,7 +681,7 @@ sub Check_Boot_Connectivity {
 		}
 		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config, species => $state->{species}, accession => $state->{accession}, start => $slipsite_start,);
 		$new_mfe_id = Check_Pknots($fold_search, $slipsite_start);
-	    } ### End if there is no mfe_id and pknots was the algorithm
+	    } ### End if there is no mfe_id and pknots was the method
 	    my $update_mfe_id_statement = qq(UPDATE $boot_table SET mfe_id = ? WHERE id = ?);
 	    $db->MyExecute(statement => $update_mfe_id_statement, vars =>[$new_mfe_id, $boot_id],);
 	    $num_fixed++;
@@ -873,7 +873,7 @@ sub Maintenance {
 	    species => $config->{index_species},
 	    seqlength => $config->{seqlength},
 	    max_mfe => [$config->{max_mfe}],
-	    algorithm => ['pknots','nupack','hotknots'],
+	    mfe_method => ['pknots','nupack','hotknots'],
 	};
         print "Recreating the Stats table\n";
 	$db->Put_Stats($data, $finished_species);
