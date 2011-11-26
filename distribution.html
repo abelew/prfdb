@@ -143,13 +143,14 @@ $(function() {
     
   $.getJSON('<% $mfe_json_filename %>', function(series) {
     var dat =  series;
-    $.plot($("#mfe"), dat, options);
+    var mfe_plot = $.plot($("#mfe"), dat, options);
+    var canvas_mfe = mfe_plot.getCanvas();
+    var canvasData = canvas_mfe.toDataURL("image/png");
+    var ajax = new XMLHttpRequest();
+    ajax.open("POST", "/upload_flot.html?filename=<% $mfe_json_filename %>", false);
+    ajax.setRequestHeader('Content-Type', 'application/upload');
+    ajax.send(canvasData);
   });
-  var canvasData = mfe.toDataURL("image/png");
-  var ajax = new XMLHttpRequest();
-  ajax.open("POST", "/flot_save.html?filename=<% $mfe_json_filename %>", false);
-  ajax.setRequestHeader('Content-Type', 'application/upload');
-  ajax.send(canvasData);
 });
 </script>
 <script type="text/javascript" id="z">
@@ -172,14 +173,15 @@ $(function() {
 
   $.getJSON('<% $z_json_filename %>', function(series) {
     var dat =  series;
-    $.plot($("#z"), dat, options);
+    var z_plot = $.plot($("#z"), dat, options);
+    var canvas_z = z_plot.getCanvas();
+    var canvasData = canvas_z.toDataURL("image/png");
+    var ajax = new XMLHttpRequest();
+    ajax.open("POST", "/upload_flot.html?file=<% $z_json_filename %>;data=" + canvasData, false);
+    ajax.setRequestHeader('Content-Type', 'application/upload');
+    var data = 'file="<% $z_json_filename %>"&data=' + canvasData;
+    ajax.send(data);
   });
-
-  var canvasData = z.toDataURL("image/png");
-  var ajax = new XMLHttpRequest();
-  ajax.open("POST", "/flot_save.html?filename=<% $z_json_filename %>", false);
-  ajax.setRequestHeader('Content-Type', 'application/upload');
-  ajax.send(canvasData);
 });
 </script>
 
