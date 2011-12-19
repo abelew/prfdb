@@ -1,9 +1,9 @@
-% if (!$algorithm or !$input_fasta) {
+% if (!$mfe_method or !$input_fasta) {
 
 Use this form to fold a _short_ sequence.<br>
 <FORM action="fold.html" enctype="multipart/form-data" method="POST">
 <input type="file" name="input_fasta">
-<select name="algorithm">
+<select name="mfe_method">
 <option selected="selected" value="nupack">Nupack</option>
 <option value="pknots">Pknots</option>
 <option value="hotknots">HotKnots</option>
@@ -72,7 +72,7 @@ sub tmp_fold {
   close(HANDLE);
 }
 use Proc::Forkfunc;
-my @child_args = ($config, $short_filename, $algorithm);
+my @child_args = ($config, $short_filename, $mfe_method);
 forkfunc(\&tmp_fold, @child_args);
 </%perl>
 
@@ -87,6 +87,6 @@ forkfunc(\&tmp_fold, @child_args);
   my $new_filename;
 </%init>
 <%args>
-  $algorithm => undef
+  $mfe_method => undef
   $input_fasta => undef
 </%args>

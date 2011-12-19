@@ -5,7 +5,7 @@ sub tmp_cloud {
   my $filters = shift;
   my $species = shift;
   my $slipsites = shift;
-  my $algorithms = shift;
+  my $mfe_methods = shift;
   my $seqlength = shift;
   my $cloud = new PRFGraph(config=>$config);
   my $suffix;
@@ -23,27 +23,27 @@ sub tmp_cloud {
   } else {
    $suffix .= "-${slipsites}";
   }
-  $suffix .= "-${algorithms}-${seqlength}";
-  my $cloud_output_filename = $cloud->Picture_Filename(type => 'cloud', species => $species, algorithms => $algorithms, suffix => $suffix,);
-  my $cloud_url = $cloud->Picture_Filename(type => 'cloud', species => $species, url => 'url', algorithms => $algorithms, suffix => $suffix,);
+  $suffix .= "-${mfe_methods}-${seqlength}";
+  my $cloud_output_filename = $cloud->Picture_Filename(type => 'cloud', species => $species, mfe_methods => $mfe_methods, suffix => $suffix,);
+  my $cloud_url = $cloud->Picture_Filename(type => 'cloud', species => $species, url => 'url', mfe_methods => $mfe_methods, suffix => $suffix,);
   my $boot_table = "boot_$species";
   my $mt = "mfe_$species";
   my $points_stmt = qq"SELECT SQL_BUFFER_RESULT $mt.mfe, $boot_table.zscore, $mt.accession, $mt.knotp, $mt.slipsite, $mt.start, genome.genename FROM $mt, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND ";
   my $averages_stmt = qq"SELECT SQL_BUFFER_RESULT avg($mt.mfe), avg($boot_table.zscore), stddev($mt.mfe), stddev($boot_table.zscore) FROM $mt, $boot_table WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND ";
 
-  if ($algorithms ne 'all') {
-    if ($algorithms eq 'nupack+hotknots') {
-        $points_stmt .= "( $mt.algorithm = 'nupack' OR $mt.algorithm = 'hotknots' ) AND ";
-	$averages_stmt .= "( $mt.algorithm = 'nupack' OR $mt.algorithm = 'hotknots' ) AND ";
-    } elsif ($algorithms eq 'nupack') {
-        $points_stmt .= "$mt.algorithm = 'nupack' AND ";
-	$averages_stmt .= "$mt.algorithm = 'nupack' AND ";
-    } elsif ($algorithms eq 'pknots') {
-        $points_stmt .= "$mt.algorithm = 'pknots' AND ";
-	$averages_stmt .= "$mt.algorithm = 'pknots' AND ";
-    } elsif ($algorithms eq 'hotknots') {
-        $points_stmt .= "$mt.algorithm = 'hotknots' AND ";
-	$averages_stmt .= "$mt.algorithm = 'hotknots' AND ";
+  if ($mfe_methods ne 'all') {
+    if ($mfe_methods eq 'nupack+hotknots') {
+        $points_stmt .= "( $mt.mfe_method = 'nupack' OR $mt.mfe_method = 'hotknots' ) AND ";
+	$averages_stmt .= "( $mt.mfe_method = 'nupack' OR $mt.mfe_method = 'hotknots' ) AND ";
+    } elsif ($mfe_methods eq 'nupack') {
+        $points_stmt .= "$mt.mfe_method = 'nupack' AND ";
+	$averages_stmt .= "$mt.mfe_method = 'nupack' AND ";
+    } elsif ($mfe_methods eq 'pknots') {
+        $points_stmt .= "$mt.mfe_method = 'pknots' AND ";
+	$averages_stmt .= "$mt.mfe_method = 'pknots' AND ";
+    } elsif ($mfe_methods eq 'hotknots') {
+        $points_stmt .= "$mt.mfe_method = 'hotknots' AND ";
+	$averages_stmt .= "$mt.mfe_method = 'hotknots' AND ";
     }
   }
 
@@ -66,7 +66,7 @@ sub tmp_cloud {
 	seqlength => $seqlength,
 	species => $species,
 	points => $points,
-	algorithms => $algorithms,
+	mfe_methods => $mfe_methods,
 	averages => $averages,
 	filename => $cloud_output_filename,
 	url => $ENV{PRFDB_HOME},
@@ -79,7 +79,7 @@ sub tmp_cloud {
 	species => $species,
 	points => $points,
 	averages => $averages,
-	algorithms => $algorithms,
+	mfe_methods => $mfe_methods,
 	filename => $cloud_output_filename,
 	url => $ENV{PRFDB_HOME},
 	slipsites => $slipsites,
@@ -88,13 +88,13 @@ sub tmp_cloud {
     my $cloud_data = $cloud->Make_Cloud(%args);
 }
   use Proc::Forkfunc;
-  my @child_args = ($config, $filters, $species, $slipsites, $algorithms, $seqlength);
+  my @child_args = ($config, $filters, $species, $slipsites, $mfe_methods, $seqlength);
   forkfunc(\&tmp_cloud,@child_args);
 </%perl>
 
 <%args>
   $species => "saccharomyces_cerevisiae"
-  $algorithms => "all"
+  $mfe_methods => "all"
   $seqlength => 100
   $slipsites => "all"
   $filters => undef
