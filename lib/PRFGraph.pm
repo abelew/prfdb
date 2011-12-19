@@ -1941,7 +1941,8 @@ sub Make_CFeynman {
     my $me = shift;
     my $id = $me->{mfe_id};
     my $db = new PRFdb(config => $config);
-    my $mt = qq"mfe_$me->{species}";
+    my $species = $me->{species};
+    my $mt = qq"mfe_${species}";
     my $stmt = qq"SELECT sequence, parsed, output FROM $mt WHERE id = ?";
     my $info = $db->MySelect(statement => $stmt, vars => [$id], type => 'row');
     my $sequence = $info->[0];
