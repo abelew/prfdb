@@ -38,6 +38,7 @@ sub new {
 	retry_time => 15,
 	handles => \@handles,
 	config => $config,
+	rpw => $config->{database_root_password},
     }, $class;
     if ($config->{checks}) {
 	$me->Create_Genome() unless ($me->Tablep('genome'));
@@ -1414,7 +1415,7 @@ sub StartSlave {
     if ($grant_replication) {
 	my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
 	my $stmt = qq"GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '$config->{database_user}'\@'$ENV{PRFDB_IP}' IDENTIFIED BY '$config->{database_password}'";
-	my $other_dbh_num = $me->MyConnect($stmt, $other_dbd, 'root', $config->{database_root_password});
+	my $other_dbh_num = $me->MyConnect($stmt, $other_dbd, 'root', $me->{rpw});
 	my $other_dbh = $me->{handles}->[$other_dbh_num];
 	print "Granting replication privileges with:\n
 $stmt\n";
@@ -1427,13 +1428,21 @@ $stmt\n";
 sub ReSync {
     my $me = shift;
     my $slave = shift;
+    unless($me->{rpw}) {
+	die("This requires root access to the database.");
+    }
     my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
     my $local_dbd = qq"dbi:$config->{database_type}:database=mysql;host=localhost";
     my $statement = "SHOW MASTER STATUS";
-    my $other_dbh_num = $me->MyConnect($statement, $other_dbd, 'root', $me->{database_root_password});
-    my $local_dbh_num = $me->MyConnect($statement, $local_dbd, 'root', $me->{database_root_password});
+    my $other_dbh_num = $me->MyConnect($statement, $other_dbd, 'root', $me->{rpw});
+    my $local_dbh_num = $me->MyConnect($statement, $local_dbd, 'root', $me->{rpw});
     my $other_dbh = $me->{handles}->[$other_dbh_num];
     my $local_dbh = $me->{handles}->[$local_dbh_num];
+    my $pre_statement = "STOP SLAVE";
+    my $o_stop = $other_dbh->prepare($pre_statement);
+    my $l_stop = $local_dbh->prepare($pre_statement);
+    my $o_rv_stop = $o_stop->execute();
+    my $l_rv_stop = $l_stop->execute();
 
     if ($slave) {
 	my $o_sth = $other_dbh->prepare($statement);

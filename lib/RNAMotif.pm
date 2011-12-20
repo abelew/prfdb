@@ -295,7 +295,7 @@ sub Generic_Search_All {
     my $species = shift;
     my $descriptor_file = $me->Make_Descriptor($str,$par);
     my $stmt = qq"SELECT accession FROM genome WHERE species = '$species'";
-    print "TESTME $stmt\n";
+    #print "TESTME $stmt\n";
     my $db = new PRFdb(config => $config);
     my $accessions = $db->MySelect(statement => $stmt,);
     my $count = 0;

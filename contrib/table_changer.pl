@@ -16,7 +16,7 @@ sub Alter_Tables {
     my $tables = $db->MySelect(qq"SHOW TABLES LIKE 'mfe_%'");
     foreach my $table (@{$tables}) {
 	my $t = $table->[0];
-	my $alter = $db->MyExecute("ALTER TABLE $t CHANGE algorithm rand_method char(10)");
+	my $alter = $db->MyExecute("ALTER TABLE $t CHANGE rand_method mfe_method char(10)");
     }
 }
 

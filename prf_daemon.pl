@@ -501,7 +501,7 @@ sub Landscape_Gatherer {
     while ($start_point + $config->{landscape_seqlength} <= $sequence_length) {
 	print "Landscape Gatherer, position $start_point\n" if (defined($config->{debug}));
 	my $individual_sequence = ">$message";
-	my $end_point = $start_point + $config->{landscape_seqlength};
+	my $end_point = $start_point + ($config->{landscape_seqlength} - 1);
 	my $sequence_string = '';
 	foreach my $character ($start_point .. $end_point) {
 	    if (defined($seq_array[$character])) {

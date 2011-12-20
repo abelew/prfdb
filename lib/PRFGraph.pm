@@ -1943,11 +1943,13 @@ sub Make_CFeynman {
     my $db = new PRFdb(config => $config);
     my $species = $me->{species};
     my $mt = qq"mfe_${species}";
+    print STDERR "GOT HERE\n";
     my $stmt = qq"SELECT sequence, parsed, output FROM $mt WHERE id = ?";
     my $info = $db->MySelect(statement => $stmt, vars => [$id], type => 'row');
     my $sequence = $info->[0];
     my $parsed = $info->[1];
     my $pkout = $info->[2];
+    print STDERR "TESTME: $sequence $parsed $pkout<br>\n";
     my $seqlength = length($sequence);
     my $character_size = 10;
     my $height_per_nt = 3.5;

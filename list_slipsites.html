@@ -24,6 +24,7 @@
 </tr>
 % my ($slipseq, $pknotscount, $id, $slipstart);
 % my $mt = "mfe_$species";
+% $mt = "mfe_virus" if ($mt =~ /virus/);
 % my $slipsites_stmt = qq"SELECT distinct start, slipsite, count(id) FROM $mt WHERE accession = ? AND start < (SELECT orf_stop FROM genome WHERE accession = ?) GROUP BY start ORDER BY start";
 % my $slipsite_information = $db->MySelect(statement => $slipsites_stmt, vars => [$accession, $accession],);
 % my $table = "landscape_$species";

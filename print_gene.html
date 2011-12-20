@@ -14,8 +14,10 @@
  </tr>
 </table>
 % my $sp = $db->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", vars => [$accession], type => 'single');
+% print "TESTME: $sp<br>\n";
 % my $in = $db->MySelect(statement => "SELECT orf_start, orf_stop, mrna_seq, direction, id FROM genome WHERE accession = ?", vars =>[$accession], type => 'row');
 % my $mt = "mfe_$sp";
+% $mt = "mfe_virus" if ($mt =~ /virus/);
 % my $slips = $db->MySelect(statement =>"SELECT DISTINCT(start), bp_mstop FROM $mt WHERE accession = ? ORDER BY start", vars => [$accession],);
 % my $snp_struct = {};
 % if ($sp eq 'homo_sapiens') {

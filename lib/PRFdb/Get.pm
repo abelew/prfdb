@@ -265,8 +265,9 @@ sub MFE_ID {
     my $start = shift;
     my $seqlength = shift;
     my $mfe_method = shift;
-    my $species = $me->MySelect(statement => "SELECT species FROM gene_info WHERE id = ?", type => 'single', vars => [$genome_id]);
+    my $species = $me->MySelect(statement => "SELECT species FROM gene_info WHERE genome_id = ?", type => 'single', vars => [$genome_id]);
     my $mfe_table = "mfe_$species";
+    $mfe_table = 'mfe_virus' if ($mfe_table =~ /virus/);
     my $statement = qq"SELECT id FROM $mfe_table WHERE genome_id = ? AND start = ? AND seqlength = ? AND mfe_method = ? LIMIT 1";
     my $mfe = $me->MySelect(statement =>$statement, vars => [$genome_id, $start, $seqlength, $mfe_method], type => 'single');
     return ($mfe);
@@ -282,11 +283,21 @@ sub Num_RNAfolds {
     my $species = $me->MySelect(statement => "SELECT species FROM gene_info WHERE genome_id = ?", type => 'single', vars => [$genome_id]);
     my $mfe_table = "mfe_$species";
     $table = $mfe_table unless (defined($table));
-    $table = "boot_virus" if ($table =~ /boot/ and $table =~ /virus/);
-    $table = "landscape_virus" if ($table =~ /landscape/ and $table =~ /virus/);
+    if ($table =~ /virus/) {
+	if ($table =~ /boot/) {
+	    $table = "boot_virus";
+	} elsif ($table =~ /landscape/) {
+	    $table = "landscape_virus";
+	} else {
+	    $table = "mfe_virus";
+	}
+    }
     my $return = {};
-    my $statement = qq"SELECT count(id) FROM $table WHERE genome_id = ? AND mfe_method = ? AND start = ? AND seqlength = ?";
-    my $count = $me->MySelect(statement =>$statement, vars => [$genome_id, $mfe_method, $slipsite_start, $seqlength], type => 'single');
+#    my $statement = qq"SELECT count(id) FROM $table WHERE genome_id = ? AND mfe_method = ? AND start = ? AND seqlength = ?";
+    my $statement = qq"SELECT count(id) FROM $table WHERE genome_id = '$genome_id' AND mfe_method = '$mfe_method' AND start = '$slipsite_start' AND seqlength = '$seqlength'";
+#    my $count = $me->MySelect(statement =>$statement, vars => [$genome_id, $mfe_method, $slipsite_start, $seqlength], type => 'single');
+    my $count = $me->MySelect(statement =>$statement, type => 'single');
+#    print "TESTME: $statement\n$count\n";
     if (!defined($count) or $count eq '') {
 	$count = 0;
     }

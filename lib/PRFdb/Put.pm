@@ -99,7 +99,10 @@ sub MFE {
 	$config->PRF_Error($errorstring, $data->{species}, $data->{accession});
     }
     my $species = $data->{species};
-    my $table = qq"mfe_$species";
+    my $table = qq"mfe_${species}";
+    if ($table =~ /virus/) {
+	$table = "mfe_virus";
+    }
     $data->{sequence} =~ tr/actgun/ACTGUN/;
     my $statement = qq(INSERT INTO $table (genome_id, mfe_method, accession, start, slipsite, seqlength, sequence, output, parsed, parens, mfe, pairs, knotp, barcode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?));
     
