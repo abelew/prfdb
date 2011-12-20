@@ -1,0 +1,35 @@
+<p>Some viral PRF signals:</p>
+<li>
+<ul>
+<%perl>
+open(IN, "<$ENV{PRFDB_HOME}/data/recode2.txt");
+my @acc = ();
+while (my $line = <IN>) {
+    chomp $line;
+    my ($accession, $position, $recode_id) = split(/\t/, $line);
+    if ($accession =~ /\,/) {
+	my @accessions = split(/\,/, $accession);
+	$accession = $accessions[0];
+    }
+    push(@acc, $accession);
+    if ($position =~ /\,/) {
+	my @positions = split(/\,/, $position);
+	$position = $positions[0];
+    }
+    my $string = qq|<li>Accession:<a href="/detail.html?accession=$accession&slipstart=$position">$accession</a>, Position: $position</li>\n|;
+    print "$string";
+}
+
+foreach my $ac (@acc) {
+    my $num = $db->MySelect(type => 'single', statement => "SELECT COUNT(id) FROM genome WHERE accession = '$ac'");
+    print "TESTME: $ac $num<br>\n";
+    if ($num == 0) {
+	$db->Import_CDS($ac);
+	sleep(1);
+    }
+
+    
+}
+
+</%perl>
+</ul>
