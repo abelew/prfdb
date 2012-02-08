@@ -1,0 +1,89 @@
+% my $query = $overlayquery;
+% $query =~ s/\s+//g;
+% my $boot_table = qq"boot_$species";
+% my $mt = "mfe_$species";
+% my $new_accession = '';
+% my $query_statement = qq"SELECT $mt.mfe, $boot_table.zscore, $mt.start, $mt.mfe_method FROM $mt,$boot_table WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.mfe_method = 'hotknots' AND $mt.seqlength = 100 AND $mt.id = $boot_table.mfe_id AND (";
+% open(FIRST_COHORT, "<$ENV{PRFDB_HOME}/data/s_c-half_life-1.txt");
+% my $entry_count = 0;
+% LOOP: while (my $line = <FIRST_COHORT>) {
+%   $entry_count++;
+%   chomp $line;
+%   if ($num_entries <= $entry_count) {
+%     $query_statement =~ s/OR $/\)/g;
+%     last LOOP;
+%   } else {
+%#    print "TESTME: $query<br>\n";
+%     my ($gene, $half_life, $r2) = split(/\t/, $line);
+%     $query = $gene;
+%     $new_accession = $db->MySelect({statement => qq/SELECT accession FROM gene_info WHERE species = 'saccharomyces_cerevisiae' AND (accession regexp '$query' or genename regexp '$query' or comment regexp '$query')/, type => 'single'});
+%     $query_statement .= "$mt.accession = '$new_accession' OR ";
+%   }
+% }
+% my $overlay_points = $db->MySelect(statement => $query_statement,);
+% my $cloud_url = qq"images/cloud/${species}/cloud-${slipsites}-${seqlength}.png";
+% my $image_dir = "$ENV{PRFDB_HOME}/images/tmp";
+% my $overlay_output = PRFdb::MakeTempfile(directory => $image_dir, SUFFIX => '.png', template => 'cloud_XXXXX',);
+% my $overlay_map = qq"${overlay_output}.map";
+% my @t = split(/\//, $overlay_output);
+% my $short_overlay = pop @t;
+% my $overlay_url = qq"images/tmp/$short_overlay";
+% my $args = {
+%     seqlength => 100,
+%     url => qq"images/",
+%     species => $species,
+%     points => $overlay_points,
+%     filename => $overlay_output,
+%     map => $overlay_map,
+%     accession => $new_accession,
+%#     inputstring => $inputstring,
+% };
+% my $cloud = new PRFGraph(config => $config);
+% my $overlay_data = $cloud->Make_Overlay(%{$args});
+<center>
+<form method="post" action="overlay_half_lives_1.html">
+<input type="hidden" name="num_entries" value="<% $num_entries %>">
+% my $num_entries_new = $num_entries + $num_entries_change;
+<select name="entries_change" onchange="this.form.submit()">
+  <option value="-1">-1</option>
+  <option value="-10">-10</option>
+  <option value="-50">-50</option>
+  <option value="-100">-100</option>
+  <option value="1">1</option>
+  <option value="10">10</option>
+  <option value="50">50</option>
+  <option value="100">100</option>
+</select>
+<input type="hidden" name="num_entries" value="<% $num_entries_new %>">
+<p>This is a cloud for <i><% $species %></i> with an overlay for <% $new_accession %>
+<br>
+<div style="position: absolute; z-index:100">
+<img src="<% $cloud_url %>" usemap="#map">
+</div>
+<div style="position: absolute; z-index:5000">
+<img src="<% $overlay_url %>" usemap="#overlaymap">
+
+</div>
+</center>
+<div>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br>
+
+<br>
+
+% open(OUT, "<$overlay_map");
+% while (my $l = <OUT>) { print $l };
+% close(OUT);
+
+<%args>
+ $species => "saccharomyces_cerevisiae"
+ $seqlength => 100
+ $slipsites => "all"
+ $cloud_filters => undef
+ $overlayquery => undef
+ $num_entries => 101
+ $num_entries_change => 0
+</%args>

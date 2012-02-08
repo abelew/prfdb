@@ -9,8 +9,6 @@
  my $filename = $pic->Picture_Filename(type => 'landscape',);
  my $picture_status = 1;
  my $url;
- my $height;
- my $width;
  $species = 'virus' if ($species =~ /virus/);
  $picture_status = 1;
 # print "TESTME: $filename<br>\n";
@@ -40,4 +38,6 @@
 <%args>
  $accession => "SGDID:S0004310"
  $species => "saccharomyces_cerevisiae"
+ $height => "200"
+ $width => "800"
 </%args>
