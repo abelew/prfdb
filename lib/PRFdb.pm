@@ -153,6 +153,7 @@ sub MySelect {
     }
 
 #    $me->dbh = $me->MyConnect($statement);
+    print STDERR "$statement\n" if ($config->{debug});
     my $dbh_num = $me->MyConnect($statement);
     my $dbh = $me->{handles}->[$dbh_num];
     my $selecttype;

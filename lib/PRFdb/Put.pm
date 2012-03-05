@@ -237,6 +237,18 @@ sub Single_Boot {
      return($rows);
 }
 
+sub All_Stats {
+    my $me = shift;
+    my $data = shift;
+    my $finished = shift;
+    my $sp = $me->MySelect(statement => "SELECT distinct(species) from gene_info");
+    my @species = ();
+    foreach my $s (@{$sp}) {
+	push(@species, $s->[0]);
+    }
+    $data->{species} = \@species;
+    $me->Put_Stats($data, $finished);
+}
 
 sub Stats {
     my $me = shift;
@@ -256,7 +268,7 @@ sub Stats {
 	$me->MyExecute(statement => qq"DELETE FROM stats WHERE species = '$species'");
 	foreach my $seqlength (@{$data->{seqlength}}) {
 	    foreach my $max_mfe (@{$data->{max_mfe}}) {
-		foreach my $mfe_method (@{$data->{mfe_method}}) {
+		foreach my $mfe_method (@{$data->{mfe_methods}}) {
 		    my $mfe_table = ($species =~ /virus/ ? "mfe_virus" : "mfe_$species");
 		    #  0    1    2     3     4    5     6     7     8
 		    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);

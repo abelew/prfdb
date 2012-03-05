@@ -119,7 +119,7 @@ if (defined($config->{do_stats})) {
 	max_mfe => [$config->{max_mfe}],
 	mfe_methods => $config->{mfe_methods},
     };
-    $db->Put_Stats($data);
+    $db->Put_All_Stats($data);
     exit(0);
 }
 if (defined($config->{optimize})) {
