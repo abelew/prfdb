@@ -28,6 +28,7 @@
 % my $slipsites_stmt = qq"SELECT distinct start, slipsite, count(id) FROM $mt WHERE accession = ? AND start < (SELECT orf_stop FROM genome WHERE accession = ?) GROUP BY start ORDER BY start";
 % my $slipsite_information = $db->MySelect(statement => $slipsites_stmt, vars => [$accession, $accession],);
 % my $table = "landscape_$species";
+% $table = qq"landscape_virus" if ($table =~ /virus/);
 % my $landscape_num = $db->MySelect(statement => "SELECT count(id) FROM $table WHERE accession = '$accession'", type => 'single');
 % my $num_stops_printed = 0;
 % my $num_starts_printed = 0;
