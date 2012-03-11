@@ -267,7 +267,8 @@ sub Pknots {
     }
     print "PKNOTS: infile: $inputfile accession: $accession start: $start
 command: $command\n" if (defined($config->{debug}));
-    open(PK, "$command |") or Callstack(message => "RNAFolders::Pknots, Could not run pknots: $command");
+#    open(PK, "$command |") or Callstack(message => "RNAFolders::Pknots, Could not run pknots: $command");
+    open(PK, "$command |");
     ## OPEN PK in Pknots
     my $counter = 0;
     my ($line_to_read, $crap) = undef;
@@ -297,8 +298,8 @@ command: $command\n" if (defined($config->{debug}));
     close(PK);
     ## CLOSE PK in Pknots
     my $pknots_return = $?;
-    unless ($pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134') {
-	Callstack(message => "Pknots Error running $command");
+    unless ($pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134' or $pknots_return eq '34304') {
+	Callstack(message => "Pknots Error running $command $?");
     }
     RemoveFile($errorfile);
     $string =~ s/\s+/ /g;
@@ -420,7 +421,7 @@ sub Pknots_Boot {
     close(PK);
     ## CLOSE PK in Pknots_Boot
     my $pknots_return = $?;
-    unless ($pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134') {
+    unless ($pknots_return eq '0' or $pknots_return eq '256' or $pknots_return eq '134' or $pknots_return eq '34304') {
 	Callstack(message => "Pknots Error: $command");
     }
     RemoveFile($errorfile);
@@ -529,7 +530,7 @@ command: $command\n" if (defined($config->{debug}));
 	$ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
-    my $bpseqfile = "${seqname}0.bpseq";
+    my $bpseqfile = "${seqname}0_RE.bpseq";
     AddOpen($bpseqfile);
     open(BPSEQ, "<$bpseqfile");
     $ret->{output} = '';
@@ -552,7 +553,7 @@ command: $command\n" if (defined($config->{debug}));
     }
     $ret->{pairs} = $ret->{pairs} / 2;
     close(BPSEQ);
-    my $ctfile = qq(${seqname}.ct);
+    my $ctfile = qq(${seqname}_RE.ct);
     AddOpen($ctfile);
     open(GETMFE, "grep ENERGY $ctfile | head -1 |");
     while (my $getmfeline = <GETMFE>) {
@@ -623,7 +624,7 @@ command: $command\n" if (defined($config->{debug}));
         $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
-    my $bpseqfile = "${seqname}0.bpseq";
+    my $bpseqfile = "${seqname}0_RE.bpseq";
     AddOpen($tempfile);
     AddOpen($bpseqfile);
     my $open_ret = open(BPSEQ, "<$bpseqfile");
@@ -651,7 +652,7 @@ command: $command\n" if (defined($config->{debug}));
 	$ret->{pairs} = $ret->{pairs} / 2;
 	close(BPSEQ);
     } ## If we were able to open the CT file.
-    my $ctfile = qq(${seqname}.ct);
+    my $ctfile = qq(${seqname}_RE.ct);
     AddOpen($ctfile);
     open(GETMFE, "grep ENERGY $ctfile | head -1 |");
     while (my $getmfeline = <GETMFE>) {

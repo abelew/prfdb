@@ -424,7 +424,9 @@ sub Reconnect {
 	my $species = $species_es->[0];
 	next if ($species =~ /virus/);
 	my $mt = "mfe_$species";
+	$mt = 'mfe_virus' if ($mt =~ /virus/);
 	my $bt = "boot_$species";
+	$bt = 'boot_virus' if ($bt =~ /virus/);
 	my $boots = $me->MySelect(statement => "SELECT * FROM $bt", type => 'list_of_hashes');
 	foreach my $boot (@{$boots}) {
 	    ## Find the correct mfe entry

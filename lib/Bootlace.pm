@@ -6,6 +6,7 @@ use SeqMisc;
 use Math::Stat;
 use PRFConfig qw / PRF_Out /;
 use vars qw($VERSION);
+use Data::Dumper;
 $VERSION='20111119';
 
 sub new {
@@ -20,7 +21,7 @@ sub new {
       ## Expect an array reference of sequence
       iterations => $arg{iterations},    ## How many repetitions
       ## Expect an int
-      boot_mfe_mfe_methods => $arg{boot_mfe_mfe_methods},    ## What to calculate mfe from
+      boot_mfe_methods => $arg{boot_mfe_methods},    ## What to calculate mfe from
       ## Expect a hash ref of mfe_methods
       randomizers => $arg{randomizers},                    ## What randomization mfe_method to use
       ## Expect a hash ref of randomizers
@@ -71,7 +72,8 @@ sub Go {
     ## randomizer should be a reference to a function which takes as input
     ## the array reference of the sequence window of interest.  Thus allowing us to
     ## change which function randomizes the sequence
-    my @methods = keys(%{$me->{boot_mfe_mfe_methods}});
+    my @methods = keys(%{$me->{boot_mfe_methods}});
+    print "HERE? @methods\n";
     foreach my $boot_mfe_method_name (keys %{$me->{boot_mfe_methods}}) {
 	my $mfe_id;
 	if (defined($boot_mfe_method_name)) {
@@ -111,7 +113,7 @@ sub Go {
 	    my $iteration_count = 1;
 	    while ($iteration_count <= $me->{iterations}) {
 		$iteration_count++;
-		my $boot_mfe_method = $me->{boot_methods}->{$boot_mfe_method_name};
+		my $boot_mfe_method = $me->{boot_mfe_methods}->{$boot_mfe_method_name};
 		
 		#my $rand_algo = $me->{randomizers}->{$rand_name}($inputfile, $species, $accession);
 		my $rand_algo = $me->{randomizers}->{$rand_name};
@@ -155,6 +157,12 @@ sub Go {
 	    $return->{genome_id} = $me->{genome_id};
 	}    ## Foreach randomization
     }    ## Foreach mfe calculator
+
+    print "
+AAAHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+";
+    print Dumper $return;
+    sleep(10);
     return ($return);
 }
 
