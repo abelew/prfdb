@@ -5,7 +5,8 @@ use lib 'lib';
 use PkParse;
 use PRFdb qw / Callstack AddOpen RemoveFile /;
 use vars qw($VERSION);
-$VERSION='20111119';
+$VERSION='20120304';
+
 sub new {
     my ($class, %arg) = @_;
     my $me = bless {
@@ -19,6 +20,35 @@ sub new {
 	sequence => $arg{sequence},
     }, $class;
     return ($me);
+}
+
+sub Compute_Energy {
+    my ($me, %arg) = @_;
+    my $seq = $arg{sequence};
+    my $par = $arg{parens};
+    my $seqlen = length($seq);
+    my $parlen = length($par);
+    while ($seqlen > $parlen) {
+	$par .= '.';
+	$parlen = length($par);
+    }
+    while ($parlen > $seqlen) {
+	$seq .= '.';
+	$seqlen = length($seq);
+    }
+    $seq =~ s/\s+//g;
+    $par =~ s/\s+//g;
+    my $command_line = qq"cd $ENV{PRFDB_HOME}/bin && $ENV{PRFDB_HOME}/bin/computeEnergy -d $seq \"$par\"";
+    open(EVAL, "$command_line |") or Callstack(message => qq"computeEnergy failed: $!");
+    my $value;
+    while (my $line = <EVAL>) {
+	chomp $line;
+	next unless ($line =~ /^Energy1/);
+	my ($crap, $fun) = split(/Energy2\s+=/, $line);
+	$value = sprintf("%.1f", $fun);
+    }
+    close(EVAL);
+    return($value);
 }
 
 sub Nupack {

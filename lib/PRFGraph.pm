@@ -369,12 +369,17 @@ sub Make_Extension {
 	my $ograph = new GD::Graph::mixed('400','400');
 #	$ograph->set_legend([qw"Num ORFs, Pct long"]);
 	$ograph->set(bgclr => 'white',
-		     y_label => 'number_extensions',
+		     y1_label => 'Number Extensions',
+		     y2_label => 'Percent Long Extension',
 		     x_label_skip => 5,
-		     x_label => 'percent_orf',
+		     two_axes => 1,
+		     x_label => 'Percent ORF',
+		     y2_min_value => 0,
+		     y2_max_value => 80,
 		     default_type => 'lines',
 		     types => [qw(lines lines)],
-		     y_max_value => ($max_orfs + 10),
+		     y1_min_value => 0,
+		     y1_max_value => ($max_orfs + 10),
 		     ) or Callstack(die => 1, message => $ograph->error);
 	my $orf_gd = $ograph->plot(\@o_data) or Callstack(die => 1, message => $ograph->error);
 	my $extension_filename = $filename;
@@ -492,6 +497,12 @@ sub Make_Cloud {
     }
     $mfe_min_value = $db->MySelect(statement => $min_stmt, type => 'single');
     $mfe_max_value = $db->MySelect(statement => $max_stmt, type => 'single');
+    unless ($mfe_min_value) {
+	$mfe_min_value = -47.0;
+    }
+    unless ($mfe_max_value) {
+	$mfe_max_value = 2.0;
+    }
     $mfe_min_value -= 3.0;
     $mfe_max_value += 3.0;
     my $z_min_value = -10.0;

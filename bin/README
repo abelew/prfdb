@@ -1,1 +1,11 @@
-hotknots parameters live here and seem to be hardcoded
+This directory is intended for containing temporary files used by rnamotif, nupack, pknots etc.
+In addition it by default contains the nupack executable.
+
+In the case of a machine which is not running architecture dependant executables,
+one should fine here:
+Fold.out.nopairs
+Fold.out.boot.nopairs
+
+For a box with arch dependant exes
+Fold.out.nopairs.$arch
+Fold.out.boot.nopairs.$arch

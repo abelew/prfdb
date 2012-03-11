@@ -1168,6 +1168,39 @@ sub Import_Genbank_Flatfile {
     } # NEXT_SEQ
 }
 
+sub Collect_Cloud {
+    my $me = shift;
+    my %args = %{@_};
+    my $species = $args{species};
+    my $seqlength = $args{seqlength};
+    my $filters = $args{filters};
+    my ($points, $averages);
+
+    if ($species != "virus") {
+	my $mt = qq"mfe_$species";
+	my $bt = qq"boot_$species";
+	my $points_stmt = qq"SELECT $mt.mfe, $bt.zscore, $mt.accession, $mt.knotp, $mt.slipsite, $mt.start, genome.genename FROM $mt, $bt, genome WHERE $bt.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $bt.zscore > -10 AND $bt.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $bt.mfe_id AND ";
+	my $averages_stmt = qq"SELECT avg($mt.mfe), avg($bt.zscore), stddev($mt.mfe), stddev($bt.zscore) FROM $mt, $bt WHERE $bt.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $bt.zscore > -10 AND $bt.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $bt.mfe_id AND ";
+	
+	foreach my $filter (@{$filters}) {
+	    if ($filter eq 'pseudoknots only') {
+		$points_stmt .= "$mt.knotp = '1' AND ";
+		$averages_stmt .= "$mt.knotp = '1' AND ";
+	    }
+	    elsif ($filter eq 'coding sequence only') {
+		$points_stmt .= "";
+		$averages_stmt .= "";
+	    }
+	}
+	$points_stmt .= " $mt.genome_id = genome.id";
+	$averages_stmt =~ s/AND $//g;
+	$points = $me->MySelect(statement => $points_stmt, vars => [$species]);
+	$averages = $me->MySelect(statement => $averages_stmt, vars => [$species], type => 'row',);
+    } else {  ## If the species _IS_ virus, then we have to do more work, but I am stupid and am not sure what to do...
+    }
+    return({points => $points, averages => $averages});
+}
+
 sub Import_RawSeq {
     my $me = shift;
     my $datum = shift;
