@@ -191,6 +191,10 @@ Return: $nupack_return\n");
     return ($return);
 }
 
+sub ILM {
+    my $me = shift;
+}
+
 sub Vienna {
     my $me = shift;
     my $inputfile = $me->{file};

@@ -73,7 +73,6 @@ sub Go {
     ## the array reference of the sequence window of interest.  Thus allowing us to
     ## change which function randomizes the sequence
     my @methods = keys(%{$me->{boot_mfe_methods}});
-    print "HERE? @methods\n";
     foreach my $boot_mfe_method_name (keys %{$me->{boot_mfe_methods}}) {
 	my $mfe_id;
 	if (defined($boot_mfe_method_name)) {
@@ -157,12 +156,6 @@ sub Go {
 	    $return->{genome_id} = $me->{genome_id};
 	}    ## Foreach randomization
     }    ## Foreach mfe calculator
-
-    print "
-AAAHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
-";
-    print Dumper $return;
-    sleep(10);
     return ($return);
 }
 

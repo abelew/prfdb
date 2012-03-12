@@ -1,18 +1,22 @@
 #!/usr/local/bin/perl -w 
 use strict;
-use vars qw"$db $config";
-use lib "$ENV{PRFDB_HOME}/usr/lib/perl5";
-use lib "$ENV{PRFDB_HOME}/lib";
-use PRFConfig;
-use PRFdb qw"AddOpen RemoveFile Callstack Cleanup";
-use PRFGraph;
-use autodie qw":all";
-use MicroRNA;
 
-$config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
-$db = new PRFdb(config => $config);
-$SIG{INT} = \&PRFdb::Cleanup;
-#my $graph = new PRFGraph(config => $config);
-## mature.fa hairpin.fa
-my $t = new MicroRNA(config => $config);
-$t->Miranda_PRF("NM_000579","473");
+open(IN, "<$ENV{PRFDB_HOME}/data/recode2.txt");
+my $cmd = qq"$ENV{PRFDB_HOME}/prf_daemon --accession ";
+
+while (my $line = <IN>) {
+    chomp $line;
+    my ($accession, $pos) = split(/\s+/, $line);
+    if ($accession =~ /\,/) {
+	my @accs = split(/\,/, $accession);
+	foreach my $acc (@accs) {
+	    my $c = $cmd . $acc;
+	    system($c);
+	}
+    } else {
+	my $c = $cmd . $accession;
+	system($c);
+    }
+}
+
+close(IN);
