@@ -605,6 +605,7 @@ sub Remove_Duplicates {
     my $accession = shift;
     my $species = $me->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", vars => [$accession], type => 'single');
     my $mfe_table = "mfe_$species";
+    $mfe_table = 'mfe_virus' if ($mfe_table =~ /virus/);
     my $info = $me->MySelect(qq"SELECT id,start,seqlength,mfe_method FROM $mfe_table WHERE accession = '$accession'");
     my @duplicate_ids;
     my $dups = {};

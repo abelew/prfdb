@@ -1415,6 +1415,7 @@ sub Make_Feynman {
 	my $db = new PRFdb(config=>$config);
 	my $species = $db->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", type => 'single', vars => [$me->{accession}]);
 	my $mt = qq"mfe_$species";
+	$mt = 'mfe_virus' if ($mt =~ /virus/);
 	my $stmt = qq"SELECT sequence, slipsite, parsed, output FROM $mt WHERE id = '$id'";
 	my $info = $db->MySelect(statement => $stmt, type => 'row');
 	$sequence = $info->[0];

@@ -1,0 +1,43 @@
+<%perl>
+
+my $mfe_table = qq"mfe_${species}";
+$mfe_table = 'mfe_virus' if ($mfe_table =~ /virus/);
+my $info = $db->MySelect("SELECT sequence, parens FROM $mfe_table WHERE id = '$mfeid'");
+my $seq = $info->[0]->[0];
+my $par = $info->[0]->[1];
+my @seq_list = split(//, $seq);
+my @par_list = split(//, $par);
+if ($#seq_list == $#par_list) {
+  print "";
+} else {
+    while ($#seq_list > $#par_list) {
+	push(@par_list, '.');
+    }
+    $par = '';
+    foreach my $p (@par_list) {
+	$par .= $p;
+    }
+}
+
+#my $command_line = qq"echo \"$seq\t$par\" | $ENV{PRFDB_HOME}/work/RNAeval";
+my $command_line = qq"cd $ENV{PRFDB_HOME}/work && $ENV{PRFDB_HOME}/work/computeEnergy -d $seq \"$par\" 2>&1";
+print "<pre>Running: $command_line</pre>\n";
+open(EVAL, "$command_line |");
+my $value;
+while (my $line = <EVAL>) {
+    chomp $line;
+    next unless ($line =~ /^Energy1/);
+    my ($crap, $fun) = split(/Energy2\s+=/, $line);
+    $value = sprintf("%.1f", $fun);
+}
+close(EVAL);
+print "The Turner MFE is: $value<br>\n";
+
+
+</%perl>
+
+<%args>
+ $mfeid => undef;
+ $accession => undef;
+ $species => undef;
+</%args>

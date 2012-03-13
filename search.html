@@ -17,7 +17,7 @@ if ($short or $accession or $hgnc_name) {
 } else {
   $query_statement = qq"SELECT * FROM gene_info WHERE ";
   if ($search_species_limit ne 'all') {
-    $query_statement .= qq"species = '$search_species_limit' AND ";
+      $query_statement .= qq"species = '$search_species_limit' AND ";
   }
   my $mode = undef;
   if (defined($mode)) {   ## SOME SNP STUFF
@@ -35,6 +35,7 @@ foreach my $c (keys %{$entries}) {
   $entries_count++;
   $species = $db->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", type => 'single', vars => [$entries->{$c}->{accession}]);
   my $mt = "mfe_$species";
+  $mt = 'mfe_virus' if ($mt =~ /virus/);
   my $slip_stmt = qq"SELECT count(distinct(start)), count(distinct(id)) FROM $mt WHERE accession = ?";
   my $slipsite_structure_count = $db->MySelect(statement => $slip_stmt, vars => [$entries->{$c}->{accession}], type => 'row',);
   $entries->{$c}->{slipsite_count} = $slipsite_structure_count->[0];
@@ -103,6 +104,7 @@ $(document).ready(function()
 % my $long_species = HTMLMisc::Make_Species($species);
 % $entries->{$entry}->{long_species} = $long_species;
 % my $mt = "mfe_$species";
+% $mt = 'mfe_virus' if ($mt =~ /virus/);
 % my $slip_stmt = qq"SELECT count(distinct(start)), count(distinct(id)) FROM $mt WHERE accession = ?";
 % my $slipsite_structure_count = $db->MySelect(statement => $slip_stmt, vars => [$entries->{$entry}->{accession}], type => 'row');
 % $entries->{$entry}->{slipsite_count} = $slipsite_structure_count->[0];
