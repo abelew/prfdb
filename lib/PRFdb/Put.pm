@@ -42,6 +42,16 @@ sub Boot {
 	    $mfe_id = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_id};
 	    my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
 	    my $seqlength = $data->{$mfe_method}->{$rand_method}->{stats}->{seqlength};
+	    foreach my $k (sort keys %{$data}) {
+		my %tmp = %{$data}->{$k};
+		print "TESTME: $data->{$k} $k\n";
+#		foreach my $l (sort keys %tmp) {
+#		    my %t = %{$data->{$k}->{$l}->{stats}};
+#		    foreach my $m (sort keys %t) {
+#			print "TESTME: $data->{$k}->{$l}->{stats}->{$m}\n";
+#		    }
+#		}
+	    }
 	    my @boot = ('genome_id');
 	    my $errorstring = $me->Check_Insertion(\@boot, $data);
 	    if (defined($errorstring)) {

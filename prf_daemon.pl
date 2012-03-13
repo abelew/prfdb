@@ -358,6 +358,7 @@ sub PRF_Gatherer {
   STARTSITE: foreach my $slipsite_start (keys %{$rnamotif_information}) {
       print "PRF_Gatherer: $current $slipsite_start\n" if (defined($config->{debug}));
       $num_slipsites++;
+      $state->{species} = 'virus' if ($state->{species} =~ /virus/);
       my $mt = "mfe_$state->{species}";
       if ($config->{do_utr} == 0) {
 	  my $end_of_orf = $db->MySelect(statement => "SELECT orf_stop FROM genome WHERE accession = ?", vars => [$state->{accession}], type =>'row',);
