@@ -641,4 +641,20 @@ $inseq
     return (\@out_array);
 }
 
+sub Add_One {
+    my $pos = shift;
+    my $arr = shift;
+    my @array = @{$arr};
+    my $len = $#array;
+    if ($len >= $pos) {
+	return($arr);
+    } else {
+	my $c = 0;
+	while ($c < $pos) {
+	    $array[$c] = 0 unless ($array[$c]);
+	}
+	return(\@array);
+    }
+}
+
 1;
