@@ -151,6 +151,7 @@ sub Make_Extension {
     my $fun = [[0,0,0],[0,100,0]];
     my $gd = $graph->plot($fun) or Callstack(die => 0, message => "Line 149" , $graph->error);
     my $black = $gd->colorResolve(0,0,0);
+    my $red = $gd->colorResolve(191,0,0);
     my $green = $gd->colorResolve(0,191,0);
     my $blue = $gd->colorResolve(0,0,191);
     my $gb = $gd->colorResolve(0,97,97);
@@ -334,14 +335,26 @@ sub Make_Extension {
 	$max_exts = 100 if ($max_exts < 100);
 	my @e_data = (\@ext_axis, \@ext_vals);
 	my $egraph = new GD::Graph::mixed('400','400');
+	$egraph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 14);
+	$egraph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 14);
+	$egraph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}",14);
+	$egraph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 14);
+	$egraph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}",14);
+	my $max_exts_y_value = $max_exts + 10;
+	while (($max_exts_y_value % 20) != 0) {
+	    $max_exts_y_value++;
+	}
 	$egraph->set(bgclr => 'white',
-		     y_max_value => ($max_exts + 10),
-		     y_label => 'number_extensions',
+		     y_max_value => $max_exts_y_value,
+		     y_label => 'Number extensions',
 		     x_label_skip => 5,
-		     x_label => 'length x 5 codons',
+		     x_label => 'Length',
+                     line_width => 3,
 		     default_type => 'lines',
 		     types => [qw(lines)],) or Callstack(die => 0, message => $egraph->error);
 	my $ext_gd = $egraph->plot(\@e_data) or Callstack(die => 1, message => $egraph->error);
+	my $codons_y_thirty_coord = sprintf("%.2f", ($y_range - (30 * 4)) + $bottom_y_coord);
+	$ext_gd->filledRectangle($left_x_coord, $codons_y_thirty_coord, $right_x_coord, ($codons_y_thirty_coord + 1), $red);
 	my $extension_filename = $filename;
 	$extension_filename =~ s/\.png/_extension\.png/g;
 	open(EXTIMG, ">$extension_filename") or Callstack(message => qq"error opening file to write extension distribution.", die => 0);
@@ -366,15 +379,71 @@ sub Make_Extension {
 	    $max_orfs = 100 if ($max_orfs < 100);
 	}
 	my @o_data = (\@orf_axis, \@orf_vals, \@long_orf_percent);
+	my @o_num_data = (\@orf_axis, \@orf_vals);
+	my $y_max_value = $max_orfs + 10;
+	while (($y_max_value % 20) != 0) {
+	    $y_max_value++;
+	}
+	my $o_num_graph = new GD::Graph::mixed('400','400');
+	$o_num_graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 14);
+	$o_num_graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 14);
+	$o_num_graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}",14);
+	$o_num_graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 14);
+	$o_num_graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}",14);
+	$o_num_graph->set(dclrs => [qw(blue)]);
+	$o_num_graph->set(bgclr => 'white',
+		     y_label => 'Number Extensions',
+		     x_label_skip => 20,
+		     x_label => 'Percent ORF',
+		     line_width => 3,
+		     default_type => 'lines',
+		     types => [qw(lines lines)],
+		     y_max_value => $y_max_value,
+		     ) or Callstack(die => 1, message => $o_num_graph->error);
+	my $orf_num_gd = $o_num_graph->plot(\@o_num_data) or Callstack(die => 1, message => $o_num_graph->error);
+	my $orf_num_filename = $filename;
+	$orf_num_filename =~ s/\.png/_orf_num\.png/g;
+	open(ORFNUMIMG, ">$orf_num_filename") or Callstack(message => qq"error opening file to write orf distribution.", die => 0);
+	binmode ORFNUMIMG;
+	print ORFNUMIMG $orf_num_gd->png;
+	close ORFNUMIMG;
+
+	my @o_pct_data =(\@orf_axis, \@long_orf_percent);
+	my $o_pct_graph = new GD::Graph::mixed('400','400');
+	$o_pct_graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 14);
+	$o_pct_graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 14);
+	$o_pct_graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}",14);
+	$o_pct_graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 14);
+	$o_pct_graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}",14);
+	$o_pct_graph->set(dclrs => [qw(black)]);
+	$o_pct_graph->set(bgclr => 'white',
+		     y_label => 'Percent Long Extensions',
+		     x_label_skip => 20,
+		     x_label => 'Percent ORF',
+		     line_width => 3,
+		     default_type => 'lines',
+		     types => [qw(lines lines)],
+		     y_max_value => 80,
+		     ) or Callstack(die => 1, message => $o_pct_graph->error);
+	my $orf_pct_gd = $o_pct_graph->plot(\@o_pct_data) or Callstack(die => 1, message => $o_pct_graph->error);
+	my $orf_pct_filename = $filename;
+	$orf_pct_filename =~ s/\.png/_orf_pct\.png/g;
+	open(ORFPCTIMG, ">$orf_pct_filename") or Callstack(message => qq"error opening file to write orf distribution.", die => 0);
+	binmode ORFPCTIMG;
+	print ORFPCTIMG $orf_pct_gd->png;
+	close ORFPCTIMG;
+
+
 	my $ograph = new GD::Graph::mixed('400','400');
 #	$ograph->set_legend([qw"Num ORFs, Pct long"]);
 	$ograph->set(bgclr => 'white',
 		     y1_label => 'Number Extensions',
-		     y2_label => 'Percent Long Extension',
+		     y2_label => 'Percent Long Extensions',
 		     x_label_skip => 5,
 		     two_axes => 1,
 		     x_label => 'Percent ORF',
 		     y2_min_value => 0,
+		     line_width => 3,
 		     y2_max_value => 80,
 		     default_type => 'lines',
 		     types => [qw(lines lines)],
@@ -1961,7 +2030,6 @@ sub Make_CFeynman {
     my $sequence = $info->[0];
     my $parsed = $info->[1];
     my $pkout = $info->[2];
-    print STDERR "TESTME: $sequence $parsed $pkout<br>\n";
     my $seqlength = length($sequence);
     my $character_size = 10;
     my $height_per_nt = 3.5;

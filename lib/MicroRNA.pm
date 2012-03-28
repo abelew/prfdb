@@ -15,7 +15,13 @@ sub new {
     my $me = bless {
 	config => $config,
 	db => new PRFdb(config => $config),
+	energy_cutoff => $arg{energy_cutoff},
+	max_internal_loop => $arg{max_internal_loop},
+	max_bulge_loop => $arg{max_bulge_loop},
     }, $class;
+    $me->{energy_cutoff} = -22.0 unless ($me->{energy_cutoff});
+    $me->{max_internal_loop} = 3 unless ($me->{max_internal_loop});
+    $me->{max_bulge_loop} = 3 unless ($me->{max_bulge_loop});
     return($me);
 }
 
@@ -25,11 +31,17 @@ sub RNAHybrid {
     my $accession = shift;
     my $position = shift;
     my $output = {};
+    my $max_bulge = $me->{max_bulge_loop};
+    my $max_internal = $me->{max_internal_loop};
+    my $max_mfe = $me->{energy_cutoff};
     my $seq = $me->{db}->MySelect(type => 'single', statement => "SELECT sequence FROM mfe_homo_sapiens WHERE accession = ? AND start = ?", vars => [$accession, $position]);
     my $data = ">tmp\n$seq\n";
     my $filename = $me->{db}->Sequence_to_Fasta($data);
-    my $command = qq"$ENV{PRFDB_HOME}/work/RNAhybrid -d -s 3utr_human -q $ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta -t $filename";
-    open(MIR, "$command |") or warn("Could not run $command $!");
+#    my $command = qq"$ENV{PRFDB_HOME}/work/RNAhybrid -u $max_bulge -v $max_internal -e $max_mfe -d -s 3utr_human -q $ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta -t $filename";
+    my $command = qq"$ENV{PRFDB_HOME}/work/RNAhybrid -u $max_bulge -v $max_internal -d -s 3utr_human -q $ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta -t $filename";
+    ## rnahybrid setfaults mysteriously if you attempt to impose an MFE constraint
+#    print STDERR "TESTME Running $command\n";
+    open(MIR, "$command |") or print STDERR "Could not run $command $!";
     my ($key, $junk, $inner_hash, $miRNA, $mfe, $target_mismatch, $target_match, $miRNA_mismatch, $miRNA_match);
 ##  Each result from rnahybrid is 11 lines of text with some blanks.
 ##  If I put a next in front of every line starting with 'target:' or blank, or  then 
@@ -42,7 +54,10 @@ sub RNAHybrid {
 	next if ($line =~ /^\s*$/);
 	next if ($line =~ /^target:/);
 	next if ($line =~ /^length/);
-	next if ($line =~ /^p-value/);
+	if ($line =~ /^p-value/) {
+#	    print STDERR "TESTME: $line\n";
+	    next;
+	}
 	$line =~ s/^mfe:\s+//g;
 	$line =~ s/^miRNA ://g;
 	$line =~ s/^position //g;

@@ -27,7 +27,7 @@ Attempting to match <% $accession %>, <% $start %> against homo_sapiens miRNA se
 % my $table = qq"mfe_${species}";
 % my $sequence = $db->MySelect(type => 'single', statement => qq"SELECT sequence from $table WHERE accession = ? AND start = ?", vars => [$accession, $start]);
 % use MicroRNA;
-% my $micro = new MicroRNA;
+% my $micro = new MicroRNA(energy_cutoff => $mfe_cutoff_new);
 % my $output =  $micro->RNAHybrid($accession, $start);
 % my $mi_counter = 0;
 % OUTER: foreach my $mir (sort keys %{$output}) {
