@@ -22,6 +22,32 @@ sub new {
     return ($me);
 }
 
+sub Prepare {
+    my $me = shift;
+    my %args = @_;
+    my $prog = $args{prog};
+    my $inputfile = $me->{file};
+    my $accession = $me->{accession};
+    my $start = $me->{start};
+    my $slipsite = Get_Slipsite_From_Input($inputfile);
+    my $errorfile = qq"${inputfile}_${prog}.err";
+    AddOpen($errorfile);
+    my $seq = Get_Sequence_From_Input($inputfile);
+    my $name = Get_Sequence_From_Input($inputfile, 'comment');
+    my $ret = {
+	start => $start,
+	slipsite => $slipsite,
+	knotp => 0,
+	genome_id => $me->{genome_id},
+	species => $me->{species},
+	accession => $accession,
+	sequence_name => $name,
+	sequence => $seq,
+	seqlength => length($seq),
+    };
+    return($ret);
+}
+
 sub Compute_Energy {
     my ($me, %arg) = @_;
     my $seq = $arg{sequence};
@@ -39,6 +65,8 @@ sub Compute_Energy {
     $seq =~ s/\s+//g;
     $par =~ s/\s+//g;
     my $command_line = qq"cd $ENV{PRFDB_HOME}/bin && $ENV{PRFDB_HOME}/bin/computeEnergy -d $seq \"$par\"";
+    print "Compute_Energy:
+$command_line\n";
     open(EVAL, "$command_line |") or Callstack(message => qq"computeEnergy failed: $!");
     my $value;
     while (my $line = <EVAL>) {
@@ -193,6 +221,51 @@ Return: $nupack_return\n");
 
 sub ILM {
     my $me = shift;
+    ## ilm takes the mwm format as initial format.
+    ## name :sequence (with u or t)
+    my %args = @_;
+    my $config = $me->{config};
+    my $ret = $me->Prepare(prog => 'ilm',);
+    chdir($config->{workdir});
+    my $mwm = $me->Make_MWM(sequence_name => $ret->{sequence_name}, sequence => $ret->{sequence},);
+    my $hlx_command = qq"$ENV{PRFDB_HOME}/bin/xhlxplot $mwm > ${mwm}.matrix";
+    AddOpen("${mwm}.matrix");
+    my $ilm_command = qq"$ENV{PRFDB_HOME}/bin/ilm ${mwm}.matrix 2> ${mwm}.err 1> ${mwm}.bpseq";
+    AddOpen("${mwm}.err");
+    AddOpen("${mwm}.bpseq");
+    print "TESTME: $hlx_command \n $ilm_command\n";
+    open(HLX, "$hlx_command |");
+    close(HLX);
+    open(ILM, "$ilm_command |");
+    close(ILM);
+    open(BP, "<${mwm}.bpseq");
+    my @ilmout = ();
+    while (my $line = <BP>) {
+	next if ($line =~ /^\s+$/);
+	next if ($line =~ /Final/);
+	my ($fiveprime, $threeprime)  = split(/\s+/, $line);
+	my $five = $fiveprime - 1;
+	my $three = $threeprime - 1;
+	if ($three == -1) {
+	    $ilmout[$five] = '.';
+	} else {
+	    $ilmout[$five] = $three;
+	}
+    }
+    close(BP);
+    use PkParse;
+    my $parser = new PkParse;
+    my $out = $parser->Unzip(\@ilmout);
+    my $new_struc = PkParse::ReBarcoder($out);
+    my $barcode = PkParse::Condense($new_struc);
+    my $parens = PkParse::MAKEBRACKETS(\@ilmout);
+    my $mfe = $me->Compute_Energy(sequence => $ret->{sequence}, parens => $parens);
+    print "TESTME: $barcode\n$parens\n$mfe\n";
+}
+
+sub BPSeq_to_Out {
+    my $me = shift;
+    
 }
 
 sub Vienna {
@@ -372,15 +445,37 @@ command: $command\n" if (defined($config->{debug}));
     return ($return);
 }
 
+sub Make_MWM {
+    my $me = shift;
+    my %args = @_;
+    my $mwm_file = $me->{file};
+    $mwm_file =~ s/\.fasta$/\.mwm/g;
+    open(IN, ">$mwm_file");
+    my $name = $args{sequence_name};
+    $name =~ s/\s+//g;
+    $name =~ s/\://g;
+    print IN "$name :$args{sequence}\n";
+    close(IN);
+    AddOpen($mwm_file);
+    return($mwm_file);
+}
+
 sub Get_Sequence_From_Input {
     my $inputfile = shift;
+    my $comment = shift;
     open(SEQ, "<$inputfile");
     ## OPEN SEQ in Get_Sequence_From_Input
     my $seq;
     while (my $line = <SEQ>) {
 	chomp $line;
 	if ($line =~ /^\>/) {
-	    next;
+	    if ($comment) {
+		$line =~ s/^\>//g;
+		close(SEQ);
+		return($line);
+	    } else {
+		next;
+	    }
 	} else {
 	    $seq .= $line;
 	}

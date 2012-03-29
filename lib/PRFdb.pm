@@ -474,6 +474,22 @@ sub Keyword_Search {
     return ($return);
 }
 
+sub Mfeid_to_MWM {
+    my $me = shift;
+    my %args = @_;
+    my $inputfile = $me->{file};
+    my $accession = $me->{accession};
+    my $start = $me->{start};
+    my $hlx = qq"$ENV{PRFDB_HOME}/bin/hlxplot";
+    my $ilm = qq"$ENV{PRFDB_HOME}/bin/ilm";
+    my $errorfile = qq"${inputfile}_ilm.err";
+    AddOpen($errorfile);
+    my $slipsite = Get_Slipsite_From_Input($inputfile);
+    
+
+
+}
+
 sub Mfeid_to_Bpseq {
     my $me = shift;
     my $species = shift;

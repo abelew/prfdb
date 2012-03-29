@@ -1,5 +1,8 @@
 #!/usr/local/bin/perl -w 
 use strict;
+use warnings;
+use lib "$ENV{PRFDB_HOME}/lib";
+use local::lib "$ENV{PRFDB_HOME}/usr/perl";
 use vars qw"$db $config";
 use lib "$ENV{PRFDB_HOME}/usr/lib/perl5";
 use lib "$ENV{PRFDB_HOME}/lib";
