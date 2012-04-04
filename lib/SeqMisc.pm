@@ -641,17 +641,44 @@ $inseq
     return (\@out_array);
 }
 
+sub Codon_Distribution {
+    my $me = shift;
+    my %args = @_;
+    my $residues = ['*'] unless ($args{residues});
+#    my $sequence = $me->{aaminusone} unless ($args{sequence});
+    my $sequence = ($args{sequence} ? $args{sequence} : $me->{aaminusone});
+    my $dist_array = ($args{dist_array} ? $args{dist_array} : []);
+    my @seq = @{$sequence};
+    my $dist = 0;
+    LOOP: while (@seq) {
+	my $current = shift(@seq);
+#	print "TESTME: $current\n";
+	foreach my $res (@{$residues}) {
+	    if ($current eq $res) {
+		$dist_array = $me->Add_One($dist, $dist_array);
+		$dist = 0;
+		next LOOP;
+	    }
+	}
+	$dist++;
+    } ## End of the while loop
+    return($dist_array);
+}
+
 sub Add_One {
+    my $me = shift;
     my $pos = shift;
     my $arr = shift;
     my @array = @{$arr};
     my $len = $#array;
     if ($len >= $pos) {
+	$arr->[$pos]++;
 	return($arr);
     } else {
 	my $c = 0;
 	while ($c < $pos) {
 	    $array[$c] = 0 unless ($array[$c]);
+	    $c++;
 	}
 	return(\@array);
     }

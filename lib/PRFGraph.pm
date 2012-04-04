@@ -28,6 +28,7 @@ sub new {
     foreach my $key (%arg) {
 	$me->{$key} = $arg{$key} if (defined($arg{$key}));
     }
+    $me->{graph_font_size} = 14;
     return ($me);
 }
 
@@ -135,18 +136,18 @@ sub Make_Extension {
     $graph->set(x_min_value => 0);
     $graph->set(x_max_value => 100);
     $graph->set(x_ticks => 1);
-    $graph->set(x_tick_number => 10);
+    $graph->set(x_tick_number => 25);
     $graph->set(x_label_skip => 2);
     $graph->set(x_tick_offset => 2);
     $graph->set(markers => [7,7]);
     $graph->set(marker_size => 0);
     $graph->set(bgclr => 'white');
     $graph->set(dclrs => [qw(black black)]);
-    $graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 12);
-    $graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 12);
-    $graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}",12);
-    $graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", 12);
-    $graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}",12);
+    $graph->set_legend_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $me->{graph_font_size});
+    $graph->set_x_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $me->{graph_font_size});
+    $graph->set_x_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $me->{graph_font_size});
+    $graph->set_y_axis_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $me->{graph_font_size});
+    $graph->set_y_label_font("$ENV{PRFDB_HOME}/fonts/$config->{graph_font}", $me->{graph_font_size});
 #    my $fun = [[0,0,0,[0,0,0]];
     my $fun = [[0,0,0],[0,100,0]];
     my $gd = $graph->plot($fun) or Callstack(die => 0, message => "Line 149" , $graph->error);
@@ -347,7 +348,7 @@ sub Make_Extension {
 	$egraph->set(bgclr => 'white',
 		     y_max_value => $max_exts_y_value,
 		     y_label => 'Number extensions',
-		     x_label_skip => 5,
+		     x_label_skip => 25,
 		     x_label => 'Length',
                      line_width => 3,
 		     default_type => 'lines',
@@ -2210,6 +2211,13 @@ sub Picture_Filename {
     my $mfe_id = $me->{mfe_id};
 
     $mfe_methods = 'all' unless ($mfe_methods);
+
+    if ($type =~ /\:/) {
+	Callstack(die => 1, message => "Illegal name.");
+    }
+    if ($species =~ /\:/) {
+	Callstack(die => 1, message => "Illegal name.");
+    }
 
     if ($type eq 'extension_percent') {
 	return(qq"images/cloud/$species/extension-percent.png");

@@ -15,7 +15,7 @@ This must be in the NCBI NR database.<br>
 <p>Imported <% $import %> bases into the PRFdb under the accession <a href="/search.html?accession=<% $import_accession %>"><% $import_accession %></a></p>'
 %  my $cmd = qq"nice -n 20 $ENV{PRFDB_HOME}/prf_daemon --accession $import_accession 2>>$ENV{PRFDB_HOME}/import.out 1>&2 &";
 %  print "Attempting to run: $cmd<br>\n";
-%  system($cmd);
+%#  system($cmd);
 % }
 
 <%args>
