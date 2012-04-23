@@ -335,7 +335,7 @@ sub PRF_Gatherer {
     $sp = $state->{species} if (defined($state->{species}));
     $ac = $state->{accession} if (defined($state->{accession}));
     my $current = "sp:$sp acc:$ac st:$orf_start l:$len";
-    print "PRF_Gather: about to run $current\n" if (defined($config->{debug}));
+    print "PRF_Gather: about to run $current\n" if ($config->{debug});
     if (defined($startpos)) {
 #      $startpos = $startpos - $orf_start;
 	my $inf = PRFdb::MakeFasta($state->{genome_information}->{sequence},
@@ -356,7 +356,7 @@ sub PRF_Gatherer {
     } ## End else, so all start sites should be collected.
     return(0) if (!defined($rnamotif_information));
   STARTSITE: foreach my $slipsite_start (keys %{$rnamotif_information}) {
-      print "PRF_Gatherer: $current $slipsite_start\n" if (defined($config->{debug}));
+      print "PRF_Gatherer: $current $slipsite_start\n" if ($config->{debug});
       $num_slipsites++;
       $state->{species} = 'virus' if ($state->{species} =~ /virus/);
       my $mt = "mfe_$state->{species}";
@@ -379,15 +379,15 @@ sub PRF_Gatherer {
       
       my $check_seq = Check_Sequence_Length();
       if ($check_seq eq 'shorter than wanted') {
-	  print "The sequence is: $check_seq and will be skipped.\n" if (defined($config->{debug}));
+	  print "The sequence is: $check_seq and will be skipped.\n" if ($config->{debug});
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
       } elsif ($check_seq eq 'null') {
-	  print "The sequence is null and will be skipped.\n"  if (defined($config->{debug}));
+	  print "The sequence is null and will be skipped.\n"  if ($config->{debug});
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
       } elsif ($check_seq eq 'polya') {
-	  print "The sequence is polya and will be skipped.\n"  if (defined($config->{debug}));
+	  print "The sequence is polya and will be skipped.\n"  if ($config->{debug});
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
       }
@@ -464,7 +464,7 @@ UNION
 						   start => $slipsite_start,
 						   seqlength => $state->{seqlength},
 						   method => $method,);
-              print "$current has $boot_folds randomizations for method: $method\n" if (defined($config->{debug}));
+              print "$current has $boot_folds randomizations for method: $method\n" if ($config->{debug});
               if (!defined($boot_folds) or $boot_folds == 0) {
                   my $bootlaces = $boot->Go($method);
                   my $rows = $db->Put_Boot($bootlaces);
@@ -500,7 +500,7 @@ sub Landscape_Gatherer {
     my $sequence_length = scalar(@seq_array);
     my $start_point = 0;
     while ($start_point + $config->{landscape_seqlength} <= $sequence_length) {
-	print "Landscape Gatherer, position $start_point\n" if (defined($config->{debug}));
+	print "Landscape Gatherer, position $start_point\n" if ($config->{debug});
 	my $individual_sequence = ">$message";
 	my $end_point = $start_point + ($config->{landscape_seqlength} - 1);
 	my $sequence_string = '';
@@ -700,29 +700,29 @@ sub Check_Folds {
     my $mfe_varname = qq"${type}_mfe_id";
     my $folds = $db->Get_Num_RNAfolds($type, $state->{genome_id}, $slipsite_start, $state->{seqlength});
     if ($folds > 0) { ### If there ARE existing folds...
-	print "$state->{genome_id} has $folds > 0 pknots_folds at position $slipsite_start\n" if (defined($config->{debug}));
+	print "$state->{genome_id} has $folds > 0 pknots_folds at position $slipsite_start\n" if ($config->{debug});
 	$state->{$mfe_varname} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start,
 						 $state->{seqlength}, $type);
 	$mfe_id = $state->{$mfe_varname};
-	print "Check_Folds $type - already done: state: $mfe_id\n" if (defined($config->{debug}));
+	print "Check_Folds $type - already done: state: $mfe_id\n" if ($config->{debug});
     } else { ### If there are NO existing folds...
-	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n" if (defined($config->{debug}));
+	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n" if ($config->{debug});
 	my ($info, $mfe_id);
 	if ($type eq 'pknots') {
 	    $info = $fold_search->Pknots();
 	    $mfe_id = $db->Put_Pknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
-	    print "Performed Put_Pknots and returned $mfe_id\n" if (defined($config->{debug}));
+	    print "Performed Put_Pknots and returned $mfe_id\n" if ($config->{debug});
 	} elsif ($type eq 'nupack') {
 	    $info = $fold_search->Nupack_NOPAIRS();
 	    $mfe_id = $db->Put_Nupack($info);
 	    $state->{$mfe_varname} = $mfe_id;
-	    print "Performed Put_Nupack and returned $mfe_id\n" if (defined($config->{debug}));
+	    print "Performed Put_Nupack and returned $mfe_id\n" if ($config->{debug});
 	} elsif ($type eq 'hotknots') {
 	    $info = $fold_search->Hotknots();
 	    $mfe_id = $db->Put_Hotknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
-	    print "Performed Put_Hotknots and returned $mfe_id\n" if (defined($config->{debug}));
+	    print "Performed Put_Hotknots and returned $mfe_id\n" if ($config->{debug});
 	} else {
 	    Callstack(die => 1, message => "Non existing type in Check_Folds");
 	}

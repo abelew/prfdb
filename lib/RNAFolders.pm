@@ -52,6 +52,7 @@ sub Compute_Energy {
     my ($me, %arg) = @_;
     my $seq = $arg{sequence};
     my $par = $arg{parens};
+    my $config = $me->{config};
     my $seqlen = length($seq);
     my $parlen = length($par);
     while ($seqlen > $parlen) {
@@ -66,7 +67,7 @@ sub Compute_Energy {
     $par =~ s/\s+//g;
     my $command_line = qq"cd $ENV{PRFDB_HOME}/bin && $ENV{PRFDB_HOME}/bin/computeEnergy -d $seq \"$par\"";
     print "Compute_Energy:
-$command_line\n";
+$command_line\n" if ($config->{debug});
     open(EVAL, "$command_line |") or Callstack(message => qq"computeEnergy failed: $!");
     my $value;
     while (my $line = <EVAL>) {
@@ -118,7 +119,7 @@ sub Nupack_NOPAIRS {
 	$command = qq($nupack $inputfile 2>$errorfile);
     }
     print "NUPACK_NOPAIRS: infile: $inputfile accession: $accession start: $start
-command: $command\n" if (defined($config->{debug}));
+command: $command\n" if ($config->{debug});
     my $nupack_pid = open(NU, "$command |") or Callstack(message => "RNAFolders::Nupack_NOPAIRS, Could not run nupack: $command $!");
     ## OPEN NU in Nupack_NOPAIRS
     my $count = 0;
@@ -233,7 +234,7 @@ sub ILM {
     my $ilm_command = qq"$ENV{PRFDB_HOME}/bin/ilm ${mwm}.matrix 2> ${mwm}.err 1> ${mwm}.bpseq";
     AddOpen("${mwm}.err");
     AddOpen("${mwm}.bpseq");
-    print "TESTME: $hlx_command \n $ilm_command\n";
+    print "TESTME: $hlx_command \n $ilm_command\n" if ($config->{debug});
     open(HLX, "$hlx_command |");
     close(HLX);
     open(ILM, "$ilm_command |");
@@ -260,7 +261,7 @@ sub ILM {
     my $barcode = PkParse::Condense($new_struc);
     my $parens = PkParse::MAKEBRACKETS(\@ilmout);
     my $mfe = $me->Compute_Energy(sequence => $ret->{sequence}, parens => $parens);
-    print "TESTME: $barcode\n$parens\n$mfe\n";
+    print "DEBUG: $barcode\n$parens\n$mfe\n" if ($config->{debug});
 }
 
 sub BPSeq_to_Out {
@@ -287,7 +288,6 @@ sub Vienna {
 ${missing_slipsite}${missing_sequence}
 ";
 	undef($db);
-
     }
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
@@ -309,7 +309,7 @@ ${missing_slipsite}${missing_sequence}
     chdir($config->{workdir});
     my $command = qq($config->{exe_rnafold} -noLP -noconv -noPS < $inputfile);
     print "Vienna: infile: $inputfile accession: $accession start: $start
-command: $command\n" if (defined($config->{debug}));
+command: $command\n" if ($config->{debug});
     open(VI, "$command |") or Callstack(message => "RNAFolders::Vienna, Could not run RNAfold: $command $!");
     my $counter = 0;
     WH: while (my $line = <VI>) {
@@ -373,7 +373,7 @@ sub Pknots {
 	$command = qq"$config->{exe_pknots} -k $inputfile 2>$errorfile";
     }
     print "PKNOTS: infile: $inputfile accession: $accession start: $start
-command: $command\n" if (defined($config->{debug}));
+command: $command\n" if ($config->{debug});
 #    open(PK, "$command |") or Callstack(message => "RNAFolders::Pknots, Could not run pknots: $command");
     open(PK, "$command |");
     ## OPEN PK in Pknots
@@ -652,7 +652,7 @@ sub Hotknots {
     close(IN);
     my $command = qq"$config->{workdir}/$config->{exe_hotknots} -I $seqname -noPS -b";
     print "HotKnots: infile: $inputfile accession: $accession start: $start
-command: $command\n" if (defined($config->{debug}));
+command: $command\n" if ($config->{debug});
     open(HK, "$command |") or Callstack(message => "Problem with $command.");
     while(my $line = <HK>) {
 #	print $line;
@@ -747,7 +747,7 @@ sub Hotknots_Boot {
     close(IN);
     my $command = qq($config->{workdir}/$config->{exe_hotknots} -I $seqname -noPS -b 2>$errorfile);
     print "Hotknots boot: infile: $inputfile accession: $accession start: $start
-command: $command\n" if (defined($config->{debug}));
+command: $command\n" if ($config->{debug});
     open(HK, "$command |");
     while(my $line = <HK>) {
         $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
