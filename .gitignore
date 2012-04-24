@@ -4,6 +4,7 @@ images/*
 *#
 prfdb.conf
 work/*
+bin/*
 mysqldump.out
 backup/prfdb_*
 data/*
@@ -16,3 +17,4 @@ obj
 */params
 blib
 folds/*fasta
+*.out

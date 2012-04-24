@@ -39,8 +39,8 @@ BEGIN {
 my $req;
 my $ah = new HTML::Mason::ApacheHandler(
 					comp_root => $ENV{PRFDB_HOME},
-					data_dir  => $ENV{PRFDB_HOME},
-					args_method   => "mod_perl",
+					data_dir => $ENV{PRFDB_HOME},
+					args_method => "mod_perl",
 					request_class => 'MasonX::Request::WithApacheSession',
 					session_class => 'Apache::Session::File',
 					session_cookie_domain => 'umd.edu',
@@ -58,5 +58,27 @@ sub handler {
     }
     return $return;
 }
- 
+
+package PRFdb::NotAllowed;
+use strict;
+use HTML::Mason::ApacheHandler;
+BEGIN {
+    use Exporter ();
+    @PRFdb::Handler::ISA = qw(Exporter);
+    @PRFdb::Handler::EXPORT = qw();
+    @PRFdb::Handler::EXPORT_OK = qw($req $dbh $dbs);
+}
+my $req;
+my $ah = new HTML::Mason::ApacheHandler(
+					comp_root => "$ENV{PRFDB_HOME}/error",
+					data_dir  => "$ENV{PRFDB_HOME}/error",
+					args_method   => "mod_perl",
+#					request_class => 'MasonX::Request',
+					);
+sub handler {
+    my ($r) =  @_;
+#    $r->pnotes(error => "Unauthorized");
+    $r->filename($r->document_root . '/error/404.html');
+    return $ah->handle_request($r);
+} 
 1;

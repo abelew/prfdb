@@ -155,9 +155,11 @@ if (defined($config->{input_file})) {
 }
 if (defined($config->{accession})) {
     $state->{queue_id} = 0;
-    $config->{debug} = 1;
     ## Dumb hack lives on
     $state->{accession} = $config->{accession};
+    if ($state->{accession} eq '' or $state->{accession} =~ /^\s+$/) {
+	die("No accession provided to the --accession argument.");
+    }
     $state->{genome_id} = $db->Get_GenomeId_From_Accession($config->{accession});
     if (defined($config->{startpos})) {
 	Gather($state, $config->{startpos});
@@ -336,12 +338,20 @@ sub PRF_Gatherer {
     $ac = $state->{accession} if (defined($state->{accession}));
     my $current = "sp:$sp acc:$ac st:$orf_start l:$len";
     print "PRF_Gather: about to run $current\n" if ($config->{debug});
+    
     if (defined($startpos)) {
 #      $startpos = $startpos - $orf_start;
 	my $inf = PRFdb::MakeFasta($state->{genome_information}->{sequence},
 				   $startpos, 
 #				   $startpos + $config->{seqlength});
 				   $startpos + $len);
+	## A quick conversion for ambiguity
+	$inf->{string} =~ s/R/A/g;
+	$inf->{string} =~ s/Y/C/g;
+	$inf->{string} =~ s/W/A/g;
+	$inf->{string} =~ s/S/C/g;
+	## This is specifically avoiding Gs and Us, making the assumption that GU basepairs are going to give a greater
+	## degree of false positive than GC or UA specifically.  I need to add some logic to note these for future testing.
 	$rnamotif_information->{$startpos}{filename} = $inf->{filename};
 	$rnamotif_information->{$startpos}{sequence} = $inf->{string};
 	$state->{rnamotif_information} = $rnamotif_information;

@@ -73,7 +73,7 @@ sub Search {
 		my $end_in_full_sequence = $end + $orf_start + 1;
 		## These + 1's are required because thus far the start site has been incorrectly calculated.
 		my $command = qq"$config->{exe_rnamotif} -context -descr $config->{exe_rnamotif_descriptor} $filename 2>rnamotif.err | $config->{exe_rmprune}";
-		print "RNAMotif, running $command\n" if (defined($config->{debug}));
+		print "RNAMotif, running $command\n" if ($config->{debug});
 		open(RNAMOT, "$command |") or Callstack(message => "RNAMotif_Search:: Search, Unable to run rnamotif.");
 		## OPEN RNAMOT in Search
 		my $permissable = 0;
@@ -322,7 +322,7 @@ sub Generic_Search {
     my $filename = $inf->{filename};
     my $command = qq"$config->{exe_rnamotif} -context -descr $descriptor $filename 2>$filename.err | $config->{exe_rmprune}";
 #    my $command = qq"$config->{exe_rnamotif} -context -descr $descriptor $filename";
-    print "RNAMotif, running $command\n" if (defined($config->{debug}));
+    print "RNAMotif, running $command\n" if ($config->{debug});
 #    print "TESTME: $command\n";
     open(RNAMOT, "$command |") or Callstack(message => "RNAMotif_Search:: Search, Unable to run rnamotif.");
     while (my $line = <RNAMOT>) {
