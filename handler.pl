@@ -50,13 +50,28 @@ my $ah = new HTML::Mason::ApacheHandler(
 					);
 sub handler {
     my ($r) =  @_;
+
+#    my $path_info = $r->uri;
+#    my @info = split(/\./, $path_info);
+#    print STDERR "$path_info\n";
+#    if (scalar(@info < 2)) {
+#	print STDERR "less than 2!\n";
+#    } else {
+#	print STDERR "2 or more\n";
+#    }
+#
+#    if ($path_info =~ /^.*\.\w+$/) {
+#	$r->filename($r->document_root . '/error/404.html');
+#	return($ah->handle_request($r));
+#    }
+
     my $return = eval { $ah->handle_request($r) };
     if (my $err = $@) {
 	$r->pnotes(error => $err);
 	$r->filename($r->document_root . '/error/500.html');
-	return $ah->handle_request($r);
+	return($ah->handle_request($r));
     }
-    return $return;
+    return($return);
 }
 
 package PRFdb::NotAllowed;

@@ -38,7 +38,7 @@ sub RNAHybrid {
     my $data = ">tmp\n$seq\n";
     my $filename = $me->{db}->Sequence_to_Fasta($data);
 #    my $command = qq"$ENV{PRFDB_HOME}/work/RNAhybrid -u $max_bulge -v $max_internal -e $max_mfe -d -s 3utr_human -q $ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta -t $filename";
-    my $command = qq"$ENV{PRFDB_HOME}/work/RNAhybrid -u $max_bulge -v $max_internal -d -s 3utr_human -q $ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta -t $filename";
+    my $command = qq"$ENV{PRFDB_HOME}/bin/RNAhybrid -u $max_bulge -v $max_internal -d -s 3utr_human -q $ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta -t $filename";
     ## rnahybrid setfaults mysteriously if you attempt to impose an MFE constraint
 #    print STDERR "TESTME Running $command\n";
     open(MIR, "$command |") or print STDERR "Could not run $command $!";
@@ -95,71 +95,104 @@ sub RNAHybrid {
     return($output);
 }
 
-sub Miranda_PRF {
+
+sub Miranda {
     my $me = shift;
     my $accession = shift;
     my $position = shift;
+    my $output = {};
+    my $max_bulge = $me->{max_bulge_loop};
+    my $max_internal = $me->{max_internal_loop};
+    my $max_mfe = $me->{energy_cutoff};
     my $seq = $me->{db}->MySelect(type => 'single', statement => "SELECT sequence FROM mfe_homo_sapiens WHERE accession = ? AND start = ?", vars => [$accession, $position]);
     my $data = ">tmp\n$seq\n";
     my $filename = $me->{db}->Sequence_to_Fasta($data);
-    my $command = qq(miranda "$ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta" $filename -en -20);
-    open(MIR, "$command |");
+    my $command = qq"$ENV{PRFDB_HOME}/bin/miranda \"$ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta\" $filename -en $me->{energy_cutoff} -sc 100 -quiet";
+    print "<pre>\n";
+#    print "TESTME: $command<br>\n";
+    open(MIR, "$command |") or print STDERR "Could not run $command $!";
     my $line_num = 0;
     my $miranda_data = {};
     my $skip_lines = 34;
     my $alignment_line_num = 1;
     my $last_line = '';
+    my $miRNA;
+    my $position = 0;
+    my $alignment = 0;
+    my $mRNA_match = '';
+    my $miRNA_match = '';
+    my $align_string = '';
+    my $energy_string = 0;
     while (my $line = <MIR>) {
+	next if ($line =~ /^\s*$/);
 	chomp $line;
 	$line_num++;
+	$alignment--;
+
+	## Skip the header at the top of the miranda output.
 	if ($skip_lines > 0) {
 	    $skip_lines--;
 	    next;
 	}
-	if ($line =~ /^Performing/) {
-	    print "PERFORMING: $line\n";
-	    my ($performing, $scan, $library_entry, $scanned_name) = split(/ /, $line);
-	    $skip_lines = 2;
-	}
+
+	## Each line which is 'Forward:' provides the following:
+#    Forward:Score: 109.000000  Q:2 to 22  R:26 to 48 Align Len (20) (60.00%) (80.00%)
+	## The miranda score
+        ## Q: The region of the miRNA
+	## R: The region of the mRNA
+	## Alignment length and identity %
+	## Sadly, the name of the miRNA doesn't come for another 4 lines...
 	if ($line =~ /^\s+Forward\:/) {
-	    print "FORWARD: $line\n";
+#	    print "FORWARD: $line\n";
 	    my ($forward, $sc, $score, $q, $to, $num, $r, $to_two, $r2, $align, $len, $len_num, $per1, $per2) = split(/\s+/, $line);
-	    $skip_lines = 1;
+	    $position = $r;
+	    $position =~ s/R\://g;
 	}
+	## The line which starts with 'Query' and the two following it provide the alignment.
+	## So as soon as I see a Query, I will set the 'alignment flag to '2' and use it to pull the next two lines.
 	if ($line =~ /^\s+Query/) {
-	    print "QUERY: $line\n";
-	    my ($qu, $threep, $top_align_seq, $fivep) = split(/\s+/, $line);
-	    $alignment_line_num = $line_num + 1;
+#	    print "QUERY: $line\n";
+	    $alignment = 3;
+	    my ($spaces, $qu, $threep, $top_align_seq, $fivep) = split(/\s+/, $line);
+	    $miRNA_match = $top_align_seq;
 	}
-	if ($alignment_line_num == $line_num) {
-	    print "ALIGN: $line\n";
-	    my $align = $line;
-	    $align =~ s/\s{15}//g;
+	## The next two stanzas decrement thanks to the alignment-- above.
+	if ($alignment == 2) {  ## Get the alignment string, strip annoying leading spaces
+	    $align_string = $line;
+	    $align_string =~ s/^\s{16}//g;
+#	    print "TESTME: $align_string<br>\n";
 	}
-	if ($line =~ /^\s+Ref/) {
-	    print "REF: $line\n";
-	    my ($ref, $fivep, $bottom_align_seq, $threep) = split(/\s+/, $line);
-	    $skip_lines = 1;
+	if ($alignment == 1) {  ## Grab the bottom match string
+	    my ($more_spaces, $ref, $fivep, $bottom_align_seq, $threep) = split(/\s+/, $line);
+	    $mRNA_match = $bottom_align_seq;
 	}
+
+	## Now get the kcal/mol predicted, we still don't have the name of the miRNA
 	if ($line =~ /^\s+Energy/) {
-	    print "ENERGY: $line\n";
+#	    print "ENERGY: $line\n";
 	    my ($ene, $energy_value, $kcal) = split(/\s+/, $line);
-	    $skip_lines = 2;
+	    $energy_string = $energy_value; ## The score line has a version of this which has been sprintf()'d
+	    ## so use that instead.
 	}
+
+	## The line following 'scores for this hit' is the one with the name etc.
 	if ($line =~ /^Scores for this hit/) {
-	    print "SCORES: $line\n";
+#	    print "SCORES: $line\n";
 	    $last_line = 'Scores for this hit';
 	} elsif ($last_line eq 'Scores for this hit') {
-	    my ($fasta_comment, $lib_hit, $hit_score, $hit_energy, $num1, $num2, $num3, $num4, $num5, $per1, $per2) = split(/\s+/, $line);
-	}
-	if ($line =~ /^Score for this Scan/) {
-	    print "SCANSCORE: $line\n";
-	    $last_line = 'Scores for this scan';
-	} elsif ($last_line eq 'Scores for this scan') {
-	    my ($fasta_comment, $lib_hit, $hit_score, $hit_energy, $num1, $num2, $num3, $num4, $num5, $per1, $per2) = split(/\s+/, $line);
+	    ## In this line we can start filling out $output
+	    my ($miRNA, $lib_hit, $hit_score, $hit_energy, $num1, $num2, $num3, $num4, $num5, $per1, $per2) = split(/\s+/, $line);
+	    $last_line = 'spelled out the score.';
+	    $output->{$miRNA}->{$position}->{mfe} = $hit_energy;
+	    $output->{$miRNA}->{$position}->{target_match} = $mRNA_match;
+	    $output->{$miRNA}->{$position}->{miRNA_match} = $miRNA_match;
+	    $output->{$miRNA}->{$position}->{target} = $accession;
+	    $output->{$miRNA}->{$position}->{align_string} = $align_string;
+	    $output->{$miRNA}->{$position}->{target_position} = $position;
 	}
     }
     close(MIR);
+    return($output);
 }
 
 sub Micro_Fasta {
@@ -172,21 +205,22 @@ sub Micro_Fasta {
 	my ($id, $micro_species, $micro_name, $hairpin_accession, $hairpin_seq, 
 	    $mature_accession, $mature, $star_accession, $star_seq, $fivep_accession,
 	    $fivep_seq, $threep_accession, $threep_seq) = @{$datum};
+	$hairpin_accession = "undefined" if (!$hairpin_accession);
 	next unless ($species eq $micro_species);
 	if (defined($mature)) {
-	    print OUT ">$micro_name $hairpin_accession $mature_accession
+	    print OUT ">${micro_name}-mature $hairpin_accession $mature_accession
 $mature\n";
 	}
 	if (defined($star_seq)) {
-	    print OUT ">$micro_name $hairpin_accession $star_accession
+	    print OUT ">${micro_name}-star $hairpin_accession $star_accession
 $star_seq\n";
 	}
 	if (defined($fivep_seq)) {
-	    print OUT ">$micro_name $hairpin_accession $fivep_accession
+	    print OUT ">${micro_name}-5p $hairpin_accession $fivep_accession
 $fivep_seq\n";
 	}   
 	if (defined($threep_seq)) {
-	    print OUT ">$micro_name $hairpin_accession $threep_accession
+	    print OUT ">${micro_name}-3p $hairpin_accession $threep_accession
 $threep_seq\n";
 	}    
     } ## End of all data

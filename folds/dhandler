@@ -1,8 +1,11 @@
-Your file does not yet exist.  Please be patient, it should appear momentarily.
+% $num_refreshes++;
+% my $url = $m->dhandler_arg;
+% $url = $url . "?num_refreshes=$num_refreshes";
+Your file does not yet exist.  Please be patient, it should appear momentarily.  This is refresh <% $num_refreshes %>
 The filename is: <% $m->dhandler_arg %>
 
 <script language="JavaScript">
-var sURL = "<% $m->dhandler_arg %>";
+var sURL = "<% $url %>";
 function doLoad()
 {
     setTimeout( "refresh()", 5*1000 );
@@ -32,3 +35,11 @@ function refresh()
 }
 //-->
 </script>
+<script>  
+  function load() {  
+  }  
+  window.onload = doLoad;  
+</script>
+<%args>
+  $num_refreshes => 0
+</%args>

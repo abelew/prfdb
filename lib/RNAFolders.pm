@@ -48,6 +48,7 @@ sub Prepare {
     return($ret);
 }
 
+## Compute_Energy generates Turner99 compatible MFEs
 sub Compute_Energy {
     my ($me, %arg) = @_;
     my $seq = $arg{sequence};
@@ -220,18 +221,28 @@ Return: $nupack_return\n");
     return ($return);
 }
 
+sub MFold {
+    my $me = shift;
+    print "Yeah, I broke mfold.</br>\n";
+    return(undef);
+}
+
 sub ILM {
     my $me = shift;
     ## ilm takes the mwm format as initial format.
     ## name :sequence (with u or t)
+    ## Wow, ILM is such a piece of crap.
     my %args = @_;
     my $config = $me->{config};
     my $ret = $me->Prepare(prog => 'ilm',);
     chdir($config->{workdir});
+    print "TESTME: $ret->{sequence_name}\n";
     my $mwm = $me->Make_MWM(sequence_name => $ret->{sequence_name}, sequence => $ret->{sequence},);
     my $hlx_command = qq"$ENV{PRFDB_HOME}/bin/xhlxplot $mwm > ${mwm}.matrix";
+    print "TESTME: $hlx_command\n";
     AddOpen("${mwm}.matrix");
     my $ilm_command = qq"$ENV{PRFDB_HOME}/bin/ilm ${mwm}.matrix 2> ${mwm}.err 1> ${mwm}.bpseq";
+    print "TESTME: $ilm_command\n";
     AddOpen("${mwm}.err");
     AddOpen("${mwm}.bpseq");
     print "TESTME: $hlx_command \n $ilm_command\n" if ($config->{debug});
@@ -262,6 +273,11 @@ sub ILM {
     my $parens = PkParse::MAKEBRACKETS(\@ilmout);
     my $mfe = $me->Compute_Energy(sequence => $ret->{sequence}, parens => $parens);
     print "DEBUG: $barcode\n$parens\n$mfe\n" if ($config->{debug});
+    $ret->{mfe} = $mfe;
+    $ret->{parens} = $parens;
+    $ret->{barcode} = $barcode;
+
+    return($ret);
 }
 
 sub BPSeq_to_Out {
@@ -338,7 +354,56 @@ command: $command\n" if ($config->{debug});
 	Callstack(message => "Sequence is not defined for accession: $accession start: $start in RNAFolders");
     }
     $return->{sequence} = Sequence_T_U($return->{sequence});
+    my $output = $me->Parens_to_Output(sequence => $return->{sequence} , parens => $return->{parens});
+    my $output_string = "@{$output}";
+    $return->{output} = $output_string;
+    my $parser = new PkParse(debug => $config->{debug},);
+    my @struct_array = split(/\s+/, $return->{output});
+    my $out = $parser->Unzip(\@struct_array);
+    my $new_struct = PkParse::ReBarcoder($out);
+    my $barcode = PkParse::Condense($new_struct);
+    my $parsed = '';
+    foreach my $char(@{$out}) {
+	$parsed .= $char . ' ';
+    }
+    $parsed = PkParse::ReOrder_Stems($parsed);
+    $return->{parsed} = $parsed;
+    $return->{barcode} = $barcode;
     return($return);
+}
+
+sub Parens_to_Output {
+    my $me = shift;
+    my %args = @_;
+    my $sequence = $args{sequence};
+    my $parens = $args{parens};
+    my @seq = split(//, $sequence);
+    my @par = split(//, $parens);
+    my @output = ();
+    for my $c (@par) {
+	push(@output, '.');
+    }
+    my $finished = 0;
+    LOOP: while ($finished == 0) {
+	my $fivep = 0;
+	print "@par\n@output";
+	foreach my $c (0 .. $#par) {
+#	    print STDERR "TESTME: $c $par[$c]\n";
+	    if ($par[$c] eq '(') {
+		$fivep = $c;
+	    } elsif ($par[$c] eq ')') {
+		$output[$fivep] = $c;
+		$output[$c] = $fivep;
+		$par[$fivep] = '.';
+		$par[$c] = '.';
+		next LOOP;
+	    }
+	    if ($c == $#par) {
+		$finished = 1;  ## This will break out of the while
+	    }
+	}
+    }  ## End of the while.
+    return(\@output);
 }
 
 sub Pknots {
@@ -659,7 +724,15 @@ command: $command\n" if ($config->{debug});
 	$ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
+
+    ## Check for output files.
     my $bpseqfile = "${seqname}0_RE.bpseq";
+    my $ctfile = qq(${seqname}_RE.ct);
+    unless (-r $bpseqfile) { ## if the Rivas/Eddy file does not exist, then use the suboptimals.
+	$bpseqfile = "${seqname}0.bpseq";
+	$ctfile = "${seqname}.ct";
+    }
+
     AddOpen($bpseqfile);
     open(BPSEQ, "<$bpseqfile");
     $ret->{output} = '';
@@ -682,7 +755,7 @@ command: $command\n" if ($config->{debug});
     }
     $ret->{pairs} = $ret->{pairs} / 2;
     close(BPSEQ);
-    my $ctfile = qq(${seqname}_RE.ct);
+
     AddOpen($ctfile);
     open(GETMFE, "grep ENERGY $ctfile | head -1 |");
     while (my $getmfeline = <GETMFE>) {

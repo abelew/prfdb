@@ -6,9 +6,9 @@ Use this form to fold a _short_ sequence.<br>
 <select name="mfe_method">
 <option selected="selected" value="nupack">Nupack</option>
 <option value="pknots">Pknots</option>
+<option value="pknots_pseudo">Pknots with pseudoknots</option>
 <option value="hotknots">HotKnots</option>
 <option value="rnafold">RNAfold</option>
-<option value="mfold">mfold</option>
 <option value="all">all</option>
 </select> 
 <input type="submit" name="fold submit" value="Fold">
@@ -34,7 +34,6 @@ close $tempfile_fh;
 print "<pre>
 $contents
 </pre>\n";
-print $contents;
 my $new_url = "folds/$short_filename.html";
 
 sub tmp_fold {
@@ -46,29 +45,45 @@ sub tmp_fold {
   my $mfe_info;
   if ($function eq 'nupack') {
     $mfe_info = $fold->Nupack_NOPAIRS();
-  }
-  elsif ($function eq 'pknots') {
+  }  elsif ($function eq 'pknots') {
     $mfe_info = $fold->Pknots('nopseudo');
-  }
-  elsif ($function eq 'hotknots') {
+  } elsif ($function eq 'hotknots') {
     $mfe_info = $fold->Hotknots();
-  }
-  elsif ($function eq 'rnafold') {
+  } elsif ($function eq 'rnafold') {
     $mfe_info = $fold->Vienna();
+  } elsif ($function eq 'pknots_pseudo') {
+    $mfe_info = $fold->Pknots();
+  } elsif ($function eq 'ilm') {
+    $mfe_info = $fold->ILM();
+  } elsif ($function eq 'mfold') {
+    $mfe_info = $fold->MFold();
+  } else {
+    $mfe_info = $fold->Multiple(['hotknots','nupack','pknots']);
   }
+
   my $mfe = $mfe_info->{mfe};
   my $parsed = $mfe_info->{parsed};
   my $barcode = $mfe_info->{barcode};
   my $output = $mfe_info->{output};
   my $pairs = $mfe_info->{pairs};
   my $sequence = $mfe_info->{sequence};
+  my $parens = $mfe_info->{parens};
+  my $turner = $fold->Compute_Energy(sequence => $sequence, parens => $parens);
+
   my $pic_output = "$ENV{PRFDB_HOME}/folds/$new_filename.svg";
   my $feynman_pic = new PRFGraph(sequence=>$sequence, parsed => $parsed, output => $output);
   my $dimensions = $feynman_pic->Make_Feynman($pic_output, 0);
   open (HANDLE, ">$input_path.html") or Callstack(message => "Cannot open HANDLE $new_filename.html");
-  print HANDLE qq(The minimum free using $function energy is: $mfe<br>
- $output<br>
-<embed id=\"feynman\" src=\"$new_filename.svg\" align=\"bottom\"></embed>);
+  print HANDLE qq(The minimum free using $function energy is: $mfe (Turner99: $turner)<br>
+<pre>
+$sequence
+$parens
+</pre><br>
+<embed id=\"feynman\" src=\"$new_filename.svg\" align=\"bottom\"></embed>
+<br>
+Download <a href=\"/download/svg2something.html?format=png&input=/folds/${new_filename}.svg\">png</a> or <a href=\"/download/svg2something.html?format=ps&intput=/folds/${new_filename}.svg\">ps</a> or  <a href=\"/download/svg2something.html?format=pdf&intput=/folds/${new_filename}.svg\">pdf</a>
+<br>
+  );  ## This marks the end of the printed html fragment of the output
   close(HANDLE);
 }
 use Proc::Forkfunc;
@@ -76,8 +91,14 @@ my @child_args = ($config, $short_filename, $mfe_method);
 forkfunc(\&tmp_fold, @child_args);
 </%perl>
 
-<p>This should redirect you to the output page for your folding.</p>
-<& /js/refresh.html, refresh_url => "folds/$short_filename.html", seconds => 5 &>
+<p>This should redirect you to the output page for your folding in 5 seconds.</p>
+<p>If it hasn't yet appeared, wait a few moments and hit reload, I will add some autodetecting shortly.</p>
+<& /js/refresh.html, refresh_url => "/folds/${short_filename}.html", seconds => 5 &>
+<script>  
+  function load() {  
+  }  
+  window.onload = mydoLoad;  
+</script>
 
 
 % }

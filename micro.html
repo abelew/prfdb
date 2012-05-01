@@ -1,43 +1,58 @@
-<form method="post" action="micro.html">
+% if ($micro_program_new) {
+%  $micro_program = $micro_program_new;
+% }
+
+<form name="micro" id="micro" action="micro.html" enctype="multipart/form-data" method="POST">
+<script type='text/javascript'>
+function micro_selection() {
+  document.forms["micro"].elements["micro_program_new"].options["<% $micro_program_new %>"].selected = true;
+}
+window.onload = micro_selection;
+</script>
+<script type='text/javascript'>
+  micro_selection;
+</script>
+
 <input type="hidden" name="species" value="<% $species %>">
 <input type="hidden" name="accession" value="<% $accession %>">
 <input type="hidden" name="start" value="<% $start %>">
-<input type="hidden" name="program" value="<% $program %>">
+<input type="hidden" name="micro_program" value="<% $micro_program %>">
 
 % my $mfe_cutoff_new = $mfe_cutoff + $mfe_cutoff_change;
-<p>The current program is: <% $program %>, change it to:
-<select name="program" onchange="this.form.submit()">
-  <option value="rnahybrid">rnahybrid</option>
-  <option value="miranda">miranda</option>
+
+<p>The current program is: <% $micro_program %>, change it to:
+<select name="micro_program_new" id="micro_program_new" onchange="this.form.submit(); return true;">
+  <option name="rnahybrid" value="rnahybrid">rnahybrid</option>
+  <option name="miranda" value="miranda">miranda</option>
 </select>
 <br>
 The current mfe cutoff is: <% $mfe_cutoff_new %> and change is <% $mfe_cutoff_change %> <br>
 Change the mfe cutoff value by
 <select name="mfe_cutoff_change" onchange="this.form.submit()">
-  <option value="0.0">0 kcal/mol</option>
-  <option value="-1.0">-1 kcal/mol</option>
-  <option value="-2.0">-2 kcal/mol</option>
-  <option value="-5.0">-5 kcal/mol</option>
-  <option value="-10.0">-10 kcal/mol</option>
-  <option value="-20.0">-20 kcal/mol</option>
-  <option value="1.0">1 kcal/mol</option>
-  <option value="2.0">2 kcal/mol</option>
-  <option value="5.0">5 kcal/mol</option>
-  <option value="10.0">10 kcal/mol</option>
-  <option value="20.0">20 kcal/mol</option>
+  <option name="0.0" value="0.0">0 kcal/mol</option>
+  <option name="-1.0" value="-1.0">-1 kcal/mol</option>
+  <option name="-2.0" value="-2.0">-2 kcal/mol</option>
+  <option name="-5.0" value="-5.0">-5 kcal/mol</option>
+  <option name="-10.0" value="-10.0">-10 kcal/mol</option>
+  <option name="-20.0" value="-20.0">-20 kcal/mol</option>
+  <option name="1.0" value="1.0">1 kcal/mol</option>
+  <option name="2.0" value="2.0">2 kcal/mol</option>
+  <option name="5.0" value="5.0">5 kcal/mol</option>
+  <option name="10.0" value="10.0">10 kcal/mol</option>
+  <option name="20.0" value="20.0">20 kcal/mol</option>
 </select>
 <input type="hidden" name="mfe_cutoff" value="<% $mfe_cutoff_new %>">
 </form>
 
 <br>
 
-Attempting to match <% $accession %>, <% $start %> against homo_sapiens miRNA sequences using <% $program %>.<br>
+Attempting to match <% $accession %>, <% $start %> against homo_sapiens miRNA sequences using <% $micro_program %>.<br>
 % my $table = qq"mfe_${species}";
 % my $sequence = $db->MySelect(type => 'single', statement => qq"SELECT sequence from $table WHERE accession = ? AND start = ?", vars => [$accession, $start]);
 % use MicroRNA;
 % my $micro = new MicroRNA(energy_cutoff => $mfe_cutoff_new);
 % my $output;
-% if ($program eq 'rnahybrid') {
+% if ($micro_program eq 'rnahybrid') {
 %   $output = $micro->RNAHybrid($accession, $start);
 % } else {
 %   $output = $micro->Miranda($accession, $start);
@@ -92,6 +107,9 @@ MFE: <% $output->{$mir}->{$pos}->{mfe} %><br>
 <% $sequence %>
 <% $target_mis_spacer %><% $output->{$mir}->{$pos}->{target_mismatch} %>
 <% $spacer %><% $output->{$mir}->{$pos}->{target_match} %>
+% if ($output->{$mir}->{$pos}->{align_string}) {
+<% $spacer %><% $output->{$mir}->{$pos}->{align_string} %>
+% }
 <b><% $spacer %><% $output->{$mir}->{$pos}->{miRNA_match} %></b>
 <% $mi_mis_spacer %><% $output->{$mir}->{$pos}->{miRNA_mismatch} %>
 </pre>
@@ -105,7 +123,8 @@ MFE: <% $output->{$mir}->{$pos}->{mfe} %><br>
 <p>There are <% $mi_counter %> hits.</p>
 
 <%args>
-  $program => 'rnahybrid';
+  $micro_program => 'rnahybrid';
+  $micro_program_new => undef;
   $accession => undef;
   $start => undef;
   $species => 'homo_sapiens';
