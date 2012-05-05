@@ -42,8 +42,7 @@ sub Boot {
 	    $mfe_id = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_id};
 	    my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
 	    my $seqlength = $data->{$mfe_method}->{$rand_method}->{stats}->{seqlength};
-	    my @boot = ('genome_id');
-	    my $errorstring = $me->Check_Insertion(\@boot, $data);
+	    my $errorstring = $me->Check_Insertion(columns => ['genome_id'], data => $data);
 	    if (defined($errorstring)) {
 		$errorstring = "Undefined value(s) in Put_Boot: $errorstring";
 		$config->PRF_Error($errorstring, $species, $accession);
@@ -92,8 +91,7 @@ sub MFE {
     my $data = shift;
     my $config = $me->{config};
     ## What fields do we want to fill in this MFE table?
-    my @pknots = ('genome_id', 'accession', 'start', 'slipsite', 'seqlength', 'sequence', 'output', 'parsed', 'parens', 'mfe', 'pairs', 'knotp', 'barcode');
-    my $errorstring = $me->Check_Insertion(\@pknots, $data);
+    my $errorstring = $me->Check_Insertion(columns => ['genome_id', 'accession', 'start', 'slipsite', 'seqlength', 'sequence', 'output', 'parsed', 'parens', 'mfe', 'pairs', 'knotp', 'barcode'], data => $data);
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_MFE: $errorstring";
 	$config->PRF_Error($errorstring, $data->{species}, $data->{accession});
@@ -127,7 +125,7 @@ sub MFE_Landscape {
     } else {
 	@filled = ('genome_id','accession','start','seqlength','sequence','output','parsed','parens','mfe','pairs','knotp','barcode');
     }
-    my $errorstring = $me->Check_Insertion(\@filled, $data);
+    my $errorstring = $me->Check_Insertion(columns => \@filled, data => $data);
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_MFE_Landscape: $errorstring";
 	$config->PRF_Error($errorstring, $data->{accession});
@@ -209,7 +207,7 @@ sub Single_Boot {
     my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
     my $seqlength = $data->{$mfe_method}->{$rand_method}->{stats}->{seqlength};
     my @boot = ('genome_id');
-    my $errorstring = $me->Check_Insertion(\@boot, $data);
+    my $errorstring = $me->Check_Insertion(columns => ['genome_id'], data => $data);
     
     if (defined($errorstring)) {
 	$errorstring = "Undefined value(s) in Put_Boot: $errorstring";
@@ -248,6 +246,80 @@ sub All_Stats {
     }
     $data->{species} = \@species;
     $me->Put_Stats($data, $finished);
+}
+
+=head2 Put_Numslipsite
+
+ Title   : Put_Numslipsite
+ Function: Make a note of how many slipsites a given accession has.
+ Example : $db->Put_Numslipsite('NM_010101','4');
+ Returns : The id number of the slipsites added
+
+=cut
+sub Numslipsite {
+    my $me = shift;
+    my $accession = shift;
+    my $num_slipsite = shift;
+    my $statement = qq/INSERT IGNORE INTO numslipsite
+(accession, num_slipsite)
+VALUES('$accession', '$num_slipsite')/;
+    $me->MyExecute(statement =>$statement,);
+    my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
+    return ($last_id);
+}
+
+=head2 Put_Genome_Entry
+
+ Title   : Put_Genome_Entry
+ Usage   : $db->Put_Genome_Entry(\%data);
+ Function: Responsible for adding an accession to the genome table.  Needs to accept input from fasta/genbank/etc.
+ Returns : The id of the inserted data
+
+=cut
+sub Genome_Entry {
+    my $me = shift;
+    my $datum = shift;
+    ## Check to see if the accession is already there
+    my $check = qq"SELECT id FROM genome where accession = ?";
+    my $already_id = $me->MySelect(statement => $check, vars => [$datum->{accession}], type => 'single');
+    ## A check to make sure that the orf_start is not 0.  If it is, set it to 1 so it is consistent with the
+    ## crap from the SGD
+    $datum->{orf_start} = 1 if (!defined($datum->{orf_start}) or $datum->{orf_start} == 0);
+    if (defined($already_id)) {
+	print "The accession $datum->{accession} is already in the database with id: $already_id\n";
+	return (undef);
+    }
+    $datum->{version} = 0 if (!defined($datum->{version}));
+    $datum->{comment} = "" if (!defined($datum->{comment}));
+    ## Check that the boot, landscape, and mfe tables exist
+    my $species = $datum->{species};
+    unless ($species =~ /[V|v]irus/) {
+      $me->Create_MFE("mfe_$species") unless ($me->Tablep("mfe_$species"));
+      $me->Create_Landscape("landscape_$species") unless ($me->Tablep("landscape_$species"));
+      $me->Create_Boot("boot_$species") unless ($me->Tablep("boot_$species"));
+    }
+#    my $statement = qq(INSERT INTO genome
+#(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
+#    VALUES('$datum->{accession}', '$datum->{species}', '$datum->{genename}', '$datum->{version}', '$datum->{comment}', '$datum->{mrna_seq}', '$datum->{protein_seq}', '$datum->{orf_start}', '$datum->{orf_stop}', '$datum->{direction}'));
+    my $statement = qq"INSERT INTO genome
+(accession, genename, version, comment, mrna_seq, orf_start, orf_stop, direction)
+VALUES(?,?,?,?,?,?,?,?)";
+    $me->MyExecute(statement => $statement,
+               vars => [$datum->{accession}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
+    my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
+    my $queue_id = $me->Set_Queue(id => $last_id,);
+    my $gene_info_stmt = qq"INSERT INTO gene_info
+(genome_id, accession, species, genename, comment)
+VALUES(?,?,?,?,?)";
+    my $gene_info = $me->MyExecute(statement => $gene_info_stmt,
+                                   vars => [$last_id,$datum->{accession},$datum->{species},
+                                            $datum->{genename},$datum->{comment}]);
+
+    ## The following line is very important to ensure that multiple
+    ## calls to this don't end up with
+    ## Increasingly long sequences
+    foreach my $k (keys %{$datum}) {$datum->{$k} = undef;}
+    return ($last_id);
 }
 
 sub Stats {

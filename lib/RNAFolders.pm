@@ -4,27 +4,76 @@ use IO::Handle;
 use lib 'lib';
 use PkParse;
 use PRFdb qw / Callstack AddOpen RemoveFile /;
+use File::Basename;
 use vars qw($VERSION);
 $VERSION='20120304';
 
 sub new {
-    my ($class, %arg) = @_;
+    my ($class, %args) = @_;
     my $me = bless {
-	config => $arg{config},
-	file => $arg{file},
-	genome_id => $arg{genome_id},
-	species => $arg{species},
-	accession => $arg{accession},
-	start => $arg{start},
-	slippery => $arg{slippery},
-	sequence => $arg{sequence},
+	config => $args{config},
+	file => $args{file},
+	genome_id => $args{genome_id},
+	species => $args{species},
+	accession => $args{accession},
+	start => $args{start},
+	slippery => $args{slippery},
+	sequence => $args{sequence},
     }, $class;
     return ($me);
 }
 
+
+sub Make_ct {
+    my ($me, %args) = @_;
+    my @seq_array = split(//, $args{sequence});
+    my @in_array = split(/\s+/, $args{output});
+    my $num_bases = scalar(@seq_array);
+    my $output_string = "$num_bases temporary_ct_file\n";
+    foreach my $c (0 .. $#seq_array) {
+	my $position = $c + 1;
+	my $last = $c;
+	my $next = $c+2;
+	if (!defined($in_array[$c])) {  ## Why did I do this?
+	    $output_string .= "$c $seq_array[$c] $last $next $seq_array[$c]\n";
+	} elsif ($in_array[$c] eq '.') {
+	    $output_string .= "$position $seq_array[$c] $last $next 0\n";
+	} else {
+	    my $bound_position = $in_array[$c] + 1;
+	    $output_string .= "$position $seq_array[$c] $last $next $bound_position\n";
+	}
+    }
+    $me->{ctseq} = $output_string;
+    return($output_string);
+}
+
+sub Make_bpseq {
+    my ($me, %args) = @_;
+    my @seq_array = split(//, $args{sequence});
+    my @in_array = split(/\s+/, $args{output});
+
+    my $output_string = '';
+
+    print STDERR "BPSEQ DEBUG: @seq_array\n@in_array\n" if ($args{debug});
+
+    foreach my $c (0 .. $#seq_array) {
+	if (!defined($in_array[$c])) {
+	    $output_string .= "$c $seq_array[$c] 0\n";
+	} elsif ($in_array[$c] eq '.') {
+	    my $position = $c + 1;
+	    $output_string .= "$position $seq_array[$c] 0\n";
+	} else {
+	    my $position = $c + 1;
+	    my $bound_position = $in_array[$c] + 1;
+	    $output_string .= "$position $seq_array[$c] $bound_position\n";
+	}
+    }
+    $me->{bpseq} = $output_string;
+    return($output_string);
+}
+
 sub Prepare {
-    my $me = shift;
-    my %args = @_;
+    my ($me, %args) = @_;
     my $prog = $args{prog};
     my $inputfile = $me->{file};
     my $accession = $me->{accession};
@@ -50,9 +99,10 @@ sub Prepare {
 
 ## Compute_Energy generates Turner99 compatible MFEs
 sub Compute_Energy {
-    my ($me, %arg) = @_;
-    my $seq = $arg{sequence};
-    my $par = $arg{parens};
+    my ($me, %args) = @_;
+    my $seq = $args{sequence};
+    my $par = $args{parens};
+    Callstack(die => 1, message => "Sequence ($seq) or parens ($par) undefined in Compute_Energy.") unless ($seq and $par);
     my $config = $me->{config};
     my $seqlen = length($seq);
     my $parlen = length($par);
@@ -87,8 +137,8 @@ sub Nupack {
 }
 
 sub Nupack_NOPAIRS {
-    my $me = shift;
-    my $pseudo = shift;
+    my ($me, %args) = @_;
+    my $pseudo = $args{pseudo};
     my $config = $me->{config};
     my $inputfile = $me->{file};
     my $accession = $me->{accession};
@@ -98,7 +148,7 @@ sub Nupack_NOPAIRS {
     my $errorfile = qq(${inputfile}_nupacknopairs.err);
     AddOpen($errorfile);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
-    my $return   = {
+    my $return = {
 	start => $start,
 	slipsite => $slipsite,
 	knotp => 0,
@@ -228,11 +278,10 @@ sub MFold {
 }
 
 sub ILM {
-    my $me = shift;
+    my ($me, %args) = @_;
     ## ilm takes the mwm format as initial format.
     ## name :sequence (with u or t)
-    ## Wow, ILM is such a piece of crap.
-    my %args = @_;
+    ## Wow, ILM has some problems.
     my $config = $me->{config};
     my $ret = $me->Prepare(prog => 'ilm',);
     chdir($config->{workdir});
@@ -265,7 +314,6 @@ sub ILM {
 	}
     }
     close(BP);
-    use PkParse;
     my $parser = new PkParse;
     my $out = $parser->Unzip(\@ilmout);
     my $new_struc = PkParse::ReBarcoder($out);
@@ -278,6 +326,131 @@ sub ILM {
     $ret->{barcode} = $barcode;
 
     return($ret);
+}
+
+sub Unafold {
+    my ($me, %args) = @_;
+    my $output = {};
+    my $config = $me->{config};
+    my $inputfile = $me->{file};
+    my $accession = $me->{accession};
+    my $start = $me->{start};
+    my $slipsite = Get_Slipsite_From_Input($inputfile);
+    my $ret = {
+	start => $start,
+	slipsite => $slipsite,
+	genome_id => $me->{genome_id},
+	species => $me->{species},
+	accession => $me->{accession},
+    };
+    my $seq = Get_Sequence_From_Input($inputfile);
+    $ret->{sequence} = Sequence_T_U($seq);
+    $ret->{seqlength} = length($seq);
+    my $command = qq"cd $config->{workdir} && $ENV{PRFDB_HOME}/bin/hybrid-ss-min $inputfile";
+#    Callstack(message => "Running $command");
+    my $unafold_pid = open(UNA, "$command |") or
+	Callstack(message => "RNAFolders::Unafold, Could not run unafold: $command $!");
+    while (my $l = <UNA>) {
+	chomp $l;
+    }
+    my @output_files = ('run','dG','ct','37.plot','37.ext');
+    my $input_filename = basename($inputfile);
+    foreach my $f (@output_files) {
+	my $output_filename = qq"$config->{workdir}/${input_filename}.$f";
+	Callstack(die => 1, message => "Could not open $output_filename $!") unless (-r $output_filename);
+	AddOpen($output_filename);
+	if ($f eq 'dG') {
+	    open(DG, "<$output_filename") or Callstack(message => "Could not open $output_filename $!");
+	    while (my $line = <DG>) {
+		chomp $line;
+		next if ($line =~ /^\#/);
+		my ($temp, $dg, $gas_constant) = split(/\S+/, $line);
+		$ret->{mfe} = $dg;
+	    }
+	    close(DG);
+	} elsif ($f eq 'ct') {
+	    my $output_array = $me->CT_to_Output(inputfile => $output_filename);
+	    my $output_string = "@{$output_array}";
+	    $ret->{output} = $output_string;
+	    my $parser = new PkParse(debug => $config->{debug},);
+	    my @struct_array = @{$output_array};
+	    my $out = $parser->Unzip(\@struct_array);
+	    $ret->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
+	    my $new_struct = PkParse::ReBarcoder($out);
+	    $ret->{barcode} = PkParse::Condense($new_struct);
+	    my $parsed = '';
+	    foreach my $char(@{$out}) {
+		$parsed .= $char . ' ';
+	    }
+	    $ret->{parsed} = PkParse::ReOrder_Stems($parsed);
+	}
+	RemoveFile($output_filename);
+    } ## End foreach output file
+
+    ## Lets start by just figuring out the various command lines that unafold actually calls in the distribution unafold.pl
+    # hybrid-ss with (--suffix DAT, --tmin mintemp, --tmax maxtemp, --NA sodium, --magnesium mag, --polymer, --allpairs, --circular, --nodangle, --simple, --traceback max)
+    # hybrid-ss-min -- same options but --mfold=$p,$w,$max which default to 5,-1,undef
+
+    ##  hybrid-ss runs one set for each temperature from -1 to 100 ish, while hybrid-ss-min by default only runs at 37C.
+
+    # If the model is not 'PF' then run h-num.pl...
+    # A file with the suffix .ss-count should be generated, run ss-count.pl on it
+    ## Pipe the output of this ct-energy --suffix somethingsomething
+    ## It prints some html!?  then runs ct-energy with the --suffix etc args again and |'s it to ct_energy-det.pl
+    ## It performs some shenanigans to convert temperatures...
+    ## Then prints it to the html
+
+    ## On the other hand, if the model is 'PF'
+    ## Run hybrid-plot-ng --temperature $temp --format png|jpeg|gif
+    ## Perform some more shenanigans and run boxplot_ng
+
+    ## Somewhere along the way, a bunch of _$fold.ct files were created...
+    ## run $sirgraph on each one..
+
+    ## ct2rnaml may be used to generate rnaml versions, that is nice
+    return($ret);
+}
+
+## A quick note on the .ct file format...
+#A CT (Connectivity Table) file contains secondary structure information for a sequence. These files are saved with a CT extension. When entering a structure to calculate the free energy, the following format must be followed.
+#
+#    Start of first line: number of bases in the sequence
+#    End of first line: title of the structure
+#    Each of the following lines provides information about a given base in the sequence. Each base has its own line, with these elements in order:
+#        Base number: index n
+#        Base (A, C, G, T, U, X)
+#        Index n-1
+#        Index n+1
+#        Number of the base to which n is paired. No pairing is indicated by 0 (zero).
+#        Natural numbering. RNAstructure ignores the actual value given in natural numbering, so it is easiest to repeat n here.#
+#
+#1The CT file may hold multiple structures for a single sequence. This is done by repeating the format for each structure without any blank lines between structures. 
+sub CT_to_Output {
+    my ($me, %args) = @_;
+    my $filename = $args{inputfile};
+    open(IN, "<$filename") or CallStack(message => "Could not open $filename $!");
+    my @output = ();
+    my $line_count = -1;
+    while (my $line = <IN>) {
+	chomp $line;
+	$line_count++;
+	if ($line_count == 0) {
+#82      dG = -16.8      testme -- an example ct first line
+	    my ($num_lines, @comment) = split(/\s+/, $line);
+	    for my $c (0 .. ($num_lines - 1)) {
+		$output[$c] = '.';
+	    }
+	} else { ## Not on the first line
+	    my ($base_num, $base, $index, $next, $base_pair, $base_num_again, @base_pairs) = split(/\s+/, $line);
+	    next if ($base_pair eq '0');
+	    $output[$index] = ($base_pair - 1);
+	}
+    }  ## End of the while
+# An example line
+#base_n  base    index   next    bp
+#1       A       0       2       0       1       0       0
+    print "TESTME: @output\n";
+    return(\@output);
 }
 
 sub BPSeq_to_Out {
@@ -386,7 +559,7 @@ sub Parens_to_Output {
     my $finished = 0;
     LOOP: while ($finished == 0) {
 	my $fivep = 0;
-	print "@par\n@output";
+#	print "@par\n@output";
 	foreach my $c (0 .. $#par) {
 #	    print STDERR "TESTME: $c $par[$c]\n";
 	    if ($par[$c] eq '(') {

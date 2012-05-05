@@ -14,6 +14,8 @@ use Statistics::Distributions;
 use SVG::TT::Graph::Line;
 use JSON;
 use vars qw ($VERSION);
+use File::Temp;
+use File::Basename;
 $VERSION='20111119';
 
 my $config;
@@ -2025,7 +2027,6 @@ sub Make_CFeynman {
     my $db = new PRFdb(config => $config);
     my $species = $me->{species};
     my $mt = qq"mfe_${species}";
-    print STDERR "GOT HERE\n";
     my $stmt = qq"SELECT sequence, parsed, output FROM $mt WHERE id = ?";
     my $info = $db->MySelect(statement => $stmt, vars => [$id], type => 'row');
     my $sequence = $info->[0];
@@ -2198,6 +2199,12 @@ sub Get_PPCC {
     return ($corr->query);
 }
 
+## Reimplement picture_filename so it isn't so stupid
+sub Get_Filename {
+    my $me = shift;
+
+}
+
 sub Picture_Filename {
     my $me = shift;
     my %args = @_;
@@ -2215,7 +2222,7 @@ sub Picture_Filename {
     if ($type =~ /\:/) {
 	Callstack(die => 1, message => "Illegal name.");
     }
-    if ($species =~ /\:/) {
+    if ($species and $species =~ /\:/) {
 	Callstack(die => 1, message => "Illegal name.");
     }
 
@@ -2258,6 +2265,7 @@ Make sure that user $< and/or group $( has write permissions.", die => 1);
 	    }
 	}
     } ## End if defined $species
+
     my $directory = $me->Make_Directory($type, $url);
     my $filename;
     if (defined($mfe_id)) {
@@ -2274,6 +2282,80 @@ Make sure that user $< and/or group $( has write permissions.", die => 1);
 	}
     }
     return ($filename);
+}
+
+sub jViz {
+    my $me = shift;
+    my %args = @_;
+    my $jviz_type = $args{jviz_type};  ## classic, dotplot, feynman, cfeynman, dual_graph
+    ## I think to make it easier, prefix all of these with jviz...
+    my $output_filename;
+    my $output =  {};
+    if ($args{output_filename}) {
+	$output_filename = $args{output_filename};
+    } else {
+	$output_filename = $me->Picture_Filename(type => $args{jviz_type}, accession => $me->{accession});
+    }
+
+    unless (-r $output_filename) {
+	my $mfe_id = $me->{mfe_id};
+	my $tmpdb = new PRFdb(config => $config);
+	my $species = $me->{species};
+
+	my $tempfile_fh = new File::Temp(SUFFIX => ".bpseq", DIR => "$ENV{PRFDB_HOME}/folds", UNLINK => 0);
+	my $tempfile_name = $tempfile_fh->filename;
+	my $fh;
+	if ($args{debug}) {
+	    print STDERR "DEBUG: Tempfile is $tempfile_name\n";
+	}
+	open($fh, ">$tempfile_name");
+	my $input_name = $tmpdb->Mfeid_to_Bpseq($species, $mfe_id, $fh);
+	close($fh);
+	my $basename = basename($tempfile_name);
+	my $xvfb_xauth = qq"$ENV{PRFDB_HOME}/folds/${basename}-auth";
+	my $type_flag = '';
+	my $suffix = $jviz_type;
+	$suffix =~ s/jviz_//g;
+	## classic, dotplot, feynman, cfeynman, dual_graph
+	if ($jviz_type eq 'jviz_classic_structure') {
+	    $type_flag = '-C';
+	} elsif ($jviz_type eq 'jviz_dot_plot') {
+	    $type_flag = '-d';
+	} elsif ($jviz_type eq 'jviz_linked_graph') {
+	    $type_flag = '-l';
+	} elsif ($jviz_type eq 'jviz_circle_graph') {
+	    $type_flag = '-c';
+	} elsif ($jviz_type eq 'jviz_dual_graph') {
+	    $type_flag = '-g';
+	} else {
+	    $type_flag = '-C';
+	    $suffix = 'classic_structure';
+	}
+
+	my $jviz_command;
+	if ($args{input_filename}) {
+	    $jviz_command = qq"cd $ENV{PRFDB_HOME}/folds && $ENV{PRFDB_HOME}/bin/xvfb-run -f ${basename}-auth -a -n 9 /usr/bin/java -jar $ENV{PRFDB_HOME}/bin/jViz.jar -t $type_flag -f png $args{input_filename} 2>/dev/null 1>&2";
+	} else {
+	    $jviz_command = qq"cd $ENV{PRFDB_HOME}/folds && $ENV{PRFDB_HOME}/bin/xvfb-run -f ${basename}-auth -a -n 9 /usr/bin/java -jar $ENV{PRFDB_HOME}/bin/jViz.jar -t $type_flag -f png $tempfile_name 2>/dev/null 1>&2";
+	}
+
+	print STDERR "DEBUG: Running $jviz_command\n" if ($args{debug});
+
+	system($jviz_command);
+	my $move_command;
+	if ($args{input_filename}) {
+	    $move_command = qq"/bin/mv $ENV{PRFDB_HOME}/folds/$args{input_filename}-${suffix}.png $output_filename";
+	} else {
+	    $move_command = qq"/bin/mv ${tempfile_name}-${suffix}.png $output_filename";
+	}
+	my $remove = qq"/bin/rm $ENV{PRFDB_HOME}/folds/${basename}-auth";
+	system($remove);
+	system($move_command);
+    } ## End unless the file already exists
+
+    $output->{path} = $output_filename;
+    $output->{filename} = basename($output_filename);
+    return($output);
 }
 
 sub Make_Directory {

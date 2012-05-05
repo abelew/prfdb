@@ -23,6 +23,10 @@ mfold:
   Prediction of RNA Secondary Structure by Energy Minimization. In Computer Analysis of Sequence Data... , 267-294
   Among many other references...
 
+Unafold:
+  This is the continuation of mfold and was written by Nicholas Markham and Michael Zuker.
+  DINAMelt web server for nucleic acid melting prediction.  NAR. 33:W577-W581. (2003)
+
 RNAhybrid:
   Marc Rehmsmeier, Peter Steffen, Matthias Höchsmann, Robert Giegerich (2004)
   Fast and effective prediction of microRNA/target duplexes RNA, 10:1507-1517
@@ -43,6 +47,16 @@ BLAST
   Altschul SF; Gish W; Miller W; Myers EW; Lipman DJ (1990)
   Basic local alignment search tool. J Mol Biol 215: 403-10 
 
+jViz.RNA
+http://jviz.cs.sfu.ca/
+  Kay C. Wiese and Edward Glen (2006)
+  "jViz.Rna - An Interactive Graphical Tool for Visualizing RNA Secondary Structure Including Pseudoknots",
+    Proceedings of the 19th International Symposium on Computer Based Medical Systems
+    (IEEE/CBMS-2006), June 2006, pp 659-664. 
+
 Bioperl
 Copyright (c) 1996-2009 Georg Fuellen, Richard Resnick, Steven E. Brenner, Chris
 Dagdigian, Steve Chervitz, Ewan Birney, James Gilbert, Elia Stupka, and others.
+
+HTML::Mason
+http://www.masonhq.com

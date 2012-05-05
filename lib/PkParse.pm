@@ -10,6 +10,10 @@ sub new {
       max_spaces => defined($args{max_spaces}) ? $args{max_spaces} : 12,
       pseudoknot => 0,
       positions_remaining => 0,
+      fwd => ['(','{'],
+      rev => [')','}'],
+      cf => '(',
+      cr => ')',
   }, $class;
   if (defined($args{debug})) {
       if ($args{debug} > 1) {
@@ -67,7 +71,10 @@ sub Unzip {
     }    ### Finished filling the state with initial values.
     my $len = $#$in_pattern;
     $back_pos = $#$out_pattern;
-    PkParse_Error($in_pattern, 'mismatch'), return (undef) unless ($len == $back_pos);
+    unless ($len == $back_pos) {
+	Callstack(message => "There was a mismatch for $in_pattern.");
+	return(undef);
+    }
     
     while ($positions_remaining > 0) {    ### As long as there are unfilled values.
 	$me->UnWind($in_pattern);             ### Every time you fill a position, decrement positions_remaining
@@ -85,7 +92,10 @@ sub UnWind {
     my $in_pattern = shift;                 ## The pknots output
     Clean_State();
     $num_loops++;
-    PkParse_Error($in_pattern, 'loop'), $positions_remaining = 0 if ($num_loops > 100);
+    if ($num_loops > 100) {
+	Callstack("There are more than 100 apparent loops in $in_pattern, going to break out now.");
+	$positions_remaining = 0;
+    }
     return ($out_pattern) if ($positions_remaining == 0);
     if ($me->{debug}) {
 	print "Start Unwind:
@@ -273,78 +283,56 @@ sub Clean_State {
   $old = 0;
 }
 
-sub MyBrackets {
-    my $pk_output = shift;
-    my $barcode = shift;
-    my @parens = @{$pk_output};
+## The easy way to detect a pseudoknot:
+#  last_base 3' position > this_base 5' position
+## Nested stems will maintain
+#  last_base 3' position < this_base 5' position
+sub SwitchParens {
+    my ($me, %args) = @_;
+    my @fwd = @{$me->{fwd}};
+    my @rev = @{$me->{rev}};
+    my $cf = shift @fwd;
+    my $cr = shift @rev;
+    push(@fwd, $cf);
+    push(@rev, $cr);
+    $me->{fwd} = \@fwd;
+    $me->{rev} = \@rev;
+    $me->{cf} = $cf;
+    $me->{cr} = $cr;
+    return(cf => $cf, cr => $cr);
+}
 
-    my %stuff = ();
-    for my $c (0 .. $#parens) {
-	next if ($parens[$c] eq '.');
-	next if ($parens[$c] eq ')');
-	next if ($parens[$c] eq '(');
-	if (!defined($stuff{$barcode->[$c]}{"fiveprime"})) {
-	    my @fiveprime = ();
-	    push(@fiveprime, $parens[$c]);
-	    $stuff{$barcode->[$c]}{"fiveprime"} = \@fiveprime;
-	}
-	else {
-	    my @fiveprime = @{$stuff{$barcode->[$c]}{"fiveprime"}};
-	    push(@fiveprime, $parens[$c]);
-	    $stuff{$barcode->[$c]}{"fiveprime"} = \@fiveprime;
-	}
-	
-	if (!defined($stuff{$barcode->[$c]}{"threeprime"})) {
-	    my @threeprime = ();
-	    push(@threeprime, $parens[$parens[$c]]);
-	    $stuff{$barcode->[$c]}{"threeprime"} = \@threeprime;
-	}
-	else {
-	    my @threeprime = @{$stuff{$barcode->[$c]}{"threeprime"}};
-	    push(@threeprime, $parens[$parens[$c]]);
-	    $stuff{$barcode->[$c]}{"threeprime"} = \@threeprime;
-	}
-    }  ## End of each element in parens
-#    print "Early TEST: @parens\n";
-    
-    my %stem_info = ();
-    my $last_stem = 0;
-    foreach my $stem (sort keys %stuff) {
-	$last_stem = $stem if ($stem > $last_stem);
-	my @temp = @{$stuff{$stem}{"threeprime"}};
-	$stem_info{$stem}{"last_threeprime"} = $stuff{$stem}{"threeprime"}->[$#temp];
-	$stem_info{$stem}{"first_threeprime"} = $stuff{$stem}{"threeprime"}->[0];
+sub SimpleParens {
+    my ($me, %args) = @_;       ## 0 1 2 3 4 5 6 7 8 9 0
+    my $pkout = $args{pkout};   ## . . 8 7 6 . 4 3 2 . .
+    my @in = split(/\s+/, $pkout);
+    my @out = @in;
+    for my $c (0 .. $#in) {
+	next if ($in[$c] eq '.');
+	$out[$c] = $me->{cf} if ($c < $in[$c]);
+	$out[$c] = $me->{cr} if ($c > $in[$c]);
     }
-    
-  OUTER: foreach my $stem (sort keys %stem_info) {
-    INNER: foreach my $second_stem (sort keys %stem_info) {
-	next INNER if ($second_stem <= $stem);
-	if ($stem_info{$stem}{"last_threeprime"} > $stem_info{$second_stem}{"first_threeprime"}) {
-	    foreach my $position (@{$stuff{$second_stem}{"threeprime"}}) {
-		$parens[$position] = '}';
-	    }
-	    foreach my $position (@{$stuff{$second_stem}{"fiveprime"}}) {
-		$parens[$position] = '{';
-	    }
-	} else {
-	    foreach my $position (@{$stuff{$second_stem}{"threeprime"}}) {
-		$parens[$position] = ')';
-	    }
-	    foreach my $position (@{$stuff{$second_stem}{"fiveprime"}}) {
-		$parens[$position] = '(';
-	    }
-	    
-	}
-    } ## END iNNER
-      foreach my $position(@{$stuff{1}{"threeprime"}}) {
-	  $parens[$position] = ')';
-      }
-      foreach my $position(@{$stuff{1}{"fiveprime"}}) {
-	  $parens[$position] = '(';
-      }
-      
-  } ## END OUTER
-    return(\@parens);
+    return(\@out);
+}
+
+sub AddCurlyParens {
+    my ($me, %args) = @_;
+    my $pkout = $args{pkout};
+    my $parse = $args{parsed};
+    my $paren = $args{parens};
+    my $knotted_stem = $me->Knotp($parse); ## Should return the number of the stem, therefore...
+    my @paren_array = split(/\s+/, $paren);
+    my @parse_array = split(/\s+/, $parse);
+    for my $c (0 .. $#paren_array) {
+	if ($parse_array[$c] eq $knotted_stem) {
+	    if ($paren_array[$c] eq '(') {  #)
+		$paren_array[$c] =  '{';  #} (
+            } elsif ($paren_array[$c] eq ')') { #{
+		$paren_array[$c] = '}';
+            } 
+        }
+    }
+    return(\@paren_array);
 }
 
 sub MAKEBRACKETS {
@@ -485,102 +473,62 @@ sub ReOrder_Stems {
 	  $return_array[$c] = '1';
       } elsif ($tmp_array[$c] eq 'b') {
 	  $return_array[$c] = '2';
-    } elsif ($tmp_array[$c] eq 'c') {
-	$return_array[$c] = '3';
-    } elsif ($tmp_array[$c] eq 'd') {
-	$return_array[$c] = '4';
-    } elsif ($tmp_array[$c] eq 'e') {
-	$return_array[$c] = '5';
-    } elsif ($tmp_array[$c] eq 'f') {
-	$return_array[$c] = '6';
-    } elsif ($tmp_array[$c] eq 'g') {
-	$return_array[$c] = '7';
-    } elsif ($tmp_array[$c] eq 'h') {
-	$return_array[$c] = '8';
-    } elsif ($tmp_array[$c] eq 'i') {
-	$return_array[$c] = '9';
-    } elsif ($tmp_array[$c] eq 'j') {
-	$return_array[$c] = '10';
-    } elsif ($tmp_array[$c] eq 'k') {
-	$return_array[$c] = '11';
-    } elsif ($tmp_array[$c] eq 'l') {
-	$return_array[$c] = '12';
-    } elsif ($tmp_array[$c] eq 'm') {
-	$return_array[$c] = '13';
-    } elsif ($tmp_array[$c] eq 'n') {
-	$return_array[$c] = '14';
-    } elsif ($tmp_array[$c] eq 'o') {
-	$return_array[$c] = '15';
-    } elsif ($tmp_array[$c] eq 'p') {
-	$return_array[$c] = '16';
-    } elsif ($tmp_array[$c] eq 'q') {
-	$return_array[$c] = '17';
-    } elsif ($tmp_array[$c] eq 'r') {
-	$return_array[$c] = '18';
-    } elsif ($tmp_array[$c] eq 's') {
-	$return_array[$c] = '19';
-    } elsif ($tmp_array[$c] eq 't') {
-	$return_array[$c] = '20';
-    } elsif ($tmp_array[$c] eq 'u') {
-	$return_array[$c] = '21';
-    } elsif ($tmp_array[$c] eq 'v') {
-	$return_array[$c] = '22';
-    } elsif ($tmp_array[$c] eq 'w') {
-	$return_array[$c] = '23';
-    } elsif ($tmp_array[$c] eq 'x') {
-	$return_array[$c] = '24';
-    } elsif ($tmp_array[$c] eq 'y') {
-	$return_array[$c] = '25';
-    } elsif ($tmp_array[$c] eq 'z') {
-	$return_array[$c] = '26';
-    }
+      } elsif ($tmp_array[$c] eq 'c') {
+	  $return_array[$c] = '3';
+      } elsif ($tmp_array[$c] eq 'd') {
+	  $return_array[$c] = '4';
+      } elsif ($tmp_array[$c] eq 'e') {
+	  $return_array[$c] = '5';
+      } elsif ($tmp_array[$c] eq 'f') {
+	  $return_array[$c] = '6';
+      } elsif ($tmp_array[$c] eq 'g') {
+	  $return_array[$c] = '7';
+      } elsif ($tmp_array[$c] eq 'h') {
+	  $return_array[$c] = '8';
+      } elsif ($tmp_array[$c] eq 'i') {
+	  $return_array[$c] = '9';
+      } elsif ($tmp_array[$c] eq 'j') {
+	  $return_array[$c] = '10';
+      } elsif ($tmp_array[$c] eq 'k') {
+	  $return_array[$c] = '11';
+      } elsif ($tmp_array[$c] eq 'l') {
+	  $return_array[$c] = '12';
+      } elsif ($tmp_array[$c] eq 'm') {
+	  $return_array[$c] = '13';
+      } elsif ($tmp_array[$c] eq 'n') {
+	  $return_array[$c] = '14';
+      } elsif ($tmp_array[$c] eq 'o') {
+	  $return_array[$c] = '15';
+      } elsif ($tmp_array[$c] eq 'p') {
+	  $return_array[$c] = '16';
+      } elsif ($tmp_array[$c] eq 'q') {
+	  $return_array[$c] = '17';
+      } elsif ($tmp_array[$c] eq 'r') {
+	  $return_array[$c] = '18';
+      } elsif ($tmp_array[$c] eq 's') {
+	  $return_array[$c] = '19';
+      } elsif ($tmp_array[$c] eq 't') {
+	  $return_array[$c] = '20';
+      } elsif ($tmp_array[$c] eq 'u') {
+	  $return_array[$c] = '21';
+      } elsif ($tmp_array[$c] eq 'v') {
+	  $return_array[$c] = '22';
+      } elsif ($tmp_array[$c] eq 'w') {
+	  $return_array[$c] = '23';
+      } elsif ($tmp_array[$c] eq 'x') {
+	  $return_array[$c] = '24';
+      } elsif ($tmp_array[$c] eq 'y') {
+	  $return_array[$c] = '25';
+      } elsif ($tmp_array[$c] eq 'z') {
+	  $return_array[$c] = '26';
+      }
   }    ## For each element of the tmp array.
-  my $return = "@return_array";
-  return ($return);
+  my $ret = "@return_array";
+  return ($ret);
 }
 
 sub ReBarcoder {
   # Added by JLJ.
-  my $strREF = shift;
-  my $str = "";
-  if (ref($strREF) eq "ARRAY") {
-      $str = "@{$strREF}";
-  } else {
-      $str = $strREF;
-  }
-
-  my $x = "";
-  my $max = 0;
-  my $stems = "";
-  my $order = "";
-
-  while ($str =~ m/(\d)/g) {
-      $x = $1;
-      if ($x > $max) { $max = $x }
-  }
-  
-  for (my $i = 1; $i <= $max; $i++) { $stems .= $i }
-
-  while ($str =~ m/(\d)/g) {
-      $x = $1;
-      unless ($order =~ m/$x/) { $order .= $x; }
-  }
-
-  $_ = $str;
-  eval "tr/$order/$stems/";    # or die $@;
-  $str = $_;
-
-  if (ref($strREF) eq "ARRAY") {
-      my @duh = split(/ /, $str);
-      return \@duh;
-  } else {
-      return $str;
-  }
-  Callstack(die => 1, messages => "WHAT THE HELLL!?!?!?!?!?!");
-}
-
-sub Condense {
-  # Added JLJ.
     my $strREF = shift;
     my $str = "";
     if (ref($strREF) eq "ARRAY") {
@@ -588,7 +536,47 @@ sub Condense {
     } else {
 	$str = $strREF;
     }
+    
+    my $x = "";
+    my $max = 0;
+    my $stems = "";
+    my $order = "";
+    
+    while ($str =~ m/(\d)/g) {
+	$x = $1;
+	if ($x > $max) { $max = $x }
+    }
+    
+    for (my $i = 1; $i <= $max; $i++) { $stems .= $i }
+    
+    while ($str =~ m/(\d)/g) {
+	$x = $1;
+	unless ($order =~ m/$x/) { $order .= $x; }
+    }
+    
+    $_ = $str;
+    eval "tr/$order/$stems/";    # or die $@;
+    $str = $_;
+    
+    if (ref($strREF) eq "ARRAY") {
+	my @duh = split(/ /, $str);
+	return \@duh;
+    } else {
+	return $str;
+    }
+    Callstack(die => 1, messages => "WHAT THE HELLL!?!?!?!?!?!");
+}
 
+sub Condense {
+    # Added JLJ.
+    my $strREF = shift;
+    my $str = "";
+    if (ref($strREF) eq "ARRAY") {
+	$str = "@{$strREF}";
+    } else {
+	$str = $strREF;
+    }
+    
     my $x = "";
     my $max = 0;
     while ($str =~ m/(\d)/g) {
@@ -652,95 +640,77 @@ sub Knotp {
 }
 
 sub Parsed_to_Barcode {
-  my $knotref = shift;
-  my $string  = '';
-  foreach my $char (@{$knotref} ) { $string = $string . $char if (defined($char)); }
-  $string =~ tr/0-9//s;
-  my @almost = split(//, $string);
-  my $finished = '';
-  if (Single_p($almost[0], \@almost)) {
-      $finished = $almost[0] . $almost[0];
-      shift(@almost);
-  }
- LOOP: for my $c (0 .. $#almost) {
-     my $char = $almost[$c];
-     my $count = 0;
-     ### If $char is in what is left of @almost 1 time...
-     foreach my $test (@almost) {
-      $count++ if ($test eq $char);
-      if ($count > 1) {
-#       print "Adding $char one time because it exists $count times\n";
-        $finished = $finished . $char;
-        $count = 0;
-        next LOOP;
-      }
+    my $knotref = shift;
+    my $string  = '';
+    foreach my $char (@{$knotref} ) { $string = $string . $char if (defined($char)); }
+    $string =~ tr/0-9//s;
+    my @almost = split(//, $string);
+    my $finished = '';
+    if (Single_p($almost[0], \@almost)) {
+	$finished = $almost[0] . $almost[0];
+	shift(@almost);
     }
+  LOOP: for my $c (0 .. $#almost) {
+      my $char = $almost[$c];
+      my $count = 0;
+      ### If $char is in what is left of @almost 1 time...
+      foreach my $test (@almost) {
+	  $count++ if ($test eq $char);
+	  if ($count > 1) {
+#       print "Adding $char one time because it exists $count times\n";
+	      $finished = $finished . $char;
+	      $count = 0;
+	      next LOOP;
+	  }
+      }
 #    print "ADDING $char twice because it exists $count times\n";
-    $finished = $finished . $char . $char;
+      $finished = $finished . $char . $char;
   }
 #  print "The reduced string is: $string\n";
-  return ($finished);
+    return ($finished);
 }
 
 sub Parsed_to_Barcode2 {
-  my $knotref = shift;
-  my $string  = '';
-  foreach my $char (@{$knotref}) { $string = $string . $char if (defined($char)); }
-  $string =~ tr/0-9//s;
+    my $knotref = shift;
+    my $string  = '';
+    foreach my $char (@{$knotref}) { $string = $string . $char if (defined($char)); }
+    $string =~ tr/0-9//s;
 #  print "TEST: $string\n";
-  my @almost = split(//, $string);
-  my $finished = '';
+    my @almost = split(//, $string);
+    my $finished = '';
 #  print "How many times does @almost have $almost[0]?\n";
-
-  if (Single_p($almost[0], \@almost)) {
-    $finished = $almost[0] . $almost[0];
-    shift(@almost);
-  }
-LOOP: for my $c (0 .. $#almost) {
-    my $char  = $almost[$c];
-    my $count = 0;
-    ### If $char is in what is left of @almost 1 time...
-    foreach my $test (@almost) {
-      $count++ if ($test eq $char);
-      if ( $count > 1 ) {
-#        print "Adding $char one time because it exists $count times\n";
-        $finished = $finished . $char;
-        $count    = 0;
-        next LOOP;
-      } elsif ( $count == 1 ) {
-#        print "ADDING $char twice because it exists $count times\n";
-        $finished = $finished . $char . $char;
-        $count    = 0;
-        next LOOP;
-      }
+    
+    if (Single_p($almost[0], \@almost)) {
+	$finished = $almost[0] . $almost[0];
+	shift(@almost);
     }
+  LOOP: for my $c (0 .. $#almost) {
+      my $char  = $almost[$c];
+      my $count = 0;
+      ### If $char is in what is left of @almost 1 time...
+      foreach my $test (@almost) {
+	  $count++ if ($test eq $char);
+	  if ( $count > 1 ) {
+#        print "Adding $char one time because it exists $count times\n";
+	      $finished = $finished . $char;
+	      $count    = 0;
+	      next LOOP;
+	  } elsif ( $count == 1 ) {
+#        print "ADDING $char twice because it exists $count times\n";
+	      $finished = $finished . $char . $char;
+	      $count    = 0;
+	      next LOOP;
+	  }
+      }
 #    print "The reduced string is: $string\n";
-    return ($finished);
+      return ($finished);
   }
-}
-
-sub PkParse_Error {
-  my $input = shift;
-  my $string = shift;
-  my $input_string = '';
-  foreach my $c (@{$input}) { $input_string .= $c }
-  open(ERROR, ">>pkparse_error.txt") or Callstack(die => 1, message => "Could not open the pkparse_error file.");
-  ## OPEN ERROR in PkParse_Error
-  if ($string eq 'loop') {
-      print ERROR "Too many loops for $input_string\n";
-  } elsif ($string eq 'mismatch') {
-      print ERROR "There was a mismatch between the input and output sizes for $input_string\n";
-  } else {
-      print ERROR "There was an error for $input_string\n";
-  }
-  close(ERROR);
-  ## CLOSE ERROR in PkParse_Error
 }
 
 1;
 
 __END__
-
+    
 =head1 NAME
 
 PkParse - A (hopefully) functional parser for the output from pknots.

@@ -5,6 +5,8 @@ use PRFConfig;
 use SeqMisc;
 use File::Temp qw / tmpnam /;
 use Fcntl ':flock';    # import LOCK_* constants
+use Bio::Root::RootI;
+use base qw(Bio::Root::RootI);
 use Bio::DB::Universal;
 use Log::Log4perl;
 use Log::Log4perl::Level;
@@ -25,6 +27,66 @@ our $log = Log::Log4perl->get_logger('stack'),
 my $config;
 my $dbh;
 ###
+
+# $Id $
+#
+# BioPerl module for PRFdb
+#
+# Cared for by Ashton Trey Belew <abelew@gmail.com>
+#
+# Copyright Ashton Trey Belew
+#
+# You may distribute this module under the same terms as perl itself
+
+# POD documentation - main docs before the code
+
+=head1 NAME
+
+PRFdb - DESCRIPTION of Interface
+
+=head1 SYNOPSIS
+
+Give standard usage here
+
+=head1 DESCRIPTION
+
+Describe the interface here
+
+=head1 FEEDBACK
+
+=head2 Mailing Lists
+
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to
+the Bioperl mailing list.  Your participation is much appreciated.
+
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Reporting Bugs
+
+Report bugs to the Bioperl bug tracking system to help us keep track
+of the bugs and their resolution. Bug reports can be submitted via
+email or the web:
+
+  http://bugzilla.open-bio.org/
+
+=head1 AUTHOR - Ashton Trey Belew
+
+Email abelew@gmail.com
+
+Describe contact details here
+
+=head1 CONTRIBUTORS
+
+Additional contributors names and emails here
+
+=head1 APPENDIX
+
+The rest of the documentation details each of the object methods.
+Internal methods are usually preceded with a _
+
+=cut
 
 sub new {
     my ($class, %arg) = @_;
@@ -229,7 +291,6 @@ with: error $DBI::errstr\n");
 with: error $DBI::errstr\n");
 	$me->{errors}->{statement} = $statement;
 	$me->{errors}->{errstr} = $DBI::errstr;
-	Write_SQL($statement);
     }
     return ($return);
 }
@@ -401,7 +462,7 @@ sub MyConnect {
     }
     
     if (!defined($dbh)) {
-	$me->{errors}->{statement} = $statement, Write_SQL($statement) if (defined($statement));
+	$me->{errors}->{statement} = $statement if (defined($statement));
 	$me->{errors}->{errstr} = $DBI::errstr;
 	my ($sec,$min,$hour,$mday,$mon,$year, $wday,$yday,$isdst) = localtime time;
 	my $error = qq"$hour:$min:$sec $mon-$mday Could not open cached connection: dbi:$config->{database_type}:database=$config->{database_name};host=$config->{database_host}, $DBI::err. $DBI::errstr";
@@ -972,7 +1033,7 @@ sub Import_Fasta {
 		    foreach my $c (@{$aa_seq}) { $aa .= $c; }
 		    $datum{protein_seq} = $aa;
 		}
-                my $genome_id = $me->Insert_Genome_Entry(\%datum);
+                my $genome_id = $me->Put_Genome_Entry(\%datum);
 #  This is repeated at the end of this function, I need to make sure that is kosher
 		if (defined($genome_id)) {
 		    print "1: Added $genome_id\n";
@@ -1099,7 +1160,7 @@ sub Import_Fasta {
 	$datum{protein_seq} = $aa;
     }
 
-    my $genome_id = $me->Insert_Genome_Entry(\%datum);
+    my $genome_id = $me->Put_Genome_Entry(\%datum);
     push(@return_array, $genome_id);
     return (\@return_array);
 }
@@ -1320,7 +1381,7 @@ sub Import_CDS {
 		     version => $seq->{_seq_version},
 		     comment => $full_comment,
 		     defline => $defline,);
-	my $genome_id = $me->Insert_Genome_Entry(\%datum);
+	my $genome_id = $me->Put_Genome_Entry(\%datum);
 	if (defined($genome_id)) {
 	    $return = $mrna_seqlength;
 	    $me->Set_Queue(id => $genome_id);
@@ -1349,84 +1410,18 @@ sub mRNA_subsequence {
     return ($orf_sequence);
 }
 
-sub Insert_Genome_Entry {
-    my $me = shift;
-    my $datum = shift;
-    ## Check to see if the accession is already there
-    my $check = qq"SELECT id FROM genome where accession = ?";
-    my $already_id = $me->MySelect(statement => $check, vars => [$datum->{accession}], type => 'single');
-    ## A check to make sure that the orf_start is not 0.  If it is, set it to 1 so it is consistent with the
-    ## crap from the SGD
-    $datum->{orf_start} = 1 if (!defined($datum->{orf_start}) or $datum->{orf_start} == 0);
-    if (defined($already_id)) {
-	print "The accession $datum->{accession} is already in the database with id: $already_id\n";
-	return (undef);
-    }
-    $datum->{version} = 0 if (!defined($datum->{version}));
-    $datum->{comment} = "" if (!defined($datum->{comment}));
-    ## Check that the boot, landscape, and mfe tables exist
-    my $species = $datum->{species};
-    unless ($species =~ /[V|v]irus/) {
-      $me->Create_MFE("mfe_$species") unless ($me->Tablep("mfe_$species"));
-      $me->Create_Landscape("landscape_$species") unless ($me->Tablep("landscape_$species"));
-      $me->Create_Boot("boot_$species") unless ($me->Tablep("boot_$species"));
-    }
-#    my $statement = qq(INSERT INTO genome
-#(accession,species,genename,version,comment,mrna_seq,protein_seq,orf_start,orf_stop,direction)
-#    VALUES('$datum->{accession}', '$datum->{species}', '$datum->{genename}', '$datum->{version}', '$datum->{comment}', '$datum->{mrna_seq}', '$datum->{protein_seq}', '$datum->{orf_start}', '$datum->{orf_stop}', '$datum->{direction}'));
-    my $statement = qq"INSERT INTO genome
-(accession, genename, version, comment, mrna_seq, orf_start, orf_stop, direction)
-VALUES(?,?,?,?,?,?,?,?)";
-    $me->MyExecute(statement => $statement,
-               vars => [$datum->{accession}, $datum->{genename}, $datum->{version}, $datum->{comment}, $datum->{mrna_seq}, $datum->{orf_start}, $datum->{orf_stop}, $datum->{direction}],);
-    my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
-    my $queue_id = $me->Set_Queue(id => $last_id,);
-    my $gene_info_stmt = qq"INSERT INTO gene_info
-(genome_id, accession, species, genename, comment)
-VALUES(?,?,?,?,?)";
-    my $gene_info = $me->MyExecute(statement => $gene_info_stmt,
-                                   vars => [$last_id,$datum->{accession},$datum->{species},
-                                            $datum->{genename},$datum->{comment}]);
+=head2 Check_Insertion
 
-    ## The following line is very important to ensure that multiple
-    ## calls to this don't end up with
-    ## Increasingly long sequences
-    foreach my $k (keys %{$datum}) {$datum->{$k} = undef;}
-    return ($last_id);
-}
+ Title   : Check_Insertion
+ Function: A quick sanity check to ensure that the fields of a table are defined before performing an insertion.
+ Example : $db->Check_Insertion(columns => ['some_column','another_column'], data => 'some_data');
+ Returns : undef if all is well, otherwise a string describing the missing columns.
 
-sub Insert_Numslipsite {
-    my $me = shift;
-    my $accession = shift;
-    my $num_slipsite = shift;
-    my $statement = qq/INSERT IGNORE INTO numslipsite
-(accession, num_slipsite)
-VALUES('$accession', '$num_slipsite')/;
-    $me->MyExecute(statement =>$statement,);
-    my $last_id = $me->MySelect(statement => 'SELECT LAST_INSERT_ID()', type => 'single');
-    return ($last_id);
-}
-
-sub Write_SQL {
-    my $statement = shift;
-    my $genome_id = shift;
-    open(SQL, ">>failed_sql_statements.txt");
-    ## OPEN SQL in Write_SQL
-    my $string = "$statement" . ";\n";
-    print SQL "$string";
-    
-    if (defined($genome_id)) {
-	my $second_statement = "UPDATE queue set done='0', checked_out='0' where genome_id = '$genome_id';\n";
-	print SQL "$second_statement";
-    }
-    close(SQL);
-    ## CLOSE SQL in Write_SQL
-}
-
+=cut
 sub Check_Insertion {
-    my $me = shift;
-    my $list = shift;
-    my $data = shift;
+    my ($me,%args) = @_;
+    my $list = $args{columns};
+    my $data = $args{data};
     my $errorstring = undef;
     foreach my $column (@{$list}) {
 	$errorstring .= "$column " unless (defined($data->{$column}));
@@ -1446,6 +1441,15 @@ sub Check_Defined {
     return ($return);
 }
 
+=head2 Tablep
+
+ Title   : Tablep
+ Function: See if a table exists.
+ Example : $db->Tablep('Some_Table');
+ Returns : The number of tables similar to 'Some_Table'
+ Args    : A tablename.
+
+=cut
 sub Tablep {
     my $me = shift;
     my $table = shift;
@@ -1462,42 +1466,68 @@ sub Tablep {
     return (scalar(@{$info}));
 }
 
+=head2 StartSlave
+
+ Title   : StartSlave
+ Usage   : This may be used to set up and start a slave MySQL server.
+ Example : $db->StartSlave(1); ## To run a command to grant replication, thus # $db->StartSlave() # if unneeded
+ Returns : If it completes, it will return the value of ReSync()
+ Args    : Any arguments passed tell it to grant replication to the new slave.
+
+=cut
 sub StartSlave {
     my $me = shift;
     my $grant_replication = shift;
     if ($grant_replication) {
 	my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
 	my $stmt = qq"GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '$config->{database_user}'\@'$ENV{PRFDB_IP}' IDENTIFIED BY '$config->{database_password}'";
-	my $other_dbh_num = $me->MyConnect($stmt, $other_dbd, 'root', $me->{rpw});
+	my $other_dbh_num = $me->MyConnect($stmt, $other_dbd, 'root', $me->{rpw}) or
+	    Callstack(message => "Unable to connect to $other_dbd", die => 1);
 	my $other_dbh = $me->{handles}->[$other_dbh_num];
-	print "Granting replication privileges with:\n
-$stmt\n";
 	my $o_sth = $other_dbh->prepare($stmt);
-	my $o_rv = $o_sth->execute();
+	my $o_rv = $o_sth->execute() or
+	    Callstack(message => "Unable to run: $stmt.", die => 1);
     }
-    $me->ReSync('slave');
+    my $ret = $me->ReSync('slave');
+    return($ret);
 }
 
+=head2 ReSync
+
+ Title   : ReSync
+ Function: Synchronize a slave MySQL server to the master.
+ Example : $db->ReSync('slave');  ## or $db->ReSync(); ## For a master server
+ Returns : Well, lets face it, if you are in a position where you need to perform a database synchronization, then
+           something is likely wrong and this function will probably return a callstack which will tell you what is
+           wrong.  If it does suceed, it will return the status of the last two statements.
+ Args    : Any arguments tells this to set itself as a slave.
+
+=cut
+
 sub ReSync {
-    my $me = shift;
-    my $slave = shift;
-    unless($me->{rpw}) {
-	die("This requires root access to the database.");
-    }
-    my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
-    my $local_dbd = qq"dbi:$config->{database_type}:database=mysql;host=localhost";
-    my $statement = "SHOW MASTER STATUS";
-    my $other_dbh_num = $me->MyConnect($statement, $other_dbd, 'root', $me->{rpw});
-    my $local_dbh_num = $me->MyConnect($statement, $local_dbd, 'root', $me->{rpw});
+   my ($me,@slave) = @_;
+   unless($me->{rpw}) {
+       die("This requires root access to the database.");
+   }
+   my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
+   my $local_dbd = qq"dbi:$config->{database_type}:database=mysql;host=localhost";
+   my $statement = "SHOW MASTER STATUS";
+   my $other_dbh_num = $me->MyConnect($statement, $other_dbd, 'root', $me->{rpw}) or
+       Callstack(message => "Could not connect to $other_dbd.", die => 1);
+   my $local_dbh_num = $me->MyConnect($statement, $local_dbd, 'root', $me->{rpw}) or
+       Callstack(message => "Could not connect to $local_dbd.", die => 1);
     my $other_dbh = $me->{handles}->[$other_dbh_num];
     my $local_dbh = $me->{handles}->[$local_dbh_num];
     my $pre_statement = "STOP SLAVE";
     my $o_stop = $other_dbh->prepare($pre_statement);
     my $l_stop = $local_dbh->prepare($pre_statement);
-    my $o_rv_stop = $o_stop->execute();
-    my $l_rv_stop = $l_stop->execute();
-
-    if ($slave) {
+    my $o_rv_stop = $o_stop->execute() or
+	Callstack(message => "Could not execute $pre_statement on $other_dbd", die => 1);
+    my $l_rv_stop = $l_stop->execute() or
+	Callstack(message => "Could not execute $pre_statement on $local_dbd", die => 1);
+   ## If an argument is passed to this, synchronize it as a slave.
+   my $ret;
+    if (@slave) {
 	my $o_sth = $other_dbh->prepare($statement);
 	my $o_rv = $o_sth->execute();
 	my $o_return = $o_sth->fetchrow_arrayref();
@@ -1511,6 +1541,7 @@ sub ReSync {
 	$l_reset = "START SLAVE";
 	$l_sth = $local_dbh->prepare($l_reset);
 	$l_rv = $l_sth->execute();
+	$ret = [$l_rv, $o_rv];
     } else {
 	my $l_sth = $local_dbh->prepare($statement);
 	my $l_rv = $l_sth->execute();
@@ -1525,7 +1556,9 @@ sub ReSync {
 	$o_reset = "START SLAVE";
 	$o_sth = $other_dbh->prepare($o_reset);
 	$o_rv = $o_sth->execute();
+	$ret = [$l_rv, $o_rv];
     }
+   return($ret);
 }
 
 sub Cleanup {
@@ -1635,10 +1668,12 @@ type => 'list_of_hashes' : a list of hashes with the names of the columns in the
 type => undef : a list of array references
 
 =head2 MyExecute
+
 Performs arbitrary executes on the database with failover and relatively decent
 error reporting.  returns how many rows were changed in the table affected.
 
 =head2 MyGet
+
 Little used because it is too clever.  Takes args in the following format:
 table => 'mfe_saccharomyces_cerevisiae', order => 'column_to_sort_by',
 criterion => [column1, =, column2, = ],
@@ -1646,6 +1681,7 @@ Thus one could use it to quickly generate SELECT statements by just
 feeding a hash of the things you actually want.
 
 =head2 Miscellaneous
+
 Pretty much the rest of PRFdb.pm works to convert from one format
 (fasta, the database, bpseq) to another (Ibid).  Because it handles
 both flat files and database connections, it makes extensive use of

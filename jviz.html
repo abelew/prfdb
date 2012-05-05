@@ -1,0 +1,30 @@
+
+    <table style="table-layout: fixed" width="100%" align="center" border="0" cellpadding="2" cellspacing="1" align="center">
+    <colgroup>
+     <col width="20%"><col width="80%">
+   </colgroup>
+   <p>The following images are generated via jViz, which is available at:
+<a href="http://jviz.cs.sfu.ca/">http://jviz.cs.sfu.ca/</a></p>
+
+% my @jviz_types = ('jviz_classic_structure', 'jviz_dot_plot', 'jviz_linked_graph', 'jviz_circle_graph', 'jviz_dual_graph');
+% foreach my $type (@jviz_types) {
+
+%  my $jviz_graph = new PRFGraph(config => $config, mfe_id => $mfeid, accession => $accession, species => $species);
+%  my $jviz_url = $jviz_graph->Picture_Filename(type=> $type, url => 'url',);
+%  my $jviz_output_filename = $jviz_graph->jViz(jviz_type => $type);
+
+      <tr>
+      <center><img src="<% $jviz_url %>"></center>
+      </tr>
+% }  ## End of the foreach type in (@jviz_types)
+    </table>
+
+</p>
+<hr>
+
+<%args>
+  $jviz_type => 'jviz_classic_structure';
+  $accession => undef;
+  $mfeid => undef;
+  $species => undef;
+</%args>

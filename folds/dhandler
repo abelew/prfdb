@@ -6,9 +6,12 @@ The filename is: <% $m->dhandler_arg %>
 
 <script language="JavaScript">
 var sURL = "<% $url %>";
+
+%#  The 20*1000 is a little silly I know, but that makes it clear(ish) that I want 20 seconds.
+
 function doLoad()
 {
-    setTimeout( "refresh()", 5*1000 );
+    setTimeout( "refresh()", 20*1000 );
 }
 
 function refresh()
@@ -40,6 +43,8 @@ function refresh()
   }  
   window.onload = doLoad;  
 </script>
+
+
 <%args>
   $num_refreshes => 0
 </%args>

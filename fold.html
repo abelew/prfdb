@@ -1,33 +1,27 @@
-% if (!$mfe_method or !$input_fasta) {
-
-Use this form to fold a _short_ sequence.<br>
-<FORM action="fold.html" enctype="multipart/form-data" method="POST">
-<input type="file" name="input_fasta">
-<select name="mfe_method">
-<option selected="selected" value="nupack">Nupack</option>
-<option value="pknots">Pknots</option>
-<option value="pknots_pseudo">Pknots with pseudoknots</option>
-<option value="hotknots">HotKnots</option>
-<option value="rnafold">RNAfold</option>
-<option value="all">all</option>
-</select> 
-<input type="submit" name="fold submit" value="Fold">
-</form>
-
-% } else {
+% if ($mfe_method or $input_fasta or $fold_sequence) {
 
 <%perl>
-use Apache2::Upload;
-my $req = new Apache2::Request($r);
-my $upload = $req->upload("input_fasta");
-my $upload_filename = $upload->filename();
-my $contents;
-my $size = $upload->slurp($contents);
-my $tempfile_fh = new File::Temp(SUFFIX => "fasta", DIR => "$ENV{PRFDB_HOME}/folds", UNLINK=>0);
+my $tempfile_fh = new File::Temp(SUFFIX => ".fasta", DIR => "$ENV{PRFDB_HOME}/folds", UNLINK=>0);
 my $new_filename = $tempfile_fh->filename();
 my $short_filename = $new_filename;
 my @fun = split(/\//, $short_filename);
 $short_filename = $fun[$#fun];
+my $contents = ">Unknown
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+";
+if ($input_fasta) {
+ use Apache2::Upload;
+ my $req = new Apache2::Request($r);
+ my $upload = $req->upload("input_fasta");
+ my $upload_filename = $upload->filename();
+ my $size = $upload->slurp($contents);
+} elsif ($fold_sequence) {
+ $contents =  ">${short_filename}
+${fold_sequence}
+";
+}
+$contents = lc($contents);
+$contents =~ s/t/u/g;
 print $tempfile_fh $contents;
 close $tempfile_fh;
 
@@ -40,6 +34,7 @@ sub tmp_fold {
   my $config = shift;
   my $new_filename = shift;
   my $function = shift;
+  my $refreshes = shift;
   my $input_path = "$ENV{PRFDB_HOME}/folds/$new_filename";
   my $fold = new RNAFolders(config => $config, file => $input_path, genome_id => 0, species => 'saccharomyces_cerevisiae', accession => 2, start => 0,);
   my $mfe_info;
@@ -55,8 +50,8 @@ sub tmp_fold {
     $mfe_info = $fold->Pknots();
   } elsif ($function eq 'ilm') {
     $mfe_info = $fold->ILM();
-  } elsif ($function eq 'mfold') {
-    $mfe_info = $fold->MFold();
+  } elsif ($function eq 'unafold') {
+    $mfe_info = $fold->Unafold();
   } else {
     $mfe_info = $fold->Multiple(['hotknots','nupack','pknots']);
   }
@@ -68,11 +63,27 @@ sub tmp_fold {
   my $pairs = $mfe_info->{pairs};
   my $sequence = $mfe_info->{sequence};
   my $parens = $mfe_info->{parens};
+  my $bpseq_string = $fold->Make_ct(sequence => $sequence, output => $output);
   my $turner = $fold->Compute_Energy(sequence => $sequence, parens => $parens);
-
+  open(BPSEQ_FILE, ">${input_path}.ct");
+  print BPSEQ_FILE $bpseq_string;
+  close(BPSEQ_FILE);
   my $pic_output = "$ENV{PRFDB_HOME}/folds/$new_filename.svg";
-  my $feynman_pic = new PRFGraph(sequence=>$sequence, parsed => $parsed, output => $output);
-  my $dimensions = $feynman_pic->Make_Feynman($pic_output, 0);
+  my $pictures = new PRFGraph(sequence=>$sequence, parsed => $parsed, output => $output);
+  my $dimensions = $pictures->Make_Feynman($pic_output, 0);
+
+
+  my $jviz_type = 'jviz_classic_structure';
+  my $jviz_url_string = '';
+  my $jviz_pic_output = $pic_output;
+  $jviz_pic_output =~ s/\.svg/-${jviz_type}\.png/g;
+  $jviz_pic_output =~ s/jviz_//g;
+#  $jviz_pic_output =~ s/\.fasta/\.bpseq/g;
+
+  my $jviz_output = $pictures->jViz(input_filename => "${new_filename}.ct", debug => 1, jviz_type => $jviz_type, output_filename => $jviz_pic_output);
+  $jviz_url_string .= "<center><img src=\"$jviz_output->{filename}\"><br>\n";
+  $jviz_url_string .= "</center>";
+
   open (HANDLE, ">$input_path.html") or Callstack(message => "Cannot open HANDLE $new_filename.html");
   print HANDLE qq(The minimum free using $function energy is: $mfe (Turner99: $turner)<br>
 <pre>
@@ -81,25 +92,49 @@ $parens
 </pre><br>
 <embed id=\"feynman\" src=\"$new_filename.svg\" align=\"bottom\"></embed>
 <br>
+$jviz_url_string
+<br>
 Download <a href=\"/download/svg2something.html?format=png&input=/folds/${new_filename}.svg\">png</a> or <a href=\"/download/svg2something.html?format=ps&intput=/folds/${new_filename}.svg\">ps</a> or  <a href=\"/download/svg2something.html?format=pdf&intput=/folds/${new_filename}.svg\">pdf</a>
 <br>
   );  ## This marks the end of the printed html fragment of the output
   close(HANDLE);
 }
 use Proc::Forkfunc;
-my @child_args = ($config, $short_filename, $mfe_method);
+my @child_args = ($config, $short_filename, $mfe_method, $num_refreshes);
 forkfunc(\&tmp_fold, @child_args);
 </%perl>
 
-<p>This should redirect you to the output page for your folding in 5 seconds.</p>
-<p>If it hasn't yet appeared, wait a few moments and hit reload, I will add some autodetecting shortly.</p>
-<& /js/refresh.html, refresh_url => "/folds/${short_filename}.html", seconds => 5 &>
+<p>This will redirect you to the output page for your folding in 20 seconds.</p>
+<& /js/refresh.html, refresh_url => "/folds/${short_filename}.html", seconds => 20 &>
 <script>  
   function load() {  
   }  
   window.onload = mydoLoad;  
 </script>
 
+% } else {
+
+<FORM action="fold.html" enctype="multipart/form-data" method="POST">
+Use this form to fold a _short_ sequence.<br>
+
+Choose a fasta formatted file: 
+<input type="file" name="input_fasta"><br>
+Or input some sequence below:<br>
+<textarea name="fold_sequence" rows=5 cols=30></textarea><br>
+and Fold it with:
+<select name="mfe_method">
+<option selected="selected" value="nupack">Nupack</option>
+<option value="pknots">Pknots</option>
+<option value="pknots_pseudo">Pknots with pseudoknots</option>
+<option value="hotknots">HotKnots</option>
+<option value="rnafold">RNAfold</option>
+<option value="unafold">UNAfold</option>
+<option value="all">all</option>
+</select><br>
+<input type="submit" name="fold submit" value="Fold"><br>
+
+
+</form>
 
 % }
 
@@ -107,7 +142,10 @@ forkfunc(\&tmp_fold, @child_args);
   my $tempfile;
   my $new_filename;
 </%init>
+
 <%args>
+  $fold_sequence => undef
   $mfe_method => undef
   $input_fasta => undef
+  $num_refreshes => 0
 </%args>

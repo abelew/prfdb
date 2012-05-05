@@ -70,10 +70,10 @@ if (defined($config->{dbselect})) {
     exit(0);
 }
 if (defined($config->{import_genbank_accession})) {
-    Import_Genbank_Accession($config->{import_genbank_accession});
+    Import_Genbank_Accession(accession => $config->{import_genbank_accession});
 }
 if (defined($config->{import_genbank_flatfile})) {
-    Import_Genbank_Flatfile($config->{import_genbank_flatfile});
+    Import_Genbank_Flatfile(input_file => $config->{import_genbank_flatfile});
 }
 if (defined($config->{makeblast})) {
     Make_Blast();
@@ -148,9 +148,9 @@ if (defined($config->{copyfrom})) {
 }
 if (defined($config->{input_file})) {
     if (defined($config->{startpos})) {
-	Read_Accessions($config->{input_file}, $config->{startpos});
+	Read_Accessions(input => $config->{input_file}, startpos => $config->{startpos});
     } else {
-	Read_Accessions($config->{input_file});
+	Read_Accessions(input => $config->{input_file});
     }
 }
 if (defined($config->{accession})) {
@@ -162,9 +162,9 @@ if (defined($config->{accession})) {
     }
     $state->{genome_id} = $db->Get_GenomeId_From_Accession($config->{accession});
     if (defined($config->{startpos})) {
-	Gather($state, $config->{startpos});
+	Gather(state => $state, startpos => $config->{startpos});
     } else {
-	Gather($state);
+	Gather(state => $state);
     }
     exit(0);
 }
@@ -219,7 +219,7 @@ MAINLOOP: until (defined($state->{time_to_die})) {
     $state->{queue_id} = $ids->{queue_id};
     $state->{genome_id} = $ids->{genome_id};
     if (defined($state->{genome_id})) {
-	Gather($state);
+	Gather(state => $state);
 	## End if have an entry in the queue
     } else {
 	sleep(60);
@@ -228,8 +228,10 @@ MAINLOOP: until (defined($state->{time_to_die})) {
 } ### End waiting for time to die
 
 sub Read_Accessions {
-    my $accession_file = shift;
-    my $startpos = shift;
+    my %args = @_;
+    my $accession_file = $args{input};
+    my $startpos = $args{startpos};
+
     my $retries = 10;
     ## Rewrite the list of things to do removing the ones which are done
     system("touch ${accession_file}.done");
@@ -288,8 +290,10 @@ sub Read_Accessions {
 
 ## Start Gather
 sub Gather {
-    my $state = shift;
-    my $startpos = shift;
+    my %args = @_;    
+    my $state = $args{state};
+    my $startpos = $args{startpos};
+
     my $ref = $db->Id_to_AccessionSpecies($state->{genome_id});
     $state->{accession} = $ref->{accession};
     $state->{species} = $ref->{species};
@@ -305,20 +309,22 @@ sub Gather {
     my %pre_landscape_state = %{$state};
     my $landscape_state = \%pre_landscape_state;
     if ($config->{do_landscape}) {
-	Landscape_Gatherer($landscape_state, $message);
+	Landscape_Gatherer(state => $landscape_state, message => $message);
     }
     foreach my $len (@{$config->{seqlength}}) {
         $state->{seqlength} = $len;
-        PRF_Gatherer($state, $len, $startpos);
+        PRF_Gatherer(state => $state, length => $len, startpos => $startpos);
     }
 }
 ## End Gather
 
 ## Start PRF_Gatherer
 sub PRF_Gatherer {
-    my $state = shift;
-    my $len = shift;
-    my $startpos = shift;
+    my %args = @_;
+    my $state = $args{state};
+    my $len = $args{length};
+    my $startpos = $args{startpos};
+
     ## Check for existence in the noslipsite table
     my $noslipsite = $db->MySelect(statement =>"SELECT num_slipsite FROM numslipsite WHERE accession = ?", type => 'row', vars => [$state->{accession}],);
     return(undef) if (defined($noslipsite->[0]) and $noslipsite->[0] == 0);
@@ -410,17 +416,17 @@ sub PRF_Gatherer {
 				       start => $slipsite_start,);
       
       if ($config->{do_nupack}) { ### Do we run a nupack fold?
-	  $nupack_mfe_id = Check_Folds('nupack', $fold_search, $slipsite_start);
+	  $nupack_mfe_id = Check_Folds(type => 'nupack', fold_search => $fold_search, slipstart => $slipsite_start);
       }
       if ($config->{do_pknots}) { ### Do we run a pknots fold?
-	  $pknots_mfe_id = Check_Folds('pknots', $fold_search, $slipsite_start);
+	  $pknots_mfe_id = Check_Folds(type => 'pknots', fold_search => $fold_search, slipstart => $slipsite_start);
       }
       if ($config->{do_hotknots}) {
-	  $hotknots_mfe_id = Check_Folds('hotknots', $fold_search, $slipsite_start);
+	  $hotknots_mfe_id = Check_Folds(type => 'hotknots', fold_search => $fold_search, slipstart => $slipsite_start);
       }
       if ($config->{do_comparison}) {
-	  my $pknots_mfe_info = $fold_search->Pknots('nopseudo');
-	  my $nupack_mfe_info = $fold_search->Nupack_NOPAIRS('nopseudo');
+	  my $pknots_mfe_info = $fold_search->Pknots(pseudo => 'nopseudo');
+	  my $nupack_mfe_info = $fold_search->Nupack_NOPAIRS(pseudo => 'nopseudo');
 	  my $vienna_mfe_info = $fold_search->Vienna();
 	  my $pk = $pknots_mfe_info->{mfe};
 	  my $nu = $nupack_mfe_info->{mfe};
@@ -480,7 +486,7 @@ UNION
                   my $rows = $db->Put_Boot($bootlaces);
               }
           }
-          Check_Boot_Connectivity($state, $slipsite_start);
+          Check_Boot_Connectivity(state => $state, slipstart => $slipsite_start);
       } ### End if we are to do a boot
 
       if ($config->{do_overlap}) {
@@ -495,7 +501,7 @@ UNION
       ## Clean up after yourself!
       PRFdb::RemoveFile($state->{fasta_file});
   }    ### End foreach slipsite_start
-    $db->Insert_Numslipsite($state->{accession}, $num_slipsites) if (!defined($noslipsite->[0]));
+    $db->Put_Numslipsite($state->{accession}, $num_slipsites) if (!defined($noslipsite->[0]));
     Clean_Up();
     ## Clean out state
 }
@@ -503,8 +509,10 @@ UNION
 
 ## Start Landscape_Gatherer
 sub Landscape_Gatherer {
-    my $state = shift;
-    my $message = shift;
+    my %args = @_;
+    my $state = $args{state};
+    my $message = $args{message};
+
     my $sequence = $db->Get_Sequence($state->{accession});
     my @seq_array = split(//, $sequence);
     my $sequence_length = scalar(@seq_array);
@@ -539,13 +547,13 @@ $sequence_string
 						   $config->{landscape_seqlength}, $landscape_table);
 	my ($nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id, $vienna_info, $vienna_mfe_id);
 	if ($nupack_foldedp == 0) {
-	    $nupack_info = $fold_search->Nupack_NOPAIRS('nopseudo');
+	    $nupack_info = $fold_search->Nupack_NOPAIRS(pseudo => 'nopseudo');
 	    $nupack_mfe_id = $db->Put_Nupack($nupack_info, $landscape_table);
 	    ## Try to stop these random seeming errors with nupack
 	    if (!defined($nupack_mfe_id)) {
 		sleep(5);
 		print STDERR "Trying again for nupack landscape fold.\n";
-		$nupack_info = $fold_search->Nupack_NOPAIRS('nopseudo');
+		$nupack_info = $fold_search->Nupack_NOPAIRS(pseudo => 'nopseudo');
 		$nupack_mfe_id = $db->Put_Nupack($nupack_info, $landscape_table);
 	    }
 	    $state->{nupack_mfe_id} = $nupack_mfe_id;
@@ -658,8 +666,9 @@ $nu_boot and running: $config->{boot_iterations} times\n";
 
 ## Start Check_Boot_Connectivity
 sub Check_Boot_Connectivity {
-    my $state = shift;
-    my $slipsite_start = shift;
+    my %args = @_;
+    my $state = $args{state};
+    my $slipsite_start = $args{slipstart};
     my $genome_id = $state->{genome_id};
     my $species = $state->{species};
     my $mt = "mfe_$species";
@@ -703,9 +712,10 @@ sub Check_Boot_Connectivity {
 ## End Check_Boot_Connectivity
 
 sub Check_Folds {
-    my $type = shift;
-    my $fold_search = shift;
-    my $slipsite_start = shift;
+    my %args = @_;
+    my $type = $args{type};
+    my $fold_search = $args{fold_search};
+    my $slipsite_start = $args{slipstart};
     my $mfe_id;
     my $mfe_varname = qq"${type}_mfe_id";
     my $folds = $db->Get_Num_RNAfolds($type, $state->{genome_id}, $slipsite_start, $state->{seqlength});
@@ -1018,15 +1028,17 @@ sub Maintenance {
 }
 
 sub Import_Genbank_Accession {
-    my $acc = shift;
+    my %args = @_;
+    my $acc = $args{accession};
     my $import = $db->Import_CDS($acc);
     exit(0);
 }
 
 sub Import_Genbank_Flatfile {
-    my $import_genbank = shift;
-    my $accession = shift;
-    my $genome = shift;
+    my %args = @_;
+    my $import_genbank = $args{input_file};
+    my $accession = $args{accession};
+    my $genome = $args{genome};
     die("Could not load Bio::DB::Universal.\n $@\n") unless (eval "use Bio::DB::Universal; 1");
     die("Could not load Bio::Index::GenBank.\n $@\n") unless (eval "use Bio::Index::GenBank; 1");
     
@@ -1143,7 +1155,7 @@ sub Import_Genbank_Flatfile {
 			 omim_id => $omim_id,
 			 defline => qq"$defline, $feature->{_gsf_tag_hash}->{gene}->[0], $feature->{_gsf_tag_hash}->{product}->[0]",
 		);
-	    $db->Insert_Genome_Entry(\%datum);
+	    $db->Put_Genome_Entry(\%datum);
 	    $accession = undef;
 	    }
       }
