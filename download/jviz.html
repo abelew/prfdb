@@ -1,0 +1,29 @@
+<%perl>
+ $r->content_type('application/octet-stream');
+ my $tempfile_fh = new File::Temp(SUFFIX => ".bpseq", DIR => "$ENV{PRFDB_HOME}/folds", UNLINK => 0);
+ my $tempfile_name = $tempfile_fh->filename;
+ my $fh;
+ open($fh, ">$tempfile_name");
+ my $name =  $db->Mfeid_to_Bpseq($species, $mfeid, $fh);
+ close($fh);
+ use File::Basename;
+ my $basename = basename($tempfile_name);
+ my $command = qq"cd $ENV{PRFDB_HOME}/folds && $ENV{PRFDB_HOME}/bin/xvfb-run -f ${basename}-auth -a -n 9 /usr/bin/java -jar $ENV{PRFDB_HOME}/bin/jViz.jar -t -C -f png $tempfile_name";
+ system($command);
+ my $print_command = qq"/bin/cat ${tempfile_name}-classic_structure.png";
+ open(CONVERT, "$print_command |");
+ my $buffer = '';
+ use constant BUFFER_SIZE => 1024;
+ while (read(CONVERT, $buffer, BUFFER_SIZE)) {
+  print $buffer;
+ }
+ close(CONVERT);
+ my $filename = qq"${mfeid}-classic.png";
+ $r->headers_out->add('Content-disposition' => ("attachment; filename=$filename"));
+</%perl>
+
+<%args>
+ $mfeid => undef;
+ $accession => undef;
+ $species => undef;
+</%args>

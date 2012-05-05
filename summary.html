@@ -1,0 +1,21 @@
+Printing a summary of the PRFdb
+% my $species_list = $db->MySelect("select distinct(species) from gene_info");
+% my $data = {};
+% foreach my $sp (@{$species_list}) {
+%  my $species = $sp->[0];
+%  my $num = $db->MySelect(type => 'single', statement => "select count(genome_id) from gene_info where species = '$species'");
+%  $data->{$species}->{orfs} = $num;
+%   my $folds = $db->MySelect(type => 'single', statement => "select sum(num_sequences) from stats where species = '$species' and seqlength = '100'");
+%  $data->{$species}->{num_100} = $folds;
+%  $data->{$species}->{sig_mfe} = $db->MySelect(type => 'single', statement => "select sum(genes_1mfe) from stats where species  = '$species' and seqlength = '100'");
+%  $data->{$species}->{sig_z} = $db->MySelect(type => 'single', statement => "select sum(genes_1z) from stats where species  = '$species' and seqlength = '100'");
+%  $data->{$species}->{sig_both} = $db->MySelect(type => 'single', statement => "select sum(genes_1both) from stats where species  = '$species' and seqlength = '100'");
+% }
+
+<ul>
+% my @most = sort { $data->{$b}->{orfs} <=> $data->{$a}->{orfs} } keys %{$data};
+% foreach my $sp (@most) {
+%   my $s = HTMLMisc::Make_Species($sp);
+%   print "<li>$s;$data->{$sp}->{orfs};$data->{$sp}->{num_100};$data->{$sp}->{sig_mfe};$data->{$sp}->{sig_z};$data->{$sp}->{sig_both}</li>\n";
+%}
+</ul>

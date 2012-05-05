@@ -1,0 +1,26 @@
+<%init>
+ $r->content_type('application/octet-stream');
+ if ($input eq 'undef') {
+  return();
+ } else {
+   my $file_path = qq"$ENV{PRFDB_HOME}/$input";
+   my $output_filename = $file_path;
+   $output_filename =~ s/$ENV{PRFDB_HOME}//g;
+   $output_filename =~ s/\/folds\///g;  ## Separate in case I want to use this code elsewhere, then this substitute will be passed silently.
+   $output_filename =~ s/\.svg$/\.png/g;
+   $output_filename =~ s/^\///g;
+   $r->headers_out->add('Content-disposition' => ("attachment; filename=$output_filename"));
+   my $command = qq"/usr/bin/rsvg-convert -f $format -d 1200 -p 1200 $file_path";
+   open (CONVERT, "$command |");
+   my $buffer = '';
+   use constant BUFFER_SIZE => 1024;
+   while (read(CONVERT, $buffer, BUFFER_SIZE)) {
+     print $buffer;
+   }
+   close(CONVERT);
+  }
+</%init>
+<%args>
+ $input => undef;
+ $format => "png";
+</%args>
