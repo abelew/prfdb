@@ -42,49 +42,33 @@ my $dbh;
 
 =head1 NAME
 
-PRFdb - DESCRIPTION of Interface
+PRFdb - The database routines of the Programmed Ribosomal Frameshift Database
 
 =head1 SYNOPSIS
 
-Give standard usage here
+  use PRFdb qw" Callstack AddOpen RemoveFile Cleanup ";
+  my $db = new PRFdb(config => $config);
+  my $lots_of_information = $db->MySelect("SELECT * FROM gene_info");
 
 =head1 DESCRIPTION
 
+The B<PRFdb> module pretty much requires a functional B<PRFConfig>
+object in order to find its myriad of configurable variables.
+It attempts to create an easy and fast environment for performing
+SQL queries/inserts/updates across the PRFdb, including automatic
+failover between database nodes, the ability to request specific
+datatypes from select statements without having to remember the
+various function names from DBI, and pretty reasonable error
+reporting functionality.
+All tables which are used in the PRFdb may be found in PRFdb::Create,
+Functions which perform common selects from the database are in
+PRFdb::Get and those which perform common inserts are in
+PRFdb::Put; these are most commonly accessed via AUTOLOAD.
 Describe the interface here
-
-=head1 FEEDBACK
-
-=head2 Mailing Lists
-
-User feedback is an integral part of the evolution of this and other
-Bioperl modules. Send your comments and suggestions preferably to
-the Bioperl mailing list.  Your participation is much appreciated.
-
-  bioperl-l@bioperl.org                  - General discussion
-  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
-
-=head2 Reporting Bugs
-
-Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
-
-  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ashton Trey Belew
 
 Email abelew@gmail.com
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
 
 =cut
 
@@ -131,6 +115,14 @@ sub new {
     return($me);
 }
 
+=head2 Callstack
+
+ Title   : Callstack
+ Usage   : Callstack(message => 'Some message.', die => 1)
+ Function: A super simple way to throw debugging messages and give a stacktrace.  This should be
+  replaced with Bio::Root::Exception, but that is for another day.
+
+=cut
 sub Callstack {
     my %args = @_;
     $log->warn("$args{message}") if ($args{message});
@@ -155,6 +147,14 @@ sub Callstack {
     }
 }
 
+=head2 Disconnect
+
+ Title   : Disconnect
+ Usage   : $db->Disconnect()
+ Function: Handles disconnecting from an arbitrary number of existing database handles.
+ Returns : The number of handles which were closed.
+
+=cut
 sub Disconnect {
     my $num_disconnected = 0;
     my $me = undef;
@@ -186,6 +186,33 @@ sub Disconnect {
     return($num_disconnected);
 }
 
+=head2 MySelect
+
+ Title   : MySelect
+ Usage   : my $result = $db->MySelect("SELECT * FROM sometable");
+
+MySelect attempts to make SQL select statements via DBI quick and flexible
+in an environment where at any time one or more database nodes might not be
+responding.
+MySelect can take either a raw select statement or a raw hash which looks
+like "statement => 'some select statement', type => 'single'"
+If it receives a string, it will return an array reference with one element
+per row of the database returned.  Otherwise it will return the following:
+
+type => 'hash', descriptor => ['id','accession']  : returns a hash reference
+with the names of each key as defined by the descriptor.
+
+type => 'row' : returns a single row as an array reference.
+
+type => 'single' : returns a scalar with a single value.
+
+type => 'flat'  : flattens an array reference returned by fetchall_arrayref
+
+type => 'list_of_hashes' : a list of hashes with the names of the columns in the table
+
+type => undef : a list of array references
+
+=cut
 sub MySelect {
     my $me = shift;
     my %args = ();
@@ -399,6 +426,16 @@ sub MyGet {
     return($final_statement);
 }
 
+=head2 MyConnect
+
+MyConnect is called early by prf_daemon as well as the apache handler.
+It in turn makes use of DBI::connect_cached and Sys::SigAction in order
+to skip between multiple database nodes in the event one is not
+responding.  Every time it makes a successful connection, it appends a
+new handle onto the PRFdb->{handles} list.
+Finally, it returns the cached DBI database handle.
+
+=cut
 sub MyConnect {
     my $me = shift;
     my $statement = shift;
@@ -1503,7 +1540,6 @@ sub StartSlave {
  Args    : Any arguments tells this to set itself as a slave.
 
 =cut
-
 sub ReSync {
    my ($me,@slave) = @_;
    unless($me->{rpw}) {
@@ -1615,57 +1651,6 @@ sub AUTOLOAD {
 
 
 __END__
-
-=head1 NAME
-
-PRFdb - The database routines of the Programmed Ribosomal Frameshift Database
-
-=head1 SYNOPSIS
-
-  use PRFdb qw" Callstack AddOpen RemoveFile Cleanup ";
-  my $db = new PRFdb(config => $config);
-  my $lots_of_information = $db->MySelect("SELECT * FROM gene_info");
-
-=head1 DESCRIPTION
-
-The B<PRFdb> module pretty much requires a functional B<PRFConfig>
-object in order to find its myriad of configurable variables.
-It attempts to create an easy and fast environment for performing
-SQL queries/inserts/updates across the PRFdb, including automatic
-failover between database nodes, the ability to request specific
-datatypes from select statements without having to remember the
-various function names from DBI, and pretty reasonable error
-reporting functionality.
-All tables which are used in the PRFdb may be found in PRFdb::Create,
-Functions which perform common selects from the database are in
-PRFdb::Get and those which perform common inserts are in
-PRFdb::Put; these are most commonly accessed via AUTOLOAD.
-
-=head2 MyConnect
-
-MyConnect is called early by prf_daemon as well as the apache handler.
-It in turn makes use of DBI::connect_cached and Sys::SigAction in order
-to skip between multiple database nodes in the event one is not
-responding.  Every time it makes a successful connection, it appends a
-new handle onto the PRFdb->{handles} list.
-Finally, it returns the cached DBI database handle.
-
-=head2 MySelect
-
-MySelect attempts to make SQL select statements via DBI quick and flexible
-in an environment where at any time one or more database nodes might not be
-responding.
-MySelect can take either a raw select statement or a raw hash which looks
-like "statement => 'some select statement', type => 'single'"
-If it receives a string, it will return an array reference with one element
-per row of the database returned.  Otherwise it will return the following:
-type => 'hash', descriptor => ['id','accession']  : returns a hash reference
-with the names of each key as defined by the descriptor.
-type => 'row' : returns a single row as an array reference.
-type => 'single' : returns a scalar with a single value.
-type => 'flat'  : flattens an array reference returned by fetchall_arrayref
-type => 'list_of_hashes' : a list of hashes with the names of the columns in the table
-type => undef : a list of array references
 
 =head2 MyExecute
 
