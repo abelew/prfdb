@@ -322,6 +322,19 @@ with: error $DBI::errstr\n");
     return ($return);
 }
 
+=head2 MyExecute
+
+ Title   : MyExecute
+ Usage   : my $modified_entries = $db->MyExecute("UPDATE table SET something");
+ Returns : The number of modified columns
+ Args    : An optional pair of statement => "SOME SQL STATEMENT ?" and vars => ['variable1','variable2'...]
+
+  MyExecute handles performing non-select statements, unlike MySelect which goes
+to some effort to provide various returns, Execute takes effort to make sure
+insert/update/etc statements are properly setup and completed and only returns
+the number of modified rows in the table.
+
+=cut
 sub MyExecute {
     my $me = shift;
     my %args = ();
@@ -370,6 +383,15 @@ with: error $DBI::errstr\n");
     return($rows);
 }
 
+=head2 MyGet
+
+Little used because it is too clever.  Takes args in the following format:
+table => 'mfe_saccharomyces_cerevisiae', order => 'column_to_sort_by',
+criterion => [column1, =, column2, = ],
+Thus one could use it to quickly generate SELECT statements by just
+feeding a hash of the things you actually want.
+
+=cut
 sub MyGet {
     my $me = shift;
     my $vars = shift;
@@ -514,10 +536,19 @@ sub MyConnect {
     return($new_handle);
 }
 
-sub Reconnect {
+=head2 Bootlace_Check
+
+ Title   : Bootlace_Check
+ Usage   : my $modified = $db->Bootlace_Check(1);
+ Function: Checks over the MFE and Bootlace tables and looks for mistakes.
+ Returns : The number of modified (and optionally) deleted rows.
+
+=cut
+sub Bootlace_Check {
     my $me = shift;
     my $prune = shift;
     my $species_list = $me->MySelect("select distinct(species) from gene_info");
+    my $count_modified = 0;
     foreach my $species_es (@{$species_list}) {
 	my $species = $species_es->[0];
 	next if ($species =~ /virus/);
@@ -536,6 +567,7 @@ sub Reconnect {
 		my $count = 0;
 		foreach my $conn (@connector) {
 		    if ($prune) {
+			$counted_modified++;
 			$me->MyExecute("DELETE FROM $mt WHERE id = '$connector[$count]->[0]'") unless($count == 0);
 		    }
 		    print "Tell me the mfe_id: $conn->[0] and genome_id: $conn->[1]\n";
@@ -545,16 +577,19 @@ sub Reconnect {
 		my ($id, $mgid) = ($connector[0]->[0], $connector[0]->[1]);
 		if (!defined($mgid) or !defined($id)) {
 		    print "There was an undefined element! $boot->{id} datum should be deleted.\n";
+		    $count_modified++;
 		    $me->MyExecute("DELETE FROM $bt WHERE id = '$boot->{id}'");
 		} elsif ($id eq $boot->{mfe_id}) {
 		    next;
 		} else {
 		    print "To Connect $species id:$boot->{id} bgid:$boot->{genome_id} mgid:$mgid, the mfe_id:$boot->{mfe_id}  must become:$id\n";
+		    $count_modified++;
 		    $me->MyExecute("UPDATE $bt set mfe_id = '$id' WHERE id = '$boot->{id}'");
 		}
 	    }
 	}
     }
+    return($count_modified);
 }
 
 sub Keyword_Search {
@@ -1651,19 +1686,6 @@ sub AUTOLOAD {
 
 
 __END__
-
-=head2 MyExecute
-
-Performs arbitrary executes on the database with failover and relatively decent
-error reporting.  returns how many rows were changed in the table affected.
-
-=head2 MyGet
-
-Little used because it is too clever.  Takes args in the following format:
-table => 'mfe_saccharomyces_cerevisiae', order => 'column_to_sort_by',
-criterion => [column1, =, column2, = ],
-Thus one could use it to quickly generate SELECT statements by just
-feeding a hash of the things you actually want.
 
 =head2 Miscellaneous
 

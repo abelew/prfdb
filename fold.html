@@ -6,9 +6,7 @@ my $new_filename = $tempfile_fh->filename();
 my $short_filename = $new_filename;
 my @fun = split(/\//, $short_filename);
 $short_filename = $fun[$#fun];
-my $contents = ">Unknown
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-";
+my $contents;
 if ($input_fasta) {
  use Apache2::Upload;
  my $req = new Apache2::Request($r);
@@ -20,8 +18,13 @@ if ($input_fasta) {
 ${fold_sequence}
 ";
 }
+unless ($contents) {
+  return;
+}
+
 $contents = lc($contents);
 $contents =~ s/t/u/g;
+
 print $tempfile_fh $contents;
 close $tempfile_fh;
 
@@ -99,9 +102,12 @@ Download <a href=\"/download/svg2something.html?format=png&input=/folds/${new_fi
   );  ## This marks the end of the printed html fragment of the output
   close(HANDLE);
 }
+
+
 use Proc::Forkfunc;
 my @child_args = ($config, $short_filename, $mfe_method, $num_refreshes);
 forkfunc(\&tmp_fold, @child_args);
+
 </%perl>
 
 <p>This will redirect you to the output page for your folding in 20 seconds.</p>

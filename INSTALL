@@ -27,7 +27,8 @@ Most other settings are fine by default, but you can change pretty much
 anything from the configuration file if you desire.
 
 Make sure that apache has libapreq running.  On a Debian installation this
-may be done by symlinking /etc/apache2/mods-available/libapred to ../mods-enabled
+may be done by symlinking /etc/apache2/mods-available/libapred to 
+/etc/apache2/mods-enabled/
 
 Make sure the $PRFDB_HOME/sessions symlink points somewhere real and is apache
 writeable.
@@ -41,3 +42,4 @@ You can test your installation with:
 If it worked, you can do a show tables and see all the initial tables.
 At that point, you will likely want to import some sequences.
 ./prf_daemon --import needs to be documented...
+but by default will take an NCBI accession and import that.
