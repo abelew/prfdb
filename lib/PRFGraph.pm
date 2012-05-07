@@ -2309,7 +2309,7 @@ sub jViz {
 	    print STDERR "DEBUG: Tempfile is $tempfile_name\n";
 	}
 	open($fh, ">$tempfile_name");
-	my $input_name = $tmpdb->Mfeid_to_Bpseq($species, $mfe_id, $fh);
+	my $input_name = $tmpdb->Mfeid_to_Bpseq(species => $species, mfeid => $mfe_id, output => $fh);
 	close($fh);
 	my $basename = basename($tempfile_name);
 	my $xvfb_xauth = qq"$ENV{PRFDB_HOME}/folds/${basename}-auth";

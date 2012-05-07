@@ -289,7 +289,7 @@ sub new {
     if (defined($me->{reconnect})) {
 	eval "use PRFdb qw'Callstack'; 1";
  	my $db = new PRFdb(config => $me);
-	$db->Reconnect($me->{prune});
+	$db->Bootlace_Check($me->{prune});
 	exit(0);
     }
     if (ref($me->{seqlength}) eq '') {

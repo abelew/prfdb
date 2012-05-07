@@ -1,4 +1,5 @@
 package PRFdb;
+## Time-stamp: <2012-05-07 15:45:29 trey>
 use strict;
 use DBI;
 use PRFConfig;
@@ -119,8 +120,9 @@ sub new {
 
  Title   : Callstack
  Usage   : Callstack(message => 'Some message.', die => 1)
- Function: A super simple way to throw debugging messages and give a stacktrace.  This should be
-  replaced with Bio::Root::Exception, but that is for another day.
+ Function: A super simple way to throw debugging messages and give a
+ stacktrace.  This should be replaced with Bio::Root::Exception, but
+ that is for another day.
 
 =cut
 sub Callstack {
@@ -151,7 +153,8 @@ sub Callstack {
 
  Title   : Disconnect
  Usage   : $db->Disconnect()
- Function: Handles disconnecting from an arbitrary number of existing database handles.
+ Function: Handles disconnecting from an arbitrary number of existing database
+ handles.
  Returns : The number of handles which were closed.
 
 =cut
@@ -592,54 +595,19 @@ sub Bootlace_Check {
     return($count_modified);
 }
 
-sub Keyword_Search {
-    my $me = shift;
-    my $species = shift;
-    my $keyword = shift;
-    my $statement = qq"SELECT accession, comment FROM gene_info WHERE comment like ? ORDER BY accession";
-    my $info = $me->MySelect(statement => $statement, vars => ['%$keyword%']);
-    my $return = {};
-    foreach my $accession (@{$info}) {
-	my $accession_id = $accession->[0];
-	my $accession_comment = $accession->[1];
-	$return->{$accession_id} = $accession_comment;
-    }
-    return ($return);
-}
+=head2 Mfeid_to_Bpseq
 
-sub Mfeid_to_MWM {
-    my $me = shift;
-    my %args = @_;
-    my $inputfile = $me->{file};
-    my $accession = $me->{accession};
-    my $start = $me->{start};
-    my $hlx = qq"$ENV{PRFDB_HOME}/bin/hlxplot";
-    my $ilm = qq"$ENV{PRFDB_HOME}/bin/ilm";
-    my $errorfile = qq"${inputfile}_ilm.err";
-    AddOpen($errorfile);
-    my $slipsite = Get_Slipsite_From_Input($inputfile);
-    
+ Title   : Mfeid_to_Bpseq
+ Usage   : my $output_file = $db->Mfeid_to_Bpseq(species => 'homo_sapiens', mfeid => '10', output => 'some_file.bpseq');
+ Returns : Generates a .bpseq file for a given ID in the MFE database.
 
-
-}
-
+=cut
 sub Mfeid_to_Bpseq {
-    my $me = shift;
-    my $species = shift;
-    my $mfeid = shift;
-    my $outputfile = shift;
-    my $add_slipsite = shift;
-    my ($fh, $filename);
-    if (!defined($outputfile)) {
-	$fh = PRFdb::MakeTempfile(SUFFIX => '.bpseq');
-	$filename = $fh->filename;
-    } elsif (ref($outputfile) eq 'GLOB') {
-	$fh = $outputfile;
-    } else {
-	$fh = \*OUT;
-	open($fh, ">$outputfile");
-	$filename = $outputfile;
-    }
+    my ($me, %args) = @_;
+    my $species = $args{species};
+    my $mfeid = $args{mfeid};
+    my $outputfile = $args{output};
+    my $add_slipsite = $args{add_slip};
     my $mfe_table = "mfe_$species";
     my $input_stmt = qq"SELECT sequence, output, slipsite FROM $mfe_table WHERE id = ?";
     my $input = $me->MySelect(statement => $input_stmt,	vars => [$mfeid], type => 'row');
@@ -662,6 +630,34 @@ sub Mfeid_to_Bpseq {
     }
     my $seq_length = scalar(@seq_array);
     my $input_length = scalar(@in_array);
+    my $final_filename = $me->Make_Bpseq(output => \@in_array sequence => \@seq_array, output_file => $outputfile);
+
+    return($final_filename);
+}
+
+=head2 Write_Bpseq
+
+ Title   : Write_Bpseq
+ Usage   : my $outfile = $db->Write_Bpseq(output => ['4','3','.','1','0'], ['g','c','a','g','c']);
+ Function: Creates a .bpseq file using the information from two arrays: 1.  a list of the base pairs from a sequence and 2.  The sequence.
+
+=cut
+sub Write_Bpseq {
+    my ($me, %args) = @_;
+    my @in_array = @{$args{output}};
+    my @seq_array = @{$args{sequence}};
+    my $output_filename = $args{output_file};
+        my ($fh, $filename);
+    if (!defined($outputfile)) {
+	$fh = PRFdb::MakeTempfile(SUFFIX => '.bpseq');
+	$filename = $fh->filename;
+    } elsif (ref($outputfile) eq 'GLOB') {
+	$fh = $outputfile;
+    } else {
+	$fh = \*OUT;
+	open($fh, ">$outputfile");
+	$filename = $outputfile;
+    }
 
     foreach my $c (0 .. $#seq_array) {
 	if (!defined($in_array[$c])) {
@@ -723,6 +719,14 @@ sub Sequence_to_Fasta {
     return ($filename);
 }
 
+=head2 MakeTempfile
+
+ Title   : MakeTempfile
+ Usage   : my $file_handle = MakeTempfile();
+ Function: Calls File::Temp to make temporary files for the PRFdb.  Some (hopefully decent) defaults are set.
+ Returns : A filehandle to the new file.
+
+=cut
 sub MakeTempfile {
     my %args = @_;
     $File::Temp::KEEP_ALL = 1;
@@ -736,6 +740,16 @@ sub MakeTempfile {
     return ($fh);
 }
 
+=head2 AddOpen
+
+ Title   : AddOpen
+ Usage   : my $open_files = AddOpen('filename')
+ Function: Maintains a list of files opened by the PRFdb in the $config namespace.
+ It is the responsibility of the Destructor in MAIN() to clear this list and make
+ sure everything is deleted.  (Note the call to PRFdb::RemoveFile('all') in END())
+ Returns : The number of files currently open.
+
+=cut
 sub AddOpen {
     my $file = shift;
     my @open_files = @{$config->{open_files}};
@@ -749,6 +763,7 @@ sub AddOpen {
 	push(@open_files, $file);
     }
     $config->{open_files} = \@open_files;
+    return(scalar(@open_files));
 }
 
 sub Remove_Duplicates {
