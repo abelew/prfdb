@@ -570,7 +570,7 @@ sub Bootlace_Check {
 		my $count = 0;
 		foreach my $conn (@connector) {
 		    if ($prune) {
-			$counted_modified++;
+			$count_modified++;
 			$me->MyExecute("DELETE FROM $mt WHERE id = '$connector[$count]->[0]'") unless($count == 0);
 		    }
 		    print "Tell me the mfe_id: $conn->[0] and genome_id: $conn->[1]\n";
@@ -630,7 +630,7 @@ sub Mfeid_to_Bpseq {
     }
     my $seq_length = scalar(@seq_array);
     my $input_length = scalar(@in_array);
-    my $final_filename = $me->Make_Bpseq(output => \@in_array sequence => \@seq_array, output_file => $outputfile);
+    my $final_filename = $me->Make_Bpseq(output => \@in_array, sequence => \@seq_array, output_file => $outputfile);
 
     return($final_filename);
 }
@@ -646,19 +646,19 @@ sub Write_Bpseq {
     my ($me, %args) = @_;
     my @in_array = @{$args{output}};
     my @seq_array = @{$args{sequence}};
-    my $output_filename = $args{output_file};
+    my $output_file = $args{output_file};
         my ($fh, $filename);
-    if (!defined($outputfile)) {
+    if (!defined($output_file)) {
 	$fh = PRFdb::MakeTempfile(SUFFIX => '.bpseq');
-	$filename = $fh->filename;
-    } elsif (ref($outputfile) eq 'GLOB') {
-	$fh = $outputfile;
+	$output_file = $fh->filename;
+    } elsif (ref($output_file) eq 'GLOB') {
+	$fh = $output_file;
     } else {
 	$fh = \*OUT;
-	open($fh, ">$outputfile");
-	$filename = $outputfile;
+	open($fh, ">$output_file");
     }
 
+    my $output;
     foreach my $c (0 .. $#seq_array) {
 	if (!defined($in_array[$c])) {
 	    $output .= "$c $seq_array[$c] 0\n";
@@ -672,7 +672,7 @@ sub Write_Bpseq {
 	}
     }
     print $fh $output;
-    return($filename);
+    return($output_file);
 }
 
 sub Genome_to_Fasta {
@@ -1326,7 +1326,7 @@ sub Import_Genbank_Flatfile {
 			 comment => $full_comment,
 			 defline => $defline,);
 	    foreach my $k (keys %datum) {
-		print "key: $k data: $datum{$k}\n";
+		print "key: $k data: $datum{$k}\n" if ($config->{debug});
 	    }
 	} ## foreach feature in @cds
 	print "Done this CDS\n\n\n";
