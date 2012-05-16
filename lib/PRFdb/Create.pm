@@ -325,16 +325,6 @@ PRIMARY KEY (id))";
     return($me->Create_Do($table, $statement));
 }
 
-sub Nosy {
-    my $me = shift;
-    my $table = "nosy";
-    my $statement = qq"CREATE TABLE nosy (
-ip char(15),
-visited $me->{config}->{sql_timestamp},
-PRIMARY KEY(ip))";
-    return($me->Create_Do($table, $statement));
-}
-
 sub Overlap {
     my $me = shift;
     my $table = "overlap";
@@ -449,7 +439,6 @@ sub Tables {
     my $me = shift;
     $me->Create_Agree() if (!$me->Tablep("agree"));
     $me->Create_Boot("boot_saccharomyces_cerevisiae") if (!$me->Tablep("boot_saccharomyces_cerevisiae"));
-    $me->Create_Errors() if (!$me->Tablep("errors"));
     $me->Create_Evaluate() if (!$me->Tablep("evaluate"));
     $me->Create_Gene_Info() if (!$me->Tablep("gene_info"));
     $me->Create_Genome() if (!$me->Tablep("genome"));
@@ -458,7 +447,6 @@ sub Tables {
     $me->Create_Landscape("landscape_saccharomyces_cerevisiae") if (!$me->Tablep("landscape_saccharomyces_cerevisiae"));
     $me->Create_MFE("mfe_saccharomyces_cerevisiae") if (!$me->Tablep("mfe_saccharomyces_cerevisiae"));
     $me->Create_MFE_Utr() if (!$me->Tablep("mfe_utr"));
-    $me->Create_Nosy() if (!$me->Tablep("nosy"));
     $me->Create_NumSlipsite() if (!$me->Tablep("numslipsite"));
     $me->Create_Overlap() if (!$me->Tablep("overlap"));
     $me->Create_Queue() if (!$me->Tablep("queue"));

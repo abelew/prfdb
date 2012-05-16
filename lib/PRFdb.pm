@@ -175,7 +175,8 @@ sub Disconnect {
 	    my $rc = $handle->disconnect();
 	    Callstack() unless ($rc);
 	}
-    } else {
+    }
+    else {
 	if (defined($PRFdb::handles)) {
 	    my @handles = @{$PRFdb::handles};
 	}
@@ -228,9 +229,11 @@ sub MySelect {
 	$vars = $input->{vars};
 	$type = $input->{type};
 	$descriptor = $input->{descriptor};
-    } elsif (!defined($_[1])) {
+    }
+    elsif (!defined($_[1])) {
 	$statement = $_[0];
-    } else {
+    }
+    else {
 	%args = @_;
 	$statement = $args{statement};
 	$vars = $args{vars};
@@ -253,7 +256,8 @@ sub MySelect {
     my $rv;
     if (defined($vars)) {
 	$rv = $sth->execute(@{$vars});
-    } else {
+    }
+    else {
 	$rv = $sth->execute();
     }
     
@@ -270,7 +274,8 @@ with: error $DBI::errstr\n");
     if (defined($type) and defined($descriptor)) {
 	$return = $sth->fetchall_hashref($descriptor);
 	$selecttype = 'selectall_hashref';
-    } elsif (defined($type) and $type eq 'row') {
+    }
+    elsif (defined($type) and $type eq 'row') {
 	## If $type is defined, AND if you ask for a row, do a selectrow_arrayref
 	$return = $sth->fetchrow_arrayref();
 	$selecttype = 'selectrow_arrayref';
@@ -281,7 +286,8 @@ with: error $DBI::errstr\n");
     elsif (defined($type) and $type eq 'single') {
 	my $tmp = $sth->fetchrow_arrayref();
 	$return = $tmp->[0];
-    } elsif (defined($type) and $type eq 'flat') {
+    }
+    elsif (defined($type) and $type eq 'flat') {
 	my $selecttype = 'flat';
 	my @ret = ();
 	my $data = $sth->fetchall_arrayref();
@@ -292,7 +298,8 @@ with: error $DBI::errstr\n");
 	    foreach my $c (0 .. $#$data) {
 		push(@ret, $data->[$c]->[0]);
 	    }
-	} else {
+	}
+	else {
 	    foreach my $c (0 .. $#$data) {
 		my @elems = @{$data->[$c]};
 		foreach my $d (0 .. $#elems) {
@@ -302,14 +309,17 @@ with: error $DBI::errstr\n");
 	}
 	$return = \@ret;
 	## Endif flat
-    } elsif (defined($type) and $type eq 'list_of_hashes') { 
+    } 
+    elsif (defined($type) and $type eq 'list_of_hashes') { 
 	$return = $sth->fetchall_arrayref({});
 	$selecttype = 'selectall_arrayref({})';     
-    } elsif (defined($type)) {    ## Usually defined as 'hash'
+    }
+    elsif (defined($type)) {    ## Usually defined as 'hash'
 	## If only $type is defined, do a selectrow_hashref
 	$return = $sth->fetchrow_hashref();
 	$selecttype = 'selectrow_hashref';
-    } else {
+    }
+    else {
     ## The default is to do a selectall_arrayref
 	$return = $sth->fetchall_arrayref();
 	$selecttype = 'selectall_arrayref';
@@ -348,9 +358,11 @@ sub MyExecute {
         $input = $_[0];
 	$vars = $input->{vars};
 	$statement = $input->{statement};
-    } elsif (!defined($_[1])) {
+    }
+    elsif (!defined($_[1])) {
 	$statement = $_[0];
-    } else {
+    }
+    else {
 	%args = @_;
 	$statement = $args{statement};
 	$vars = $args{vars};
@@ -367,7 +379,8 @@ sub MyExecute {
     }
     if (scalar(@vars) > 0) {
 	$rv = $sth->execute(@{$input->{vars}}) or Callstack();
-    } else {
+    }
+    else {
 	$rv = $sth->execute() or Callstack();
     }
     
@@ -380,7 +393,8 @@ with: error $DBI::errstr\n");
 	$me->{errors}->{statement} = $statement;
 	$me->{errors}->{errstr} = $DBI::errstr;
 	return(undef);
-    } else {
+    }
+    else {
 	$rows = $dbh->rows();
     }
     return($rows);
@@ -423,7 +437,8 @@ sub MyGet {
 	    $criteria_count++;
 	    if ($vars->{$criterion} =~ /\s+/) {
 		$final_statement .= "$criterion $vars->{$criterion} AND ";
-	    } else {
+	    }
+	    else {
 		$final_statement .= "$criterion = '$vars->{$criterion}' AND ";
 	    }
 	}
@@ -479,7 +494,8 @@ sub MyConnect {
     my $dbd;
     if (defined($alt_dbd)) {
 	$dbd = $alt_dbd;
-    } else {
+    }
+    else {
 	$dbd = qq"dbi:$config->{database_type}:database=$config->{database_name};host=$hostname";
     }
     my $dbh;
@@ -492,7 +508,8 @@ sub MyConnect {
 	if (defined($alt_user)) {
 	    $user = $alt_user;
 	    $pass = $alt_pass;
-	} else {
+	}
+	else {
 	    $user = $config->{database_user};
 	    $pass = $config->{database_pass};
 	}
@@ -576,15 +593,18 @@ sub Bootlace_Check {
 		    print "Tell me the mfe_id: $conn->[0] and genome_id: $conn->[1]\n";
 		    $count++;
 		}
-	    } else {
+	    }
+	    else {
 		my ($id, $mgid) = ($connector[0]->[0], $connector[0]->[1]);
 		if (!defined($mgid) or !defined($id)) {
 		    print "There was an undefined element! $boot->{id} datum should be deleted.\n";
 		    $count_modified++;
 		    $me->MyExecute("DELETE FROM $bt WHERE id = '$boot->{id}'");
-		} elsif ($id eq $boot->{mfe_id}) {
+		}
+		elsif ($id eq $boot->{mfe_id}) {
 		    next;
-		} else {
+		}
+		else {
 		    print "To Connect $species id:$boot->{id} bgid:$boot->{genome_id} mgid:$mgid, the mfe_id:$boot->{mfe_id}  must become:$id\n";
 		    $count_modified++;
 		    $me->MyExecute("UPDATE $bt set mfe_id = '$id' WHERE id = '$boot->{id}'");
@@ -635,14 +655,106 @@ sub Mfeid_to_Bpseq {
     return($final_filename);
 }
 
-=head2 Write_Bpseq
+sub Mfeid_to_Seq {
+    my ($me, %args) = @_;
+    my $species = $args{species};
+    my $mfeid = $args{mfeid};
+    my $outputfile = $args{output};
+    my $type = $args{type};
+    my $add_slipsite = $args{add_slip};
+    my $mfe_table = "mfe_$species";
+    my $input_stmt = qq"SELECT sequence, output, slipsite FROM $mfe_table WHERE id = ?";
+    my $input = $me->MySelect(statement => $input_stmt,	vars => [$mfeid], type => 'row');
+    my $seq = $input->[0];
+    my $in = $input->[1];
+    my $slipsite = $input->[2];
+    my $output = '';
+    $seq =~ s/^\s+//g;
+    $seq =~ tr/augct/AUGCT/;
+    $in =~ s/^\s+//g;
+    my @seq_array = split(//, $seq);
+    my @in_array = split(/\s+/, $in);
+    if (defined($add_slipsite)) {
+	$slipsite = reverse($slipsite);
+	my @slipsite_array = split(//, $slipsite);
+	foreach my $slipsite_char (@slipsite_array) {
+	    unshift(@seq_array, $slipsite_char);
+	    unshift(@in_array, '.');
+	}
+    }
+    my $seq_length = scalar(@seq_array);
+    my $input_length = scalar(@in_array);
+    
+    my $final_filename;
+    if ($type eq 'bpseq') {
+	$final_filename = $me->Make_Bpseq(output => \@in_array, sequence => \@seq_array, output_file => $outputfile);
+    }
+    elsif ($type eq 'ct') {
+	$final_filename = $me->Make_CT(output => \@in_array, sequence => \@seq_array, output_file => $outputfile);
+    }
+    else {
+	return;
+    }
 
- Title   : Write_Bpseq
- Usage   : my $outfile = $db->Write_Bpseq(output => ['4','3','.','1','0'], ['g','c','a','g','c']);
+    return($final_filename);
+}
+
+=head2 Make_CT
+
+ Title   : Make_CT
+ Usage   : my $filename = $db->Make_CT(output => ['.'...], sequence => ['A','U'...], output_file => 'some_file.ct');
+ Function: Create a Context Table file from the output of pknots etc.
+ Returns : The filename of the created file.
+
+=cut
+sub Make_CT {
+    my ($me, %args) = @_;
+    my @in_array = @{$args{output}};
+    my @seq_array = @{$args{sequence}};
+    my $output_file = $args{output_file};
+    my ($fh, $filename);
+    if (!defined($output_file)) {
+	$fh = PRFdb::MakeTempfile(SUFFIX => '.ct');
+	$output_file = $fh->filename;
+    }
+    elsif (ref($output_file) eq 'GLOB') {
+	$fh = $output_file;
+    }
+    else {
+	$fh = \*OUT;
+	open($fh, ">$output_file");
+    }
+
+    my $bases = scalar(@seq_array);
+    print STDERR "HERE WITH CT $output_file\n";
+    my $output_string = "$bases  $output_file\n";
+    foreach my $c (0 .. $#seq_array) {
+	my $position = $c + 1;
+	my $last = $c;
+	my $next = $c+2;
+	if (!defined($in_array[$c])) {  ## Why did I do this?
+	    $output_string .= "$c $seq_array[$c] $last $next $seq_array[$c]\n";
+	}
+	elsif ($in_array[$c] eq '.') {
+	    $output_string .= "$position $seq_array[$c] $last $next 0\n";
+	}
+	else {
+	    my $bound_position = $in_array[$c] + 1;
+	    $output_string .= "$position $seq_array[$c] $last $next $bound_position\n";
+	}
+    }
+    print $fh $output_string;
+    return($output_file);
+}
+
+=head2 Make_Bpseq
+
+ Title   : Make_Bpseq
+ Usage   : my $outfile = $db->Make_Bpseq(output => ['4','3','.','1','0'], ['g','c','a','g','c']);
  Function: Creates a .bpseq file using the information from two arrays: 1.  a list of the base pairs from a sequence and 2.  The sequence.
 
 =cut
-sub Write_Bpseq {
+sub Make_Bpseq {
     my ($me, %args) = @_;
     my @in_array = @{$args{output}};
     my @seq_array = @{$args{sequence}};
@@ -651,9 +763,11 @@ sub Write_Bpseq {
     if (!defined($output_file)) {
 	$fh = PRFdb::MakeTempfile(SUFFIX => '.bpseq');
 	$output_file = $fh->filename;
-    } elsif (ref($output_file) eq 'GLOB') {
+    }
+    elsif (ref($output_file) eq 'GLOB') {
 	$fh = $output_file;
-    } else {
+    }
+    else {
 	$fh = \*OUT;
 	open($fh, ">$output_file");
     }
@@ -662,10 +776,12 @@ sub Write_Bpseq {
     foreach my $c (0 .. $#seq_array) {
 	if (!defined($in_array[$c])) {
 	    $output .= "$c $seq_array[$c] 0\n";
-	} elsif ($in_array[$c] eq '.') {
+	}
+	elsif ($in_array[$c] eq '.') {
 	    my $position = $c + 1;
 	    $output .= "$position $seq_array[$c] 0\n";
-	} else {
+	}
+	else {
 	    my $position = $c + 1;
 	    my $bound_position = $in_array[$c] + 1;
 	    $output .= "$position $seq_array[$c] $bound_position\n";
@@ -675,16 +791,23 @@ sub Write_Bpseq {
     return($output_file);
 }
 
+=head2 Genome_to_Fasta
+
+ Title   : Genome_to_Fasta
+ Usage   : my $count = $db->Genome_to_Fasta(output => 'saccharomyces_cerevisiae.fasta', species => 'saccharomyces_cerevisiae');
+ Returns : The number of elements gathered from the database
+
+=cut
 sub Genome_to_Fasta {
-    my $me = shift;
-    my $output = shift;
-    my $species = shift;
+    my ($me, %args) = @_;
+    my $output = $args{output};
+    my $species = $args{species};
     my $statement = qq"SELECT DISTINCT genome_id, accession, comment, FROM gene_info";
     my $info;
     system("mkdir $ENV{PRFDB_HOME}/blast") if (!-r  "$ENV{PRFDB_HOME}/blast");
     open(OUTPUT, "| gzip --stdout -f - >> $ENV{PRFDB_HOME}/blast/$output") or Callstack(die => 1, message => "Could not open the fasta output file.");
     if (defined($species)) {
-	$statement .= " WHERE species = \'$species\'";
+	$statement .= qq" WHERE species = '$species'";
     }
     $info = $me->MySelect($statement);
     my $count = 0;
@@ -693,7 +816,8 @@ sub Genome_to_Fasta {
 	if (!defined($datum)) {
 	    print "Problem with $count element\n";
 	    next;
-	} else {
+	}
+	else {
 	    my $sequence = $me->MySelect(statement => "SELECT mrna_seq FROM genome WHERE id = ?", vars => [$datum->[0]], type => 'single');
 	    my $id = $datum->[0];
 	    my $accession = $datum->[1];
@@ -707,6 +831,7 @@ $sequence
     }
     close(OUTPUT);
 #    system("/usr/bin/gzip $ENV{PRFDB_HOME}/blast/$output");
+    return($count);
 }
 
 sub Sequence_to_Fasta {
@@ -919,21 +1044,6 @@ sub Id_to_AccessionSpecies {
     return ($return);
 }
 
-sub Error_Db {
-    my $me = shift;
-    my $message = shift;
-    my $species = shift;
-    my $accession = shift;
-    $species = '' if (!defined($species));
-    $accession = '' if (!defined($accession));
-    print "Error: '$message'\n";
-    my $statement = qq"INSERT into errors (message, accession) VALUES(?,?)";
-    ## Don't call Execute here or you may run into circular crazyness
-    $me->MyConnect($statement,);
-    my $sth = $dbh->prepare($statement);
-    $sth->execute($message, $accession);
-}
-
 sub Add_Webqueue {
     my $me = shift;
     my $id = shift;
@@ -1038,12 +1148,14 @@ sub Grab_Queue {
 	$queue = $me->Get_Queue('webqueue');
 	if (defined($queue)) {
 	    return ($queue);
-	} else {
+	}
+	else {
 	    $queue = $me->Get_Queue();
 	    return ($queue);
 	}
 	## End check webqueue
-    } else {
+    }
+    else {
 	$queue = $me->Get_Queue();
 	if (!defined($queue)) {
 	    print "There are no more entries in the queue.\n";
@@ -1088,7 +1200,8 @@ sub Import_Fasta {
     my $linenum = 0;
     if (defined($config->{species})) {
 	print "Species is defined as $config->{species}\n";
-    } else {
+    }
+    else {
 	Callstack(die => 1, message => "Species must be defined.");
     }
     while (my $line = <IN>) {
@@ -1099,16 +1212,19 @@ sub Import_Fasta {
             if ($linenum > 1) {
                 if (defined($config->{startpos})) {
                     $datum{orf_start} = $config->{startpos};
-                } else {
+                }
+		else {
                     $datum{orf_start} = 1;
                 }
                 if (defined($config->{endpos})) {
                     if ($config->{endpos} > 0) {
                         $datum{orf_stop} = $config->{end_pos};
-                    } else {  ## A negative offset
+                    }
+		    else {  ## A negative offset
                         $datum{orf_stop} = length($datum{mrna_seq}) - $config->{endpos};
                     }
-                } else {
+                }
+		else {
                     $datum{orf_stop} = length($datum{mrna_seq});
                 }
 		## Insert the entry here and add the queue entry
@@ -1153,7 +1269,8 @@ sub Import_Fasta {
 			$datum{version} = 1;
 		    }
 		    ## End if the style is sgd
-		} elsif ($style eq 'celegans') {
+		}
+		elsif ($style eq 'celegans') {
 		    %datum = (accession => undef,
 			      genename => undef,
 			      version => undef,
@@ -1171,7 +1288,8 @@ sub Import_Fasta {
 			$datum{version} = 1;
 		    }
 		    ## End if the style is of C. elegans
-		} elsif ($style eq 'mgc') {
+		}
+		elsif ($style eq 'mgc') {
 		    %datum = (accession => undef,
 			      genename => undef,
 			      version => undef,
@@ -1181,7 +1299,8 @@ sub Import_Fasta {
 		    my ($accession, $version);
 		    if ($accession_version =~ m/\./) {
 			($accession, $version) = split(/\./, $accession_version);
-		    } else {
+		    }
+		    else {
 			$accession = $accession_version;
 			$version   = '0';
 		    }
@@ -1196,7 +1315,8 @@ sub Import_Fasta {
 		    $datum{direction} = 'forward';
 		    $datum{defline} = $line;
 		    ## End if the style is from the mammalian gene collection
-		} elsif ($style eq 'misc') {
+		}
+		elsif ($style eq 'misc') {
 		    %datum = (accession => undef,
 			      genename => undef,
 			      version => undef,
@@ -1220,11 +1340,13 @@ sub Import_Fasta {
 		    $datum{species} = $config->{species};
 		    ## End if the style is misc
 		}
-	    } else {
+	    }
+	    else {
 		print "Style is not defined.\n";
 	    }
 	    ## End if you are on a > line
-	} else {
+	}
+	else {
 	    $line =~ s/\s//g;
 	    $line =~ s/\d//g;
 	    $datum{mrna_seq} .= $line;
@@ -1269,6 +1391,7 @@ sub Import_Genbank_Flatfile {
 	my ($genus, $species) = split(/ /, $binomial_species);
 	my $full_species = qq(${genus}_${species});
 	$full_species =~ tr/[A-Z]/[a-z]/;
+	$full_species =~ s/\W//g;
 	$config->{species} = $full_species;
 	my $full_comment = $seq->desc();
 	my $defline = "lcl||gb|$accession|species|$full_comment\n";
@@ -1290,15 +1413,18 @@ sub Import_Genbank_Flatfile {
 		$direction = 'undefined';
 		$start = $orf_start;
 		$stop = $orf_stop;
-	    } elsif ($feature->{_location}{_strand} == 1) {
+	    }
+	    elsif ($feature->{_location}{_strand} == 1) {
 		$direction = 'forward';
 		$start = $orf_start;
 		$stop = $orf_stop;
-	    } elsif ($feature->{_location}{_strand} == -1) {
+	    }
+	    elsif ($feature->{_location}{_strand} == -1) {
 		$direction = 'reverse';
 		$start = $orf_stop;
 		$stop = $orf_start;
 	    }
+
 	    if (defined($padding)) {
 		$orf_start = $orf_start - $padding;
 		$orf_stop = $orf_stop + $padding;
@@ -1361,7 +1487,9 @@ sub Collect_Cloud {
 	$averages_stmt =~ s/AND $//g;
 	$points = $me->MySelect(statement => $points_stmt, vars => [$species]);
 	$averages = $me->MySelect(statement => $averages_stmt, vars => [$species], type => 'row',);
-    } else {  ## If the species _IS_ virus, then we have to do more work, but I am stupid and am not sure what to do...
+    }
+    else {  ## If the species _IS_ virus, then we have to do more work, but I am stupid and am not sure what to do...
+	print "Unsure.\n";
     }
     return({points => $points, averages => $averages});
 }
@@ -1427,9 +1555,11 @@ sub Import_CDS {
 	my $direction;
 	if (!defined($feature->{_location}{_strand})) {
 	    $direction = 'forward';
-	} elsif ($feature->{_location}{_strand} == 1) {
+	}
+	elsif ($feature->{_location}{_strand} == 1) {
 	    $direction = 'forward';
-	} elsif ($feature->{_location}{_strand} == -1) {
+	}
+	elsif ($feature->{_location}{_strand} == -1) {
 	    $direction = 'reverse';
 	    my $tmp_start = $orf_start;
 	    $orf_start = $orf_stop - 1;
@@ -1446,7 +1576,8 @@ sub Import_CDS {
 	    }
 	    $sub_sequence =~ tr/ATGCatgcuU/TACGtacgaA/;
 	    $tmp_mrna_sequence = $sub_sequence;
-	} else {
+	}
+	else {
 	    Callstack(message => "WTF: Direction is not forward or reverse");
 	    $direction = 'forward';
 	}
@@ -1472,7 +1603,8 @@ sub Import_CDS {
 	if (defined($genome_id)) {
 	    $return = $mrna_seqlength;
 	    $me->Set_Queue(id => $genome_id);
-	} else {
+	}
+	else {
 	    $return = 0;
 	    my $gid = $me->MySelect(statement => "SELECT id FROM genome WHERE accession = '$datum{accession}'", type => 'single');
 	    $me->Set_Queue(id => $gid);
@@ -1543,7 +1675,8 @@ sub Tablep {
     if ($table =~ /virus/) {
 	if ($table =~ /^boot_/) {
 	    $table = 'boot_virus';
-	} elsif ($table =~ /^landscape_/) {
+	}
+	elsif ($table =~ /^landscape_/) {
 	    $table = 'landscape_virus';
 	}
     }
@@ -1613,37 +1746,38 @@ sub ReSync {
 	Callstack(message => "Could not execute $pre_statement on $local_dbd", die => 1);
    ## If an argument is passed to this, synchronize it as a slave.
    my $ret;
-    if (@slave) {
-	my $o_sth = $other_dbh->prepare($statement);
-	my $o_rv = $o_sth->execute();
-	my $o_return = $o_sth->fetchrow_arrayref();
-	my $o_file = $o_return->[0];
-	my $o_pos = $o_return->[1];
-	my $l_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$o_file', MASTER_LOG_POS=$o_pos";
-	print "Remote log file and position is: $o_file $o_pos\n";
-	print "Changing local master with:\n$l_reset\n";
-	my $l_sth = $local_dbh->prepare($l_reset);
-	my $l_rv = $l_sth->execute();
-	$l_reset = "START SLAVE";
-	$l_sth = $local_dbh->prepare($l_reset);
-	$l_rv = $l_sth->execute();
-	$ret = [$l_rv, $o_rv];
-    } else {
-	my $l_sth = $local_dbh->prepare($statement);
-	my $l_rv = $l_sth->execute();
-	my $l_return = $l_sth->fetchrow_arrayref();
-	my $l_file = $l_return->[0];
-	my $l_pos = $l_return->[1];
-	my $o_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$l_file', MASTER_LOG_POS=$l_pos";
-	print "Local log file and position is: $l_file $l_pos\n";
-	print "Changing remote master with: $o_reset\n";
-	my $o_sth = $other_dbh->prepare($o_reset);
-	my $o_rv = $o_sth->execute();
-	$o_reset = "START SLAVE";
-	$o_sth = $other_dbh->prepare($o_reset);
-	$o_rv = $o_sth->execute();
-	$ret = [$l_rv, $o_rv];
-    }
+   if (@slave) {
+       my $o_sth = $other_dbh->prepare($statement);
+       my $o_rv = $o_sth->execute();
+       my $o_return = $o_sth->fetchrow_arrayref();
+       my $o_file = $o_return->[0];
+       my $o_pos = $o_return->[1];
+       my $l_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$o_file', MASTER_LOG_POS=$o_pos";
+       print "Remote log file and position is: $o_file $o_pos\n";
+       print "Changing local master with:\n$l_reset\n";
+       my $l_sth = $local_dbh->prepare($l_reset);
+       my $l_rv = $l_sth->execute();
+       $l_reset = "START SLAVE";
+       $l_sth = $local_dbh->prepare($l_reset);
+       $l_rv = $l_sth->execute();
+       $ret = [$l_rv, $o_rv];
+   }
+   else {
+       my $l_sth = $local_dbh->prepare($statement);
+       my $l_rv = $l_sth->execute();
+       my $l_return = $l_sth->fetchrow_arrayref();
+       my $l_file = $l_return->[0];
+       my $l_pos = $l_return->[1];
+       my $o_reset = qq"CHANGE MASTER TO MASTER_LOG_FILE='$l_file', MASTER_LOG_POS=$l_pos";
+       print "Local log file and position is: $l_file $l_pos\n";
+       print "Changing remote master with: $o_reset\n";
+       my $o_sth = $other_dbh->prepare($o_reset);
+       my $o_rv = $o_sth->execute();
+       $o_reset = "START SLAVE";
+       $o_sth = $other_dbh->prepare($o_reset);
+       $o_rv = $o_sth->execute();
+       $ret = [$l_rv, $o_rv];
+   }
    return($ret);
 }
 
@@ -1671,7 +1805,8 @@ sub AUTOLOAD {
 	    no strict 'refs';
 	    &$newname($me, @_);
 	}
-    } elsif ($name =~ /^Get_/) {
+    }
+    elsif ($name =~ /^Get_/) {
 	my $newname = $name;
 	$newname =~ s/Get_//g;
 	$newname = "PRFdb::Get::$newname";
@@ -1679,7 +1814,8 @@ sub AUTOLOAD {
 	    no strict 'refs';
 	    &$newname($me, @_);
 	}
-    } elsif ($name =~ /^Put_/) {
+    }
+    elsif ($name =~ /^Put_/) {
 	my $newname = $name;
 	$newname =~ s/Put_//g;
 	$newname = "PRFdb::Put::$newname";
@@ -1687,7 +1823,8 @@ sub AUTOLOAD {
 	    no strict 'refs';
 	    &$newname($me, @_);
 	}
-    } else {
+    }
+    else {
 	print "Unable to find the function $name in PRFdb.pm\n";
     }
 #    if (@_) {

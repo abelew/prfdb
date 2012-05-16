@@ -12,10 +12,12 @@ use GD::SVG;
 use Statistics::Basic qw(:all);
 use Statistics::Distributions;
 use SVG::TT::Graph::Line;
+use SVG::TT::Graph::Pie;
 use JSON;
 use vars qw ($VERSION);
 use File::Temp;
 use File::Basename;
+use Switch;
 $VERSION='20111119';
 
 my $config;
@@ -48,25 +50,63 @@ sub Graph_Agreement {
     foreach my $datum (@{$data}) {
 	my ($all, $no, $n, $h, $p, $hn, $np, $hp, $hnp) = @{$datum};
 	foreach my $num (0 .. 100) {
-	    if ($all == $num) {
-		($all_agree[$num]) ? $all_agree[$num] = $all_agree[$num]++ : $all_agree[$num] = 1;
-	    } elsif ($no == $num) {
-		($no_agree[$num]) ? $no_agree[$num] = $no_agree[$num]++ : $no_agree[$num] = 1;
-	    } elsif ($n == $num) {
-		($n_alone[$num]) ? $n_alone[$num] = $n_alone[$num]++ : $n_alone[$num] = 1;
-	    } elsif ($p == $num) {
-		($p_alone[$num]) ? $p_alone[$num] = $p_alone[$num]++ : $p_alone[$num] = 1;
-	    } elsif ($h == $num) {
-		($h_alone[$num]) ? $h_alone[$num] = $h_alone[$num]++ : $h_alone[$num] = 1;
-	    } elsif ($hn == $num) {
-		($hplusn[$num]) ? $hplusn[$num] = $hplusn[$num]++ : $hplusn[$num] = 1;
-	    } elsif ($np == $num) {
-		($nplusp[$num]) ? $nplusp[$num] = $nplusp[$num]++ : $nplusp[$num] = 1;
-	    } elsif ($hp == $num) {
-		($hplusp[$num]) ? $hplusp[$num] = $hplusp[$num]++ : $hplusp[$num] = 1;
-	    } elsif ($hnp == $num) {
-		($hnp_arr[$num]) ? $hnp_arr[$num] = $hnp_arr[$num]++ : $hnp_arr[$num] = 1;
-	    }
+	    switch ($num) {
+		case { $num == $all } {
+		    ($all_agree[$num]) ? $all_agree[$num] = $all_agree[$num]++ : $all_agree[$num] = 1;
+		}
+		case { $num == $no } {
+		    ($no_agree[$num]) ? $no_agree[$num] = $no_agree[$num]++ : $no_agree[$num] = 1;
+		}
+		case { $num == $n } {
+		    ($n_alone[$num]) ? $n_alone[$num] = $n_alone[$num]++ : $n_alone[$num] = 1;
+		}
+		case { $num == $p } {
+		    ($p_alone[$num]) ? $p_alone[$num] = $p_alone[$num]++ : $p_alone[$num] = 1;
+		}
+		case { $num == $h } {
+		    ($h_alone[$num]) ? $h_alone[$num] = $h_alone[$num]++ : $h_alone[$num] = 1;
+		}
+		case { $num == $hn } {
+		    ($hplusn[$num]) ? $hplusn[$num] = $hplusn[$num]++ : $hplusn[$num] = 1;
+		}
+		case { $np == $num } {
+		    ($nplusp[$num]) ? $nplusp[$num] = $nplusp[$num]++ : $nplusp[$num] = 1;
+		}
+		case { $hp == $num } {
+		    ($hplusp[$num]) ? $hplusp[$num] = $hplusp[$num]++ : $hplusp[$num] = 1;
+		}
+		case { $hnp == $num } {
+		    ($hnp_arr[$num]) ? $hnp_arr[$num] = $hnp_arr[$num]++ : $hnp_arr[$num] = 1;
+		}
+	    } ## End switch
+
+#	    if ($all == $num) {
+#		($all_agree[$num]) ? $all_agree[$num] = $all_agree[$num]++ : $all_agree[$num] = 1;
+#	    }
+#	    elsif ($no == $num) {
+#		($no_agree[$num]) ? $no_agree[$num] = $no_agree[$num]++ : $no_agree[$num] = 1;
+#	    }
+#	    elsif ($n == $num) {
+#		($n_alone[$num]) ? $n_alone[$num] = $n_alone[$num]++ : $n_alone[$num] = 1;
+#	    }
+#	    elsif ($p == $num) {
+#		($p_alone[$num]) ? $p_alone[$num] = $p_alone[$num]++ : $p_alone[$num] = 1;
+#	    }
+#	    elsif ($h == $num) {
+#		($h_alone[$num]) ? $h_alone[$num] = $h_alone[$num]++ : $h_alone[$num] = 1;
+#	    }
+#	    elsif ($hn == $num) {
+#		($hplusn[$num]) ? $hplusn[$num] = $hplusn[$num]++ : $hplusn[$num] = 1;
+#	    }
+#	    elsif ($np == $num) {
+#		($nplusp[$num]) ? $nplusp[$num] = $nplusp[$num]++ : $nplusp[$num] = 1;
+#	    }
+#	    elsif ($hp == $num) {
+#		($hplusp[$num]) ? $hplusp[$num] = $hplusp[$num]++ : $hplusp[$num] = 1;
+#	    }
+#	    elsif ($hnp == $num) {
+#		($hnp_arr[$num]) ? $hnp_arr[$num] = $hnp_arr[$num]++ : $hnp_arr[$num] = 1;
+#	    }
 	}
     }
     print "
@@ -122,10 +162,12 @@ sub Make_Extension {
     if ($type eq 'percent') {
 	$graph->set(y_max_value => 150);
 	$graph->set(y_label => '-1 frame extension in percent');
-    } elsif ($type eq 'codons') {
+    }
+    elsif ($type eq 'codons') {
 	$graph->set(y_max_value => 200);
 	$graph->set(y_label => '-1 frame extension in codons');
-    } else {
+    }
+    else {
 	$graph->set(y_max_value => 200);
 	$graph->set(y_label => 'testme');
     }
@@ -175,9 +217,11 @@ sub Make_Extension {
     my $map_string = '';
     if ($type eq 'percent') {
 	$map_string = qq/<map name="percent_extension" id="percent_extension">\n/;
-    } elsif ($type eq 'codons') {
+    }
+    elsif ($type eq 'codons') {
 	$map_string = qq/<map name="codons_extension" id="codons_extension">\n/;
-    } else {
+    }
+    else {
 	$map_string = "uhh what?\n";
     }
     print MAP $map_string;
@@ -206,11 +250,14 @@ sub Make_Extension {
 	my $stop_count = 0;
 	if (($orf_start % 3) == 0) {
 	    $stop_count = 1;
-	} elsif (($orf_start % 3) == 1) {
+	}
+	elsif (($orf_start % 3) == 1) {
 	    $stop_count = 2;
-	} elsif (($orf_start % 3) == 2) {
+	}
+	elsif (($orf_start % 3) == 2) {
 	    $stop_count = 0;
-	} else {
+	}
+	else {
 	    Callstack(message => "WTF?", die => 1);
 	}
 	my $minus_start = $start + 4;
@@ -223,12 +270,14 @@ sub Make_Extension {
 		    $codon eq 'uag' or $codon eq 'uaa' or $codon eq 'uga') {
 		    $minus_string .= $codon;
 		    last LOOP;
-		} else {
+		}
+		else {
 		    $minus_string .= $codon;
 		}
 		$codon = $seq[$c];
 		## if on a third base of the -1 frame
-	    } else {
+	    }
+	    else {
 		$codon .= $seq[$c];
 	    }
 	} ## Foreach character of the sequence
@@ -248,7 +297,8 @@ sub Make_Extension {
 		my $tmp = $long_orf_distribution->[$x_percent_int];
 		$tmp++;
 		$long_orf_distribution->[$x_percent_int] = $tmp;
-	    } else {
+	    }
+	    else {
 		$long_orf_distribution->[$x_percent_int] = 1;
 	    }
 	}
@@ -257,7 +307,8 @@ sub Make_Extension {
 	    my $tmp = $orf_distribution->[$x_percent_int];
 	    $tmp++;
 	    $orf_distribution->[$x_percent_int] = $tmp;
-	} else {
+	}
+	else {
 	    $orf_distribution->[$x_percent_int] = 1;
 	}
 	## Make a graph of the distribution of these extensions right quick...
@@ -267,7 +318,8 @@ sub Make_Extension {
 	    my $tmp = $extension_distribution->[$minus_modified];
 	    $tmp++;
 	    $extension_distribution->[$minus_modified] = $tmp;
-	} else {
+	}
+	else {
 	    $extension_distribution->[$minus_modified] = 1;
 	}
 	## That fills out the $extension_distribution array
@@ -291,13 +343,16 @@ sub Make_Extension {
 	if (($mfe < $avg_mfe) and ($zscore > $avg_zscore)) {
 	    ## Red
 	    $color = $gd->colorResolve(191,0,0); 
-	} elsif ($mfe < $avg_mfe) {
+	}
+	elsif ($mfe < $avg_mfe) {
 	    ## Green, I think
 	    $color = $gd->colorResolve(0,191,0);
-	} elsif ($zscore > $avg_zscore) {
+	}
+	elsif ($zscore > $avg_zscore) {
 	    ## Blue?
 	    $color = $gd->colorResolve(0,0,191);
-	} else {
+	}
+	else {
 	    ## Gray?
 	    $color = $gd->colorResolve(165,165,165);
 	}
@@ -310,12 +365,14 @@ sub Make_Extension {
 #	    }
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${percent_y_coord},$radius" href="${url}" title="$accession, mfe:$mfe z:$zscore xpercent:$x_percentage ypercent:$y_percentage">\n/;
 	    $gd->filledArc($x_coord, $percent_y_coord, 4,4,0,360,$color,4);
-	} elsif ($type eq 'codons') {
+	}
+	elsif ($type eq 'codons') {
 	    $minus_codons = sprintf("%.1f", $minus_codons);
 	    $map_string = qq/<area shape="circle" coords="${x_coord},${codons_y_coord},$radius" href="${url}" title="$accession mfe:$mfe z:$zscore xpercent:$x_percentage ycodons:$minus_codons">\n/;
 #	    print "Percent: xcoord: $x_coord xcoord: $codons_y_coord<br>\n";
 	    $gd->filledArc($x_coord, $codons_y_coord, 4,4,0,360,$color,4);
-	} else {
+	}
+	else {
 	    Callstack(message => "Type is not specified", die => 1);
 	}
 	print MAP $map_string;
@@ -330,7 +387,8 @@ sub Make_Extension {
 	    if ($extension_distribution->[$c]) {
 		$max_exts = $extension_distribution->[$c] if ($max_exts < $extension_distribution->[$c]);
 		$ext_vals[$c] = $extension_distribution->[$c];
-	    } else {
+	    }
+	    else {
 		$ext_vals[$c] = 1;
 	    }
 	    push(@ext_axis, $c);
@@ -374,7 +432,8 @@ sub Make_Extension {
 		$max_orfs = $orf_distribution->[$c] if ($max_orfs < $orf_distribution->[$c]);
 		$orf_vals[$c] = $orf_distribution->[$c];
 		$long_orf_percent[$c] = (($long_orf_distribution->[$c] / $orf_distribution->[$c]) * 100.0);
-	    } else {
+	    }
+	    else {
 		$orf_vals[$c] = 1;
 		$long_orf_percent[$c] = 0;
 	    }
@@ -487,7 +546,6 @@ sub Make_Summary_Pie {
     my $info = $db->MySelect(type => 'list_of_hashes', statement => $info_stmt);
     foreach my $datum (@{$info}) {
 	my %inf = %{$datum};
-	use SVG::TT::Graph::Pie;
 	my @fields = ('No match', 'Insignificant', 'Significant');
 	my $no_match = $inf{total_genes} - $inf{genes_hits};
 	my $insignificant = $inf{total_genes} - $inf{genes_1both_knotted};
@@ -556,13 +614,16 @@ sub Make_Cloud {
 	if ($args_mfe_methods eq 'nupack+hotknots') {
 	    $min_stmt .= " WHERE mfe_method = 'nupack' OR mfe_method = 'hotknots'";
 	    $max_stmt .= " WHERE mfe_method = 'nupack' OR mfe_method = 'hotknots'";
-	} elsif ($args_mfe_methods eq 'nupack') {
+	}
+	elsif ($args_mfe_methods eq 'nupack') {
 	    $min_stmt .= " WHERE mfe_method = 'nupack'";
 	    $max_stmt .= " WHERE mfe_method = 'nupack'";
-	} elsif ($args_mfe_methods eq 'hotknots') {
+	}
+	elsif ($args_mfe_methods eq 'hotknots') {
 	    $min_stmt .= " WHERE mfe_method = 'hotknots'";
 	    $max_stmt .= " WHERE mfe_method = 'hotknots'";
-	} elsif ($args_mfe_methods eq 'pknots') {
+	}
+	elsif ($args_mfe_methods eq 'pknots') {
 	    $min_stmt .= " WHERE mfe_method = 'pknots'";
 	    $max_stmt .= " WHERE mfe_method = 'pknots'";
 	}
@@ -653,10 +714,12 @@ sub Make_Cloud {
 		my $s = $z_distribution{$y_point}{$slipsite};
 		$s++;
 		$z_distribution{$y_point}{$slipsite} = $s;
-	    } else {
+	    }
+	    else {
 		$z_distribution{$y_point}{$slipsite} = 1;
 	    }
-	} else {
+	}
+	else {
 	    $z_distribution{$y_point}{total} = 1;
 	    $z_distribution{$y_point}{$slipsite} = 1;
 	}
@@ -670,10 +733,12 @@ sub Make_Cloud {
 		my $kn = $mfe_distribution{$x_point}{kno};
 		$kn++ if ($knotted == 1);
 		$mfe_distribution{$x_point}{kno} = $kn;
-	    } else {
+	    }
+	    else {
 		$mfe_distribution{$x_point}{kno} = 1 if ($knotted == 1);
 	    }
-	} else {
+	}
+	else {
 	    $mfe_distribution{$x_point}{total} = 1;
 	    $mfe_distribution{$x_point}{kno} = 1 if ($knotted == 1);
 	}
@@ -687,7 +752,8 @@ sub Make_Cloud {
 	    if ($max_counter < $points->{$x_point}->{$y_point}->{count}) {
 		$max_counter = $points->{$x_point}->{$y_point}->{count};
 	    }
-	} else {
+	}
+	else {
 	    $points->{$x_point}->{$y_point}->{count} = 1;
 	    $points->{$x_point}->{$y_point}->{accessions} = $point->[2];
 	    $points->{$x_point}->{$y_point}->{genenames} = $point->[6];
@@ -725,11 +791,14 @@ sub Make_Cloud {
 		foreach my $slips (keys %{$z_distribution{$k}}) {
 		    if ($slips =~ /^AAA/) {
 			$aaa_val += $z_distribution{$k}{$slips};
-		    } elsif ($slips =~ /^UUU/) {
+		    }
+		    elsif ($slips =~ /^UUU/) {
 			$uuu_val += $z_distribution{$k}{$slips};
-		    } elsif ($slips =~ /^CCC/) {
+		    }
+		    elsif ($slips =~ /^CCC/) {
 			$ccc_val += $z_distribution{$k}{$slips};
-		    } elsif ($slips =~ /^GGG/) {
+		    }
+		    elsif ($slips =~ /^GGG/) {
 			$ggg_val += $z_distribution{$k}{$slips};
 		    }
 		} ## End foreach slips
@@ -825,16 +894,20 @@ sub Make_Cloud {
 	    if (($x_coord < $average_mfe_coord) and ($y_coord > $average_z_coord)) {
 		$color = $gd->colorResolve($color_value,0,0);
 		# print " C: red<br>\n";
-	    } elsif ($x_coord < $average_mfe_coord) {
+	    }
+	    elsif ($x_coord < $average_mfe_coord) {
 		$color = $gd->colorResolve(0,$color_value,0);
 		# print " C: green<br>\n";
-	    } elsif ($y_coord > $average_z_coord) {
+	    }
+	    elsif ($y_coord > $average_z_coord) {
 		$color = $gd->colorResolve(0,0,$color_value);
 		# print " C: blue<br>\n";
-	    } elsif (($x_coord > $average_mfe_coord) and ($y_coord < $average_z_coord)) {
+	    }
+	    elsif (($x_coord > $average_mfe_coord) and ($y_coord < $average_z_coord)) {
 		$color = $gd->colorResolve($color_value,$color_value,$color_value);
 		# print " C: grey<br>\n";
-	    } else {
+	    }
+	    else {
 		$color = $gd->colorResolve(254,191,191);
 		# print " C: pink<br>\n";
 	    }
@@ -876,17 +949,20 @@ sub Make_Cloud {
 		$y_coord = sprintf('%.0f', $y_coord);
 		if ($points->{$x_point}->{$y_point}->{count} == 1) {
 		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accessions&slipstart=$start" title="$genenames">\n);
-		} else {
+		}
+		else {
 		    if (defined($pknot)) {
 			$image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/cloud_mfe_z.html?pknot=1&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point}" title="$genenames">\n);
-		    } else {
+		    }
+		    else {
 			$image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/cloud_mfe_z.html?seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point}" title="$genenames">\n);
 		    }
 		}
 		print MAP $image_map_string;
 	    }
 	}
-    } else {
+    } 
+    else {
 	foreach my $point (@{$data}) {
 	    my $x_point = sprintf("%.1f",$point->[0]);
 	    my $y_point = sprintf("%.1f",$point->[1]);
@@ -900,18 +976,23 @@ sub Make_Cloud {
 	    if ($x_coord <= $mfe_significant_coord and $y_coord <= $z_significant_coord) {
 		if (!defined($slips_significant{$slipsite})) {
 		    $slips_significant{$slipsite}{num} = 1;
-		} else {
+		}
+		else {
 		    $slips_significant{$slipsite}{num}++;
 		}
 		if ($slipsite =~ /^AAA....$/) {
 		    $slips_significant{$slipsite}{color} = 'red';
-		} elsif ($slipsite =~ /^UUU....$/) {
+		}
+		elsif ($slipsite =~ /^UUU....$/) {
 		    $slips_significant{$slipsite}{color} = 'green';
-		} elsif ($slipsite =~ /^GGG....$/) {
+		}
+		elsif ($slipsite =~ /^GGG....$/) {
 		    $slips_significant{$slipsite}{color} = 'blue';
-		} elsif ($slipsite =~ /^CCC....$/) {
+		}
+		elsif ($slipsite =~ /^CCC....$/) {
 		    $slips_significant{$slipsite}{color} = 'black';
-		} else {
+		}
+		else {
 		    #$slips_significant{$slipsite}{color} = 'yellow';
 		    #warn("This sucks. $slipsite doesn't match");
 		    next;
@@ -919,21 +1000,28 @@ sub Make_Cloud {
 	    }
 	    if (!defined($slipsites_numbers{$slipsite})) {
 		$slipsites_numbers{$slipsite}{num} = 1;
-	    } else {
+	    }
+	    else {
 		$slipsites_numbers{$slipsite}{num}++;
 	    }
+
 	    if ($slipsite =~ /^AAA....$/) {
 		$slipsites_numbers{$slipsite}{color} = 'red';
-	    } elsif ($slipsite =~ /^UUU....$/) {
+	    }
+	    elsif ($slipsite =~ /^UUU....$/) {
 		$slipsites_numbers{$slipsite}{color} = 'green';
-	    } elsif ($slipsite =~ /^GGG....$/) {
+	    }
+	    elsif ($slipsite =~ /^GGG....$/) {
 		$slipsites_numbers{$slipsite}{color} = 'blue';
-	    } elsif ($slipsite =~ /^CCC....$/) {
+	    }
+	    elsif ($slipsite =~ /^CCC....$/) {
 		$slipsites_numbers{$slipsite}{color} = 'black';
-	    } else {
+	    }
+	    else {
 		#warn("This sucks. $slipsite doesn't match the expected");
 		next;
 	    }
+	    
 	    if ($args_slipsites eq $slipsite) {
 		my $x_coord = sprintf("%.1f",((($x_range/$mfe_range)*($x_point - $mfe_min_value)) + $left_x_coord));
 		my $y_coord = sprintf("%.1f",((($y_range/$z_range)*($z_max_value - $y_point)) + $bottom_y_coord));
@@ -944,10 +1032,12 @@ sub Make_Cloud {
 		
 		if ($slipsites_numbers{$slipsite}{num} > 1) {
 		    $image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/detail.html?short=1&accession=$accessions&slipstart=$start" title="$genenames">\n);
-		} else {
+		}
+		else {
 		    if (defined($pknot)) {
 			$image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/cloud_mfe_z.html?seqlength=${seqlength}&slipsite=$args_slipsites&pknot=1&species=${species}&mfe=${x_point}&z=${y_point}" title="$genenames">\n;);
-		    } else {
+		    }
+		    else {
 			$image_map_string = qq(<area shape="circle" coords="${x_coord},${y_coord},$radius" href="/cloud_mfe_z.html?seqlength=${seqlength}&slipsite=$args_slipsites&seqlength=${seqlength}&species=${species}&mfe=${x_point}&z=${y_point}" title="$genenames">\n);
 		    } ## Foreach x point
 		}
@@ -987,10 +1077,12 @@ sub Make_Cloud {
 	    #$percent_sig{$slip}{color} = 'yellow';
 	    #$slipsites_numbers{$slip}{num} = 0;
 	    #$slipsites_numbers{$slip}{color} = 'yellow';
-	} else {
+	}
+	else {
 	    if ($slipsites_numbers{$slip}{num} == 0) {
 		$percent_sig{$slip}{num} = 0;
-	    } else {
+	    }
+	    else {
 		$percent_sig{$slip}{num} = (($slips_significant{$slip}{num} / $slipsites_numbers{$slip}{num}) * 100.0);
 		$percent_sig{$slip}{num} = sprintf("%.1f", $percent_sig{$slip}{num});
 	    }
@@ -1254,10 +1346,12 @@ sub Make_Landscape {
 	if ($datum->[1] eq 'pknots') {
 	    $info->{$place}->{pknots} = $datum->[3];
 	    $mean_pknots = $mean_pknots + $datum->[3];
-	} elsif ($datum->[1] eq 'nupack') {
+	}
+	elsif ($datum->[1] eq 'nupack') {
 	    $info->{$place}->{nupack} = $datum->[3];
 	    $mean_nupack = $mean_nupack + $datum->[3];
-	} elsif ($datum->[1] eq 'vienna') {
+	}
+	elsif ($datum->[1] eq 'vienna') {
 	    $info->{$place}->{vienna} = $datum->[3];
 	    $mean_vienna = $mean_vienna + $datum->[3];
 	}
@@ -1282,7 +1376,8 @@ sub Make_Landscape {
 	    push(@nupack_y, $info->{$current}->{nupack});
 	    push(@pknots_y, $info->{$current}->{pknots});
 	    push(@vienna_y, $info->{$current}->{vienna});
-	} else {
+	}
+	else {
 	    push(@nupack_y,undef);
 	    push(@pknots_y,undef);
 	    push(@vienna_y,undef);
@@ -1414,7 +1509,8 @@ sub Make_Distribution {
 	my $zscore;
 	if ($xstddev == 0) {
 	    $zscore = 0;
-	} else {
+	}
+	else {
 	    $zscore = ($x - $xbar) / $xstddev;
 	}
 	my $prob = (1 - Statistics::Distributions::uprob($zscore));
@@ -1482,7 +1578,8 @@ sub Make_Feynman {
 	$sequence = $me->{sequence};
 	$parsed = $me->{parsed};
 	$pkout = $me->{output};
-    } else {
+    }
+    else {
 	$id = $me->{mfe_id};
 	my $db = new PRFdb(config=>$config);
 	my $species = $db->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", type => 'single', vars => [$me->{accession}]);
@@ -1572,10 +1669,12 @@ sub Make_Feynman {
 	if ($paired[$c] eq '.') {
 	    if ($stems[$c] =~ /\d+/) {
 		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
-	    } elsif ($stems[$c] eq '.') {
+	    }
+	    elsif ($stems[$c] eq '.') {
 		$fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
 	    }
-	} elsif ($paired[$c] =~ /\d+/) {
+	}
+	elsif ($paired[$c] =~ /\d+/) {
 	    my $current_stem = $stems[$c];
 	    my $bases_in_stem = $bp_per_stem->{$current_stem};
 	    my $center_characters = ($paired[$c] - $c) / 2;
@@ -1592,7 +1691,8 @@ sub Make_Feynman {
 	    $fey->arc($center_x, $center_y, $dist_x, $dist_y, 180, 0, $colors[$stems[$c]]);
 	    $paired[$paired[$c]] = '.';
 	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $colors[$stems[$c]]);
-	} else {
+	}
+	else {
 ### Why are there spaces?
 #	    print "Crap in a hat the character is $paired[$c]\n";
 	    $fey->char(gdMediumBoldFont, $character_x, $character_y, $seq[$c], $black);
@@ -1602,7 +1702,8 @@ sub Make_Feynman {
     my $output;
     if(defined($out_filename)) {
 	$output = $out_filename;
-    } else {
+    }
+    else {
 	$output = $me->Picture_Filename(type => 'feynman');
     }
     open(OUT, ">$output");
@@ -1721,10 +1822,12 @@ sub Make_OFeynman {
 	if (!defined($n)) {
 	    print "n not defined\n";
 	    next;
-	} elsif (!defined($h)) {
+	}
+	elsif (!defined($h)) {
 	    print "h not defined\n";
 	    next;
-	} elsif (!defined($p)) {
+	}
+	elsif (!defined($p)) {
 	    print "$p not defined\n";
 	    next;
 	}
@@ -1735,73 +1838,87 @@ sub Make_OFeynman {
 	    $comp->{$c}->{partner} = ['.'];
 	    $comp->{$c}->{color} = [0];
 	    ## Nothing is 0
-	} elsif (($n eq $h) and ($n eq $p)) {
+	}
+	elsif (($n eq $h) and ($n eq $p)) {
 	    $agree->{all}++;
 	    $comp->{$c}->{partner} = [$n];
 	    $comp->{$c}->{color} = [1];
 	    ## All 3 same is 1
-	} elsif (($n ne $h) and ($n ne $p)) {
+	}
+	elsif (($n ne $h) and ($n ne $p)) {
 	    $agree->{hnp}++;
 	    $comp->{$c}->{partner} = [$n,$h,$p];
 	    $comp->{$c}->{color} = [2,3,4];
 	    ## nupack is 2
 	    ## hotknots is 3
 	    ## pknots is 4
-	} elsif ($n eq '.' and $h eq '.') {
+	}
+	elsif ($n eq '.' and $h eq '.') {
 	    $agree->{p}++;
 	    $comp->{$c}->{partner} = [$p];
 	    $comp->{$c}->{color} = [4];
-	} elsif ($n eq '.' and $p eq '.') {
+	}
+	elsif ($n eq '.' and $p eq '.') {
 	    $agree->{h}++;
 	    $comp->{$c}->{partner} = [$h];
 	    $comp->{$c}->{color} = [3];
-	} elsif ($h eq '.' and $p eq '.') {
+	}
+	elsif ($h eq '.' and $p eq '.') {
 	    $agree->{n}++;
 	    $comp->{$c}->{partner} = [$n];
 	    $comp->{$c}->{color} = [2];
-	} elsif ($n eq '.') {
+	}
+	elsif ($n eq '.') {
 	    $agree->{hp}++;
 	    if ($h eq $p) {
 		$comp->{$c}->{partner} = [$h];
 		$comp->{$c}->{color} = [5];
 		## hotknots+pknots is 5
-	    } else {
+	    }
+	    else {
 		$comp->{$c}->{partner} = [$h,$p];
 		$comp->{$c}->{color} = [3,4];
 	    }
-	} elsif ($h eq '.') {
+	}
+	elsif ($h eq '.') {
 	    $agree->{np}++;
 	    if ($n eq $p) {
 		$comp->{$c}->{partner} = [$n];
 		$comp->{$c}->{color} = [6];
 		## nupack+pknots is 6
-	    } else {
+	    }
+	    else {
 		$comp->{$c}->{partner} = [$n,$p];
 		$comp->{$c}->{color} = [2,4];
 	    }
-	} elsif ($p eq '.') {
+	}
+	elsif ($p eq '.') {
 	    $agree->{hn}++;
 	    if ($h eq $n) {
 		$comp->{$c}->{partner} = [$h];
 		$comp->{$c}->{color} = [7];
 		## hotknots+nupack is 7
-	    } else {
+	    }
+	    else {
 		$comp->{$c}->{partner} = [$h,$n];
 		$comp->{$c}->{color} = [2,3];
 	    }
-	} elsif ($n eq $p) {
+	}
+	elsif ($n eq $p) {
 	    $agree->{hnp}++;
 #	    $comp->{$c}->{partner} = [$n,$h];
 #	    $comp->{$c}->{color} = [6,3];
 	    $comp->{$c}->{partner} = [$h,$n];
 	    $comp->{$c}->{color} = [3,6];
-	} elsif ($n eq $h) {
+	}
+	elsif ($n eq $h) {
 	    $agree->{hnp}++;
 #	    $comp->{$c}->{partner} = [$n,$p];
 #	    $comp->{$c}->{color} = [7,4];
 	    $comp->{$c}->{partner} = [$p,$n];
 	    $comp->{$c}->{color} = [4,7];
-	} elsif ($p eq $h) {
+	}
+	elsif ($p eq $h) {
 	    $agree->{hnp}++;
 #	    $comp->{$c}->{partner} = [$p,$n];
 #	    $comp->{$c}->{color} = [5,2];
@@ -1857,7 +1974,8 @@ sub Make_OFeynman {
     my $output;
     if(defined($out_filename)) {
 	$output = $out_filename;
-    } else {
+    }
+    else {
 	$output = $me->Picture_Filename(type => 'ofeynman');
     }
     open(OUT, ">$output");
@@ -1983,12 +2101,14 @@ sub Make_Classical {
 #		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
 #		$fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
 		$fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
-	    } elsif ($stems[$c] eq '.') {
+	    }
+	    elsif ($stems[$c] eq '.') {
 #		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
 #		$fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
 		$fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
 	    }
-	} elsif ($paired[$c] =~ /\d+/) {
+	}
+	elsif ($paired[$c] =~ /\d+/) {
 	    my $old_position = Char_Position($paired[$c], $num_characters, $width, $height);
 	    my $old_degrees = $old_position->[2];
 	    my $old_x = $old_position->[0];
@@ -2003,7 +2123,8 @@ sub Make_Classical {
 #	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
 #	    $fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
 	    $fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
-	} else { ### Why are there spaces?
+	}
+	else { ### Why are there spaces?
 #	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
 #	    $fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
 	    $fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
@@ -2105,12 +2226,14 @@ sub Make_CFeynman {
 #		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
 #		$fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
 		$fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
-	    } elsif ($stems[$c] eq '.') {
+	    }
+	    elsif ($stems[$c] eq '.') {
 #		$fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
 #		$fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
 		$fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
 	    }
-	} elsif ($paired[$c] =~ /\d+/) {
+	}
+	elsif ($paired[$c] =~ /\d+/) {
 	    my $old_position = Char_Position($paired[$c], $num_characters, $width, $height);
 	    my $old_degrees = $old_position->[2];
 	    my $old_x = $old_position->[0];
@@ -2125,7 +2248,8 @@ sub Make_CFeynman {
 #	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $colors[$stems[$c]], $degrees);
 #	    $fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
 	    $fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
-	} else { ### Why are there spaces?
+	}
+	else { ### Why are there spaces?
 #	    $fey->stringRotate(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black, $degrees);
 #	    $fey->stringFT($black, gdMediumBoldFont, 4, $degrees, $position_x, $position_y, $seq[$c]);
 	    $fey->char(gdMediumBoldFont, $position_x, $position_y, $seq[$c], $black);
@@ -2184,7 +2308,8 @@ sub Get_PPCC {
 	next if (!defined($x));
 	if ($xstddev == 0) {
 	    push(@PofX, 0);
-	} else { 
+	}
+	else { 
 	    push(@PofX, (1 - Statistics::Distributions::uprob($x - $xbar) / $xstddev));
 	}
     }
@@ -2196,7 +2321,7 @@ sub Get_PPCC {
 	push(@PofY, $new_value);
     }
     my $corr = new Statistics::Basic::Correlation(\@PofY, \@PofX);
-    return ($corr->query);
+    return($corr->query);
 }
 
 ## Reimplement picture_filename so it isn't so stupid
@@ -2228,7 +2353,8 @@ sub Picture_Filename {
 
     if ($type eq 'extension_percent') {
 	return(qq"images/cloud/$species/extension-percent.png");
-    } elsif ($type eq 'extension_codons') {
+    }
+    elsif ($type eq 'extension_codons') {
 	return(qq"images/cloud/$species/extension-codons.png");
     } 
     
@@ -2254,13 +2380,15 @@ Make sure that user $< and/or group $( has write permissions.", die => 1);
 	if (defined($url)) {
 	    if (defined($suffix)) {
 		return(qq"images/$type/$species/cloud$suffix$extension");
-	    } else {
+	    }
+	    else {
 		return(qq"images/$type/$species/cloud$extension");
 	    }
 	} else {
 	    if (defined($suffix)) {
 		return(qq"$ENV{PRFDB_HOME}/images/${type}/${species}/cloud${suffix}$extension");
-	    } else {
+	    }
+	    else {
 		return(qq"$ENV{PRFDB_HOME}/images/${type}/${species}/cloud$extension");
 	    }
 	}
@@ -2271,17 +2399,20 @@ Make sure that user $< and/or group $( has write permissions.", die => 1);
     if (defined($mfe_id)) {
 	if (defined($suffix)) {
 	    $filename = qq"$directory/${accession}-${mfe_id}${suffix}$extension";
-	} else {
+	}
+	else {
 	    $filename = qq"$directory/${accession}-${mfe_id}$extension";
 	}
-    } else {
+    }
+    else {
 	if (defined($suffix)) {
 	    $filename = qq"$directory/$accession${suffix}$extension";
-	} else {
+	}
+	else {
 	    $filename = qq"$directory/$accession$extension";
 	}
     }
-    return ($filename);
+    return($filename);
 }
 
 sub jViz {
@@ -2291,27 +2422,30 @@ sub jViz {
     ## I think to make it easier, prefix all of these with jviz...
     my $output_filename;
     my $output =  {};
+
+    my $pids = $me->Check_Process(process => "java");
+    my $num_pids = scalar(@{$pids});
+    ## sleep(5) while(scalar(@{$me->Check_Process(process => "java")}) > 0);
+    while ($num_pids > 0) {
+	$pids = $me->Check_Process(process => "java");
+	$num_pids = scalar(@{$pids});
+	sleep(5);
+    }
+
     if ($args{output_filename}) {
 	$output_filename = $args{output_filename};
-    } else {
+    }
+    else {
 	$output_filename = $me->Picture_Filename(type => $args{jviz_type}, accession => $me->{accession});
     }
 
     unless (-r $output_filename) {
 	my $mfe_id = $me->{mfe_id};
-	my $tmpdb = new PRFdb(config => $config);
+	my $db = new PRFdb(config => $config);
 	my $species = $me->{species};
 
-	my $tempfile_fh = new File::Temp(SUFFIX => ".bpseq", DIR => "$ENV{PRFDB_HOME}/folds", UNLINK => 0);
-	my $tempfile_name = $tempfile_fh->filename;
-	my $fh;
-	if ($args{debug}) {
-	    print STDERR "DEBUG: Tempfile is $tempfile_name\n";
-	}
-	open($fh, ">$tempfile_name");
-	my $input_name = $tmpdb->Mfeid_to_Bpseq(species => $species, mfeid => $mfe_id, output => $fh);
-	close($fh);
-	my $basename = basename($tempfile_name);
+	my $input_name = $db->Mfeid_to_Seq(type => 'ct', species => $species, mfeid => $mfe_id);
+	my $basename = basename($input_name);
 	my $xvfb_xauth = qq"$ENV{PRFDB_HOME}/folds/${basename}-auth";
 	my $type_flag = '';
 	my $suffix = $jviz_type;
@@ -2319,35 +2453,30 @@ sub jViz {
 	## classic, dotplot, feynman, cfeynman, dual_graph
 	if ($jviz_type eq 'jviz_classic_structure') {
 	    $type_flag = '-C';
-	} elsif ($jviz_type eq 'jviz_dot_plot') {
+	}
+	elsif ($jviz_type eq 'jviz_dot_plot') {
 	    $type_flag = '-d';
-	} elsif ($jviz_type eq 'jviz_linked_graph') {
+	}
+	elsif ($jviz_type eq 'jviz_linked_graph') {
 	    $type_flag = '-l';
-	} elsif ($jviz_type eq 'jviz_circle_graph') {
+	}
+	elsif ($jviz_type eq 'jviz_circle_graph') {
 	    $type_flag = '-c';
-	} elsif ($jviz_type eq 'jviz_dual_graph') {
+	}
+	elsif ($jviz_type eq 'jviz_dual_graph') {
 	    $type_flag = '-g';
-	} else {
+	}
+	else {
 	    $type_flag = '-C';
 	    $suffix = 'classic_structure';
 	}
 
-	my $jviz_command;
-	if ($args{input_filename}) {
-	    $jviz_command = qq"cd $ENV{PRFDB_HOME}/folds && $ENV{PRFDB_HOME}/bin/xvfb-run -f ${basename}-auth -a -n 9 /usr/bin/java -jar $ENV{PRFDB_HOME}/bin/jViz.jar -t $type_flag -f png $args{input_filename} 2>/dev/null 1>&2";
-	} else {
-	    $jviz_command = qq"cd $ENV{PRFDB_HOME}/folds && $ENV{PRFDB_HOME}/bin/xvfb-run -f ${basename}-auth -a -n 9 /usr/bin/java -jar $ENV{PRFDB_HOME}/bin/jViz.jar -t $type_flag -f png $tempfile_name 2>/dev/null 1>&2";
-	}
-
-	print STDERR "DEBUG: Running $jviz_command\n" if ($args{debug});
-
+	my $jviz_command = qq"cd $ENV{PRFDB_HOME}/folds && $ENV{PRFDB_HOME}/bin/xvfb-run -f ${basename}-auth -a /usr/bin/java -jar $ENV{PRFDB_HOME}/bin/jViz.jar -t $type_flag -f png $input_name 2>/dev/null 1>&2";
+	print STDERR "DEBUG: Running $jviz_command\n";
 	system($jviz_command);
-	my $move_command;
-	if ($args{input_filename}) {
-	    $move_command = qq"/bin/mv $ENV{PRFDB_HOME}/folds/$args{input_filename}-${suffix}.png $output_filename";
-	} else {
-	    $move_command = qq"/bin/mv ${tempfile_name}-${suffix}.png $output_filename";
-	}
+	my $move_command = qq"/bin/mv ${input_name}-${suffix}.png $output_filename";
+	$move_command =~ s/\/work\//\/folds\//g;
+	print STDERR "MOVE: $move_command\n";
 	my $remove = qq"/bin/rm $ENV{PRFDB_HOME}/folds/${basename}-auth";
 	system($remove);
 	system($move_command);
@@ -2357,6 +2486,23 @@ sub jViz {
     $output->{filename} = basename($output_filename);
     return($output);
 }
+
+
+sub Check_Process {
+    my ($me, %args) = @_;
+    my $process = $args{process};
+    my $command = qq"/bin/ps -C $process -o pid=";
+    open(TEST, "$command |") or Callstack("Could not run $command $!");
+    my @pids = ();
+    while (my $line = <TEST>) {
+	chomp $line;
+	push(@pids, $line);
+    }
+    return(\@pids);
+}
+
+
+
 
 sub Make_Directory {
     my $me = shift;
@@ -2391,7 +2537,8 @@ sub Make_Directory {
     my $directory;
     if (defined($species)) {
 	$directory = qq($ENV{PRFDB_HOME}/images/$type/$species);
-    } else {
+    }
+    else {
 	$directory = qq"$ENV{PRFDB_HOME}/images/$type/";
 	my @cheat_again = split(//, $nums);
 	foreach my $n (@cheat_again) {
@@ -2431,7 +2578,8 @@ sub Get_Stems {
 	next if ($char eq '.');
 	if (!defined($dat->{$char})) {
 	    $dat->{$char} = 0.5;
-	} else {
+	}
+	else {
 	    $dat->{$char} = $dat->{$char} + 0.5;
 	}
     }
@@ -2444,11 +2592,11 @@ sub Get_Feynman_ImageSize {
     open(IN, "<$filename");
     my($svg, $height, $width, $stuff);
     while(my $line = <IN>) {
-     next unless ($line =~ /^\<svg/);
-     ($svg, $height, $width, $stuff) = split(/\s+/, $line);
-     $height =~ s/height="(\d+).*/$1/g;
-     $width =~ s/width="(\d+).*/$1/g;
-     last;
+	next unless ($line =~ /^\<svg/);
+	($svg, $height, $width, $stuff) = split(/\s+/, $line);
+	$height =~ s/height="(\d+).*/$1/g;
+        $width =~ s/width="(\d+).*/$1/g;
+	last;
     }
     close(IN);
     my $ret = {};
