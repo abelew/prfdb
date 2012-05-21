@@ -1,46 +1,34 @@
-<p>Candidate cPRF signals are
-    available as a batch download from either of the two text files below.
-    Each file is prefaced with the SQL used to generate the results, for
-    clarity. If you desire direct access to the PRFdb via a MySQL client,
-    then please contact
-    Dr. Dinman
-    (<a href="mailto:dinman@umd.edu">dinman@umd.edu</a>). Right-click
-    and choose &quot;Save as...&quot; and then open these up in your favorite
-    plain-text editor. </p><br><br>
-<table width="100%" border="0" cellspacing="2" cellpadding="2">
-  <tr valign="top">
-    <td><p><a href="http://prfdb.umd.edu/data/cPRF_niceformat.txt">cPRF_niceformat.txt</a></p></td>
-    <td><p>This is probably the document that most people will want. It's
-          formatted linearly, so that each record has it's own section. This
-          document can be open in Word without too much trouble.(1.2 MB)</p>
-      <p>&nbsp;</p></td>
+<%perl>
+sub On_Campus {
+    my $campus_subnet = qq"128\.8";
+    if ($ENV{REMOTE_ADDR} =~ /^$campus_subnet/) {
+	return(1);
+    }
+    else {
+	return(0);
+    }
+}
+</%perl>
+<p>The source of the PRFdb is available via <a href="http://github.com/abelew/prfdb">github</a>.</p>
 
-  </tr>
-  <tr valign="top">
-    <td><p><a href="http://prfdb.umd.edu/data/cPRF_cols.txt">cPRF_cols.txt</a></p>
-      <p>&nbsp;</p></td>
-    <td><p>Column formatted document. Becuase the sequence and basepaired
-          columns are so wide, this document is really not intended for use
-          with Word or even Excel. Open this with a plain-text editor and then
-          use Perl or someother scripting language to parse the data.(780 Kb)</p>
-      <p>&nbsp;</p></td>
-  </tr>
-
-  <tr>
-    <td><p><a href="http://prfdb.umd.edu/data/prfdb.tar.gz">The prfdb</a></p></td>
-    <td><p>This archive contains the code of the PRFdb.  It includes the source for the
-    secondary structure algorithms used to generate the database as well as a default
-    configuration file.</p></td>
-  </tr>
-</table>
-
-<form method="post" action="http://prfdb.umd.edu/download.html" enctype="application/x-www-form-urlencoded">
+% if (On_Campus()) {
+<form method="post" action="http://prfdb.umd.edu/download/species.html" enctype="application/x-www-form-urlencoded">
 <p>
 Download the entire table for the species of your choice:<br>
-<!---  <& species_selector.html, select_name => "species" &>   --->
+<select name="table" id="table">
+ <option name="gene_info" value="gene_info">Gene Information</option>
+ <option name="mfe" value="mfe">MFE</option>
+ <option name="boot" value="boot">Randomization</option>
+ <option name="landscape" value="landscape">Landscape</option>
+</select>
+<& species_selector.html, select_name => "species", all => 1, skip_species => 'all' &>
+<input type="submit" name="submit">
+
+% }
 <br>
-<input type="submit" name="download_species" value="Choose Download" /></p>
-</form>   </tr>
+</p>
+</form>
+</tr>
 
 <%init>
 </%init>

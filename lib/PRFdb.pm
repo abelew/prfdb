@@ -25,8 +25,8 @@ $VERSION = '20111119';
 Log::Log4perl->easy_init($WARN);
 our $log = Log::Log4perl->get_logger('stack'),
 ### Holy crap global variables!
-my $config;
-my $dbh;
+our $config;
+our $dbh;
 ###
 
 # $Id $
@@ -91,7 +91,6 @@ sub new {
 	$me->Create_Genome() unless ($me->Tablep('genome'));
 	$me->Create_Gene_Info() unless ($me->Tablep('gene_info'));
 	$me->Create_Queue() unless ($me->Tablep($config->{queue_table}));
-	$me->Create_Errors() unless ($me->Tablep('errors'));
 	$me->Create_Agree() unless ($me->Tablep('agree'));
 	$me->Create_NumSlipsite() unless ($me->Tablep('numslipsite'));
 	if (defined($config->{index_species})) {
@@ -655,6 +654,13 @@ sub Mfeid_to_Bpseq {
     return($final_filename);
 }
 
+=head2 Mfeid_to_Seq
+
+ Title   : Mfeid_to_Seq
+ Usage   : my $seq_filename = $db->Mfeid_to_Seq(species => 'saccharomyces_cerevisiae', mfeid => '12');
+ Function: Creates a seq file from an ID number in the mfe table, primarily used for hotknots.
+
+=cut
 sub Mfeid_to_Seq {
     my ($me, %args) = @_;
     my $species = $args{species};
@@ -891,6 +897,14 @@ sub AddOpen {
     return(scalar(@open_files));
 }
 
+=head2 Remove_Duplicates
+
+ Title   : Remove_Duplicates
+ Usage   : my $count_removed = $db->Remove_Duplicates('NM_00579');
+ Function: Deletes duplicate entries from the mfe tables.
+ Returns : The number of deleted entries.
+
+=cut
 sub Remove_Duplicates {
     my $me = shift;
     my $accession = shift;
@@ -948,6 +962,15 @@ sub Remove_Duplicates {
     return($count);
 }
 
+=head2 RemoveFile
+
+ Title   : RemoveFile
+ Usage   : my $num_deleted = $db->RemoveFile('all');
+ Function: Removes temporary files, usually when the prfdb shuts down.  The 'all' keyword
+   tells it to delete everythig in its private list of opened files, populated by AddFile()
+ Returns : The number of files deleted.
+
+=cut
 sub RemoveFile {
     my $file = shift;
     my @open_files = @{$config->{open_files}};
@@ -986,6 +1009,14 @@ sub RemoveFile {
     return($num_deleted);
 }
 
+=head2 MakeFasta
+
+ Title   : MakeFasta
+ Usage   : my $fasta_file = $db->MakeFasta("ATGATGATG","1","3");
+ Function: Create a fasta given a sequence, a start, and end position.
+ Returns : A hash containing the relevant information: filehandle of the new file, its name, the sequence.
+
+=cut
 sub MakeFasta {
     my $seq = shift;
     my $start = shift;
@@ -1031,6 +1062,14 @@ $output->{string}
     return($output);
 }
 
+=head2 Id_to_AccessionSpecies
+
+ Title   : Id_to_AccessionSpecies
+ Usage   : my $acc_spec = $db->Id_to_AccessionSpecies('12','0');
+ Function: Given an ID and start position of ORF, provide the accession and species for a given entry.
+ Args    : something analagous to: { species => 'saccharomyces_cerevisiae', accession => 'NM_00012' }
+
+=cut
 sub Id_to_AccessionSpecies {
     my $me = shift;
     my $id = shift;
@@ -1042,16 +1081,6 @@ sub Id_to_AccessionSpecies {
     my $species = $data->[1];
     my $return = {accession => $accession, species => $species,};
     return ($return);
-}
-
-sub Add_Webqueue {
-    my $me = shift;
-    my $id = shift;
-    my $check = $me->MySelect(statement => qq"SELECT count(id) FROM webqueue WHERE genome_id = '$id'", type => 'single');
-    return(undef) if ($check > 0);
-    my $statement = qq"INSERT INTO webqueue VALUES('','$id','0','','0','')";
-    my $rc = $me->MyExecute(statement => $statement,);
-    return(1);
 }
 
 sub Set_Queue {
@@ -1086,13 +1115,6 @@ sub Clean_Table {
     my $table = $type . '_' . $config->{species};
     my $statement = "DELETE from $table";
     $me->MyExecute(statement =>$statement,);
-}
-
-sub Drop_Table {
-    my $me = shift;
-    my $table = shift;
-    my $statement = "DROP table $table";
-    $me->MyExecute(statement => $statement,);
 }
 
 sub FillQueue {

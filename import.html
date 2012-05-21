@@ -1,23 +1,23 @@
-% if (!defined($import_accession)) {  ## No accession, print out the form.
+% if (!defined($accession)) {  ## No accession, print out the form.
 Type the exact accession of the sequence you wish to import.<br>
 
 This must be in the NCBI NR database.<br>
 <form method="post" action="http://prfdb.umd.edu/import.html" enctype="application/x-www-form-urlencoded">
-<input type="text" name="import_accession"  size="20" /><hr>
+<input type="text" name="accession"  size="20" /><hr>
 <input type="submit" name="perform_import" value="Perform Import"></form></tr>
 
 % } else {
-%  if ($import_accession =~ /\./) {
-%    my ($accession, $version) = split(/\./, $import_accession);
-%    $import_accession = $accession;
+%  if ($accession =~ /\./) {
+%    my ($acc, $version) = split(/\./, $accession);
+%    $accession = $acc;
 %  }
-%  my $import = $db->Import_CDS($import_accession);
-<p>Imported <% $import %> bases into the PRFdb under the accession <a href="/search.html?accession=<% $import_accession %>"><% $import_accession %></a></p>'
-%  my $cmd = qq"nice -n 20 $ENV{PRFDB_HOME}/prf_daemon --accession $import_accession 2>>$ENV{PRFDB_HOME}/import.out 1>&2 &";
-%  print "Attempting to run: $cmd<br>\n";
+%  my $import = $db->Import_CDS($accession);
+<p>Imported <% $import %> bases into the PRFdb under the accession <a href="/search.html?accession=<% $accession %>"><% $accession %></a></p>'
+%#  my $cmd = qq"nice -n 20 $ENV{PRFDB_HOME}/prf_daemon --accession $accession 2>>$ENV{PRFDB_HOME}/import.out 1>&2 &";
+%#  print "Attempting to run: $cmd<br>\n";
 %#  system($cmd);
 % }
 
 <%args>
-   $import_accession => undef
+   $accession => undef
 </%args>

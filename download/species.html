@@ -1,0 +1,43 @@
+<%perl>
+    $r->content_type('application/octet-stream');
+    my $filename = qq"${species}_${table}.csv";
+    $r->headers_out->add('Content-disposition' => ("attachment; filename=$filename"));
+
+
+    my $cols;
+    my $stmt;
+    my $tab = qq"${table}_${species}";
+
+    if ($table eq 'gene_info') {
+	$stmt = qq"SELECT * FROM gene_info WHERE species = '$species'";
+	$cols = qq"DESCRIBE $table";
+    }
+    elsif ($species =~ /virus/) {
+	$cols = qq"DESCRIBE ${table}_virus";
+	$stmt = qq"SELECT * FROM ${table}_virus";
+    }
+    else {
+ 	$cols = qq"DESCRIBE ${tab}";
+	$stmt = qq"SELECT * FROM ${tab}";
+    }
+
+    my $col = $db->MySelect($cols);    
+    foreach my $column (@{$col}) {
+	print "$column->[0]\t";
+    }
+    print "\n";
+
+    my $dat = $db->MySelect(statement => $stmt);
+    foreach my $datum (@{$dat}) {
+	foreach my $d (@{$datum}) {
+	    print "$d\t";
+	}
+	print "\n";
+    }
+    print "\n";
+</%perl>
+
+<%args>
+    $table => "gene_info";
+    $species => "saccharomyces_cerevisiae";
+</%args>

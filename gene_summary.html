@@ -12,7 +12,14 @@
    <br>
    <strong>
     <a href="/help/detail.html#accession" title="Check the help for accession" rel="external" target="_blank">Accession:</a>
-   </strong> <% $accession %><br>
+   </strong>
+% if ($species eq 'saccharomyces_cerevisiae') {
+  <a title="Link out to the SGD entry." rel="external" target="_blank" href="http://http://www.yeastgenome.org/cgi-bin/locus.fpl?locus=<% $accession %>">
+% } else {
+  <a title="Link to the NCBI entry." rel="external" target="_blank" href="http://www.ncbi.nlm.nih.gov/nuccore/<% $accession %>">
+% }
+ <% $accession %></a><br>
+
    <strong>
     <a href="/help/detail.html#species" title="Check the help for species" rel="external" target="_blank">Species:</a>
    </strong><i><% $long_species %></i><br>
@@ -39,7 +46,7 @@
   <br>
 % my $table = "landscape_$species";
 % my $landscape = $db->MySelect(statement => "SELECT count(id) FROM $table WHERE accession = ?", vars => [$accession], type => 'single');
-   Download: <a href="/download/sequence.html?accession=<% $accession %>" title="Download a fasta file containing this gene.">Nucleotide</a> or <a href="/download/aasequence.html?accession=<% $accession %>" title="Download a fasta file containing this gene's amino acid sequence.">Amino acid</a> sequence.<br>
+   Download: <a href="/download/sequence.html?accession=<% $accession %>" title="Download a fasta file containing this gene.">Nucleotide</a><a href="/download/orfnt.html?accession=<% $accession %>" title="Download the ORF sequence.">(ORF)</a> or <a href="/download/aasequence.html?accession=<% $accession %>" title="Download a fasta file containing this gene's amino acid sequence.">Amino acid</a> sequence.<br>
   </td>
  </tr>
 </table>
