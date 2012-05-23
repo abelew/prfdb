@@ -26,8 +26,8 @@ fi
 echo "Running fixdeps to set up the perl dependencies."
 ${PRFDB_HOME}/fixdeps.pl
 mkdir -p ${PRFDB_HOME}/bin/params ${PRFDB_HOME}/bin/TestSeq
-ln -s ${PRFDB_HOME}/bin/params ${PRFDB_HOME}/work/
-ln -s ${PRFDB_HOME}/bin/TestSeq ${PRFDB_HOME}/work/
+ln -s ${PRFDB_HOME}/bin/params ${PRFDB_HOME}/work/params
+ln -s ${PRFDB_HOME}/bin/TestSeq ${PRFDB_HOME}/work/TestSeq
 cd src/
 CONFIGURE_CMD="./configure --prefix=$PRFDB_HOME --bindir=$PRFDB_HOME/bin"
 echo "Please see the AUTHORS file for the authors of software upon which the PRFdb depends."
@@ -51,8 +51,8 @@ else
   cp bin/HotKnot $PRFDB_HOME/bin
   cp bin/params/* $PRFDB_HOME/bin/params
   ## hotknots expects some text files for its parambeters, they live in both the 'TestSeq' and 'params' directories
-  rsync -av ${PRFDB_HOME}/src/HotKnots_v2.0/bin/params ${PRFDB_HOME}/bin/params
-  rsync -av ${PRFDB_HOME}/src/HotKnots_v2.0/bin/TestSeq ${PRFDB_HOME}/bin/TestSeq
+  rsync -av ${PRFDB_HOME}/src/HotKnots_v2.0/bin/params/ ${PRFDB_HOME}/bin/params
+  rsync -av ${PRFDB_HOME}/src/HotKnots_v2.0/bin/TestSeq/ ${PRFDB_HOME}/bin/TestSeq
 fi
 
 if [ -r $PRFDB_HOME/bin/Fold.out.nopairs ]; then
