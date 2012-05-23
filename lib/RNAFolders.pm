@@ -928,8 +928,8 @@ command: $command\n" if ($config->{debug});
     my $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0_RE.bpseq";
     my $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}_RE.ct";
     unless (-r $bpseqfile) { ## if the Rivas/Eddy file does not exist, then use the suboptimals.
-        $bpseqfile = "${seqname}0.bpseq";
-        $ctfile = "${seqname}.ct";
+        $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0.bpseq";
+        $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}.ct";
     }
     
     AddOpen($bpseqfile);
@@ -1008,7 +1008,7 @@ sub Hotknots_Boot {
     my $ret = {
         start => $start,
         slipsite => $slipsite,
-	knotp => 0,
+        knotp => 0,
         accession => $accession,
         sequence => $seq,
         seqlength => length($seq),
