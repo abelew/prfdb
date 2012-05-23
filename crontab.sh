@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+#set -x
 export PRFDB_HOME=/usr/local/prfdb/prfdb_test
 cd $PRFDB_HOME
 string="Started at: `date`"

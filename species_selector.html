@@ -1,8 +1,26 @@
+% if ($onload) {
+<select name="<% $select_name %>" onchange="this.form.submit(); return true;">
+% } else {
 <select name="<% $select_name %>">
+% }
+
+% my $index_species;
+% if ($all) {
+%  my @in;
+%  my $tmp_index = $db->MySelect(type => 'flat', statement => "SELECT distinct(species) from gene_info");
+%  foreach my $sp (@{$tmp_index}) {
+%   push(@in, $sp) unless ($sp =~ /virus/);
+%  }
+%  push(@in, 'virus');
+%  $index_species = \@in;
+% }
+% else {
+%  $index_species = $config->{index_species};
+% }
+
 % if ($skip_species ne 'all') {
  <option value="all">all</option>
 % }
-% my $index_species = $config->{index_species};
 % foreach my $spec (@{$index_species}) {
 %  if ($skip_species ne $spec) {
  <option value="<% $spec %>"><% HTMLMisc::Make_Species($spec) %></option>
@@ -13,4 +31,6 @@
 <%args>
   $select_name => "species"
   $skip_species => 0
+  $all => 0
+  $onload => 0
 </%args>

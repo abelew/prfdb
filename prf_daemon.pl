@@ -53,137 +53,7 @@ if ($config->{checks}) {
     Check_Blast();
 }
 ## Some Arguments should be checked before others...
-if (defined($config->{make_jobs})) {
-    Make_Queue_Jobs();
-    exit(0);
-}    
-if (defined($config->{dbexec})) {
-    $db->MyExecute(statement => "$config->{dbexec}");
-    exit(0);
-}
-if (defined($config->{dbselect})) {
-    my $answer = $db->MySelect($config->{dbselect});
-    foreach my $row (@{$answer}) {
-	my @r = @{$row};
-	print @r;
-    }
-    exit(0);
-}
-if (defined($config->{import_genbank_accession})) {
-    Import_Genbank_Accession(accession => $config->{import_genbank_accession});
-}
-if (defined($config->{import_genbank_flatfile})) {
-    Import_Genbank_Flatfile(input_file => $config->{import_genbank_flatfile});
-}
-if (defined($config->{makeblast})) {
-    Make_Blast();
-    exit(0);
-}
-if (defined($config->{resync})) {
-    $db->ReSync();
-    exit(0);
-}
-if (defined($config->{revcomp})) {
-    die("Need a sequence.") if (!$config->{revcomp});
-    my $tmp = new SeqMisc(sequence => $config->{revcomp});
-    print "$tmp->{revcomp}\n";
-    exit(0);
-}
-if (defined($config->{reverse})) {
-    die("Need a sequence.") if (!$config->{reverse});
-    my $tmp = new SeqMisc(sequence => $config->{reverse});
-    print "$tmp->{reverse}\n";
-    exit(0);
-}
-if (defined($config->{zscore})) {
-    Zscore();
-    exit(0);
-}
-if (defined($config->{clear_queue})) {
-    $db->Reset_Queue(complete => 1);
-    exit(0);
-}
-if (defined($config->{make_landscape})) {
-    Make_Landscape_Tables();
-    exit(0);
-}
-if (defined($config->{maintain})) {
-    print "Performing maintenance of the PRFdb.\n";
-    Maintenance();
-    exit(0);
-}
-if (defined($config->{do_stats})) {
-    my $data = {
-	species => $config->{index_species},
-	seqlength => $config->{seqlength},
-	max_mfe => [$config->{max_mfe}],
-	mfe_methods => $config->{mfe_methods},
-    };
-    $db->Put_All_Stats($data);
-    exit(0);
-}
-if (defined($config->{optimize})) {
-    Optimize($config->{optimize});
-    exit(0);
-}
-if (defined($config->{blast})) {
-    my $blast = new PRFBlast;
-    $blast->Search($config->{blast}, 'local');
-    print "\n\n\n\n\n\n\n";
-    $blast->Search($config->{blast}, 'remote');
-    exit(0);
-}
-if (defined($config->{fillqueue})) {
-    $db->FillQueue();
-    my $num = $db->MySelect(statement => "SELECT count(id) from $config->{queue_table}", type => 'single');
-    print "The queue now has $num entries\n";
-    exit(0);
-}
-if (defined($config->{resetqueue})) {
-    $db->Reset_Queue();
-    exit(0);
-}
-if (defined($config->{copyfrom})) {
-    $db->Copy_Genome($config->{copyfrom});
-}
-if (defined($config->{input_file})) {
-    if (defined($config->{startpos})) {
-	Read_Accessions(input => $config->{input_file}, startpos => $config->{startpos});
-    } else {
-	Read_Accessions(input => $config->{input_file});
-    }
-}
-if (defined($config->{accession})) {
-    $state->{queue_id} = 0;
-    ## Dumb hack lives on
-    $state->{accession} = $config->{accession};
-    if ($state->{accession} eq '' or $state->{accession} =~ /^\s+$/) {
-	die("No accession provided to the --accession argument.");
-    }
-    $state->{genome_id} = $db->Get_GenomeId_From_Accession($config->{accession});
-    if (defined($config->{startpos})) {
-	Gather(state => $state, startpos => $config->{startpos});
-    } else {
-	Gather(state => $state);
-    }
-    exit(0);
-}
-if (defined($config->{input_fasta})) {
-    my $queue_ids;
-    if (defined($config->{startpos})) {
-	$queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style}, $config->{startpos});
-    } else {
-	$queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style});
-    }
-    exit(0);
-}
-if (defined($config->{nodaemon})) {
-    print "No daemon is set, existing before reading queue.\n";
-    exit(0);
-}
-if ($config->{checks}) {
-    Print_Config();
-}
+my $args_check = Check_Args();
 
 MAINLOOP: until (defined($state->{time_to_die})) {
     my $wait = $db->MySelect(statement => "SELECT wait from wait", type => 'single');
@@ -198,7 +68,8 @@ MAINLOOP: until (defined($state->{time_to_die})) {
     if ($state->{done_count} > 60 and !defined($config->{master})) {$state->{time_to_die} = 1}
     if (defined($config->{seqlength})) {
 	$state->{seqlength} = $config->{seqlength};
-    } else {
+    }
+    else {
 	$state->{seqlength} = 100;
     }
     if (defined($config->{process_import_queue})) {
@@ -208,7 +79,8 @@ MAINLOOP: until (defined($state->{time_to_die})) {
 	    if (defined($import) and $import !~ m/Error/) {
 		if ($import == 0) {
 		    print "Did not import $import_accession, it has no coding sequence defined.\n";
-		} else {
+		}
+		else {
 		    print "Imported $import_accession added $import bases.\n";
 		}
 	    }
@@ -221,7 +93,8 @@ MAINLOOP: until (defined($state->{time_to_die})) {
     if (defined($state->{genome_id})) {
 	Gather(state => $state);
 	## End if have an entry in the queue
-    } else {
+    }
+    else {
 	sleep(60);
 	$state->{done_count}++;
     } ## no longer have $state->{genome_id}
@@ -272,13 +145,15 @@ sub Read_Accessions {
 	    my $seq;
 	    if (defined($startpos)) {
 		$seq = $db->Import_CDS($accession, $startpos);
-	    } else {
+	    }
+	    else {
 		$seq = $db->Import_CDS($accession);
 	    }
 	    if ($seq =~ /^Error/) {
 		sleep(30);
 		$attempts++;
-	    } else {
+	    }
+	    else {
 		print DONE "$accession\n";
 		next OUTER;
 	    }
@@ -292,7 +167,7 @@ sub Read_Accessions {
 sub Gather {
     my %args = @_;    
     my $state = $args{state};
-    my $startpos = $args{startpos};
+    my $startpos = $args{startpos} if ($args{startpos});
 
     my $ref = $db->Id_to_AccessionSpecies($state->{genome_id});
     $state->{accession} = $ref->{accession};
@@ -361,7 +236,8 @@ sub PRF_Gatherer {
 	$rnamotif_information->{$startpos}{filename} = $inf->{filename};
 	$rnamotif_information->{$startpos}{sequence} = $inf->{string};
 	$state->{rnamotif_information} = $rnamotif_information;
-    } else {
+    }
+    else {
 	$rnamotif_information = $motifs->Search($state->{genome_information}->{sequence},
 						$state->{genome_information}->{orf_start},
 						$len);
@@ -398,11 +274,13 @@ sub PRF_Gatherer {
 	  print "The sequence is: $check_seq and will be skipped.\n" if ($config->{debug});
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
-      } elsif ($check_seq eq 'null') {
+      }
+      elsif ($check_seq eq 'null') {
 	  print "The sequence is null and will be skipped.\n"  if ($config->{debug});
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
-      } elsif ($check_seq eq 'polya') {
+      }
+      elsif ($check_seq eq 'polya') {
 	  print "The sequence is polya and will be skipped.\n"  if ($config->{debug});
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
@@ -597,7 +475,8 @@ sub Check_Environment {
 	my $copy_command;
 	if ($config->{has_modperl}) {
 	    $copy_command = qq(cp $ENV{PRFDB_HOME}/html/htaccess.modperl $ENV{PRFDB_HOME}/.htaccess);
-	} else {
+	}
+	else {
 	    $copy_command = qq(cp $ENV{PRFDB_HOME}/html/htaccess.cgi $ENV{PRFDB_HOME}/.htaccess);
 	}
 	system($copy_command);
@@ -619,17 +498,22 @@ sub Print_Config {
     ### This is a little function designed to give the user a chance to abort
     if   ($config->{nupack_nopairs_hack}) {
 	print "I AM using a hacked version of nupack!\n"; 
-    } else {
+    }
+    else {
 	print "I AM NOT using a hacked version of nupack!\n";
     }
+
     if ($config->{do_nupack}) {
 	print "I AM doing a nupack fold using the program: $config->{exe_nupack}\n";
-    } else {
+    }
+    else {
 	print "I AM NOT doing a nupack fold\n"; 
     }
+
     if ($config->{do_pknots}) {
 	print "I AM doing a pknots fold using the program: $config->{exe_pknots}\n";
-    } else {
+    }
+    else {
 	print "I AM NOT doing a pknots fold\n";
     }
     if ($config->{do_boot}) {
@@ -647,14 +531,18 @@ sub Print_Config {
 	}
 	print "nupack is using the following program for bootstrap:
 $nu_boot and running: $config->{boot_iterations} times\n";
-    } else {
+    }
+    else {
 	print "I AM NOT doing a boot.\n";
     }
+
     if ($config->{arch_specific_exe}) {
 	print "I AM USING ARCH SPECIFIC EXECUTABLES\n";
-    } else {
+    }
+    else {
 	print "I am not using arch specific executables\n"; 
     }
+
     if (ref($config->{seqlength}) eq 'ARRAY') {
 	my @fun = @{$config->{seqlength}};
     print "The default structure length in this run is: @fun\n";
@@ -694,7 +582,8 @@ sub Check_Boot_Connectivity {
 		}
 		my $fold_search = new RNAFolders(file => $state->{fasta_file}, genome_id => $state->{genome_id}, config => $config, species => $state->{species}, accession => $state->{accession}, start => $slipsite_start,);
 		$new_mfe_id = Check_Nupack($fold_search, $slipsite_start);
-	    } elsif ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'pknots') {
+	    }
+	    elsif ((!defined($new_mfe_id) or $new_mfe_id == '0' or $new_mfe_id eq '') and $mfe_method eq 'pknots') {
 		### Then there is no pknots information :(
 		if (!defined($state->{accession})) {
 		    Callstack(die => 1, message => "The accession is no longer defined. This cannot be allowed.");
@@ -725,7 +614,8 @@ sub Check_Folds {
 						 $state->{seqlength}, $type);
 	$mfe_id = $state->{$mfe_varname};
 	print "Check_Folds $type - already done: state: $mfe_id\n" if ($config->{debug});
-    } else { ### If there are NO existing folds...
+    }
+    else { ### If there are NO existing folds...
 	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n" if ($config->{debug});
 	my ($info, $mfe_id);
 	if ($type eq 'pknots') {
@@ -733,17 +623,20 @@ sub Check_Folds {
 	    $mfe_id = $db->Put_Pknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Pknots and returned $mfe_id\n" if ($config->{debug});
-	} elsif ($type eq 'nupack') {
+	}
+	elsif ($type eq 'nupack') {
 	    $info = $fold_search->Nupack_NOPAIRS();
 	    $mfe_id = $db->Put_Nupack($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Nupack and returned $mfe_id\n" if ($config->{debug});
-	} elsif ($type eq 'hotknots') {
+	}
+	elsif ($type eq 'hotknots') {
 	    $info = $fold_search->Hotknots();
 	    $mfe_id = $db->Put_Hotknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Hotknots and returned $mfe_id\n" if ($config->{debug});
-	} else {
+	}
+	else {
 	    Callstack(die => 1, message => "Non existing type in Check_Folds");
 	}
     }    ### Done checking for pknots folds
@@ -773,7 +666,8 @@ sub Check_Sequence_Length {
 	chomp $line;
 	if ($line =~ /^\>/) {
 	    $output .= $line;
-	} else {
+	}
+	else {
 	    my @tmp = split(//, $line);
 	    push(@out, @tmp);
 	}
@@ -784,13 +678,17 @@ sub Check_Sequence_Length {
     $sequence = uc($sequence);
     if (!defined($sequence) or $sequence eq '') {
 	return ('null');
-    } elsif ($sequence_length > $wanted_sequence_length) {
+    }
+    elsif ($sequence_length > $wanted_sequence_length) {
 	return ('longer than wanted');
-    } elsif ($sequence_length == $wanted_sequence_length) {
+    }
+    elsif ($sequence_length == $wanted_sequence_length) {
 	return ('equal');
-    } elsif ($sequence_length < $wanted_sequence_length) {
+    }
+    elsif ($sequence_length < $wanted_sequence_length) {
 	return ('shorter than wanted');
-    } else {
+    }
+    else {
 	return ('unknown');
     }
 }
@@ -948,9 +846,11 @@ sub Maintenance {
 			      $suffix .= "-pknot";
 			      $pknots_only = 1;
 			  }
+
 			  if ($slip eq 'all') {
 			      $suffix .= "-all";
-			  } else {
+			  }
+			  else {
 			      $suffix .= "-${slip}";
 			  }
 			  $suffix .= "-${seqlength}";
@@ -989,7 +889,8 @@ sub Maintenance {
 				      pknot => 1,
 				      slipsites => $slip,
 				      );
-			      } else {
+			      }
+			      else {
 				  %args = (
 				      seqlength => $seqlength,
 				      species => $species,
@@ -1087,11 +988,13 @@ sub Import_Genbank_Flatfile {
 		$direction = 'undefined';
 		$start = $orf_start;
 		$stop = $orf_stop;
-	    } elsif ($feature->{_location}{_strand} == 1) {
+	    }
+	    elsif ($feature->{_location}{_strand} == 1) {
 		$direction = 'forward';
 		$start = $orf_start;
 		$stop = $orf_stop;
-	    } elsif ($feature->{_location}{_strand} == -1) {
+	    }
+	    elsif ($feature->{_location}{_strand} == -1) {
 		$direction = 'reverse';
 		$start = $orf_stop;
 		$stop = $orf_start;
@@ -1205,6 +1108,141 @@ sub Make_Queue_Jobs {
 #	    print "Going to run /usr/local/bin/qsub $output_file\n";
 	}
     }
+}
+
+sub Check_Args {
+    if (defined($config->{make_jobs})) {
+	Make_Queue_Jobs();
+	exit(0);
+    }    
+    if (defined($config->{dbexec})) {
+	$db->MyExecute(statement => "$config->{dbexec}");
+	exit(0);
+    }
+    if (defined($config->{dbselect})) {
+	my $answer = $db->MySelect($config->{dbselect});
+	foreach my $row (@{$answer}) {
+	    my @r = @{$row};
+	    print @r;
+	}
+	exit(0);
+    }
+    if (defined($config->{import_genbank_accession})) {
+	Import_Genbank_Accession(accession => $config->{import_genbank_accession});
+    }
+    if (defined($config->{import_genbank_flatfile})) {
+	Import_Genbank_Flatfile(input_file => $config->{import_genbank_flatfile});
+    }
+    if (defined($config->{makeblast})) {
+	Make_Blast();
+	exit(0);
+    }
+    if (defined($config->{resync})) {
+	$db->ReSync();
+	exit(0);
+    }
+    if (defined($config->{revcomp})) {
+	die("Need a sequence.") if (!$config->{revcomp});
+	my $tmp = new SeqMisc(sequence => $config->{revcomp});
+	print "$tmp->{revcomp}\n";
+	exit(0);
+    }
+    if (defined($config->{reverse})) {
+	die("Need a sequence.") if (!$config->{reverse});
+	my $tmp = new SeqMisc(sequence => $config->{reverse});
+	print "$tmp->{reverse}\n";
+	exit(0);
+    }
+    if (defined($config->{zscore})) {
+	Zscore();
+	exit(0);
+    }
+    if (defined($config->{clear_queue})) {
+	$db->Reset_Queue(complete => 1);
+	exit(0);
+    }
+    if (defined($config->{make_landscape})) {
+	Make_Landscape_Tables();
+	exit(0);
+    }
+    if (defined($config->{maintain})) {
+	print "Performing maintenance of the PRFdb.\n";
+	Maintenance();
+	exit(0);
+    }
+    if (defined($config->{do_stats})) {
+	my $data = {
+	    species => $config->{index_species},
+	    seqlength => $config->{seqlength},
+	    max_mfe => [$config->{max_mfe}],
+	    mfe_methods => $config->{mfe_methods},
+	};
+	$db->Put_All_Stats($data);
+	exit(0);
+    }
+    if (defined($config->{optimize})) {
+	Optimize($config->{optimize});
+	exit(0);
+    }
+    if (defined($config->{blast})) {
+	my $blast = new PRFBlast;
+	$blast->Search($config->{blast}, 'local');
+	print "\n\n\n\n\n\n\n";
+	$blast->Search($config->{blast}, 'remote');
+	exit(0);
+    }
+    if (defined($config->{fillqueue})) {
+	$db->FillQueue();
+	my $num = $db->MySelect(statement => "SELECT count(id) from $config->{queue_table}", type => 'single');
+	print "The queue now has $num entries\n";
+	exit(0);
+    }
+    if (defined($config->{resetqueue})) {
+	$db->Reset_Queue();
+	exit(0);
+    }
+    if (defined($config->{copyfrom})) {
+	$db->Copy_Genome($config->{copyfrom});
+    }
+    if (defined($config->{input_file})) {
+	if (defined($config->{startpos})) {
+	    Read_Accessions(input => $config->{input_file}, startpos => $config->{startpos});
+	} else {
+	    Read_Accessions(input => $config->{input_file});
+	}
+    }
+    if (defined($config->{accession})) {
+	$state->{queue_id} = 0;
+	## Dumb hack lives on
+	$state->{accession} = $config->{accession};
+	if ($state->{accession} eq '' or $state->{accession} =~ /^\s+$/) {
+	    die("No accession provided to the --accession argument.");
+	}
+	$state->{genome_id} = $db->Get_GenomeId_From_Accession($config->{accession});
+	if (defined($config->{startpos})) {
+	    Gather(state => $state, startpos => $config->{startpos});
+	} else {
+	    Gather(state => $state);
+	}
+	exit(0);
+    }
+    if (defined($config->{input_fasta})) {
+	my $queue_ids;
+	if (defined($config->{startpos})) {
+	    $queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style}, $config->{startpos});
+	} else {
+	    $queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style});
+	}
+	exit(0);
+    }
+    if (defined($config->{nodaemon})) {
+	print "No daemon is set, existing before reading queue.\n";
+	exit(0);
+    }
+    if ($config->{checks}) {
+	Print_Config();
+    }
+    return(undef);
 }
 
 BEGIN {

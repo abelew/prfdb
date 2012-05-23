@@ -141,7 +141,7 @@ $num_algos++ if ($config->{do_nupack} == 1);
 $num_algos++ if ($config->{do_hotknots} == 1);
 my $num_expected_mfes = scalar(@{$config->{seqlength}}) * $num_algos;
 my $num_have = $db->MySelect(statement => qq"SELECT count(id) FROM $mt WHERE accession = '$accession' AND start = '$slipstart'", type => 'single');
-$db->Add_Webqueue($information->{genome_id}) if ($num_have < $num_expected_mfes);
+$db->Put_Webqueue($information->{genome_id}) if ($num_have < $num_expected_mfes);
 </%init>
 
 <%args>
