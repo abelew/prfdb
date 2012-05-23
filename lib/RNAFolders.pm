@@ -297,7 +297,7 @@ sub ILM {
     my $ilm_command = qq"$ENV{PRFDB_HOME}/bin/ilm ${mwm}.matrix 2> ${mwm}.err 1> ${mwm}.bpseq";
     AddOpen("${mwm}.err");
     AddOpen("${mwm}.bpseq");
-    print "TESTME: $hlx_command \n $ilm_command\n" if ($config->{debug});
+    print "$hlx_command \n $ilm_command\n" if ($config->{debug});
     open(HLX, "$hlx_command |");
     close(HLX);
     open(ILM, "$ilm_command |");
@@ -615,7 +615,7 @@ sub Pknots {
         $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} $inputfile 2>$errorfile";
     }
     else {
-        $command = qq"$config->{exe_pknots} -k $inputfile 2>$errorfile";
+        $command = qq"$config->{exe_pknots} -k $inputfile /dev/stdout 2>$errorfile";
     }
     print "PKNOTS: infile: $inputfile accession: $accession start: $start
 command: $command\n" if ($config->{debug});
@@ -776,7 +776,8 @@ sub Pknots_Boot {
         start => $start,
     };
     chdir($config->{workdir});
-    my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} $inputfile 2>$errorfile";
+    my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} $inputfile /dev/stdout 2>$errorfile";
+#    print "TESTME: Running $command\n";
     open(PK, "$command |") or Callstack(message => "RNAFolders::Pknots_Boot, Failed to run pknots: $command");
     ## OPEN PK in Pknots_Boot
     my $counter = 0;
@@ -829,9 +830,9 @@ sub Nupack_Boot_NOPAIRS {
     my $accession = shift;
     my $start = shift;
     my $config = shift;
-    my $nupack = qq($config->{workdir}/$config->{exe_nupack});
-    my $nupack_boot = qq($config->{workdir}/$config->{exe_nupack_boot});
-    my $errorfile = qq(${inputfile}_nupack.err);
+    my $nupack = qq"$config->{workdir}/$config->{exe_nupack}";
+    my $nupack_boot = qq"$config->{workdir}/$config->{exe_nupack_boot}";
+    my $errorfile = qq"${inputfile}_nupack.err";
     AddOpen($errorfile);
     my $ret = {
         accession => $accession,
@@ -842,7 +843,7 @@ sub Nupack_Boot_NOPAIRS {
     Callstack(die => 1, message => qq"$config->{workdir}/dataS_G.rna is missing.") unless (-r "$config->{workdir}/dataS_G.rna");
     Callstack(die => 1, message => qq"$nupack_boot is missing.") unless (-r $nupack_boot);
     warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{exe_nupack} =~ /nopairs/);
-    my $command = qq"$ENV{PRFDB_HOME}/bin/$nupack_boot $inputfile 2>$errorfile";
+    my $command = qq"$nupack_boot $inputfile 2>$errorfile";
     my @nupack_output;
     open(NU, "$command |") or Callstack(message => "RNAFolders::Nupack_Boot_NOPAIRS, Failed to run nupack:  $command");
     ## OPEN NU in Nupack_Boot_NOPAIRS
@@ -902,6 +903,8 @@ sub Hotknots {
     chdir($config->{workdir});
     my $seqname = $inputfile;
     $seqname =~ s/\.fasta//g;
+    my $seqfilename = $seqname;
+    $seqfilename = basename($seqfilename);
     my $tempfile = $inputfile;
     if ($tempfile =~ m/\.fasta/) {
         $tempfile =~ s/\.fasta/\.seq/g;
@@ -912,7 +915,7 @@ sub Hotknots {
     open(IN, ">$tempfile");
     print IN $seq;
     close(IN);
-    my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqname -noPS -b";
+    my $command = qq"cd $config->{workdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b";
     print "HotKnots: infile: $inputfile accession: $accession start: $start
 command: $command\n" if ($config->{debug});
     open(HK, "$command |") or Callstack(message => "Problem with $command.");
@@ -925,11 +928,11 @@ command: $command\n" if ($config->{debug});
     ## Check for output files.
     ## Something changed in the most recent hotknots release which makes the output files from hotknots
     ## appear in $PRFDB_HOME/work/TestSeq/RivasEddy -- I am not quite sure why at this point.
-    my $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0_RE.bpseq";
-    my $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}_RE.ct";
+    my $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0_RE.bpseq";
+    my $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct";
     unless (-r $bpseqfile) { ## if the Rivas/Eddy file does not exist, then use the suboptimals.
-        $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0.bpseq";
-        $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}.ct";
+        $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0.bpseq";
+        $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}.ct";
     }
     
     AddOpen($bpseqfile);
@@ -1016,12 +1019,14 @@ sub Hotknots_Boot {
     chdir($config->{workdir});
     my $seqname = $inputfile;
     $seqname =~ s/\.fasta//g;
+    my $seqfilename = $seqname;
+    $seqfilename = basename($seqfilename);
     my $tempfile = $inputfile;
     $tempfile =~ s/\.fasta/\.seq/g;
     open(IN, ">$tempfile");
     print IN $seq;
     close(IN);
-    my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqname -noPS -b 2>$errorfile";
+    my $command = qq"cd $config->{workdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b 2>$errorfile";
     print "Hotknots boot: infile: $inputfile accession: $accession start: $start
 command: $command\n" if ($config->{debug});
     open(HK, "$command |");
@@ -1029,7 +1034,7 @@ command: $command\n" if ($config->{debug});
         $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
-    my $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0_RE.bpseq";
+    my $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0_RE.bpseq";
     AddOpen($tempfile);
     AddOpen($bpseqfile);
     my $open_ret = open(BPSEQ, "<$bpseqfile");
@@ -1060,7 +1065,7 @@ command: $command\n" if ($config->{debug});
         $ret->{pairs} = $ret->{pairs} / 2;
         close(BPSEQ);
     } ## If we were able to open the CT file.
-    my $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}_RE.ct";
+    my $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct";
     AddOpen($ctfile);
     open(GETMFE, "grep ENERGY $ctfile | head -1 |");
     while (my $getmfeline = <GETMFE>) {

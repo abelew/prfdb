@@ -66,7 +66,7 @@ sub Go {
 #  print "Boot: infile: $inputfile accession: $accession start: $start seqlength: $seqlength\n";
     
     if (!defined($seqlength) or $seqlength eq '' or $seqlength == 0) {
-	print "SEQLENGTH NOT DEFINED\n";
+        print "SEQLENGTH NOT DEFINED\n";
 	return (0);
     }
     ## randomizer should be a reference to a function which takes as input
@@ -74,87 +74,89 @@ sub Go {
     ## change which function randomizes the sequence
     my @methods = keys(%{$me->{boot_mfe_methods}});
     foreach my $boot_mfe_method_name (keys %{$me->{boot_mfe_methods}}) {
-	my $mfe_id;
-	if (defined($boot_mfe_method_name)) {
-	    my $key = "${boot_mfe_method_name}_mfe_id";
-	    $mfe_id = $me->{$key};
-	}
-	if (!defined($mfe_id)) {
-	    $mfe_id = $me->{mfe_id};
-	}
-	my @randers = keys(%{$me->{randomizers}});
-	foreach my $rand_name (keys %{$me->{randomizers}}) {
-	    my $ret = {
-		mfe_id => $mfe_id,
-		accession => $accession,
-		species => $species,
-		start => $start,
-		seqlength => $seqlength,
-		iterations => 0,
-		mfe_mean => 0.0,
-		pairs_mean => 0.0,
-		mfe_sd => 0.0,
-		pairs_sd => 0.0,
-		mfe_se => 0.0,
-		pairs_se => 0.0,
-		mfe_conf => 0.0,
-		pairs_conf => 0.0,
-		total_pairs => 0,
-		total_mfe => 0.0,
-		total_mfe_deviation => 0.0,
-		total_pairs_deviation => 0.0,
-		total_mfe_error => 0.0,
-		total_pairs_error => 0.0,
-		mfe_values => '',
-	    };
-	    my @stats_mfe;
-	    my @stats_pairs;
-	    my $iteration_count = 1;
-	    while ($iteration_count <= $me->{iterations}) {
-		$iteration_count++;
-		my $boot_mfe_method = $me->{boot_mfe_methods}->{$boot_mfe_method_name};
-		
-		#my $rand_algo = $me->{randomizers}->{$rand_name}($inputfile, $species, $accession);
-		my $rand_algo = $me->{randomizers}->{$rand_name};
-		my $array_reference = $me->{fasta_arrayref};
-		my $randomized_sequence = &{$rand_algo}($array_reference);
-		my $new_sequence = $me->Overwrite_Inputfile($randomized_sequence);
-		
-		#	      my $mfe = &{$boot_mfe_method}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
-		my $mfe = &{$boot_mfe_method}($me->{inputfile}, $me->{accession}, $me->{start}, $me->{config});
-		foreach my $k (keys %{$mfe}) {
-		    $return->{$boot_mfe_method_name}->{$rand_name}->{$iteration_count}->{$k} = $mfe->{$k};
-		}
-		
-		if (defined($mfe->{mfe})) {
-		    push(@stats_mfe, $mfe->{mfe});
-		    $ret->{iterations}++;
-		    $ret->{mfe_values} .= "$mfe->{mfe} ";
-		}
-		push(@stats_pairs, $mfe->{pairs}) if (defined($mfe->{pairs}));
-		
-	    }    ## Foreach repetition
-	    ## Now have collected every repetition, so we can calculate the means
-	    my $mfe_stat = new Math::Stat(\@stats_mfe, {AutoClean => 1});
-	    $ret->{mfe_mean} = sprintf("%.2f", $mfe_stat->average());
-	    $ret->{mfe_sd} = sprintf("%.2f", $mfe_stat->stddev());
-	    
-	    my $pairs_stat = new Math::Stat(\@stats_pairs, { AutoClean => 1 });
-	    $ret->{pairs_mean} = sprintf("%.2f", $pairs_stat->average());
-	    $ret->{pairs_sd} = sprintf("%.2f", $pairs_stat->stddev());
-	    
-	    if (!defined($ret->{iterations}) or $ret->{iterations} eq '0') {
-		$ret->{mfe_se} = undef;
-		$ret->{pairs_se} = undef;
-	    } 
-	    else {
-		$ret->{mfe_se} = sprintf("%.2f", $ret->{mfe_sd} / sqrt($ret->{iterations}));
-		$ret->{pairs_se} = sprintf("%.2f", $ret->{pairs_sd} / sqrt($ret->{iterations}));
-	    }
-	    
-	    $return->{$boot_mfe_method_name}->{$rand_name}->{stats} = $ret;
-	    $return->{genome_id} = $me->{genome_id};
-	}    ## Foreach randomization
+        my $mfe_id;
+        if (defined($boot_mfe_method_name)) {
+            my $key = "${boot_mfe_method_name}_mfe_id";
+            $mfe_id = $me->{$key};
+        }
+        if (!defined($mfe_id)) {
+            $mfe_id = $me->{mfe_id};
+        }
+        my @randers = keys(%{$me->{randomizers}});
+        foreach my $rand_name (keys %{$me->{randomizers}}) {
+            my $ret = {
+                mfe_id => $mfe_id,
+                accession => $accession,
+                species => $species,
+                start => $start,
+                seqlength => $seqlength,
+                iterations => 0,
+                mfe_mean => 0.0,
+                pairs_mean => 0.0,
+                mfe_sd => 0.0,
+                pairs_sd => 0.0,
+                mfe_se => 0.0,
+                pairs_se => 0.0,
+                mfe_conf => 0.0,
+                pairs_conf => 0.0,
+                total_pairs => 0,
+                total_mfe => 0.0,
+                total_mfe_deviation => 0.0,
+                total_pairs_deviation => 0.0,
+                total_mfe_error => 0.0,
+                total_pairs_error => 0.0,
+                mfe_values => '',
+            };
+            my @stats_mfe;
+            my @stats_pairs;
+            my $iteration_count = 1;
+            while ($iteration_count <= $me->{iterations}) {
+                $iteration_count++;
+                my $boot_mfe_method = $me->{boot_mfe_methods}->{$boot_mfe_method_name};
+                
+                #my $rand_algo = $me->{randomizers}->{$rand_name}($inputfile, $species, $accession);
+                my $rand_algo = $me->{randomizers}->{$rand_name};
+                my $array_reference = $me->{fasta_arrayref};
+                my $randomized_sequence = &{$rand_algo}($array_reference);
+                my $new_sequence = $me->Overwrite_Inputfile($randomized_sequence);
+                
+                #	      my $mfe = &{$boot_mfe_method}($me->{inputfile}, $me->{species}, $me->{accession}, $me->{start});
+                my $mfe = &{$boot_mfe_method}($me->{inputfile}, $me->{accession}, $me->{start}, $me->{config});
+                foreach my $k (keys %{$mfe}) {
+                    $return->{$boot_mfe_method_name}->{$rand_name}->{$iteration_count}->{$k} = $mfe->{$k};
+                }
+                
+                if (defined($mfe->{mfe})) {
+#                    print "TESTME: $mfe->{mfe}, incrementing iterations: $ret->{iterations}\n";
+                    push(@stats_mfe, $mfe->{mfe});
+                    $ret->{iterations}++;
+                    $ret->{mfe_values} .= "$mfe->{mfe} ";
+                }
+                push(@stats_pairs, $mfe->{pairs}) if (defined($mfe->{pairs}));
+                
+            }    ## Foreach repetition
+            ## Now have collected every repetition, so we can calculate the means
+            my $mfe_stat = new Math::Stat(\@stats_mfe, {AutoClean => 1});
+            $ret->{mfe_mean} = sprintf("%.2f", $mfe_stat->average());
+            $ret->{mfe_sd} = sprintf("%.2f", $mfe_stat->stddev());
+            
+            my $pairs_stat = new Math::Stat(\@stats_pairs, { AutoClean => 1 });
+            $ret->{pairs_mean} = sprintf("%.2f", $pairs_stat->average());
+            $ret->{pairs_sd} = sprintf("%.2f", $pairs_stat->stddev());
+            
+#            print "TESTME: Is ret->{iterations} still good?: $ret->{iterations}\n";
+            if (!$ret->{iterations}) {
+                $ret->{mfe_se} = undef;
+                $ret->{pairs_se} = undef;
+            }
+            else {
+                $ret->{mfe_se} = sprintf("%.2f", $ret->{mfe_sd} / sqrt($ret->{iterations}));
+                $ret->{pairs_se} = sprintf("%.2f", $ret->{pairs_sd} / sqrt($ret->{iterations}));
+            }
+            
+            $return->{$boot_mfe_method_name}->{$rand_name}->{stats} = $ret;
+            $return->{genome_id} = $me->{genome_id};
+        }    ## Foreach randomization
     }    ## Foreach mfe calculator
     return ($return);
 }
