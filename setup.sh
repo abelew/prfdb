@@ -105,17 +105,16 @@ if [ -n $RET ]; then
 fi
 
 echo "Installing pknots."
-cd $PRFDB_HOME/src/pknots-1.05
-cd src/squid
+cd $PRFDB_HOME/src/pknots_v1.07
+cd easel
 make
-cp libsquid.a ..
 cd ..
 make
 RET=$?
-cp pknots $PRFDB_HOME/bin
+cp src/pknots $PRFDB_HOME/bin
 if [ -n $RET ]; then
   cd $PRFDB_HOME/src
-  rm -rf $PRFDB_HOME/src/pknots-1.05
+  rm -rf $PRFDB_HOME/src/pknots_v1.07
 fi
 
 echo "Installing ViennaRNA."
