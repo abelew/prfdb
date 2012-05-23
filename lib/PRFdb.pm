@@ -1,5 +1,5 @@
 package PRFdb;
-## Time-stamp: <Wed May 23 09:55:46 2012 Ashton Trey Belew (abelew@wesleyan.edu)>
+## Time-stamp: <Wed May 23 13:31:08 2012 Ashton Trey Belew (abelew@wesleyan.edu)>
 use strict;
 use DBI;
 use PRFConfig;
@@ -1071,7 +1071,7 @@ sub Id_to_AccessionSpecies {
     my $me = shift;
     my $id = shift;
     my $start = shift;
-    Callstack(message => "Undefined value in Id_to_AccessionSpecies") unless (defined($id));
+    Callstack(die => 1, message => "Undefined value in Id_to_AccessionSpecies") unless (defined($id));
     my $statement = qq"SELECT accession, species from gene_info where genome_id = ?";
     my $data = $me->MySelect(statement => $statement, vars => [$id], type => 'row');
     my $accession = $data->[0];
