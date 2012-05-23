@@ -63,6 +63,7 @@ else
   make clean ; make
   RET=$?
   cp Fold.out $PRFDB_HOME/work/Fold.out.nopairs
+  cp $PRFDB_HOME/src/NUPACK1.2_pseudoknot/data* $PRFDB_HOME/work
   ln -s $PRFDB_HOME/work/Fold.out.nopairs $PRFDB_HOME/bin/
   if [ -n $RET ]; then
     cd $PRFDB_HOME/src
