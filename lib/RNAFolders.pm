@@ -890,24 +890,24 @@ sub Hotknots {
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
     my $ret = {
-	start => $start,
-	slipsite => $slipsite,
-	knotp => 0,
-	genome_id => $me->{genome_id},
-	species => $me->{species},
-	accession => $accession,
-	sequence => $seq,
-	seqlength => length($seq),
+        start => $start,
+        slipsite => $slipsite,
+        knotp => 0,
+        genome_id => $me->{genome_id},
+        species => $me->{species},
+        accession => $accession,
+        sequence => $seq,
+        seqlength => length($seq),
     };
     chdir($config->{workdir});
     my $seqname = $inputfile;
     $seqname =~ s/\.fasta//g;
     my $tempfile = $inputfile;
     if ($tempfile =~ m/\.fasta/) {
-      $tempfile =~ s/\.fasta/\.seq/g;
+        $tempfile =~ s/\.fasta/\.seq/g;
     }
     else {
-      $tempfile .= ".seq";
+        $tempfile .= ".seq";
     }
     open(IN, ">$tempfile");
     print IN $seq;
@@ -918,16 +918,18 @@ command: $command\n" if ($config->{debug});
     open(HK, "$command |") or Callstack(message => "Problem with $command.");
     while(my $line = <HK>) {
 #	print $line;
-	$ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
+        $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
-
+    
     ## Check for output files.
-    my $bpseqfile = "${seqname}0_RE.bpseq";
-    my $ctfile = qq(${seqname}_RE.ct);
+    ## Something changed in the most recent hotknots release which makes the output files from hotknots
+    ## appear in $PRFDB_HOME/work/TestSeq/RivasEddy -- I am not quite sure why at this point.
+    my $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0_RE.bpseq";
+    my $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}_RE.ct";
     unless (-r $bpseqfile) { ## if the Rivas/Eddy file does not exist, then use the suboptimals.
-	$bpseqfile = "${seqname}0.bpseq";
-	$ctfile = "${seqname}.ct";
+        $bpseqfile = "${seqname}0.bpseq";
+        $ctfile = "${seqname}.ct";
     }
 
     AddOpen($bpseqfile);
@@ -935,23 +937,23 @@ command: $command\n" if ($config->{debug});
     $ret->{output} = '';
     $ret->{pairs} = 0;
     while (my $bps = <BPSEQ>) {
-	my ($basenum, $base, $basepair) = split(/\s+/, $bps);
-	if ($basepair =~ /\d+/) {
-	    if ($basepair == 0) {
-		$ret->{output} .= '. ';
-	    }
-	    elsif ($basepair > 0) {
-		my $basepair_num = $basepair - 1;
-		$ret->{output} .= "$basepair_num ";
-		$ret->{pairs}++;
-	    }
-	    else {
-		Callstack(die => 1, message => "Something is fubared.");
-	    }
-	}
-	else {
-	    Callstack(die => 1, message => "Something is fubared.");
-	}
+        my ($basenum, $base, $basepair) = split(/\s+/, $bps);
+        if ($basepair =~ /\d+/) {
+            if ($basepair == 0) {
+                $ret->{output} .= '. ';
+            }
+            elsif ($basepair > 0) {
+                my $basepair_num = $basepair - 1;
+                $ret->{output} .= "$basepair_num ";
+                $ret->{pairs}++;
+            }
+            else {
+                Callstack(die => 1, message => "Something is fubared.");
+            }
+        }
+        else {
+            Callstack(die => 1, message => "Something is fubared.");
+        }
     }
     $ret->{pairs} = $ret->{pairs} / 2;
     close(BPSEQ);
@@ -959,13 +961,13 @@ command: $command\n" if ($config->{debug});
     AddOpen($ctfile);
     open(GETMFE, "grep ENERGY $ctfile | head -1 |");
     while (my $getmfeline = <GETMFE>) {
-	my ($null, $num, $ENERGY, $eq, $mfe, $crap) = split(/\s+/, $getmfeline);
-	$ret->{mfe} = $mfe;
+        my ($null, $num, $ENERGY, $eq, $mfe, $crap) = split(/\s+/, $getmfeline);
+        $ret->{mfe} = $mfe;
     }
     close(GETMFE);
-
+    
     RemoveFile([$ctfile, $bpseqfile, $errorfile]);
-
+    
     my $parser = new PkParse(debug => $config->{debug});
     my @struct_array = split(/\s+/, $ret->{output});
     my $out = $parser->Unzip(\@struct_array);
@@ -973,21 +975,21 @@ command: $command\n" if ($config->{debug});
     my $barcode = PkParse::Condense($new_struct);
     my $parsed = '';
     foreach my $char (@{$out}) {
-	$parsed .= $char . ' ';
+        $parsed .= $char . ' ';
     }
     $parsed = PkParse::ReOrder_Stems($parsed);
     $ret->{parsed} = $parsed;
     $ret->{barcode} = $barcode;
     $ret->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
     if ($parser->{pseudoknot} == 0) {
-	$ret->{knotp} = 0;
+        $ret->{knotp} = 0;
     }
     else {
-	$ret->{knotp} = 1;
+        $ret->{knotp} = 1;
     }
     chdir($ENV{PRFDB_HOME});
     if (!defined($ret->{sequence})) {
-	Callstack(message => "Sequence is not defined for accession: $accession start: $start\n");
+        Callstack(message => "Sequence is not defined for accession: $accession start: $start\n");
     }
     $ret->{sequence} = Sequence_T_U($ret->{sequence});
     return($ret);

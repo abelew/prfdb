@@ -25,7 +25,9 @@ echo \"export PRFDB_HOME=$PWD\" >> ~/.bashrc
 fi
 echo "Running fixdeps to set up the perl dependencies."
 ${PRFDB_HOME}/fixdeps.pl
-mkdir -p bin/params
+mkdir -p ${PRFDB_HOME}/bin/params ${PRFDB_HOME}/bin/TestSeq
+ln -s ${PRFDB_HOME}/bin/params ${PRFDB_HOME}/work/
+ln -s ${PRFDB_HOME}/bin/TestSeq ${PRFDB_HOME}/work/
 cd src/
 CONFIGURE_CMD="./configure --prefix=$PRFDB_HOME --bindir=$PRFDB_HOME/bin"
 SOURCE_FILES="HotKnots_v2.0.tar.gz NUPACK1.2_pseudoknot_nopairs.tar.gz pknots.tar.gz NUPACK1.2_nopseudoknot_nopairs.tar.gz  rnamotif-3.0.7.tar.gz squid.tar.gz ViennaRNA-1.7.2.tar.gz miRanda-aug2010.tar.gz rnahybrid-2.1-src.tar.gz mfold_util-4.6.tar.gz unafold-3.8.tar.gz"
@@ -46,7 +48,9 @@ echo "Installing HotKnots"
 cd $PRFDB_HOME/src/HotKnots_v2.0
 cp bin/HotKnot $PRFDB_HOME/bin
 cp bin/params/* $PRFDB_HOME/bin/params
-
+## hotknots expects some text files for its parambeters, they live in both the 'TestSeq' and 'params' directories
+rsync -av ${PRFDB_HOME}/src/HotKnots_v2.0/bin/params ${PRFDB_HOME}/bin/params
+rsync -av ${PRFDB_HOME}/src/HotKnots_v2.0/bin/TestSeq ${PRFDB_HOME}/bin/TestSeq
 echo "Installing a slightly hacked version of NUPACK"
 cd $PRFDB_HOME/src/NUPACK1.2_pseudoknot/source
 make clean ; make
