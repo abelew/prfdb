@@ -151,6 +151,49 @@
     <colgroup>
      <col width="100%">
     </colgroup>
+
+% my $found_snp = 0;
+% my $snp_info;
+% my $start_region;
+% my $end_region;
+% if ($information->{species} eq 'homo_sapiens') {
+%  $snp_info = $db->MySelect("SELECT * FROM snp WHERE gene_acc = '$information->{accession}' AND location is not null");
+%  $start_region = $information->{slipstart} - 7;
+%  $end_region = $information->{slipstart} + $information->{seqlength};
+%  foreach my $datum (@{$snp_info}) {
+%   if (($datum->[4] >= $start_region) and ($datum->[4] <= $end_region)) {
+%    $found_snp++;
+%   }
+%  } ## End checking for hits
+% } ## End if homo sapiens
+
+%  if ($found_snp) {
+%   my $snp_string = '';
+%   for my $c ($start_region .. $end_region) {
+%    my $hit = 0;
+%    foreach my $datum (@{$snp_info}) {
+%     if ($datum->[4] == $c) {
+%      $snp_string .= qq(<a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=snp&cmd=search&term=$datum->[1]" title="SNP at position $datum->[4]" rel="external" target="_blank">$datum->[5]</a>);
+%      $hit = $hit + 3;
+%     }
+%    } ## End foreach element of @snp_info
+%    if ($hit) {
+%     $hit--;
+%    } else {    
+%     $snp_string .= '.';
+%    }
+%   } ## End for from the start region to end region
+      <tr>
+	<td text-align="right"><span style="whitespace: nowrap">
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;<% $snp_string %></font></b>
+	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;<b>SNPS</b>
+          </font></div>
+        </span>
+        </td>
+      </tr>
+
+% }  ## End if found_snp
+
       <tr>
 	<td text-align="right"><span style="whitespace: nowrap">
 <!---	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{minus_stop} %></font></b>  --->

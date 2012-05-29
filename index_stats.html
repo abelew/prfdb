@@ -4,7 +4,7 @@
     <p>
 % my $data = $db->MySelect(statement => "SELECT * FROM index_stats ORDER BY species", type => 'list_of_hashes');
 % foreach my $datum (@{$data}) {
- <i><% $datum->{num_mfe_entries} %> <a href="/distribution.html?species=<% $datum->{species} %>&seqlength=100&slipsites=all"><% HTMLMisc::Make_Species($datum->{species}) %></a></i> sequence windows<br>
+ <i><% $datum->{num_mfe_entries} %> <a title="View the distribution of predictions for <% HTMLMisc::Make_Species($datum->{species}) %>" href="/distribution.html?species=<% $datum->{species} %>&seqlength=100&slipsites=all"><% HTMLMisc::Make_Species($datum->{species}) %></a></i> sequence windows<br>
  comprising <% $datum->{num_mfe_knotted} %> of <% $datum->{num_genome} %> genes.<br><br>
 %}
     </p>
