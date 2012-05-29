@@ -1554,6 +1554,8 @@ sub Make_Distribution {
     my $bottom_y_coord = $axes_coords->[4];
     my $x_interval = sprintf("%.1f", (($max-$min)/$num_bins) );
     my $x_interval_pixels = ($bottom_x_coord - $top_x_coord)/($num_bins + 2);
+    ## Check for divide by 0
+    return if (!$x_interval);
     my $mfe_x_coord = $top_x_coord + ($x_interval_pixels) + (($real_mfe - $min) * ($x_interval_pixels/$x_interval));
     my $mfe_xbar_coord = $top_x_coord + ($x_interval_pixels) + (($xbar - $min) * ($x_interval_pixels/$x_interval));
     my $green = $gd->colorAllocate(0,191,0);

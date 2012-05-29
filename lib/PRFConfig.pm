@@ -38,22 +38,22 @@ sub new {
     my ($class, %arg) = @_;
     my $me = bless {}, $class;
     foreach my $key (keys %arg) {
-	$me->{$key} = $arg{$key} if (defined($arg{$key}));
+        $me->{$key} = $arg{$key} if (defined($arg{$key}));
     }
-
+    
     $me->{appconfig} = AppConfig->new({
-	CASE => 1,
-	CREATE => 1,
-	PEDANTIC => 0,
+        CASE => 1,
+        CREATE => 1,
+        PEDANTIC => 0,
 #	ERROR => eval(),
-	GLOBAL => {
-	    EXPAND => EXPAND_ALL,
-	    EXPAND_ENV => 1,
-	    EXPAND_UID => 1,
-	    DEFAULT => "<unset>",
-	    ARGCOUNT => 1,
-	},});
-
+        GLOBAL => {
+            EXPAND => EXPAND_ALL,
+            EXPAND_ENV => 1,
+            EXPAND_UID => 1,
+            DEFAULT => "<unset>",
+            ARGCOUNT => 1,
+        },});
+    
     ## First fill out a set of default configuration values
     ## The following for loop will include all of these in conf_specification_temp
     ## which will in turn be passed to GetOpts
@@ -62,6 +62,7 @@ sub new {
     $me->{add_to_path} = "/usr/bin:/usr/local/bin" if (!defined($me->{add_to_path}));
     $me->{arch_specific_exe} = 0 if (!defined($me->{arch_specific_exe}));
     $me->{base} = $ENV{PRFDB_HOME} if (!defined($me->{base}));
+    $me->{bindir} = qq"$ENV{PRFDB_HOME}/bin" if (!defined($me->{bindir}));
     $me->{blastdir} = 'blast' if (!defined($me->{blastdir}));
     $me->{boot_iterations} = 100 if (!defined($me->{boot_iterations}));
     $me->{boot_mfe_methods} = {pknots => \&RNAFolders::Pknots_Boot, nupack => \&RNAFolders::Nupack_Boot, hotknots => \&RNAFolders::Hotknots_Boot,} if (!defined($me->{boot_mfe_methods}));
@@ -174,168 +175,179 @@ sub new {
 
     my ($open, %data, $config_option);
     if (-r $me->{config_file}) {
-	$open = $me->{appconfig}->file($me->{config_file});
-	%data = $me->{appconfig}->varlist("^.*");
-	for $config_option (keys %data) {
-	    $me->{$config_option} = $data{$config_option};
-	    undef $data{$config_option};
-	}
+        $open = $me->{appconfig}->file($me->{config_file});
+        %data = $me->{appconfig}->varlist("^.*");
+        for $config_option (keys %data) {
+            $me->{$config_option} = $data{$config_option};
+            undef $data{$config_option};
+        }
     }
 
     ## This makes all of the above options over-rideable on the command line.
     my (%conf, %conf_specification, %conf_specification_temp);
     foreach my $default (keys %{$me}) {
-	$conf_specification{"$default:s"} = \$conf{$default};
+        $conf_specification{"$default:s"} = \$conf{$default};
     }
     ## These are all of the configuration options for the commandline specifically
     %conf_specification_temp = (
-	'accession|i:s' => \$conf{accession},
-	'arch:i' => \$conf{arch_specific_exe},
-	'blast:s' => \$conf{blast},
-	'boot:i' => \$conf{do_boot},
-	'clear_queue' => \$conf{clear_queue},
-	'complement:s' => \$conf{complement},
-	'copyfrom:s' => \$conf{copyfrom},
-	'create_tables' => \$conf{create_tables},
-	'dbexec:s' => \$conf{dbexec},
-	'dbselect:s' => \$conf{dbselect},
-	'fasta_style:s' => \$conf{fasta_style},
-	'fillqueue' => \$conf{fillqueue},
-	'genome' => \$conf{genome},
-	'help|version' => \$conf{help},
-	'hotknots:i' => \$conf{do_hotknots},
-	'import:s' => \$conf{import_accession},
-	'import_genbank:s' => \$conf{import_genbank},
-	'import_genbank_accession:s' => \$conf{import_genbank_accession},
-	'import_genbank_flatfile:s' => \$conf{import_genbank_flatfile},
-	'index_stats' => \$conf{index_stats},
-	'input' => \$conf{input},
-	'input_fasta:s' => \$conf{input_fasta},
-	'input_file:s' => \$conf{input_file},
-	'iterations:i' => \$conf{boot_iterations},
-	'make_jobs' => \$conf{make_jobs},
-	'landscape_length:i' => \$conf{landscape_seqlength},
-	'length:i' => \$conf{seqlength},
-	'make_landscape' => \$conf{make_landscape},
-	'makeblast' => \$conf{makeblast},
-	'maintain' => \$conf{maintain},
-	'mysql_backup' => \$conf{mysql_backup},
-	'nodaemon:i' => \$conf{nodaemon},
-	'nupack_nopairs:i' => \$conf{nupack_nopairs_hack},
-	'optimize:s' => \$conf{optimize},
-	'output' => \$conf{output},
-	'pknots:i' => \$conf{do_pknots},
-	'process_import_queue' => \$conf{process_import_queue},
-	'randomize' => \$conf{randomize_id},
-	'reconnect' => \$conf{reconnect},
-	'resetqueue' => \$conf{resetqueue},
-	'revcomp:s' => \$conf{revcomp},
-	'reverse:s' => \$conf{reverse},
-	'setup_db' => \$conf{setup_db},
-	'shell' => \$conf{shell},
-	'species:s' => \$conf{species},
-	'startmotif:s' => \$conf{startmotif},
-	'startpos:s' => \$conf{startpos},
-	'do_stats:s' => \$conf{do_stats},
-	'stats' => \$conf{stats},
-	'utr:i' => \$conf{do_utr},
-	'workdir:s' => \$conf{workdir},
-	'zscore' => \$conf{zscore},
-	'resync' => \$conf{resync},
-	);
+        'accession|i:s' => \$conf{accession},
+        'arch:i' => \$conf{arch_specific_exe},
+        'blast:s' => \$conf{blast},
+        'boot:i' => \$conf{do_boot},
+        'clear_queue' => \$conf{clear_queue},
+        'complement:s' => \$conf{complement},
+        'copyfrom:s' => \$conf{copyfrom},
+        'create_tables' => \$conf{create_tables},
+        'dbexec:s' => \$conf{dbexec},
+        'dbselect:s' => \$conf{dbselect},
+        'fasta_style:s' => \$conf{fasta_style},
+        'fillqueue' => \$conf{fillqueue},
+        'genome' => \$conf{genome},
+        'help|version' => \$conf{help},
+        'hotknots:i' => \$conf{do_hotknots},
+        'import:s' => \$conf{import_accession},
+        'import_genbank:s' => \$conf{import_genbank},
+        'import_genbank_accession:s' => \$conf{import_genbank_accession},
+        'import_genbank_flatfile:s' => \$conf{import_genbank_flatfile},
+        'index_stats' => \$conf{index_stats},
+        'input' => \$conf{input},
+        'input_fasta:s' => \$conf{input_fasta},
+        'input_file:s' => \$conf{input_file},
+        'iterations:i' => \$conf{boot_iterations},
+        'make_jobs' => \$conf{make_jobs},
+        'landscape_length:i' => \$conf{landscape_seqlength},
+        'length:i' => \$conf{seqlength},
+        'make_landscape' => \$conf{make_landscape},
+        'makeblast' => \$conf{makeblast},
+        'maintain' => \$conf{maintain},
+        'mysql_backup' => \$conf{mysql_backup},
+        'nodaemon:i' => \$conf{nodaemon},
+        'nupack_nopairs:i' => \$conf{nupack_nopairs_hack},
+        'optimize:s' => \$conf{optimize},
+        'output' => \$conf{output},
+        'pknots:i' => \$conf{do_pknots},
+        'process_import_queue' => \$conf{process_import_queue},
+        'randomize' => \$conf{randomize_id},
+        'reconnect' => \$conf{reconnect},
+        'resetqueue' => \$conf{resetqueue},
+        'revcomp:s' => \$conf{revcomp},
+        'reverse:s' => \$conf{reverse},
+        'setup_db' => \$conf{setup_db},
+        'shell' => \$conf{shell},
+        'species:s' => \$conf{species},
+        'startmotif:s' => \$conf{startmotif},
+        'startpos:s' => \$conf{startpos},
+        'do_stats:s' => \$conf{do_stats},
+        'stats' => \$conf{stats},
+        'utr:i' => \$conf{do_utr},
+        'workdir:s' => \$conf{workdir},
+        'zscore' => \$conf{zscore},
+        'resync' => \$conf{resync},
+        );
     ## This makes both of the above groups command-line changeable
     foreach my $name (keys %conf_specification_temp) {
-	$conf_specification{$name} = $conf_specification_temp{$name};
+        $conf_specification{$name} = $conf_specification_temp{$name};
     }
     undef(%conf_specification_temp);
+
     ## This next line pulls in the command line options.
     my $argv_result = GetOptions(%conf_specification);
     unless ($argv_result) {
-	Help();
+        Help();
     }
+
     ## This puts every option defined above into the PRFConfig namespace.
     foreach my $opt (keys %conf) {
-	if (defined($conf{$opt})) {
-	    $me->{$opt} = $conf{$opt};
-	}
+        if (defined($conf{$opt})) {
+            $me->{$opt} = $conf{$opt};
+        }
     }
     undef(%conf);
 
     if (defined($me->{help})) {
-	Help();
+        Help();
     }
     if (defined($me->{blast_db})) {
-	$ENV{BLASTDB} = qq"$me->{blast_db}/blast";
+        $ENV{BLASTDB} = qq"$me->{blast_db}/blast";
     }
     if (defined($me->{checks}) and $me->{checks} == 1) {
-	$me->{debug} = 0;
+        $me->{debug} = 0;
     }
     if (defined($me->{debug})) {
-	$me->{checks} = 1;
+        $me->{checks} = 1;
     }
+
     if (ref($me->{database_host}) eq '') {
-	$me->{database_host} = eval($me->{database_host});
-	$me->{database_otherhost} = $me->{database_host}->[1];
+        $me->{database_host} = eval($me->{database_host});
+        $me->{database_otherhost} = $me->{database_host}->[1];
     }
+
     if (ref($me->{boot_mfe_methods}) eq '') {
-	$me->{boot_mfe_methods} = eval($me->{boot_mfe_methods});
+        $me->{boot_mfe_methods} = eval($me->{boot_mfe_methods});
     }
+
     if (ref($me->{boot_randomizers}) eq '') {
-	$me->{boot_randomizers} = eval($me->{boot_randomizers});
+        $me->{boot_randomizers} = eval($me->{boot_randomizers});
     }
+
     if (ref($me->{index_species}) eq '') {
-	$me->{index_species} = eval($me->{index_species});
+        $me->{index_species} = eval($me->{index_species});
     }
+
     if (defined($me->{reconnect})) {
-	eval "use PRFdb qw'Callstack'; 1";
- 	my $db = new PRFdb(config => $me);
-	$db->Bootlace_Check($me->{prune});
-	exit(0);
+        eval "use PRFdb qw'Callstack'; 1";
+        my $db = new PRFdb(config => $me);
+        $db->Bootlace_Check($me->{prune});
+        exit(0);
     }
+
     if (ref($me->{seqlength}) eq '') {
-	$me->{seqlength} = eval($me->{seqlength});
+        $me->{seqlength} = eval($me->{seqlength});
     }
+
     if (defined($me->{setup_db})) {
-	print "Running this assumes that you put an option
+        print "Running this assumes that you put an option
 in your prfdb.conf with the localhost SQL root password TEMPORARILY!
 Do so with a line like: database_root_password = PASSWORD
 In addition, it assumes you have a chosen password for the database.
 I am going to wait 10 seconds before running to let you suspend me
 and go check..\n";
-	sleep(3);
-	print "Go on, go check.";
-	sleep(7);
-	my $cmd = qq/mysqladmin -u root --password=$me->{database_root_password} create $me->{database_name}/;
-	system($cmd);
-	$cmd = qq/mysql -u root --password=$me->{database_root_password} mysql -e "GRANT ALL PRIVILEGES ON $me->{database_name}.* to '$me->{database_user}'\@'\%' IDENTIFIED BY '$me->{database_pass}'"/;
-	print "Running $cmd\n";
-	system($cmd);
-	$cmd = qq/mysql -u root --password=$me->{database_root_password} mysql -e "flush privileges"/;
-	print "Running $cmd\n";
-	system($cmd);
-	eval "use PRFdb qw'Callstack'; 1";
- 	my $db = new PRFdb(config => $me);
-	print "Creating Tables\n";
-	$db->Create_Tables();
-	$db->Create_MFE("mfe_saccharomyces_cerevisiae") if (!$db->Tablep("mfe_saccharomyces_cerevisiae"));
-	$db->Create_Boot("boot_saccharomyces_cerevisiae") if (!$db->Tablep("boot_saccharomyces_cerevisiae"));
-	$db->Create_Landscape("landscape_saccharomyces_cerevisiae") if (!$db->Tablep("landscape_saccharomyces_cerevisiae"));
-	exit(0);
+        sleep(3);
+        print "Go on, go check.";
+        sleep(7);
+        my $cmd = qq/mysqladmin -u root --password=$me->{database_root_password} create $me->{database_name}/;
+        system($cmd);
+        $cmd = qq/mysql -u root --password=$me->{database_root_password} mysql -e "GRANT ALL PRIVILEGES ON $me->{database_name}.* to '$me->{database_user}'\@'\%' IDENTIFIED BY '$me->{database_pass}'"/;
+        print "Running $cmd\n";
+        system($cmd);
+        $cmd = qq/mysql -u root --password=$me->{database_root_password} mysql -e "flush privileges"/;
+        print "Running $cmd\n";
+        system($cmd);
+        eval "use PRFdb qw'Callstack'; 1";
+        my $db = new PRFdb(config => $me);
+        print "Creating Tables\n";
+        $db->Create_Tables();
+        $db->Create_MFE("mfe_saccharomyces_cerevisiae") if (!$db->Tablep("mfe_saccharomyces_cerevisiae"));
+        $db->Create_Boot("boot_saccharomyces_cerevisiae") if (!$db->Tablep("boot_saccharomyces_cerevisiae"));
+        $db->Create_Landscape("landscape_saccharomyces_cerevisiae") if (!$db->Tablep("landscape_saccharomyces_cerevisiae"));
+        exit(0);
     }
+
     if (defined($me->{mysql_backup})) {
-	my $host = $me->{database_host}->[0];
-	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-	my $suffix = "mysqldump_${min}${hour}${mon}${wday}${year}.txt.gz";
-	my $dump_command = qq"nice mysqldump -u $me->{database_user} --password=$me->{database_pass}";
-	my $commandline = qq"cd $ENV{PRFDB_HOME}/backup && $dump_command $me->{database_name} | gzip > $me->{database_name}_$suffix && rm `ls -t $me->{database_name}_* | tail \-1` 2>$ENV{PRFDB_HOME}/backup/mysqldump.out 1>&2";
-	print "Going to run: $commandline\n";
-	system($commandline);
-	exit(0);
+        my $host = $me->{database_host}->[0];
+        my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+        my $suffix = "mysqldump_${min}${hour}${mon}${wday}${year}.txt.gz";
+        my $dump_command = qq"nice mysqldump -u $me->{database_user} --password=$me->{database_pass}";
+        my $commandline = qq"cd $ENV{PRFDB_HOME}/backup && $dump_command $me->{database_name} | gzip > $me->{database_name}_$suffix && rm `ls -t $me->{database_name}_* | tail \-1` 2>$ENV{PRFDB_HOME}/backup/mysqldump.out 1>&2";
+        print "Going to run: $commandline\n";
+        system($commandline);
+        exit(0);
     }
+
     if (defined($me->{shell})) {
-	my $host = $me->{database_host}->[0];
-	system("mysql -u $me->{database_user} --password=$me->{database_pass} -h $host $me->{database_name}");
-	exit(0);
+        my $host = $me->{database_host}->[0];
+        system("mysql -u $me->{database_user} --password=$me->{database_pass} -h $host $me->{database_name}");
+        exit(0);
     }
 
     my $err = $me->{log_error};
@@ -344,68 +356,71 @@ and go check..\n";
     $me->{workdir} = $me->{base} . '/' . $me->{workdir};
     $me->{blastdir} = $me->{base} . '/' . $me->{blastdir};
     foreach my $dir (split(/:/, $me->{add_to_path})) {
-	$ENV{PATH} = $ENV{PATH} . ':' . $dir;
+        $ENV{PATH} = $ENV{PATH} . ':' . $dir;
     }
-    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir};
+    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . ':' . $me->{bindir};
     $ENV{BLASTDB} = qq"$me->{base}/blast";
-
-
+    
     if ($me->{arch_specific_exe} == 1) {
-	## If we have architecture specific executables, then
-	## They should live in directories named after their architecture
-	my @modified_exes = ('rnamotif', 'rmprune', 'pknots', 'zcat');
-	open(UNAME, "/usr/bin/env uname -a |");
-	## OPEN UNAME in PRFConfig
-	my $arch;
-	while (my $line = <UNAME>) {
-	    chomp $line;
-	    if ($line =~ /\w/) {
-		$arch = $line;
-	    }
-	}
-	close(UNAME);
-	## CLOSE UNAME in PRFConfig
-	chomp $arch;
-	if ($arch =~ /IRIX/) {
-	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/irix';
-	} elsif ($arch =~ /Linux/) {
-	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/linux';
-	} elsif ($arch =~ /Darwin/) {
-	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/osx';
-	} elsif ($arch =~ /AIX/) {
-	    $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/aix';
-	}
-	foreach my $exe (@modified_exes) {
-	    if ($arch =~ /IRIX/) {
-		my $exe_path = join('', $me->{workdir} , '/irix/', $me->{$exe});
-		$me->{$exe} = $exe_path;
-	    } elsif ($arch =~ /AIX/) {
-		my $exe_path = join('', $me->{workdir} , '/aix/', $me->{$exe});
-		$me->{$exe} = $exe_path;
-	    } elsif ($arch =~ /Darwin/) {
-		my $exe_path = join('', $me->{workdir} , '/osx/', $me->{$exe});
-		$me->{$exe} = $exe_path;
-	    } elsif ($arch =~ /Linux/) {
-		my $exe_path = join('', $me->{workdir} , '/linux/', $me->{$exe});
-		$me->{$exe} = $exe_path;
-	    } else {
-		Callstack(die => 1, message => "Architecture $arch not available.");
-	    }
-	}    ## For every modified executable
-	
-	if ($arch =~ /IRIX/) {
-	    $me->{nupack} .= ".irix";
-	    $me->{nupack_boot} .= ".irix";
-	} elsif ($arch =~ /AIX/) {
-	    $me->{nupack} .= ".aix";
-	    $me->{nupack_boot} .= ".aix";
-	} elsif ($arch =~ /Linux/) {
-	    $me->{nupack} .= ".linux";
-	    $me->{nupack_boot} .= ".linux";
-	} elsif ($arch =~ /Darwin/) {
-	    $me->{nupack} .= ".osx";
-	    $me->{nupack_boot} .= ".osx";
-	}
+        ## If we have architecture specific executables, then
+        ## They should live in directories named after their architecture
+        my @modified_exes = ('rnamotif', 'rmprune', 'pknots', 'zcat');
+        open(UNAME, "/usr/bin/env uname -a |");
+        ## OPEN UNAME in PRFConfig
+        my $arch;
+        while (my $line = <UNAME>) {
+            chomp $line;
+            if ($line =~ /\w/) {
+                $arch = $line;
+            }
+        }
+        close(UNAME);
+        ## CLOSE UNAME in PRFConfig
+        chomp $arch;
+        if ($arch =~ /IRIX/) {
+            $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/irix';
+        } elsif ($arch =~ /Linux/) {
+            $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/linux';
+        } elsif ($arch =~ /Darwin/) {
+            $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/osx';
+        } elsif ($arch =~ /AIX/) {
+            $ENV{PATH} = $ENV{PATH} . ':' . $me->{workdir} . '/aix';
+        }
+        
+        foreach my $exe (@modified_exes) {
+            if ($arch =~ /IRIX/) {
+                my $exe_path = join('', $me->{workdir} , '/irix/', $me->{$exe});
+                $me->{$exe} = $exe_path;
+            } elsif ($arch =~ /AIX/) {
+                my $exe_path = join('', $me->{workdir} , '/aix/', $me->{$exe});
+                $me->{$exe} = $exe_path;
+            } elsif ($arch =~ /Darwin/) {
+                my $exe_path = join('', $me->{workdir} , '/osx/', $me->{$exe});
+                $me->{$exe} = $exe_path;
+            } elsif ($arch =~ /Linux/) {
+                my $exe_path = join('', $me->{workdir} , '/linux/', $me->{$exe});
+                $me->{$exe} = $exe_path;
+            } else {
+                Callstack(die => 1, message => "Architecture $arch not available.");
+            }
+        }    ## For every modified executable
+        
+        if ($arch =~ /IRIX/) {
+            $me->{nupack} .= ".irix";
+            $me->{nupack_boot} .= ".irix";
+        }
+        elsif ($arch =~ /AIX/) {
+            $me->{nupack} .= ".aix";
+            $me->{nupack_boot} .= ".aix";
+        }
+        elsif ($arch =~ /Linux/) {
+            $me->{nupack} .= ".linux";
+            $me->{nupack_boot} .= ".linux";
+        }
+        elsif ($arch =~ /Darwin/) {
+            $me->{nupack} .= ".osx";
+            $me->{nupack_boot} .= ".osx";
+        }
     }    ## End checking if multiple architectures are in use
     $ENV{EFNDATA} = $me->{workdir};
     $ENV{ENERGY_FILE} = qq"$me->{workdir}/dataS_G.rna";
@@ -416,32 +431,17 @@ and go check..\n";
     return($me);
 }
 
-sub PRF_Out {
-    my $me = shift;
-    my $message = shift;
-    my $out = $me->{log};
-    open(OUTFH, ">>$out") or Callstack(die => 1, message => "Unable to open the log file $out.");
-    ## OPEN OUTFH in PRF_Out
-    my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
-    my $month = $mon + 1;
-    my $y = $year + 1900;
-    my $datestring = qq"$hour:$min:$sec $mday/$month/$y";
-    print OUTFH "$datestring\t$message\n";
-    close(OUTFH);
-    ## CLOSE OUTFH in PRF_Out
-}
-
 sub AddOpen {
     my $me = shift;
     my $file = shift;
     my @open_files = @{$me->{open_files}};
-
+    
     if (ref($file) eq 'ARRAY') {
-	foreach my $f (@{$file}) {
-	    push(@open_files, $f);
-	}
+        foreach my $f (@{$file}) {
+            push(@open_files, $f);
+        }
     } else {
-	push(@open_files, $file);
+        push(@open_files, $file);
     }
     $me->{open_files} = \@open_files;
     my $num_open_files = scalar(@open_files);
@@ -457,27 +457,27 @@ sub RemoveFile {
     my @comp = ();
     
     if ($file eq 'all') {
-	foreach my $f (@{open_files}) {
-	    unlink($f);
-	    print STDERR "Deleting: $f\n" if (defined($me->{debug}) and $me->{debug} > 0);
-	    $num_deleted++;
-	}
-	$me->{open_files} = \@new_open_files;
-	return($num_deleted);
+        foreach my $f (@{open_files}) {
+            unlink($f);
+            print STDERR "Deleting: $f\n" if (defined($me->{debug}) and $me->{debug} > 0);
+            $num_deleted++;
+        }
+        $me->{open_files} = \@new_open_files;
+        return($num_deleted);
     } elsif (ref($file) eq 'ARRAY') {
-	@comp = @{$file};
+        @comp = @{$file};
     } else {
-	push(@comp, $file);
+        push(@comp, $file);
     }
-
+    
     foreach my $f (@open_files) {
-	foreach my $c (@comp) {
-	    if ($c eq $f) {
-		$num_deleted++;
-		unlink($f);
-	    }
-	}
-	push(@new_open_files, $f);
+        foreach my $c (@comp) {
+            if ($c eq $f) {
+                $num_deleted++;
+                unlink($f);
+            }
+        }
+        push(@new_open_files, $f);
     }
     $me->{open_files} = \@new_open_files;
     return($num_deleted);
@@ -520,9 +520,10 @@ sub AUTOLOAD {
     my $name = $AUTOLOAD;
     $name =~ s/.*://;   # strip fully-qualified portion
     if (@_) {
-	return $me->{$name} = shift;
-    } else {
-	return $me->{$name};
+        return $me->{$name} = shift;
+    }
+    else {
+        return $me->{$name};
     }
 }
 

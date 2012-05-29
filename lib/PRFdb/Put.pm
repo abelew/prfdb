@@ -40,37 +40,38 @@ sub Boot {
     my $rows = 0;
     ## What fields are required?
     foreach my $mfe_method (keys %{$config->{boot_mfe_methods}}) {
-	my $mfe_id = $data->{mfe_id};	
-	foreach my $rand_method (keys %{$config->{boot_randomizers}}) {
-	    my $iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{iterations};
-	    my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
-	    my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
-	    my $mfe_se = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_se};
-	    my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
-	    my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
-	    my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
-	    my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
-	    my $species = $data->{$mfe_method}->{$rand_method}->{stats}->{species};
-	    my $accession = $data->{$mfe_method}->{$rand_method}->{stats}->{accession};
-	    $mfe_id = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_id};
-	    my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
-	    my $seqlength = $data->{$mfe_method}->{$rand_method}->{stats}->{seqlength};
-	    my $errorstring = $me->Check_Insertion(columns => ['genome_id'], data => $data);
-	    if (defined($errorstring)) {
-		$errorstring = "Undefined value(s) in Put_Boot: $errorstring";
-		$config->PRF_Error($errorstring, $species, $accession);
-	    }
-	    my $boot_table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
+        print "Working on $mfe_method\n";
+        my $mfe_id = $data->{mfe_id};	
+        foreach my $rand_method (keys %{$config->{boot_randomizers}}) {
+            my $iterations = $data->{$mfe_method}->{$rand_method}->{stats}->{iterations};
+            my $mfe_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_mean};
+            my $mfe_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_sd};
+            my $mfe_se = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_se};
+            my $pairs_mean = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_mean};
+            my $pairs_sd = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_sd};
+            my $pairs_se = $data->{$mfe_method}->{$rand_method}->{stats}->{pairs_se};
+            my $mfe_values = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_values};
+            my $species = $data->{$mfe_method}->{$rand_method}->{stats}->{species};
+            my $accession = $data->{$mfe_method}->{$rand_method}->{stats}->{accession};
+            $mfe_id = $data->{$mfe_method}->{$rand_method}->{stats}->{mfe_id};
+            my $start = $data->{$mfe_method}->{$rand_method}->{stats}->{start};
+            my $seqlength = $data->{$mfe_method}->{$rand_method}->{stats}->{seqlength};
+            my $errorstring = $me->Check_Insertion(columns => ['genome_id'], data => $data);
+            if (defined($errorstring)) {
+                $errorstring = "Undefined value(s) in Put_Boot: $errorstring";
+                $config->PRF_Error($errorstring, $species, $accession);
+            }
+            my $boot_table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
 #	    my $statement = qq"INSERT INTO $boot_table
-	    my $statement = qq"INSERT DELAYED INTO $boot_table
+            my $statement = qq"INSERT DELAYED INTO $boot_table
 (genome_id, mfe_id, accession, start, seqlength, iterations, rand_method, mfe_method, mfe_mean, mfe_sd, mfe_se, pairs_mean, pairs_sd, pairs_se, mfe_values)
     VALUES
 (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             my $undefined_values = $me->Check_Defined(genome_id => $data->{genome_id}, mfe_id => $mfe_id, accession => $accession, start => $start, seqlength => $seqlength, iterations => $iterations, rand_method => $rand_method, mfe_method => $mfe_method, mfe_mean => $mfe_mean, mfe_sd => $mfe_sd, mfe_se => $mfe_se, pairs_mean => $pairs_mean, pairs_sd => $pairs_sd, pairs_se => $pairs_se, mfe_values => $mfe_values);
             if ($undefined_values) {
-              $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values\n";
-              $config->PRF_Error( $errorstring, $species, $accession );
-              print "$errorstring, $species, $accession\n";
+              $errorstring = "An error occurred in Put_Boot, undefined values: $undefined_values ";
+              $config->PRF_Error($errorstring, $species, $accession);
+              print "$errorstring, $mfe_method, $species, $accession\n";
             }
             my $inserted_rows = $me->MyExecute(statement => $statement, vars => [ $data->{genome_id}, $mfe_id, $accession, $start, $seqlength, $iterations, $rand_method, $mfe_method, $mfe_mean, $mfe_sd, $mfe_se, $pairs_mean, $pairs_sd, $pairs_se, $mfe_values ],);
             $rows = $rows + $inserted_rows;

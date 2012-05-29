@@ -184,7 +184,7 @@ sub Gather {
     my %pre_landscape_state = %{$state};
     my $landscape_state = \%pre_landscape_state;
     if ($config->{do_landscape}) {
-	Landscape_Gatherer(state => $landscape_state, message => $message);
+        Landscape_Gatherer(state => $landscape_state, message => $message);
     }
     foreach my $len (@{$config->{seqlength}}) {
         $state->{seqlength} = $len;
@@ -1115,10 +1115,12 @@ sub Check_Args {
 	Make_Queue_Jobs();
 	exit(0);
     }    
+
     if (defined($config->{dbexec})) {
 	$db->MyExecute(statement => "$config->{dbexec}");
 	exit(0);
     }
+
     if (defined($config->{dbselect})) {
 	my $answer = $db->MySelect($config->{dbselect});
 	foreach my $row (@{$answer}) {
@@ -1127,49 +1129,60 @@ sub Check_Args {
 	}
 	exit(0);
     }
+
     if (defined($config->{import_genbank_accession})) {
 	Import_Genbank_Accession(accession => $config->{import_genbank_accession});
     }
+
     if (defined($config->{import_genbank_flatfile})) {
 	Import_Genbank_Flatfile(input_file => $config->{import_genbank_flatfile});
     }
+
     if (defined($config->{makeblast})) {
 	Make_Blast();
 	exit(0);
     }
+
     if (defined($config->{resync})) {
 	$db->ReSync();
 	exit(0);
     }
+
     if (defined($config->{revcomp})) {
 	die("Need a sequence.") if (!$config->{revcomp});
 	my $tmp = new SeqMisc(sequence => $config->{revcomp});
 	print "$tmp->{revcomp}\n";
 	exit(0);
     }
+
     if (defined($config->{reverse})) {
 	die("Need a sequence.") if (!$config->{reverse});
 	my $tmp = new SeqMisc(sequence => $config->{reverse});
 	print "$tmp->{reverse}\n";
 	exit(0);
     }
+
     if (defined($config->{zscore})) {
 	Zscore();
 	exit(0);
     }
+
     if (defined($config->{clear_queue})) {
 	$db->Reset_Queue(complete => 1);
 	exit(0);
     }
+
     if (defined($config->{make_landscape})) {
 	Make_Landscape_Tables();
 	exit(0);
     }
+
     if (defined($config->{maintain})) {
 	print "Performing maintenance of the PRFdb.\n";
 	Maintenance();
 	exit(0);
     }
+
     if (defined($config->{do_stats})) {
 	my $data = {
 	    species => $config->{index_species},
@@ -1180,10 +1193,12 @@ sub Check_Args {
 	$db->Put_All_Stats($data);
 	exit(0);
     }
+
     if (defined($config->{optimize})) {
 	Optimize($config->{optimize});
 	exit(0);
     }
+
     if (defined($config->{blast})) {
 	my $blast = new PRFBlast;
 	$blast->Search($config->{blast}, 'local');
@@ -1191,56 +1206,71 @@ sub Check_Args {
 	$blast->Search($config->{blast}, 'remote');
 	exit(0);
     }
+
     if (defined($config->{fillqueue})) {
 	$db->FillQueue();
 	my $num = $db->MySelect(statement => "SELECT count(id) from $config->{queue_table}", type => 'single');
 	print "The queue now has $num entries\n";
 	exit(0);
     }
+
     if (defined($config->{resetqueue})) {
 	$db->Reset_Queue();
 	exit(0);
     }
+
     if (defined($config->{copyfrom})) {
 	$db->Copy_Genome($config->{copyfrom});
     }
+
     if (defined($config->{input_file})) {
-	if (defined($config->{startpos})) {
-	    Read_Accessions(input => $config->{input_file}, startpos => $config->{startpos});
-	} else {
-	    Read_Accessions(input => $config->{input_file});
-	}
+        if (defined($config->{startpos})) {
+            Read_Accessions(input => $config->{input_file}, startpos => $config->{startpos});
+        } else {
+            Read_Accessions(input => $config->{input_file});
+        }
     }
+
     if (defined($config->{accession})) {
-	$state->{queue_id} = 0;
-	## Dumb hack lives on
-	$state->{accession} = $config->{accession};
-	if ($state->{accession} eq '' or $state->{accession} =~ /^\s+$/) {
-	    die("No accession provided to the --accession argument.");
-	}
-	$state->{genome_id} = $db->Get_GenomeId_From_Accession($config->{accession});
-	if (defined($config->{startpos})) {
-	    Gather(state => $state, startpos => $config->{startpos});
-	} else {
-	    Gather(state => $state);
-	}
-	exit(0);
+        $state->{queue_id} = 0;
+        ## Dumb hack lives on
+        $state->{accession} = $config->{accession};
+        if ($state->{accession} eq '' or $state->{accession} =~ /^\s+$/) {
+            die("No accession provided to the --accession argument.");
+        }
+        $state->{genome_id} = $db->Get_GenomeId_From_Accession($config->{accession});
+        ## If it does not exist, import it, assuming it is from genbank.
+        if (!$state->{genome_id}) {
+            my $import = $db->Import_CDS($config->{accession});
+            $state->{genome_id} = $db->Get_GenomeId_From_Accession($config->{accession});
+        }
+
+        if (defined($config->{startpos})) {
+            Gather(state => $state, startpos => $config->{startpos});
+        } 
+        else {
+            Gather(state => $state);
+        }
+        exit(0);
     }
+
     if (defined($config->{input_fasta})) {
-	my $queue_ids;
-	if (defined($config->{startpos})) {
-	    $queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style}, $config->{startpos});
-	} else {
-	    $queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style});
-	}
-	exit(0);
+        my $queue_ids;
+        if (defined($config->{startpos})) {
+            $queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style}, $config->{startpos});
+        } else {
+            $queue_ids = $db->Import_Fasta($config->{input_fasta}, $config->{fasta_style});
+        }
+        exit(0);
     }
+
     if (defined($config->{nodaemon})) {
-	print "No daemon is set, existing before reading queue.\n";
-	exit(0);
+        print "No daemon is set, existing before reading queue.\n";
+        exit(0);
     }
+
     if ($config->{checks}) {
-	Print_Config();
+        Print_Config();
     }
     return(undef);
 }

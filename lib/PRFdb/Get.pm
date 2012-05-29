@@ -8,7 +8,7 @@ sub GenomeId_From_Accession {
     my $me = shift;
     my $accession = shift;
     my $info = $me->MySelect(statement => qq"SELECT id FROM genome WHERE accession = ?", vars => [$accession], type => 'single');
-    return ($info);
+    return($info);
 }
 
 sub GenomeId_From_QueueId {
