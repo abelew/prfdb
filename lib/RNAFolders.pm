@@ -56,7 +56,7 @@ sub Make_bpseq {
 
     my $output_string = '';
 
-    print STDERR "BPSEQ DEBUG: @seq_array\n@in_array\n" if ($args{debug});
+#    print STDERR "BPSEQ DEBUG: @seq_array\n@in_array\n" if ($args{debug});
 
     foreach my $c (0 .. $#seq_array) {
 	if (!defined($in_array[$c])) {
@@ -274,8 +274,8 @@ Return: $nupack_return\n");
     $ret->{barcode} = $barcode;
     chdir($ENV{PRFDB_HOME});
     if (!defined($ret->{sequence})) {
-	Callstack();
-	print STDERR "The full output from nupack was: $nupack_output\n";
+#	Callstack();
+#	print STDERR "The full output from nupack was: $nupack_output\n";
 	Callstack(message => "Sequence is not defined for accession: $accession start: $start in RNAFolders");
 	$ret->{sequence} = $me->{sequence};
     }

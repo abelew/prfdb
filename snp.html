@@ -1,3 +1,33 @@
+% if ($frameshift) {
+%  my $stmt;
+%  if ($frameshift eq 'd') {
+%   $stmt = qq"SELECT * FROM snp WHERE frameshift REGEXP '^[0-9]+\$'";
+%  } else {
+%     $stmt = qq"SELECT * FROM snp WHERE frameshift = '$frameshift'";
+%  }
+%    my $data = $db->MySelect(type => 'list_of_hashes', statement => $stmt);
+<table>
+ <tr>
+  <td>Accession</td>
+  <td>Alleles</td>
+  <td>Orientation</td>
+  <td>Location</td>
+  <td>Link</td>
+ </tr>
+%    foreach my $datum (@{$data}) {
+ <tr>
+  <td><% $datum->{gene_acc} %></td>
+  <td><% $datum->{alleles} %></td>
+  <td><% $datum->{orientation} %></td>
+  <td><% $datum->{location} %></td>
+%#  <td><a href="/detail.html?mfeid=<% $datum->{mfe_ids} %>">Link</a></td>
+  <td><a href="/search.html?accession=<% $datum->{gene_acc} %>">Link</a></td>
+ </tr>
+%    } ## End foreach
+</table>
+% } ## No species defined.
+% else {
+
 <script language="JavaScript">
 <!-- Use the HTML comment to hide JavaScript from old browsers
 function stemdigit()
@@ -74,22 +104,46 @@ function togglegene(u)
 <form method="post" action="snp.html" enctype="multipart/form-data" name="snpform">
 
 Please select SNP filter options for PRFdb.<br><br>
-Species: <select name="species" >
-<option selected="selected" value="homo_sapiens">Homo sapiens</option>
-</select><br>
-SNP location: <select name="frameshift"  onchange="stemdigit()" id="frameshift">
-<option selected="selected" value="s">slippery site</option>
-<option value="d">stem</option>
-<option value="sdf">PRF signal</option>
-<option value="n">NOT PRF signal</option>
+SNP location: 
+<select name="frameshift" id="frameshift" onchange="this.form.submit(); return true;">
+  <option value="null" selected="selected">No SNPs</option>
+  <option value="s">slippery site</option>
+  <option value="d">stem</option>
+  <option value="sdf">PRF signal</option>
+  <option value="n">NOT PRF signal</option>
+</select>
 
-<option value="null">No SNPs</option>
-</select> <span id="digit" class="snphid">number <input type="text" name="snp_digit"  size="5" maxlength="10" /></span><br>
-GI/accession: <label><input type="checkbox" name="gene" value="off" onclick="toggleinput()" /></label> <span id="genetoggle" class="snphid">Select: <label><input type="radio" name="genetoggle" value="text" checked="checked" onclick="togglegene(this)" />Text Input</label> <label><input type="radio" name="genetoggle" value="upload" onclick="togglegene(this)" />Upload List</label></span><br>
+<!-----  Not really useful I think
+<span id="digit" class="snphid">number <input type="text" name="snp_digit"  size="5" maxlength="10" /></span><br>
+GI/accession:
+<label>
+ <input type="checkbox" name="gene" value="off" onclick="toggleinput()">
+</label>
+
+<span id="genetoggle" class="snphid">Select:
+ <label>
+  <input type="radio" name="genetoggle" value="text" checked="checked" onclick="togglegene(this)">Text Input
+ </label>
+ <label>
+  <input type="radio" name="genetoggle" value="upload" onclick="togglegene(this)">Upload List
+ </label>
+</span><br>
+
 <table id="geneselect" class="snphid" border="0"></table>
-<input type="submit" name="snpfilter" value="Filter PRFdb for SNPs" /><div><input type="hidden" name=".cgifields" value="gene"  /><input type="hidden" name=".cgifields" value="genetoggle"  /></div></form>   </tr>
+ <input type="submit" name="snpfilter" value="Filter PRFdb for SNPs"><div>
+ <input type="hidden" name=".cgifields" value="gene"><input type="hidden" name=".cgifields" value="genetoggle"></div></form>
+</tr>
+----------->
+
+% }  ## End else no species defined.
 
 <%init>
 </%init>
+
 <%args>
+  $species => 'homo_sapiens'
+  $frameshift => undef
+  $genetoggle => undef
+  $gene_text => undef
+  $gene_upload => undef
 </%args>
