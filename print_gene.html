@@ -81,7 +81,7 @@ the MFE over a sliding 105bp window.</p>
 % if ($sp eq 'saccharomyces_cerevisiae') {
 %  my ($systematic, $common) = split(/\s+/, $genename);
 %  my $ingolia_json;
-%  $ingolia_json = qq"/ingolia/json/${systematic}.json";
+%  $ingolia_json = qq"/ingolia/json/${sp}/${systematic}.json";
 <form method="post" action="print_gene.html?species=saccharomyces_cerevisiae&accession=<% $accession %>&show_frame=<% $show_frame %>&translate=<% $translate %>">
 % my $zoom_new = $zoom + $zoom_change;
 <select name="zoom_change" onchange="this.form.submit()">
