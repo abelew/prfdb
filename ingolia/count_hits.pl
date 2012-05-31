@@ -25,9 +25,9 @@ if ($orf eq 'all') {
 sub Gen_All {
     opendir(my $js, 'json');
     while (readdir($js)) {
-	my $filename = $_;
-	next if ($filename =~ /^\./);
-	Gen($filename, 'all');
+        my $filename = $_;
+        next if ($filename =~ /^\./);
+        Gen($filename, 'all');
     }
     closedir($js);
 }
@@ -38,8 +38,8 @@ sub Gen {
     open(IN, "<json/$filename");
     my $json_text = '';
     while (my $line = <IN>) {
-	chomp $line;
-	$json_text .= $line;
+        chomp $line;
+        $json_text .= $line;
     }
     close(IN);
     my $datum = decode_json $json_text;
@@ -62,23 +62,23 @@ sub Gen {
     my $total_foot_star = 0;
     my $total_mrna_star = 0;
     foreach my $point (@mrna_rich_list) {
-	next unless ($point);
-	$total_mrna_rich += $point->[1] if ($point->[1]);
+        next unless ($point);
+        $total_mrna_rich += $point->[1] if ($point->[1]);
     }
     $cov_mrna_rich = sprintf("%.2f", ($total_mrna_rich / $num_mrna_rich));
     foreach my $point (@mrna_star_list) {
-	next unless ($point);
-	$total_mrna_star += $point->[1] if ($point->[1]);
+        next unless ($point);
+        $total_mrna_star += $point->[1] if ($point->[1]);
     }
     $cov_mrna_star = sprintf("%.2f", ($total_mrna_star / $num_mrna_star));
     foreach my $point (@foot_rich_list) {
-	next unless ($point);
-	$total_foot_rich += $point->[1] if ($point->[1]);
+        next unless ($point);
+        $total_foot_rich += $point->[1] if ($point->[1]);
     }
     $cov_foot_rich = sprintf("%.2f", ($total_foot_rich / $num_foot_rich));
     foreach my $point (@foot_star_list) {
-	next unless ($point);
-	$total_foot_star += $point->[1] if ($point->[1]);
+        next unless ($point);
+        $total_foot_star += $point->[1] if ($point->[1]);
     }
     $cov_foot_star = sprintf("%.2f", ($total_foot_star / $num_foot_star));
     $data->{$filename}->{total_mrna_rich} = $total_mrna_rich;
@@ -89,18 +89,18 @@ sub Gen {
     $data->{$filename}->{cov_mrna_star} = $cov_mrna_star;
     $data->{$filename}->{cov_foot_rich} = $cov_foot_rich;
     $data->{$filename}->{cov_foot_star} = $cov_foot_star;
-
+    
     if ($all) {
-	open(OUT, ">coverage-all.json");
+        open(OUT, ">coverage-all.json");
     } else {
-	open(OUT, ">coverage-${filename}");
-	my $name = $filename;
-	$name =~ s/\.json//g;
-	my $rpkM_mrna_rich = sprintf("%.2f", ($cov_mrna_rich / (($num_mrna_rich / 1000) * ($total_reads->{mrna_rich} / 1000000))));
-	my $rpkM_mrna_star = sprintf("%.2f", ($cov_mrna_star / (($num_mrna_star / 1000) * ($total_reads->{mrna_star} / 1000000))));
-	my $rpkM_foot_rich = sprintf("%.2f", ($cov_foot_rich / (($num_foot_rich / 1000) * ($total_reads->{foot_rich} / 1000000))));
-	my $rpkM_foot_star = sprintf("%.2f", ($cov_foot_star / (($num_foot_star / 1000) * ($total_reads->{foot_star} / 1000000))));
-	print "Name:$name\t
+        open(OUT, ">coverage-${filename}");
+        my $name = $filename;
+        $name =~ s/\.json//g;
+        my $rpkM_mrna_rich = sprintf("%.2f", ($cov_mrna_rich / (($num_mrna_rich / 1000) * ($total_reads->{mrna_rich} / 1000000))));
+        my $rpkM_mrna_star = sprintf("%.2f", ($cov_mrna_star / (($num_mrna_star / 1000) * ($total_reads->{mrna_star} / 1000000))));
+        my $rpkM_foot_rich = sprintf("%.2f", ($cov_foot_rich / (($num_foot_rich / 1000) * ($total_reads->{foot_rich} / 1000000))));
+        my $rpkM_foot_star = sprintf("%.2f", ($cov_foot_star / (($num_foot_star / 1000) * ($total_reads->{foot_star} / 1000000))));
+        print "Name:$name\t
 rpkM: mrna_rich: $rpkM_mrna_rich\t mrna_star: $rpkM_mrna_star\t fp_rich: $rpkM_foot_rich\t fp_star: $rpkM_foot_star
 coverage: mrna_rich: $cov_mrna_rich\t mrna_star: $cov_mrna_star\t foot_rich: $cov_foot_rich\t foot_star: $cov_foot_star
 reads: mrna_rich: $num_mrna_rich\t mrna_star: $num_mrna_star\t foot_rich: $num_foot_rich\t foot_star: $num_foot_star\n";
