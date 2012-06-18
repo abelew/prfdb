@@ -70,19 +70,17 @@ foreach my $c (keys %{$entries}) {
 
 <script type="text/javascript" src="/js/jquery.js"></script>
 <script type="text/javascript" src="/js/jquery.tablesorter.js"></script>
-<script type="text/javascript" src="/js/jquery.tablesorter.pager.js"></script>
-<script type="text/javascript" id="js">
+<script type="text/javascript" id="tablesearch">
 $(document).ready(function()
 {
   $("#search")
   .tablesorter({widthFixed: true, widgets: ['zebra'],})
-  .tablesorterPager({container: $("#pager")});
   $("#search").bind("sortStart",function() { 
       $("#overlay").show(); 
   }).bind("sortEnd",function() { 
       $("#overlay").hide(); 
   }); 
-  $("#test").tablesorter({widthFixed: true, widgets: ['zebra'],})
+  $("#search").tablesorter({widthFixed: true, widgets: ['zebra'],})
  })
 </script>
 
@@ -145,6 +143,7 @@ $(document).ready(function()
 <div id="overlay">
   Please wait...
 </div>
+<!-----
 <div id="pager">
 	<form> 
 		<img src="/images/first.gif" class="first"/> 
@@ -160,7 +159,7 @@ $(document).ready(function()
 		</select> 
 	</form> 
   </div> 
-
+------------->
 % } ## End the else there are multiple hits
 
 % } else {  ## If you haven't filled out any of the form, then provide it.

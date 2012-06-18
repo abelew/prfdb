@@ -137,6 +137,7 @@ sub new {
     $me->{pbs_shell} = '/bin/bash' if (!defined($me->{pbs_shell}));
     $me->{pbs_template} = 'pbs_template' if (!defined($me->{pbs_template}));
     $me->{POST_CHOMP} = 1 if (!defined($me->{POST_CHOMP}));
+    $me->{process_import_queue} = 0 if (!defined($me->{process_import_queue}));
     $me->{queue_table} = 'queue' if (!defined($me->{queue_table}));
     $me->{randomize_id} = 0 if (!defined($me->{randomize_id}));
     $me->{seqlength} = [100,75,50] if (!defined($me->{seqlength}));
@@ -270,12 +271,12 @@ sub new {
     if (defined($me->{blast_db})) {
         $ENV{BLASTDB} = qq"$me->{blast_db}/blast";
     }
-    if (defined($me->{checks}) and $me->{checks} == 1) {
-        $me->{debug} = 0;
-    }
-    if (defined($me->{debug})) {
-        $me->{checks} = 1;
-    }
+#    if (defined($me->{checks}) and $me->{checks} == 1) {
+#        $me->{debug} = 0;
+#    }
+#    if (defined($me->{debug})) {
+#        $me->{checks} = 1;
+#    }
 
     if (ref($me->{database_host}) eq '') {
         $me->{database_host} = eval($me->{database_host});

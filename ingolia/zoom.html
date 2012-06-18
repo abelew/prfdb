@@ -1,0 +1,93 @@
+% my $json_file = qq"$ENV{PRFDB_HOME}/ingolia/json/homo_sapiens/${accession}.json";
+% my $json_url = qq"/ingolia/json/homo_sapiens/${accession}.json";
+<script language="javascript" type="text/javascript" src="/js/jquery.js"></script>
+<script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
+<script language="javascript" type="text/javascript" src="/js/jquery.flot.selection.js"></script>
+
+<div id="placeholder" style="width:1200px;height:400px"></div>
+<p>
+  Replot the chart with min and max values for the axes set to the values.
+  Enable the checkbox below and select a region.<br>
+  <input id="setSelection" type="button" value="Reset range.">
+</p>
+<input type="hidden" id="zoom">
+
+<script id="source" language="javascript" type="text/javascript">
+$(function () {
+ var data;
+  $.ajax({
+   async: false,
+   url: "<% $json_url %>",
+   dataType: "json",
+   success:  function(json) {
+   data = json;
+  }
+ });
+
+ var options = {
+  colors: [ "darkblue", "red", "green"],
+  grid: {
+   backgroundColor: { colors: ["#FFF", "#DDD"] },
+   markings: [
+    { xaxis: { from: 1, to: <% $start %> }, color: "#ccffcc"},
+    { xaxis: { from: <% $start %>, to: <% $end %> }, color: "#ddddff" },
+    { xaxis: { from: <% $end %>, to: <% $full_seqlength %> }, color: "#ffdddd" } ]
+  },
+ series: {
+   lines: { show: false },
+   points: { show: false },
+   bars: { show:true, fill:1, lineWidth:0.3, barWidth:1.0 } },
+   legend: { noColumns: 2 },
+   xaxis: {
+    tickDecimals: 0,
+    axisLabel: 'Position',
+    axisLabelUseCanvas: true
+   },
+   yaxis: {
+    min: 0,
+    yaxis: { min: 0, autoScaleMargin: 0.1 },
+    axisLabel: 'Hits',
+    axisLabelUseCanvas: true
+   },
+   selection: { mode: "xy" }
+  };
+
+  var placeholder = $("#placeholder");
+
+  placeholder.bind("plotselected", function (event, ranges) {
+   $("#selection").text(ranges.xaxis.from.toFixed(1) + " to " + ranges.xaxis.to.toFixed(1));
+   $("#selection").text(ranges.yaxis.from.toFixed(1) + " to " + ranges.yaxis.to.toFixed(1));
+
+
+  plot = $.plot(placeholder, data,
+   $.extend(true, {}, options, {
+    xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
+    yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
+   }));
+  });
+
+  placeholder.bind("plotunselected", function (event) {
+    $("#selection").text("");
+  });
+
+  var plot = $.plot(placeholder, data, options);
+
+  $("#clearSelection").click(function () {
+   plot.clearSelection();
+  });
+  $("#setSelection").click(function () {
+   plot.clearSelection();
+   plot = $.plot(placeholder, data,
+     $.extend(true, {}, options, {
+       xaxis: { min: 0, max: <% $full_seqlength %> }
+       }));
+   });
+  });
+</script>
+
+<%args>
+ $full_seqlength => 0
+ $start => 0
+ $end => 0
+ $accession => undef
+</%args>

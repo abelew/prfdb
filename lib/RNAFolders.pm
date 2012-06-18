@@ -658,8 +658,19 @@ command: $command\n" if ($config->{debug});
         Callstack(message => "Pknots Error running $command $?");
     }
     RemoveFile($errorfile);
-    $string =~ s/\s+/ /g;
-    $ret->{output} = $string;
+
+    ## The next few lines are to deal with a change in pknots which resulted in it no longer 0 indexing its output.
+    my @out_array = split(/\s+/, $string);
+    my $output_string = '';
+    for my $c (0 .. $#out_array) {
+	if ($out_array[$c] eq '.') {
+	    $output_string .= '. ';
+	} else {
+	    my $new_num = $out_array[$c] - 1;
+	    $output_string .= "$new_num ";
+	}
+    }
+    $ret->{output} = $output_string;
     if (defined($config->{max_spaces})) {
         my $max_spaces = $config->{max_spaces};
         $parser = new PkParse(debug => $config->{debug}, max_spaces => $max_spaces);

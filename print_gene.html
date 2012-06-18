@@ -78,7 +78,11 @@ the horzontal blue line shows the mean nupack value.  green, red, and blue lines
 the MFE over a sliding 105bp window.</p>
 <& print_landscape.html, accession => "$accession", species => "$sp" &>
 
-% if ($sp eq 'saccharomyces_cerevisiae') {
+% if ($sp eq 'homo_sapiens') {
+%  my $full_seqlength = length($in->[2]);
+%  $m->comp("/ingolia/zoom.html", accession=>$accession, start=>$in->[0], end=>$in->[1], full_seqlength=>$full_seqlength);
+% }
+% elsif ($sp eq 'saccharomyces_cerevisiae') {
 %  my ($systematic, $common) = split(/\s+/, $genename);
 %  my $ingolia_json;
 %  $ingolia_json = qq"/ingolia/json/${sp}/${systematic}.json";

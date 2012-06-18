@@ -1,14 +1,21 @@
 package PkParse;
 use PRFdb qw" Callstack ";
 use vars qw($VERSION);
-$VERSION='20111119';
+use strict;
+$VERSION='20120706';
+
+## Recently (circa June 2012) this parser has been falling all over its feet.
+## So I rewrote it more simply only to realize that the reason it has been failing
+## is because some of the programs which are feeding it are now producing 1-indexed
+## output strings while previously everything was 0-indexed.
 
 sub new {
   my ($class, %args) = @_;
   my $me = bless {
-      debug => 0,
+      debug => $args{debug},
       max_spaces => defined($args{max_spaces}) ? $args{max_spaces} : 12,
       pseudoknot => 0,
+      output => $args{output},
       positions_remaining => 0,
       fwd => ['(','{'],
       rev => [')','}'],
@@ -22,6 +29,89 @@ sub new {
   }
   return ($me);
 }
+
+sub get {
+    my ($me, $key) = @_;
+    return($me->{$key});
+}
+
+sub set {
+    my ($me, %args) = @_;
+    my $num_set = 0;
+    foreach my $k (keys %args) {
+	$me->{$k} = $args{$k};
+	$num_set++;
+    }
+    return($num_set);
+}
+
+sub Parse {
+    my ($me, %args) = @_;
+    my $input = $args{input};
+    ## '23 22 21 20 18 17 16 15 14 . . . . 9 8 7 6 5 . 4 3 2 1 35 34 . . . . . . . . 25 24 46 45 . . . . . . . 37 36 . . . . ';
+    my @out = split(/\s+/, $input);
+    my $number_empty = 0;
+    for my $char (0 .. $#out) {
+	if ($out[$char] eq '.') {
+	    $out[$char] = -2;
+	}
+	else {
+	    $number_empty++;
+	    $out[$char] = -1;
+	}
+    }
+    $me->set(empty => $number_empty, output => \@out, input => $input, stem => 1);
+    
+    print "TESTME: @out\n";
+    my $scanned_array;
+    while ($me->{empty} > 0) {
+	$scanned_array = $me->Scan();
+    }
+    
+    ## Now set the -2 back to '.'
+    my @done = @{$scanned_array};
+    for my $c (0 .. $#done) { 
+	$done[$c] = '.' if ($done[$c] == -2);    
+    }
+    print "FINISHED: @done\n";
+    return(@done);
+}
+
+sub Scan {
+    my $me = shift;
+    my @out = @{$me->{output}};
+    print "STARTSCAN: @out\n";
+    my $struct = $me->{input};
+    my @str = split(/\s+/, $struct);
+
+    for my $char (0 .. $#out) {
+	next if ($out[$char] == -2);
+
+	if ($out[$char] == -1) {
+	    my $pointing_to = $str[$char];
+	    my $next_num = 1;
+	    $next_num++ while ($str[$char + $next_num] eq '.');  ## Remember that @str is (. . . 11 10 9 . . . 5 6 7);
+	    my $next_to = $str[$char + $next_num] - 1;
+
+	    $out[$char] = $me->{stem};
+	    $out[$pointing_to] =  $me->{stem};
+	    $me->set(output => \@out, empty => ($me->{empty} - 2));	    
+
+	    my $dist = abs($next_to - $pointing_to);
+	    print "DIST: $next_to $pointing_to $dist\n";
+	    if (abs($next_to - $pointing_to) > 4) {
+		$me->set(stem => $me->{stem} + 1);
+	    }
+	    return(\@out);
+	}
+	else {
+	    next;
+	}
+    }
+    return(\@out);
+}
+
+
 
 ### STATE INFORMATION
 my $stemid = 0;
@@ -280,7 +370,6 @@ sub Clean_State {
   $last_pos = -1000;
   $positions_filled = 0;
   $times_in_stem = 0;
-  $old = 0;
 }
 
 ## The easy way to detect a pseudoknot:
@@ -342,34 +431,34 @@ sub MAKEBRACKETS {
     push(@helixLIST, FINDGAPS($strREF));
     my @brackets = ();
     while (my $helixREF = pop(@helixLIST)) {
-    for (my $i = 0 ; $i < @$helixREF ; $i++) {
-	unless ($$helixREF[$i] eq '-') {
-	    $brackets[$i] = $$helixREF[$i];
+	for (my $i = 0 ; $i < @$helixREF ; $i++) {
+	    unless ($$helixREF[$i] eq '-') {
+		$brackets[$i] = $$helixREF[$i];
+	    }
 	}
-    }
     }
     return join("", @brackets);
 }
 
 sub FINDHELIX {
-  my ($strREF) = @_;
-  my $helixREF = "";
-  my @helixLIST = ();
-  my $last3 = 0;
-  my $limit = @$strREF;
-
-  for (my $i = 0; $i < @$strREF; $i++) {
-      if (($$strREF[$i] =~ /\d+/) and ($i < $$strREF[$i])) {
-	  SETDEFAULTBRACKETS();
-	  if (($i < $last3) and ($limit < @$strREF)) {
-	      SETALTERNATIVEBRACKETS();
-	  }
-	  ($i, $last3, $limit, $helixREF) = ZIPHELIX($strREF, $i, $limit);
-	  # print @$helixREF,"\n";
-	  push(@helixLIST, $helixREF);
-      }
-  }
-  return @helixLIST;
+    my ($strREF) = @_;
+    my $helixREF = "";
+    my @helixLIST = ();
+    my $last3 = 0;
+    my $limit = @$strREF;
+    
+    for (my $i = 0; $i < @$strREF; $i++) {
+	if (($$strREF[$i] =~ /\d+/) and ($i < $$strREF[$i])) {
+	    SETDEFAULTBRACKETS();
+	    if (($i < $last3) and ($limit < @$strREF)) {
+		SETALTERNATIVEBRACKETS();
+	    }
+	    ($i, $last3, $limit, $helixREF) = ZIPHELIX($strREF, $i, $limit);
+	    # print @$helixREF,"\n";
+	    push(@helixLIST, $helixREF);
+	}
+    }
+    return @helixLIST;
 }
 
 sub FINDGAPS {
@@ -387,64 +476,65 @@ sub FINDGAPS {
 }
 
 sub ZIPHELIX {
-  my ($strREF, $b5, $limit) = @_;
-  my @helix = ();
-  my $b3 = $$strREF[$b5];
-  my $last5 = $b5;
-  my $last3 = $b3;
-  my $knot5 = "";
-  my $knotted = 0;
-  my $helixCrown = 0;
-  my $nextLimit = @$strREF;
-
-  for (my $i = 0; $i < $b5; $i++) {
-      $helix[$i] = "-";
-  }
-
-  for (my $i = $b5; $i < $b3; $i++) {
-    if (defined($helix[$i])) {
-	if ($helix[$i] =~ /[\)\]]/) {
-	    $helixCrown = 1;
-	}
-    }
-
-    if (($$strREF[$i] =~ /\d+/) and ($i < $$strREF[$i]) and ($$strREF[$i] <= $b3)
-	and ($i < $limit) and (not $knotted) and (not $helixCrown) and (not $helix[$i])) {
-	$helix[$i] = $leftG;
-	$helix[$$strREF[$i]] = $rightG;
-	$last3 = $$strREF[$i];
-	$last5 = $i;
-    } elsif (($$strREF[$i] =~ /\d+/) and ($i < $$strREF[$i]) and ($$strREF[$i] > $b3) and (not $helix[$i])) {
-	$helix[$i] = "-";
-	$nextLimit = $i + 1;
-	unless ($knotted) {
-	    $knot5 = $i - 1;
-	    $knotted = 1;
-	}
-    } elsif ($$strREF[$i] =~ /\./) {
-	$helix[$i] = "-";
-	$helix[$i] = "-";
-    } elsif (not $helix[$i]) {
+    my $me = shift;
+    my ($strREF, $b5, $limit) = @_;
+    my @helix = ();
+    my $b3 = $$strREF[$b5];
+    my $last5 = $b5;
+    my $last3 = $b3;
+    my $knot5 = "";
+    my $knotted = 0;
+    my $helixCrown = 0;
+    my $nextLimit = @$strREF;
+    
+    for (my $i = 0; $i < $b5; $i++) {
 	$helix[$i] = "-";
     }
-  }
-
-  if ($knot5) {
-      $last5 = $knot5;
-  } else {
-      $nextLimit = @$strREF;
-  }
-  return ($last5, $last3, $nextLimit, \@helix);
+    
+    for (my $i = $b5; $i < $b3; $i++) {
+	if (defined($helix[$i])) {
+	    if ($helix[$i] =~ /[\)\]]/) {
+		$helixCrown = 1;
+	    }
+	}
+	
+	if (($$strREF[$i] =~ /\d+/) and ($i < $$strREF[$i]) and ($$strREF[$i] <= $b3)
+	    and ($i < $limit) and (not $knotted) and (not $helixCrown) and (not $helix[$i])) {
+	    $helix[$i] = $me->{leftG};
+	    $helix[$$strREF[$i]] = $me->{rightG};
+	    $last3 = $$strREF[$i];
+	    $last5 = $i;
+	} elsif (($$strREF[$i] =~ /\d+/) and ($i < $$strREF[$i]) and ($$strREF[$i] > $b3) and (not $helix[$i])) {
+	    $helix[$i] = "-";
+	    $nextLimit = $i + 1;
+	    unless ($knotted) {
+		$knot5 = $i - 1;
+		$knotted = 1;
+	    }
+	} elsif ($$strREF[$i] =~ /\./) {
+	    $helix[$i] = "-";
+	    $helix[$i] = "-";
+	} elsif (not $helix[$i]) {
+	    $helix[$i] = "-";
+	}
+    }
+    
+    if ($knot5) {
+	$last5 = $knot5;
+    } else {
+	$nextLimit = @$strREF;
+    }
+    return ($last5, $last3, $nextLimit, \@helix);
 }
 
 sub SETDEFAULTBRACKETS {
-    $leftG = "(";
-    $rightG = ")";
+    my $me = shift;
+    $me->set(leftG => '(', rightG => ')');
 }
 
 sub SETALTERNATIVEBRACKETS {
-    $leftG = "{";
-    $rightG = "}";
+    my $me = shift;
+    $me->set(leftG => '{', rightG => '}');
 }
 
 sub ReOrder_Stems {

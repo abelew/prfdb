@@ -87,7 +87,7 @@ sub new {
         config => $config,
         rpw => $config->{database_root_password},
     }, $class;
-    if ($config->{checks}) {
+    if (defined($config->{checks}) and $config->{checks} == 1) {
         $me->Create_Genome() unless ($me->Tablep('genome'));
         $me->Create_Gene_Info() unless ($me->Tablep('gene_info'));
         $me->Create_Queue() unless ($me->Tablep($config->{queue_table}));
@@ -382,6 +382,8 @@ sub MyExecute {
     else {
         $rv = $sth->execute() or Callstack();
     }
+    ## Added as a test 6/7/2012
+    #$dbh->commit;
     
     my $rows = 0;
     if (!defined($rv)) {
@@ -1680,6 +1682,7 @@ sub Check_Defined {
 sub Tablep {
     my $me = shift;
     my $table = shift;
+    return(undef) if (!defined($table));
     if ($table =~ /virus/) {
         if ($table =~ /^boot_/) {
             $table = 'boot_virus';
