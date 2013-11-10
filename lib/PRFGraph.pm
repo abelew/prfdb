@@ -701,7 +701,16 @@ sub Make_Cloud {
 
     my (%mfe_distribution, %z_distribution) = ();
     #Callstack(message => qq"Go to 560?");  ## This one is ok...
+    my $cloud_csv_filename = $filename;
+    $cloud_csv_filename =~ s/\.png/\.csv/g;
+    open(CLOUD_CSV, ">$cloud_csv_filename") or Callstack(die => 0, message => qq"Could not open $cloud_csv_filename. $!");
+    ##                                   0   1    2          3          4     5
+    ## Structure of each row of @data:  mfe, z, accession, knotp, slipsite, start, genename
+##                        0            1         2           3   4       5
+    print CLOUD_CSV qq|"accession", "start", "slipsite", "MFE", "Z", "knotted"\n|;
     foreach my $point (@{$data}) {
+##                             0            1              2            3              4          5            
+	print CLOUD_CSV qq|"$point->[2]","$point->[5]","$point->[4]","$point->[0]","$point->[1]","$point->[3]"\n|;
 	my $x_point = sprintf("%.1f",$point->[0]);
 	my $y_point = sprintf("%.2f",$point->[1]);
 	my $slipsite = $point->[4];
@@ -760,7 +769,8 @@ sub Make_Cloud {
 	    $points->{$x_point}->{$y_point}->{knotted} = $point->[3];
 	    $points->{$x_point}->{$y_point}->{start} = $point->[5];
 	}
-    }
+    }  ## End foreach point in @data
+    close(CLOUD_CSV);
 
     ## Created %z_distribution and %mfe_distribution above, now to make them a graph...
     ## The Z graph should be tall and thin (200x800 perhaps)
@@ -1554,10 +1564,16 @@ sub Make_Distribution {
     my $bottom_y_coord = $axes_coords->[4];
     my $x_interval = sprintf("%.1f", (($max-$min)/$num_bins) );
     my $x_interval_pixels = ($bottom_x_coord - $top_x_coord)/($num_bins + 2);
-    ## Check for divide by 0
-    return if (!$x_interval);
-    my $mfe_x_coord = $top_x_coord + ($x_interval_pixels) + (($real_mfe - $min) * ($x_interval_pixels/$x_interval));
-    my $mfe_xbar_coord = $top_x_coord + ($x_interval_pixels) + (($xbar - $min) * ($x_interval_pixels/$x_interval));
+
+    my $mfe_x_coord;
+    my $mfe_xbar_coord;
+    if (!$x_interval or $x_interval == 0) {
+	$mfe_x_coord = $top_x_coord + $x_interval_pixels + (($real_mfe - $min) * $x_interval_pixels);
+	$mfe_xbar_coord = $top_x_coord + $x_interval_pixels + (($xbar - $min) * $x_interval_pixels);
+    } else {
+	$mfe_x_coord = $top_x_coord + $x_interval_pixels + (($real_mfe - $min) * ($x_interval_pixels/$x_interval));
+	$mfe_xbar_coord = $top_x_coord + $x_interval_pixels + (($xbar - $min) * ($x_interval_pixels/$x_interval));
+    }
     my $green = $gd->colorAllocate(0,191,0);
     $gd->filledRectangle($mfe_x_coord, $bottom_y_coord+1 , $mfe_x_coord+1, $top_y_coord-1, $green);
     my $bl = $gd->colorAllocate(0,0,0);
@@ -2422,6 +2438,7 @@ sub jViz {
     my %args = @_;
     my $jviz_type = $args{jviz_type};  ## classic, dotplot, feynman, cfeynman, dual_graph
     ## I think to make it easier, prefix all of these with jviz...
+    my $input_filename = $args{input_file};
     my $output_filename;
     my $output =  {};
 
@@ -2434,19 +2451,24 @@ sub jViz {
 	sleep(5);
     }
 
-    if ($args{output_filename}) {
-	$output_filename = $args{output_filename};
+    if ($args{output_file}) {
+	$output_filename = $args{output_file};
     }
     else {
 	$output_filename = $me->Picture_Filename(type => $args{jviz_type}, accession => $me->{accession});
     }
 
+    print STDERR "THe output filename is: $output_filename\n" if ($args{debug});
     unless (-r $output_filename) {
-	my $mfe_id = $me->{mfe_id};
 	my $db = new PRFdb(config => $config);
 	my $species = $me->{species};
-
-	my $input_name = $db->Mfeid_to_Seq(type => 'ct', species => $species, mfeid => $mfe_id);
+	my $input_name;
+	if ($me->{mfe_id}) {
+	    my $mfe_id = $me->{mfe_id};
+	    $input_name = $db->Mfeid_to_Seq(type => 'ct', species => $species, mfeid => $mfe_id);
+	} else {
+	    $input_name = $input_filename;
+	}
 	my $basename = basename($input_name);
 	my $xvfb_xauth = qq"$ENV{PRFDB_HOME}/folds/${basename}-auth";
 	my $type_flag = '';
@@ -2473,15 +2495,16 @@ sub jViz {
 	    $suffix = 'classic_structure';
 	}
 
-	my $jviz_command = qq"cd $ENV{PRFDB_HOME}/folds && $ENV{PRFDB_HOME}/bin/xvfb-run -f ${basename}-auth -a /usr/bin/java -jar $ENV{PRFDB_HOME}/bin/jViz.jar -t $type_flag -f png $input_name 2>/dev/null 1>&2";
-	print STDERR "DEBUG: Running $jviz_command\n";
+	my $jviz_command = qq"cd $ENV{PRFDB_HOME}/folds && $ENV{PRFDB_HOME}/bin/xvfb-run -f ${basename}-auth -a /usr/bin/java -jar $ENV{PRFDB_HOME}/bin/jViz.jar -t $type_flag -f png ${basename} 2>${basename}.out 1>&2";
+	print STDERR "DEBUG: Running $jviz_command\n" if ($args{debug});
 	system($jviz_command);
-	my $move_command = qq"/bin/mv ${input_name}-${suffix}.png $output_filename";
-	$move_command =~ s/\/work\//\/folds\//g;
-	print STDERR "MOVE: $move_command\n";
+	my $move_command = qq"cd $ENV{PRFDB_HOME}/folds && /bin/mv ${basename}-${suffix}.png $output_filename";
+	print STDERR "MOVE: $move_command\n" if ($args{debug});
+	system($move_command);
+	$output_filename = qq"${basename}-${suffix}.png";
 	my $remove = qq"/bin/rm $ENV{PRFDB_HOME}/folds/${basename}-auth";
 	system($remove);
-	system($move_command);
+
     } ## End unless the file already exists
 
     $output->{path} = $output_filename;

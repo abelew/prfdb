@@ -28,6 +28,7 @@ sub Make_ct {
     my ($me, %args) = @_;
     my @seq_array = split(//, $args{sequence});
     my @in_array = split(/\s+/, $args{output});
+    my $function = $args{function};
     my $num_bases = scalar(@seq_array);
     my $output_string = "$num_bases temporary_ct_file\n";
     foreach my $c (0 .. $#seq_array) {
@@ -42,6 +43,8 @@ sub Make_ct {
         }
         else {
             my $bound_position = $in_array[$c] + 1;
+	    ## I don't understand this line at all.
+	    $bound_position = $bound_position + 1 if ($function eq 'pknots');
             $output_string .= "$position $seq_array[$c] $last $next $bound_position\n";
         }
     }
@@ -272,7 +275,7 @@ Return: $nupack_return\n");
     $parsed = PkParse::ReOrder_Stems($parsed);
     $ret->{parsed} = $parsed;
     $ret->{barcode} = $barcode;
-    chdir($ENV{PRFDB_HOME});
+#    chdir($ENV{PRFDB_HOME});
     if (!defined($ret->{sequence})) {
 #	Callstack();
 #	print STDERR "The full output from nupack was: $nupack_output\n";
@@ -290,7 +293,7 @@ sub ILM {
     ## Wow, ILM has some problems.
     my $config = $me->{config};
     my $ret = $me->Prepare(prog => 'ilm',);
-    chdir($config->{workdir});
+#    chdir($config->{workdir});
     my $mwm = $me->Make_MWM(sequence_name => $ret->{sequence_name}, sequence => $ret->{sequence},);
     my $hlx_command = qq"$ENV{PRFDB_HOME}/bin/xhlxplot $mwm > ${mwm}.matrix";
     AddOpen("${mwm}.matrix");
@@ -324,7 +327,7 @@ sub ILM {
     my $barcode = PkParse::Condense($new_struc);
     my $parens = PkParse::MAKEBRACKETS(\@ilmout);
     my $mfe = $me->Compute_Energy(sequence => $ret->{sequence}, parens => $parens);
-    print "DEBUG: $barcode\n$parens\n$mfe\n" if ($config->{debug});
+#    print "DEBUG: $barcode\n$parens\n$mfe\n" if ($config->{debug});
     $ret->{mfe} = $mfe;
     $ret->{parens} = $parens;
     $ret->{barcode} = $barcode;
@@ -499,7 +502,7 @@ ${missing_slipsite}${missing_sequence}
         seqlength => length($seq),
         mfe => undef,
     };
-    chdir($config->{workdir});
+#    chdir($config->{workdir});
     my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_rnafold} -noLP -noconv -noPS < $inputfile";
     print "Vienna: infile: $inputfile accession: $accession start: $start
 command: $command\n" if ($config->{debug});
@@ -548,6 +551,46 @@ command: $command\n" if ($config->{debug});
     $ret->{parsed} = $parsed;
     $ret->{barcode} = $barcode;
     return($ret);
+}
+
+sub RNAShape {
+    my $me = shift;
+    my $inputfile = $me->{file};
+    my $accession = $me->{accession};
+    my $start = $me->{start};
+    my $config = $me->{config};
+    if (!-r $inputfile) {
+	Callstack(message => "Missing inputfile.");
+	open(NEWIN, ">$inputfile");
+	my $db = new PRFdb(config => $config);
+	my $species = $db->MySelect("SELECT species from genome where accession = ?", vars => [$accession], type => 'single');
+	my $mfe_table = "mfe_$species";
+	my $seq = $db->MySelect("SELECT slipsite, sequence FROM $mfe_table where accession = ?", vars => [$accession]);
+	my $missing_slipsite = $seq->[0]->[0];
+	my $missing_sequence = $seq->[0]->[1];
+	print NEWIN ">$accession
+${missing_slipsite}${missing_sequence}
+";
+	undef($db);
+    }
+    my $slipsite = Get_Splipsite_From_Input($inputfile);
+    my $seq = Get_Sequence_From_Input($inputfile);
+    if (!defined($seq)) {
+	Callstack(message => "Sequence is not defined in RNAShapes.");
+    }
+    my $errorfile = qq(${inputfile}_rnashapes.err);
+    AddOpen($errorfile);
+    my $ret = {
+	start => $start,
+	slipsite => $slipsite,
+	genome_id => $me->{genome_id},
+	species => $me->{species},
+	accession => $me->{accession},
+	sequence => $seq,
+	seqlength => length($seq),
+	mfe => undef,
+    };
+
 }
 
 sub Parens_to_Output {
@@ -606,7 +649,7 @@ sub Pknots {
         sequence => $seq,
         seqlength => length($seq),
     };
-    chdir($config->{workdir});
+#    chdir($config->{workdir});
     my $command;
     if (!-r "$ENV{PRFDB_HOME}/bin/$config->{exe_pknots}") {
         Callstack(die => 1, message => "pknots: $config->{exe_pknots} is missing.");
@@ -615,11 +658,11 @@ sub Pknots {
         $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} $inputfile 2>$errorfile";
     }
     else {
-        $command = qq"$config->{exe_pknots} -k $inputfile /dev/stdout 2>$errorfile";
+        $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} -k $inputfile 2>$errorfile";
     }
-    print "PKNOTS: infile: $inputfile accession: $accession start: $start
-command: $command\n" if ($config->{debug});
+#    print STDERR "PKNOTS: infile: $inputfile accession: $accession start: $start command: $command\n";
 #    open(PK, "$command |") or Callstack(message => "RNAFolders::Pknots, Could not run pknots: $command");
+#    print STDERR "WTF IS THE COMMAND: $command\n";
     open(PK, "$command |");
     ## OPEN PK in Pknots
     my $counter = 0;
@@ -678,29 +721,36 @@ command: $command\n" if ($config->{debug});
     else {
         $parser = new PkParse(debug => $config->{debug});
     }
+
+#    print STDERR "MFE? $ret->{mfe}\n";
     my @struct_array = split(/\s+/, $string);
     my $out = $parser->Unzip(\@struct_array);
-    my $new_struc = PkParse::ReBarcoder($out);
-    my $barcode = PkParse::Condense($new_struc);
+#    print STDERR "@struct_array 
+#$out\n";
+    my $new_struct = PkParse::ReBarcoder($out);
+    my $barcode = PkParse::Condense($new_struct);
     my $parsed = '';
     foreach my $char (@{$out}) {
         $parsed .= $char . ' ';
     }
+#    print STDERR "PARSED? $parsed\n";
     $parsed = PkParse::ReOrder_Stems($parsed);
+#    print STDERR "REORDERPARSED? $parsed\n";
     $ret->{parsed} = $parsed;
     $ret->{barcode} = $barcode;
-    $ret->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
+#    print STDERR "STRUCT ARRAY @struct_array\n";
+#    my $pp = PkParse::MAKEBRACKETS(\@struct_array);
+    my $pp = $parser->SimpleParens(pkout => $string);
+    $ret->{parens} = $pp;
+#    print STDERR "PP $pp\n";
     if ($parser->{pseudoknot} == 0) {
         $ret->{knotp} = 0;
     }
     else {
         $ret->{knotp} = 1;
     }
-    
-    if ($ret->{parens} =~ /\{/) {
-        $ret->{knotp} = 1;
-    }
-    chdir($ENV{PRFDB_HOME});
+
+#    chdir($ENV{PRFDB_HOME});
     if (!defined($ret->{sequence})) {
         Callstack(message => "Sequence is not defined in RNAFolders");
     }
@@ -786,7 +836,7 @@ sub Pknots_Boot {
         accession => $accession,
         start => $start,
     };
-    chdir($config->{workdir});
+#    chdir($config->{workdir});
     my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} $inputfile /dev/stdout 2>$errorfile";
 #    print "TESTME: Running $command\n";
     open(PK, "$command |") or Callstack(message => "RNAFolders::Pknots_Boot, Failed to run pknots: $command");
@@ -849,7 +899,7 @@ sub Nupack_Boot_NOPAIRS {
         accession => $accession,
         start => $start,
     };
-    chdir($config->{workdir});
+#    chdir($config->{workdir});
     Callstack(die => 1, message => qq"$config->{workdir}/dataS_G.dna is missing.") unless (-r "$config->{workdir}/dataS_G.dna");
     Callstack(die => 1, message => qq"$config->{workdir}/dataS_G.rna is missing.") unless (-r "$config->{workdir}/dataS_G.rna");
     Callstack(die => 1, message => qq"$nupack_boot is missing.") unless (-r $nupack_boot);
@@ -893,10 +943,14 @@ sub Nupack_Boot_NOPAIRS {
 
 sub Hotknots {
     my $me = shift;
+    my %args = @_;
     my $inputfile = $me->{file};
     my $accession = $me->{accession};
     my $start = $me->{start};
     my $config = $me->{config};
+    if ($args{chdir}) {
+	chdir($args{chdir});
+    }
     my $errorfile = qq(${inputfile}_hotknots.err);
     AddOpen($errorfile);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
@@ -911,7 +965,7 @@ sub Hotknots {
         sequence => $seq,
         seqlength => length($seq),
     };
-    chdir($config->{workdir});
+#    chdir($config->{workdir});  ## This is problematic.
     my $seqname = $inputfile;
     $seqname =~ s/\.fasta//g;
     my $seqfilename = $seqname;
@@ -926,9 +980,17 @@ sub Hotknots {
     open(IN, ">$tempfile");
     print IN $seq;
     close(IN);
-    my $command = qq"cd $config->{workdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b";
-    print "HotKnots: infile: $inputfile accession: $accession start: $start
-command: $command\n" if ($config->{debug});
+    my $command;
+    if ($args{chdir}) {
+	$command = qq"cd $args{chdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b";
+    } else {
+	$command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b";
+    }
+#    print STDERR "HotKnots: infile: $inputfile accession: $accession start: $start
+#command: $command\n" if ($config->{debug});
+    print STDERR "HotKnots: infile: $inputfile accession: $accession start: $start CWD: $ENV{PWD}
+command: $command\n";
+
     open(HK, "$command |") or Callstack(message => "Problem with $command.");
     while(my $line = <HK>) {
 #	print $line;
@@ -939,11 +1001,19 @@ command: $command\n" if ($config->{debug});
     ## Check for output files.
     ## Something changed in the most recent hotknots release which makes the output files from hotknots
     ## appear in $PRFDB_HOME/work/TestSeq/RivasEddy -- I am not quite sure why at this point.
-    my $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0_RE.bpseq";
-    my $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct";
+    my $bpseqfile = qq"${seqfilename}0_RE.bpseq";
+    my $ctfile = qq"${seqfilename}_RE.ct";
+    unless (-r $bpseqfile) {
+	$bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0_RE.bpseq";
+	$ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct";
+    }
     unless (-r $bpseqfile) { ## if the Rivas/Eddy file does not exist, then use the suboptimals.
         $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0.bpseq";
         $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}.ct";
+    }
+    unless (-r $bpseqfile) { ## Try the 'folds' directory -- I really need to figure wtf is going on with these.
+        $bpseqfile = qq"$ENV{PRFDB_HOME}/folds/${seqfilename}0.bpseq";
+        $ctfile = qq"$ENV{PRFDB_HOME}/folds/${seqfilename}.ct";
     }
     
     AddOpen($bpseqfile);
@@ -994,14 +1064,15 @@ command: $command\n" if ($config->{debug});
     $parsed = PkParse::ReOrder_Stems($parsed);
     $ret->{parsed} = $parsed;
     $ret->{barcode} = $barcode;
-    $ret->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
+    $ret->{parens} = $parser->SimpleParens(pkout => $ret->{output});
+#    $ret->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
     if ($parser->{pseudoknot} == 0) {
         $ret->{knotp} = 0;
     }
     else {
         $ret->{knotp} = 1;
     }
-    chdir($ENV{PRFDB_HOME});
+#    chdir($ENV{PRFDB_HOME});
     if (!defined($ret->{sequence})) {
         Callstack(message => "Sequence is not defined for accession: $accession start: $start\n");
     }
@@ -1027,7 +1098,7 @@ sub Hotknots_Boot {
         sequence => $seq,
         seqlength => length($seq),
     };
-    chdir($config->{workdir});
+#    chdir($config->{workdir});
     my $seqname = $inputfile;
     $seqname =~ s/\.fasta//g;
     my $seqfilename = $seqname;
@@ -1037,7 +1108,8 @@ sub Hotknots_Boot {
     open(IN, ">$tempfile");
     print IN $seq;
     close(IN);
-    my $command = qq"cd $config->{workdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b 2>$errorfile";
+#    my $command = qq"cd $config->{workdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b 2>$errorfile";
+    my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b 2>$errorfile";
     print "Hotknots boot: infile: $inputfile accession: $accession start: $start
 command: $command\n" if ($config->{debug});
     open(HK, "$command |");
@@ -1105,7 +1177,7 @@ command: $command\n" if ($config->{debug});
     else {
         $ret->{knotp} = 1;
     }
-    chdir($ENV{PRFDB_HOME});
+#    chdir($ENV{PRFDB_HOME});
     $ret->{sequence} = Sequence_T_U($ret->{sequence});
     return($ret);
 }

@@ -401,7 +401,11 @@ sub SimpleParens {
 	$out[$c] = $me->{cf} if ($c < $in[$c]);
 	$out[$c] = $me->{cr} if ($c > $in[$c]);
     }
-    return(\@out);
+    my $out_string;
+    foreach my $char(@out) {
+	$out_string .= $char;
+    }
+    return($out_string);
 }
 
 sub AddCurlyParens {

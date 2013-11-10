@@ -3,9 +3,9 @@
 <%perl>
 my $tempfile_fh = new File::Temp(SUFFIX => ".fasta", DIR => "$ENV{PRFDB_HOME}/folds", UNLINK=>0);
 my $new_filename = $tempfile_fh->filename();
-my $short_filename = $new_filename;
-my @fun = split(/\//, $short_filename);
-$short_filename = $fun[$#fun];
+use File::Basename;
+my $short_filename = basename($new_filename);
+#print "TESTME: $short_filename<br>\n";
 my $contents;
 if ($input_fasta) {
  use Apache2::Upload;
@@ -34,6 +34,12 @@ $contents
 </pre>\n";
 my $new_url = "folds/$short_filename.html";
 
+
+use Proc::Forkfunc;
+my @child_args = ($config, $short_filename, $mfe_method, $num_refreshes);
+forkfunc(\&tmp_fold, @child_args);
+
+
 sub tmp_fold {
   my $config = shift;
   my $new_filename = shift;
@@ -47,7 +53,7 @@ sub tmp_fold {
   }  elsif ($function eq 'pknots') {
     $mfe_info = $fold->Pknots('nopseudo');
   } elsif ($function eq 'hotknots') {
-    $mfe_info = $fold->Hotknots();
+    $mfe_info = $fold->Hotknots(chdir => qq"$ENV{PRFDB_HOME}/folds");
   } elsif ($function eq 'rnafold') {
     $mfe_info = $fold->Vienna();
   } elsif ($function eq 'pknots_pseudo') {
@@ -60,6 +66,11 @@ sub tmp_fold {
     $mfe_info = $fold->Multiple(['hotknots','nupack','pknots']);
   }
 
+#  print STDERR "TESTME: GOT HERE?\n";
+#  foreach my $k (keys %{$mfe_info}) {
+#    print STDERR "TESTME: $k $mfe_info->{$k}<br>\n";
+#  }
+
   my $mfe = $mfe_info->{mfe};
   my $parsed = $mfe_info->{parsed};
   my $barcode = $mfe_info->{barcode};
@@ -67,7 +78,7 @@ sub tmp_fold {
   my $pairs = $mfe_info->{pairs};
   my $sequence = $mfe_info->{sequence};
   my $parens = $mfe_info->{parens};
-  my $bpseq_string = $fold->Make_ct(sequence => $sequence, output => $output);
+  my $bpseq_string = $fold->Make_ct(sequence => $sequence, output => $output, function => $function);
   my $turner = $fold->Compute_Energy(sequence => $sequence, parens => $parens);
   open(BPSEQ_FILE, ">${input_path}.ct");
   print BPSEQ_FILE $bpseq_string;
@@ -84,8 +95,24 @@ sub tmp_fold {
   $jviz_pic_output =~ s/jviz_//g;
 #  $jviz_pic_output =~ s/\.fasta/\.bpseq/g;
 
-  my $jviz_output = $pictures->jViz(input_filename => "${new_filename}.ct", debug => 1, jviz_type => $jviz_type, output_filename => $jviz_pic_output);
-  $jviz_url_string .= "<center><img src=\"$jviz_output->{filename}\"><br>\n";
+  my $jviz_pic_input = $pic_output;
+  $jviz_pic_input =~ s/\.svg//g;
+
+#  print STDERR "INFO: $jviz_pic_input $jviz_pic_output\n";
+#  my $jviz_output = $pictures->jViz(input_filename => "${jviz_pic_input}.ct", debug => 0, jviz_type => $jviz_type, output_filename => $jviz_pic_output);
+  my $jviz_output = $pictures->jViz(mfe_id => undef,
+                                    input_file => "${jviz_pic_input}.ct",
+				    debug => 0, 
+				    jviz_type => $jviz_type,
+				     output_file => $jviz_pic_output);
+
+#  my $mangle = $jviz_pic_input;
+#  $mangle =~ s/\.fasta/\.fasta-classic_structure\.png/g;
+#  my $cmd = qq"cp $jviz_output->{filename} $mangle";
+#  print STDERR "TESTME: $cmd\n";
+#  system($cmd);
+  my $url_file = basename($jviz_pic_output);
+  $jviz_url_string .= "<center><img src=\"$url_file\"><br>\n";
   $jviz_url_string .= "</center>";
 
   open (HANDLE, ">$input_path.html") or Callstack(message => "Cannot open HANDLE $new_filename.html");
@@ -104,15 +131,17 @@ Download <a href=\"/download/svg2something.html?format=png&input=/folds/${new_fi
   close(HANDLE);
 }
 
-
-use Proc::Forkfunc;
-my @child_args = ($config, $short_filename, $mfe_method, $num_refreshes);
-forkfunc(\&tmp_fold, @child_args);
-
 </%perl>
 
-<p>This will redirect you to the output page for your folding in 20 seconds.</p>
-<& /js/refresh.html, refresh_url => "/folds/${short_filename}.html", seconds => 20 &>
+<p>This will redirect you to the output page for your folding in 5 seconds.<br>
+Keep in mind that these programs take exponentially more time with respect to length of query sequence.
+For example:<br>
+If you use pknots with pseudoknots and a 60 nt sequence, it should take 5 seconds or less,<br>
+but 80 nt will take about 10 seconds, 90 nt will take 4 minutes, 100 nt will take 1.5 hours.<br>
+Nupack and a 60 nt sequence takes about 0.5 seconds, 90 nt takes 5 seconds, 100 nt takes 4 minutes.<br>
+RNAfold and 60 nt takes about 0.1 second, 90 nt takes 1 second, 150 nt takes 10 seconds, 180 nt takes 2 hours...
+</p>
+<& /js/refresh.html, refresh_url => "/folds/${short_filename}.html", seconds => 5 &>
 <script>  
   function load() {  
   }  
@@ -127,7 +156,7 @@ Use this form to fold a _short_ sequence.<br>
 Choose a fasta formatted file: 
 <input type="file" name="input_fasta"><br>
 Or input some sequence below:<br>
-<textarea name="fold_sequence" rows=5 cols=30></textarea><br>
+<textarea name="fold_sequence" rows=5 cols=80></textarea><br>
 and Fold it with:
 <select name="mfe_method">
 <option selected="selected" value="nupack">Nupack</option>

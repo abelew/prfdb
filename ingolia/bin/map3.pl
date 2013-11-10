@@ -18,7 +18,7 @@ my $json = JSON->new->allow_nonref;
 ## $hits{BC12121212}->{end} = 200;
 ## $hits{BC12121212}->{json} = ({label => "Zero", data => [[0,0],[3,0],[6,10]...] },{label => "Minus one", data => $mone },{label => "Plus one", data => $pone },);
 my %hits = ();
-
+my %totals = ();
 #my $input_file = "hs_mgc_mrna.sam";
 #my $input_file = "hs.sam";
 #my $input_file = "pc3_all_fp.fastq.sam";
@@ -55,6 +55,9 @@ while(my $line = <STARTS>) {
     chomp $line;
     my ($accession, $start) = split(/\t/, $line);
     $hits{$accession}->{start} = $start;
+    $totals{$accession}->{0} = 0;
+    $totals{$accession}->{1} = 0;
+    $totals{$accession}->{2} = 0;
     my @start_json = (
 		      {label => "Zero", data => []},
 		      {label => "Minus one", data => []},
@@ -82,6 +85,7 @@ while (my $line = <IN>) {
     my $relative_position = $ref_position - $hits{$accession}->{start};
 
     my $frame = ($relative_position % 3);
+    $totals{$accession}->{$frame} = $totals{$accession}->{$frame} + 1;
     my $data = $hits{$accession}->{json};
     my $frame_data = $data->[$frame]->{data}; ## Pull the data field from the 0th entry in the json field
     if ($frame_data->[$ref_position]) {
@@ -110,4 +114,39 @@ foreach my $acc (%hits) {
     close OUT;
     my $cmd = qq"sed 's/null\,//g' $filename > t ; mv t $filename";
     system($cmd);
+}
+
+foreach my $acc (keys %totals) {
+    $totals{$acc}->{ratio} = ((($totals{$acc}->{0} * 10.0) + ($totals{$acc}->{1} * 10.0) + 1) / (($totals{$acc}->{2} * 10.0) + 1));
+}
+
+my @most_acc = ();
+my %high_ratios = ();
+my $count = 0;
+foreach my $key (sort valsort (keys(%totals))) {
+    $count++;
+    if ($count < 4000) {
+	$high_ratios{$key} = $totals{$key}->{ratio};
+    }
+    push(@most_acc, $key);
+}
+%totals = undef;
+my @high_rat = ();
+foreach my $key (sort ratsort (keys(%high_ratios))) {
+    push(@high_rat, $key);
+}
+
+open(MOST, ">most_accessions.txt");
+print MOST @most_acc;
+close(MOST);
+open(RAT, ">highest_ratios.txt");
+print RAT @high_rat;
+close(RAT);
+
+sub valsort {
+    $totals{$b}->{0} <=> $totals{$a}->{0};
+}
+
+sub ratsort {
+    $high_ratios{$a} <=> $high_ratios{$b};
 }

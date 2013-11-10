@@ -104,7 +104,7 @@ Attempting to match <% $accession %>, <% $start %> against homo_sapiens miRNA se
 <p>miRNA: <% $mir %>, position: <% $pos %> <br>
 MFE: <% $output->{$mir}->{$pos}->{mfe} %><br>
 <pre>
-<% $sequence %>
+5'&nbsp;<% $sequence %> &nbsp;3'
 <% $target_mis_spacer %><% $output->{$mir}->{$pos}->{target_mismatch} %>
 <% $spacer %><% $output->{$mir}->{$pos}->{target_match} %>
 % if ($output->{$mir}->{$pos}->{align_string}) {

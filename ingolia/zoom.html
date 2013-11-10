@@ -3,12 +3,15 @@
 <script language="javascript" type="text/javascript" src="/js/jquery.js"></script>
 <script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
 <script language="javascript" type="text/javascript" src="/js/jquery.flot.selection.js"></script>
+<script language="javascript" type="text/javascript" src="/js/canvas2image.js"></script>
+<script language="javascript" type="text/javascript" src="/js/base64.js"></script>
 
-<div id="placeholder" style="width:1200px;height:400px"></div>
+<div id="profile" style="width:1200px;height:400px"></div>
 <p>
   Replot the chart with min and max values for the axes set to the values.
   Enable the checkbox below and select a region.<br>
-  <input id="setSelection" type="button" value="Reset range.">
+  <input id="setSelection" type="button" value="Reset range."><br>
+  <input type="button" id="savepng" value="Save PNG">
 </p>
 <input type="hidden" id="zoom">
 
@@ -52,7 +55,7 @@ $(function () {
    selection: { mode: "xy" }
   };
 
-  var placeholder = $("#placeholder");
+  var placeholder = $("#profile");
 
   placeholder.bind("plotselected", function (event, ranges) {
    $("#selection").text(ranges.xaxis.from.toFixed(1) + " to " + ranges.xaxis.to.toFixed(1));
@@ -83,6 +86,13 @@ $(function () {
        }));
    });
   });
+
+
+document.getElementById("savepng").onclick = function() {
+  var output_canvas = document.getElementById("profile");
+  Canvas2Image.saveAsPNG(output_canvas);
+
+}
 </script>
 
 <%args>
