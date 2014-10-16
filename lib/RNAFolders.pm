@@ -153,7 +153,11 @@ sub Nupack_NOPAIRS {
     my $nupack = qq($config->{workdir}/$config->{exe_nupack});
     my $nupack_boot = qq($config->{workdir}/$config->{exe_nupack_boot});
     my $errorfile = qq(${inputfile}_nupacknopairs.err);
+    my $out_pairs = qq($config->{workdir}/out.pairs);
+    my $out_ene = qq($config->{workdir}/out.ene);
     AddOpen($errorfile);
+    AddOpen($out_pairs);
+    AddOpen($out_ene);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $ret = {
         start => $start,
@@ -243,6 +247,8 @@ command: $command\n" if ($config->{debug});
 Return: $nupack_return\n");
     }
     RemoveFile($errorfile);
+    RemoveFile($out_ene);
+    RemoveFile($out_pairs);
     for my $c (0 .. $#nupack_output) {
         $nupack_output[$c] = '.' unless (defined $nupack_output[$c]);
     }
