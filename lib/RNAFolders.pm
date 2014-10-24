@@ -201,11 +201,9 @@ command: $command\n" if ($config->{debug});
         if ($count == 15) {
             my ($crap, $len) = split(/\ \=\ /, $line);
             $ret->{seqlength} = $len;
-        }
-        elsif ($count == 17) {    ## Line 17 returns the input sequence
+        } elsif ($count == 17) {    ## Line 17 returns the input sequence
             $ret->{sequence} = $line;
-        }
-        elsif ($line =~ /^\d+\s\d+$/) {
+        } elsif ($line =~ /^\d+\s\d+$/) {
             my ($fiveprime, $threeprime) = split(/\s+/, $line);
             my $five = $fiveprime - 1;
             my $three = $threeprime - 1;
@@ -213,21 +211,17 @@ command: $command\n" if ($config->{debug});
             $nupack_output[$five] = $three;
 	    $pairs++;
             $count--;
-        }
-        elsif ($count == 18) {    ## Line 18 returns paren output
+        } elsif ($count == 18) {    ## Line 18 returns paren output
             $ret->{parens} = $line;
-        }
-        elsif ($count == 19) {    ## Get the MFE here
+        } elsif ($count == 19) {    ## Get the MFE here
             my $tmp = $line;
             $tmp =~ s/^mfe\ \=\ //g;
             $tmp =~ s/\ kcal\/mol//g;
             $ret->{mfe} = $tmp;
-        }
-        elsif ($count == 20) {    ## Is it a pseudoknot?
+        } elsif ($count == 20) {    ## Is it a pseudoknot?
             if ($line eq 'pseudoknotted!') {
                 $ret->{knotp} = 1;
-            }
-            else {
+            } else {
                 $ret->{knotp} = 0;
             }
         }
@@ -267,8 +261,7 @@ Return: $nupack_return\n");
     if (defined($config->{max_spaces})) {
         my $max_spaces = $config->{max_spaces};
         $parser = new PkParse(debug => $config->{debug}, max_spaces => $max_spaces);
-    }
-    else {
+    } else {
         $parser = new PkParse(debug => $config->{debug});
     }
     my $out = $parser->Unzip(\@nupack_output);
@@ -365,6 +358,7 @@ sub Unafold {
     while (my $l = <UNA>) {
         chomp $l;
     }
+    close(UNA);
     my @output_files = ('run','dG','ct','37.plot','37.ext');
     my $input_filename = basename($inputfile);
     foreach my $f (@output_files) {
@@ -380,8 +374,7 @@ sub Unafold {
                 $ret->{mfe} = $dg;
             }
             close(DG);
-        }
-        elsif ($f eq 'ct') {
+        } elsif ($f eq 'ct') {
             my $output_array = $me->CT_to_Output(inputfile => $output_filename);
             my $output_string = "@{$output_array}";
             $ret->{output} = $output_string;
@@ -453,8 +446,7 @@ sub CT_to_Output {
             for my $c (0 .. ($num_lines - 1)) {
                 $output[$c] = '.';
             }
-        }
-        else { ## Not on the first line
+        } else { ## Not on the first line
             my ($base_num, $base, $index, $next, $base_pair, $base_num_again, @base_pairs) = split(/\s+/, $line);
             next if ($base_pair eq '0');
             $output[$index] = ($base_pair - 1);
@@ -463,6 +455,7 @@ sub CT_to_Output {
 # An example line
 #base_n  base    index   next    bp
 #1       A       0       2       0       1       0       0
+    close(IN);
     return(\@output);
 }
 
@@ -490,6 +483,7 @@ sub Vienna {
 ${missing_slipsite}${missing_sequence}
 ";
 	undef($db);
+	close(NEWIN);
     }
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
@@ -559,6 +553,78 @@ command: $command\n" if ($config->{debug});
     return($ret);
 }
 
+sub Vienna_Boot {
+    my $inputfile = shift;
+    my $accession = shift;
+    my $start = shift;
+    my $config = shift;
+    if (!-r $inputfile) {
+        Callstack(message => "Missing inputfile.");
+        open(NEWIN, ">$inputfile");
+        my $db = new PRFdb(config => $config);
+        my $species = $db->MySelect("SELECT species FROM genome WHERE accession = ?", vars => [$accession], type => 'single');
+        my $mfe_table = "mfe_$species";
+        my $seq = $db->MySelect("SELECT slipsite, sequence FROM $mfe_table where accession = ?", vars => [$accession]);
+        my $missing_slipsite = $seq->[0]->[0];
+        my $missing_sequence = $seq->[0]->[1];
+        print NEWIN ">$accession
+${missing_slipsite}${missing_sequence}
+";
+	undef($db);
+	close(NEWIN);
+    }
+    my $slipsite = Get_Slipsite_From_Input($inputfile);
+    my $seq = Get_Sequence_From_Input($inputfile);
+    if (!defined($seq)) {
+        Callstack(message => "Sequence is not defined in Vienna");
+    }
+    my $errorfile = qq(${inputfile}_vienna.err);
+    AddOpen($errorfile);
+    my $ret = {
+        start => $start,
+        accession => $accession,
+    };
+#    chdir($config->{workdir});
+    my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_rnafold} -noLP -noconv -noPS < $inputfile";
+    print "Vienna: infile: $inputfile accession: $accession start: $start
+command: $command\n" if ($config->{debug});
+    open(VI, "$command |") or Callstack(message => "RNAFolders::Vienna, Could not run RNAfold: $command $!");
+    my $counter = 0;
+  WH: while (my $line = <VI>) {
+      if ($line =~ /^\>/) {
+          next WH;
+      }
+      if ($line =~ /^$/) {
+          next WH;
+      }
+      $counter++;
+      chomp $line;
+      if ($counter == 1) {
+          $ret->{sequence} = $line;
+      } elsif ($counter == 2) {
+          my ($struct, $num) = split(/\s+\(\s*/, $line);
+          if (!defined($num)) {
+          }
+          $num =~ s/\)//g;
+          $ret->{parens} = $struct;
+          $ret->{mfe} = $num;
+      }
+  } ## End the while
+    close(VI);
+    RemoveFile($errorfile);
+    my @data = split(//, $ret->{parens});
+##    print "TESTME: @data
+##$ret->{parens}\n";
+    my $pairs = 0;
+    foreach my $char (@data) {
+	if ($char ne '.') {
+	    $pairs++;
+	}
+    }
+    $ret->{pairs} = ($pairs / 2);
+    return($ret);
+}
+
 sub RNAShape {
     my $me = shift;
     my $inputfile = $me->{file};
@@ -578,6 +644,7 @@ sub RNAShape {
 ${missing_slipsite}${missing_sequence}
 ";
 	undef($db);
+	close(NEWIN);
     }
     my $slipsite = Get_Splipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
@@ -636,13 +703,13 @@ sub Parens_to_Output {
 
 sub Pknots {
     my $me = shift;
-    my $pseudo = shift;
+    my %args = @_;
+    my $pseudo = $args{pseudo};
     my $inputfile = $me->{file};
     my $accession = $me->{accession};
     my $start = $me->{start};
     my $config = $me->{config};
     my $errorfile = qq(${inputfile}_pknots.err);
-    AddOpen($errorfile);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
     my $ret = {
@@ -660,46 +727,23 @@ sub Pknots {
     if (!-r "$ENV{PRFDB_HOME}/bin/$config->{exe_pknots}") {
         Callstack(die => 1, message => "pknots: $config->{exe_pknots} is missing.");
     }
+    my $output_file = "${inputfile}.out";
+    AddOpen($errorfile);
+    AddOpen($output_file);
     if (defined($pseudo) and $pseudo eq 'nopseudo') {
-        $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} $inputfile 2>$errorfile";
+        $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} $inputfile $output_file 2>$errorfile";
+    } else {
+        $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} -k $inputfile $output_file 2>$errorfile";
     }
-    else {
-        $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} -k $inputfile 2>$errorfile";
-    }
-#    print STDERR "PKNOTS: infile: $inputfile accession: $accession start: $start command: $command\n";
+##    print STDERR "PKNOTS: infile: $inputfile accession: $accession start: $start command:
+##$command\n";
 #    open(PK, "$command |") or Callstack(message => "RNAFolders::Pknots, Could not run pknots: $command");
 #    print STDERR "WTF IS THE COMMAND: $command\n";
     open(PK, "$command |");
-    ## OPEN PK in Pknots
-    my $counter = 0;
-    my ($line_to_read, $crap) = undef;
-    my $string = '';
-    my $uninteresting = undef;
-    my $parser;
+    my $pk_stdout;
     while (my $line = <PK>) {
-        $counter++;
-        chomp $line;
-        ### The NAM field prints out the name of the sequence
-        ### Which is set to the slippery site in RNAMotif
-        if ($line =~ /^NAM/) {
-            ($crap, $ret->{slipsite}) = split(/NAM\s+/, $line);
-            $ret->{slipsite} =~ tr/actgTu/ACUGUU/;
-        }
-        elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
-            $line_to_read = $counter + 2;
-        }
-        elsif (defined($line_to_read) and $line_to_read == $counter) {
-            $line =~ s/^\s+//g;
-            $line =~ s/$/ /g;
-            $string .= $line;
-        }
-        elsif ($line =~ /\/mol\)\:\s+/) {
-            ($crap, $ret->{mfe}) = split(/\/mol\)\:\s+/, $line);
-        }
-        elsif ($line =~ /found\:\s+/) {
-            ($crap, $ret->{pairs}) = split(/found\:\s+/, $line);
-        }
-    }    ## For every line of pknots
+	$pk_stdout = $pk_stdout . $line;
+    }
     close(PK);
     ## CLOSE PK in Pknots
     my $pknots_return = $?;
@@ -707,8 +751,37 @@ sub Pknots {
         Callstack(message => "Pknots Error running $command $?");
     }
     RemoveFile($errorfile);
-
+    open(PKOUT, "<$output_file");
+    ## OPEN PK in Pknots
+    my $counter = 0;
+    my ($line_to_read, $crap) = undef;
+    my $string = '';
+    my $uninteresting = undef;
+    my $parser;
+    while (my $line = <PKOUT>) {
+        $counter++;
+        chomp $line;
+        ### The NAM field prints out the name of the sequence
+        ### Which is set to the slippery site in RNAMotif
+        if ($line =~ /^NAM/) {
+            ($crap, $ret->{slipsite}) = split(/NAM\s+/, $line);
+            $ret->{slipsite} =~ tr/actgTu/ACUGUU/;
+        } elsif ($line =~ /^\s+\d+\s+[A-Z]+/) { ## 1 A U C G ... ## Position number and sequence
+            $line_to_read = $counter + 2;
+        } elsif (defined($line_to_read) and $line_to_read == $counter) {
+            $line =~ s/^\s+//g;
+            $line =~ s/$/ /g;
+            $string .= $line;
+        } elsif ($line =~ /kcal\/mol\)\:\s+/) {
+            ($crap, $ret->{mfe}) = split(/\/mol\)\:\s+/, $line);
+        } elsif ($line =~ /pairs found\:\s+/) {
+            ($crap, $ret->{pairs}) = split(/found\:\s+/, $line);
+        }
+    }    ## For every line of pknots
+    close(PKOUT);
+##    RemoveFile($output_file);
     ## The next few lines are to deal with a change in pknots which resulted in it no longer 0 indexing its output.
+    ## Apparently they changed this back...
     my @out_array = split(/\s+/, $string);
     my $output_string = '';
     for my $c (0 .. $#out_array) {
@@ -716,9 +789,11 @@ sub Pknots {
 	    $output_string .= '. ';
 	} else {
 	    my $new_num = $out_array[$c] - 1;
+##	    my $new_num = $out_array[$c];
 	    $output_string .= "$new_num ";
 	}
     }
+    print "TESTME: $output_string\n";
     $ret->{output} = $output_string;
     if (defined($config->{max_spaces})) {
         my $max_spaces = $config->{max_spaces};
@@ -729,7 +804,7 @@ sub Pknots {
     }
 
 #    print STDERR "MFE? $ret->{mfe}\n";
-    my @struct_array = split(/\s+/, $string);
+    my @struct_array = split(/\s+/, $output_string);
     my $out = $parser->Unzip(\@struct_array);
 #    print STDERR "@struct_array 
 #$out\n";
@@ -761,6 +836,8 @@ sub Pknots {
         Callstack(message => "Sequence is not defined in RNAFolders");
     }
     $ret->{sequence} = Sequence_T_U($ret->{sequence});
+    use Data::Dumper;
+    print Dumper $ret;
     return($ret);
 }
 
@@ -792,12 +869,10 @@ sub Get_Sequence_From_Input {
                 $line =~ s/^\>//g;
                 close(SEQ);
                 return($line);
-            }
-            else {
+            } else {
                 next;
             }
-        }
-        else {
+        } else {
             $seq .= $line;
         }
     }
@@ -817,8 +892,7 @@ sub Get_Slipsite_From_Input {
             ($slipsite, $crap) = split(/ /, $line);
             $slipsite =~ tr/actgTu/ACUGUU/;
             $slipsite =~ s/\>//g;
-        }
-        else {
+        } else {
             next;
         }
     }
@@ -857,18 +931,14 @@ sub Pknots_Boot {
         chomp $line;
         if ($line =~ /^NAM/) {
             my ($crap, $name ) = split( /NAM\s+/, $line);
-        }
-        elsif ($line =~ m/\/mol\)\:\s+/) {
+        } elsif ($line =~ m/\/mol\)\:\s+/) {
             ($crap, $ret->{mfe}) = split(/\/mol\)\:\s+/, $line);
-        }
-        elsif ($line =~ /found\:\s+/) {
+        } elsif ($line =~ /found\:\s+/) {
             ($crap, $ret->{pairs}) = split(/found\:\s+/, $line);
             $uninteresting = 1;
-        }
-        elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
+        } elsif ($line =~ /^\s+\d+\s+[A-Z]+/) {
             $line_to_read = $counter + 2;
-        }
-        elsif (defined($line_to_read) and $line_to_read == $counter) {
+        } elsif (defined($line_to_read) and $line_to_read == $counter) {
             $line =~ s/^\s+//g;
             $line =~ s/$/ /g;
             $string .= $line;
@@ -922,14 +992,12 @@ sub Nupack_Boot_NOPAIRS {
         if ($line =~ /^\d+\s\d+$/) {
             $pairs++;
             $counter--;
-        }
-        elsif ($counter == 19) {
+        } elsif ($counter == 19) {
             my $tmp = $line;
             $tmp =~ s/^mfe\ \=\ //g;
             $tmp =~ s/\ kcal\/mol//g;
             $ret->{mfe} = $tmp;
-        }
-        else {
+        } else {
             next;
         }
     }    ## End of the output from nupack_boot
@@ -994,8 +1062,8 @@ sub Hotknots {
     }
 #    print STDERR "HotKnots: infile: $inputfile accession: $accession start: $start
 #command: $command\n" if ($config->{debug});
-    print STDERR "HotKnots: infile: $inputfile accession: $accession start: $start CWD: $ENV{PWD}
-command: $command\n";
+##    print STDERR "HotKnots: infile: $inputfile accession: $accession start: $start CWD: $ENV{PWD}
+##command: $command\n";
 
     open(HK, "$command |") or Callstack(message => "Problem with $command.");
     while(my $line = <HK>) {
@@ -1007,57 +1075,66 @@ command: $command\n";
     ## Check for output files.
     ## Something changed in the most recent hotknots release which makes the output files from hotknots
     ## appear in $PRFDB_HOME/work/TestSeq/RivasEddy -- I am not quite sure why at this point.
-    my $bpseqfile = qq"${seqfilename}0_RE.bpseq";
-    my $ctfile = qq"${seqfilename}_RE.ct";
-    unless (-r $bpseqfile) {
-	$bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0_RE.bpseq";
-	$ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct";
+    my @bpseqfiles = (qq"$config->{workdir}/${seqfilename}0_RE.bpseq",
+		      qq"$config->{workdir}/folds/${seqfilename}0.bpseq",
+		      qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}.ct",
+		      qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0.bpseq",
+	);
+    my @ctfiles = (qq"$config->{workdir}/${seqfilename}_RE.ct",
+		   qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct",
+		   qq"$ENV{PRFDB_HOME}/folds/${seqfilename}.ct",
+		   qq"$config->{workdir}/folds/${seqfilename}_RE.ct",);
+    my $found_bp = 0;
+    my $found_ct = 0;
+  BPLOOP: foreach my $bpseqfile (@bpseqfiles) {
+      if (-r $bpseqfile) {
+	  $found_bp = 1;
+	  AddOpen($bpseqfile);
+	  open(BPSEQ, "<$bpseqfile");
+	  $ret->{output} = '';
+	  $ret->{pairs} = 0;
+	  while (my $bps = <BPSEQ>) {
+	      my ($basenum, $base, $basepair) = split(/\s+/, $bps);
+	      if ($basepair =~ /\d+/) {
+		  if ($basepair == 0) {
+		      $ret->{output} .= '. ';
+		  } elsif ($basepair > 0) {
+		      my $basepair_num = $basepair - 1;
+		      $ret->{output} .= "$basepair_num ";
+		      $ret->{pairs}++;
+		  } else {
+		      Callstack(die => 1, message => "Something is fubared.");
+		  }
+	      } else {
+		  Callstack(die => 1, message => "Something is fubared.");
+	      }
+	  }
+	  $ret->{pairs} = $ret->{pairs} / 2;
+	  close(BPSEQ);
+	  RemoveFile([$bpseqfile]);
+	  last BPLOOP;
+      }
+    } ## End looking for bpseq files
+    unless ($found_bp) {
+	die("Never found the bpseq file, this is bad.\n");
     }
-    unless (-r $bpseqfile) { ## if the Rivas/Eddy file does not exist, then use the suboptimals.
-        $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0.bpseq";
-        $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}.ct";
+  CTLOOP: foreach my $ctfile (@ctfiles) {
+      if (-r $ctfile) {
+	  $found_ct = 1;
+	  AddOpen($ctfile);
+	  open(GETMFE, "grep ENERGY $ctfile | head -1 |");
+	  while (my $getmfeline = <GETMFE>) {
+	      my ($null, $num, $ENERGY, $eq, $mfe, $crap) = split(/\s+/, $getmfeline);
+	      $ret->{mfe} = $mfe;
+	  }
+	  close(GETMFE);
+    	  RemoveFile([$ctfile, $errorfile]);
+	  last CTLOOP;
+      }
+  } ## End looking for ct files	
+    unless ($found_ct) {
+	die("Never found the ct file.");
     }
-    unless (-r $bpseqfile) { ## Try the 'folds' directory -- I really need to figure wtf is going on with these.
-        $bpseqfile = qq"$ENV{PRFDB_HOME}/folds/${seqfilename}0.bpseq";
-        $ctfile = qq"$ENV{PRFDB_HOME}/folds/${seqfilename}.ct";
-    }
-    
-    AddOpen($bpseqfile);
-    open(BPSEQ, "<$bpseqfile");
-    $ret->{output} = '';
-    $ret->{pairs} = 0;
-    while (my $bps = <BPSEQ>) {
-        my ($basenum, $base, $basepair) = split(/\s+/, $bps);
-        if ($basepair =~ /\d+/) {
-            if ($basepair == 0) {
-                $ret->{output} .= '. ';
-            }
-            elsif ($basepair > 0) {
-                my $basepair_num = $basepair - 1;
-                $ret->{output} .= "$basepair_num ";
-                $ret->{pairs}++;
-            }
-            else {
-                Callstack(die => 1, message => "Something is fubared.");
-            }
-        }
-        else {
-            Callstack(die => 1, message => "Something is fubared.");
-        }
-    }
-    $ret->{pairs} = $ret->{pairs} / 2;
-    close(BPSEQ);
-    
-    AddOpen($ctfile);
-    open(GETMFE, "grep ENERGY $ctfile | head -1 |");
-    while (my $getmfeline = <GETMFE>) {
-        my ($null, $num, $ENERGY, $eq, $mfe, $crap) = split(/\s+/, $getmfeline);
-        $ret->{mfe} = $mfe;
-    }
-    close(GETMFE);
-    
-    RemoveFile([$ctfile, $bpseqfile, $errorfile]);
-    
     my $parser = new PkParse(debug => $config->{debug});
     my @struct_array = split(/\s+/, $ret->{output});
     my $out = $parser->Unzip(\@struct_array);
@@ -1105,65 +1182,86 @@ sub Hotknots_Boot {
         seqlength => length($seq),
     };
 #    chdir($config->{workdir});
-    my $seqname = $inputfile;
-    $seqname =~ s/\.fasta//g;
-    my $seqfilename = $seqname;
-    $seqfilename = basename($seqfilename);
-    my $tempfile = $inputfile;
-    $tempfile =~ s/\.fasta/\.seq/g;
-    open(IN, ">$tempfile");
+    my $seqname = basename($inputfile, [".fasta"]);
+    open(IN, ">$config->{workdir}/${seqname}.seq");
     print IN $seq;
     close(IN);
+    print "Finished writing $seq into ${seqname}.seq\n";
+    sleep(10);
 #    my $command = qq"cd $config->{workdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b 2>$errorfile";
-    my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b 2>$errorfile";
-    print "Hotknots boot: infile: $inputfile accession: $accession start: $start
+    my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqname -noPS -b 2>$errorfile";
+    print "Hotknots boot: infile: $seqname accession: $accession start: $start
 command: $command\n" if ($config->{debug});
     open(HK, "$command |");
     while(my $line = <HK>) {
         $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
-    my $bpseqfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0_RE.bpseq";
-    AddOpen($tempfile);
-    AddOpen($bpseqfile);
-    my $open_ret = open(BPSEQ, "<$bpseqfile");
-    if (defined($open_ret)) {
-        $ret->{output} = '';
-        $ret->{pairs} = 0;
-        while (my $bps = <BPSEQ>) {
-            my ($basenum, $base, $basepair) = split(/\s+/, $bps);
-            if ($basepair =~ /\d+/) {
-                if ($basepair == 0) {
-                    $ret->{output} .= '. ';
-                }
-                elsif ($basepair > 0) {
-                    my $basepair_num = $basepair - 1;
-                    $ret->{output} .= "$basepair_num ";
-                    $ret->{pairs}++;
-                }
-                else {
-                    Callstack(message => "The number of basepairs is negative?  $basepair");
-                    last;
-                }
-            }
-            else {
-                Callstack(message => "The base pair is not a number: $basepair.");
-                last;
-            }
-        }
-        $ret->{pairs} = $ret->{pairs} / 2;
-        close(BPSEQ);
-    } ## If we were able to open the CT file.
-    my $ctfile = qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct";
-    AddOpen($ctfile);
-    open(GETMFE, "grep ENERGY $ctfile | head -1 |");
-    while (my $getmfeline = <GETMFE>) {
-        my ($null, $num, $ENERGY, $eq, $mfe, $crap) = split(/\s+/, $getmfeline);
-        $ret->{mfe} = $mfe;
-    }
-    close(GETMFE);
     
-    RemoveFile([$ctfile, $bpseqfile, $errorfile, $tempfile]);
+    my @bpseqfiles = (qq"$config->{workdir}/${seqname}0_RE.bpseq",
+		      qq"$config->{workdir}/folds/${seqname}0.bpseq",
+		      qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}.ct",
+		      qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0.bpseq",
+	);
+    my @ctfiles = (qq"$config->{workdir}/${seqname}_RE.ct",
+		   qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}_RE.ct",
+		   qq"$ENV{PRFDB_HOME}/folds/${seqname}.ct",
+		   qq"$config->{workdir}/folds/${seqname}_RE.ct",);
+    my $found_bp = 0;
+    my $found_ct = 0;
+  BPLOOP: foreach my $bpseqfile (@bpseqfiles) {
+      print "Checking for $bpseqfile\n";
+      if (-r $bpseqfile) {
+	  $found_bp = 1;
+	  AddOpen($bpseqfile);
+	  open(BPSEQ, "<$bpseqfile");
+	  $ret->{output} = '';
+	  $ret->{pairs} = 0;
+	  while (my $bps = <BPSEQ>) {
+	      my ($basenum, $base, $basepair) = split(/\s+/, $bps);
+	      if ($basepair =~ /\d+/) {
+		  if ($basepair == 0) {
+		      $ret->{output} .= '. ';
+		  } elsif ($basepair > 0) {
+		      my $basepair_num = $basepair - 1;
+		      $ret->{output} .= "$basepair_num ";
+		      $ret->{pairs}++;
+		  } else {
+		      Callstack(message => "The number of basepairs is negative?  $basepair");
+		      last;
+		  }
+	      } else {
+		  Callstack(message => "The base pair is not a number: $basepair.");
+		  last;
+	      }
+	  }
+	  $ret->{pairs} = $ret->{pairs} / 2;
+	  close(BPSEQ);
+	  RemoveFile([$bpseqfile]);
+	  last BPLOOP;
+      }
+  } ## End looking for the bpseq file.
+    unless ($found_bp) {
+	die("Never found the bpseq file.");
+    }
+    
+  CTLOOP: foreach my $ctfile (@ctfiles) {
+      if (-r $ctfile) {
+	  $found_ct = 1;
+	  AddOpen($ctfile);
+	  open(GETMFE, "grep ENERGY $ctfile | head -1 |");
+	  while (my $getmfeline = <GETMFE>) {
+	      my ($null, $num, $ENERGY, $eq, $mfe, $crap) = split(/\s+/, $getmfeline);
+	      $ret->{mfe} = $mfe;
+	  }
+	  close(GETMFE);
+	  RemoveFile([$ctfile, $errorfile]);
+	  last CTLOOP;
+      }
+  }
+    unless ($found_ct) {
+	die("Never found the ctfile.");
+    }
     my $parser = new PkParse(debug => $config->{debug});
     my @struct_array = split(/\s+/, $ret->{output});
     my $out = $parser->Unzip(\@struct_array);
@@ -1171,22 +1269,23 @@ command: $command\n" if ($config->{debug});
     my $barcode = PkParse::Condense($new_struct);
     my $parsed = '';
     foreach my $char (@{$out}) {
-        $parsed .= $char . ' ';
+	$parsed .= $char . ' ';
     }
     $parsed = PkParse::ReOrder_Stems($parsed);
     $ret->{parsed} = $parsed;
     $ret->{barcode} = $barcode;
-    $ret->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
+##    $ret->{parens} = PkParse::MAKEBRACKETS(\@struct_array);
     if ($parser->{pseudoknot} == 0) {
-        $ret->{knotp} = 0;
+	$ret->{knotp} = 0;
     }
     else {
-        $ret->{knotp} = 1;
+	$ret->{knotp} = 1;
     }
 #    chdir($ENV{PRFDB_HOME});
     $ret->{sequence} = Sequence_T_U($ret->{sequence});
     return($ret);
 }
+
 
 sub Sequence_T_U {
     my $sequence = shift;

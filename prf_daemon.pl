@@ -4,6 +4,8 @@ use warnings;
 use lib "$ENV{PRFDB_HOME}/lib";
 use local::lib "$ENV{PRFDB_HOME}/usr/perl";
 use vars qw"$db $config";
+use Devel::Trace;
+$Devel::Trace::TRACE = 1;   # Enable
 die("Could not load PRFConfig.\n$@\n") unless (eval "use PRFConfig; 1");
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
 die("Could not load PRFdb.\n$@\n") unless (eval "use PRFdb qw'AddOpen RemoveFile Callstack Cleanup'; 1");
@@ -79,8 +81,7 @@ MAINLOOP: until (defined($state->{time_to_die})) {
 	    if (defined($import) and $import !~ m/Error/) {
 		if ($import == 0) {
 		    print "Did not import $import_accession, it has no coding sequence defined.\n";
-		}
-		else {
+		} else {
 		    print "Imported $import_accession added $import bases.\n";
 		}
 	    }
@@ -90,11 +91,15 @@ MAINLOOP: until (defined($state->{time_to_die})) {
     $state->{queue_table} = $ids->{queue_table};
     $state->{queue_id} = $ids->{queue_id};
     $state->{genome_id} = $ids->{genome_id};
+    use Data::Dumper;
+    print Dumper $ids;
+    print Dumper $state;
+    print "HEY you, what is state genome_id?  $state->{genome_id}\n";
+    sleep(5);
     if (defined($state->{genome_id})) {
 	Gather(state => $state);
 	## End if have an entry in the queue
-    }
-    else {
+    } else {
 	sleep(60);
 	$state->{done_count}++;
     } ## no longer have $state->{genome_id}
@@ -172,6 +177,8 @@ sub Gather {
     my $ref = $db->Id_to_AccessionSpecies($state->{genome_id});
     $state->{accession} = $ref->{accession};
     $state->{species} = $ref->{species};
+    ## I recently deleted many entries and caused a bunch of these calls to come up undefined.
+    return(undef) if (!defined($ref->{species}));
     $db->Create_Landscape("landscape_$state->{species}") unless($db->Tablep("landscape_$state->{species}"));
     $db->Create_Boot("boot_$state->{species}") unless($db->Tablep("boot_$state->{species}")); 
     unless ($state->{species} =~ /^virus/) {
@@ -189,6 +196,8 @@ sub Gather {
     foreach my $len (@{$config->{seqlength}}) {
         $state->{seqlength} = $len;
         PRF_Gatherer(state => $state, length => $len, startpos => $startpos);
+	print "Finished a PRF Gather, this is a good time to CTRL-C this thing.\n";
+	sleep(5);
     }
 }
 ## End Gather
@@ -302,6 +311,7 @@ sub PRF_Gatherer {
       if ($config->{do_hotknots}) {
 	  $hotknots_mfe_id = Check_Folds(type => 'hotknots', fold_search => $fold_search, slipstart => $slipsite_start);
       }
+      print "Looking at the comparison search\n" if ($config->{debug});
       if ($config->{do_comparison}) {
 	  my $pknots_mfe_info = $fold_search->Pknots(pseudo => 'nopseudo');
 	  my $nupack_mfe_info = $fold_search->Nupack_NOPAIRS(pseudo => 'nopseudo');
@@ -357,7 +367,7 @@ UNION
 						   genome_id =>$state->{genome_id},
 						   start => $slipsite_start,
 						   seqlength => $state->{seqlength},
-						   method => $method,);
+						   mfe_method => $method,);
               print "$current has $boot_folds randomizations for method: $method\n" if ($config->{debug});
               if (!defined($boot_folds) or $boot_folds == 0) {
                   my $bootlaces = $boot->Go($method);
@@ -378,7 +388,7 @@ UNION
       } ## End check to do an overlap
       ## Clean up after yourself!
       PRFdb::RemoveFile($state->{fasta_file});
-  }    ### End foreach slipsite_start
+    }    ### End foreach slipsite_start
     $db->Put_Numslipsite($state->{accession}, $num_slipsites) if (!defined($noslipsite->[0]));
     Clean_Up();
     ## Clean out state
@@ -437,7 +447,7 @@ $sequence_string
 	    $state->{nupack_mfe_id} = $nupack_mfe_id;
 	}
 	if ($pknots_foldedp == 0) {
-	    $pknots_info = $fold_search->Pknots('nopseudo');
+	    $pknots_info = $fold_search->Pknots(pseudo => 'nopseudo');
 	    $pknots_mfe_id = $db->Put_Pknots($pknots_info, $landscape_table);
 	    $state->{pknots_mfe_id} = $pknots_mfe_id;
 	}
@@ -608,14 +618,14 @@ sub Check_Folds {
     my $mfe_id;
     my $mfe_varname = qq"${type}_mfe_id";
     my $folds = $db->Get_Num_RNAfolds($type, $state->{genome_id}, $slipsite_start, $state->{seqlength});
+    print "About to check for folds of type $type, have $folds\n";
     if ($folds > 0) { ### If there ARE existing folds...
-	print "$state->{genome_id} has $folds > 0 pknots_folds at position $slipsite_start\n" if ($config->{debug});
+	print "$state->{genome_id} has $folds > 0 $type at position $slipsite_start\n" if ($config->{debug});
 	$state->{$mfe_varname} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start,
 						 $state->{seqlength}, $type);
 	$mfe_id = $state->{$mfe_varname};
 	print "Check_Folds $type - already done: state: $mfe_id\n" if ($config->{debug});
-    }
-    else { ### If there are NO existing folds...
+    } else { ### If there are NO existing folds...
 	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n" if ($config->{debug});
 	my ($info, $mfe_id);
 	if ($type eq 'pknots') {
@@ -623,23 +633,21 @@ sub Check_Folds {
 	    $mfe_id = $db->Put_Pknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Pknots and returned $mfe_id\n" if ($config->{debug});
-	}
-	elsif ($type eq 'nupack') {
+	} elsif ($type eq 'nupack') {
 	    $info = $fold_search->Nupack_NOPAIRS();
 	    $mfe_id = $db->Put_Nupack($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Nupack and returned $mfe_id\n" if ($config->{debug});
-	}
-	elsif ($type eq 'hotknots') {
+	} elsif ($type eq 'hotknots') {
 	    $info = $fold_search->Hotknots();
 	    $mfe_id = $db->Put_Hotknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Hotknots and returned $mfe_id\n" if ($config->{debug});
-	}
-	else {
+	} else {
 	    Callstack(die => 1, message => "Non existing type in Check_Folds");
 	}
-    }    ### Done checking for pknots folds
+    } ## Done checking for folds
+    print "Finished checking for folds.\n" if ($config->{debug});
     return ($mfe_id);
 }
 ## End Check_Folds
@@ -666,8 +674,7 @@ sub Check_Sequence_Length {
 	chomp $line;
 	if ($line =~ /^\>/) {
 	    $output .= $line;
-	}
-	else {
+	} else {
 	    my @tmp = split(//, $line);
 	    push(@out, @tmp);
 	}
@@ -678,17 +685,13 @@ sub Check_Sequence_Length {
     $sequence = uc($sequence);
     if (!defined($sequence) or $sequence eq '') {
 	return ('null');
-    }
-    elsif ($sequence_length > $wanted_sequence_length) {
+    } elsif ($sequence_length > $wanted_sequence_length) {
 	return ('longer than wanted');
-    }
-    elsif ($sequence_length == $wanted_sequence_length) {
+    } elsif ($sequence_length == $wanted_sequence_length) {
 	return ('equal');
-    }
-    elsif ($sequence_length < $wanted_sequence_length) {
+    } elsif ($sequence_length < $wanted_sequence_length) {
 	return ('shorter than wanted');
-    }
-    else {
+    } else {
 	return ('unknown');
     }
 }
@@ -753,13 +756,11 @@ sub Zscore {
 
 sub Optimize {
     my $tables = $db->MySelect("show tables");
-    unless ($config->{maintenance_skip_optimize}) {
-	foreach my $t (@{$tables}) {
-            print "Performing OPTIMIZE TABLE $t->[0]\n";
-	    $db->MyExecute("OPTIMIZE TABLE $t->[0]");
-            print "Performing ANALYZE TABLE $t->[0]\n";
-	    $db->MyExecute("ANALYZE TABLE $t->[0]");
-	}
+    foreach my $t (@{$tables}) {
+	print "Performing OPTIMIZE TABLE $t->[0]\n";
+	$db->MyExecute("OPTIMIZE TABLE $t->[0]");
+	print "Performing ANALYZE TABLE $t->[0]\n";
+	$db->MyExecute("ANALYZE TABLE $t->[0]");
     }
 }
 

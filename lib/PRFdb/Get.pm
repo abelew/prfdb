@@ -76,41 +76,57 @@ sub Queue {
     }
     ## This id is the same id which uniquely identifies a sequence in the genome database
     my $single_id;
-#    my $first = $me->MyExecute(statement => "LOCK TABLES $table WRITE");
+    my $first = $me->MyExecute(statement => "LOCK TABLES $table WRITE");
     if ($config->{randomize_id}) {
 	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out IS NULL OR checked_out = '0' ORDER BY RAND() LIMIT 1";
     } else {
-	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out IS NULL OR checked_out = '0' LIMIT 1";
+	print "TESTME: $table\n";
+	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' LIMIT 1";
     }
     my $ids = $me->MySelect(statement => $single_id, type => 'row');
+    print "TESTME: AFTER IF $ids $ids->[0] genome_id: $ids->[1]\n";
     my $id = $ids->[0];
     my $genome_id = $ids->[1];
-    if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
+    ##if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
 	## This should mean there are no more entries to fold in the queue
 	## Lets check this for truth -- first see if any are not done
 	## This should come true if the webqueue is empty for example.
-	my $done_id = qq"SELECT id, genome_id FROM $table WHERE done = '0' LIMIT 1";
-	my $ids = $me->MySelect(statement => $done_id, type =>'row');
-	$id = $ids->[0];
-	$genome_id = $ids->[1];
-	if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
-	    return(undef);
-	}
+	## There is a problem with this, in the case where there is only one left, it
+	## will return that single ID over and over again until it finishes.
+    ##my $done_id = qq"SELECT id, genome_id FROM $table WHERE done = '0' LIMIT 1";
+    ##my $ids = $me->MySelect(statement => $done_id, type =>'row');
+    ##$id = $ids->[0];
+    ##$genome_id = $ids->[1];
+    if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
+	print "TESTME: $id or $genome_id was undefined!\n";
+	return(undef);
     }
+    ##}
+    print "Updating $table setting checked out for $id\n";
     my $update = qq"UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?";
-    $me->MyExecute(statement => $update, vars=> [$id],);
-#    $me->MyExecute(statement => "UNLOCK TABLES");
-    my $return = {
-	queue_table => $table,
-	queue_id  => $id,
-	genome_id => $genome_id,
-    };
-    return ($return);
+    $me->MyExecute(statement => $update, vars=> [$id]);
+    $me->MyExecute(statement => "UNLOCK TABLES");
+    ## Check and make sure the ID still exists (I pruned a bunch out)
+    my $exists = $me->MySelect(statement => qq"SELECT count(genome_id) FROM gene_info WHERE genome_id=?", vars => [$genome_id], type => 'single');
+    my $ret;
+    print "TESTME: $exists select count(genome_id) from gene_info where genome_id = $genome_id\n";
+    if ($exists == 0) {
+	$me->MyExecute(statement => qq"UPDATE $table SET done='1' WHERE id=?", vars => [$id],);
+	my $tries = 0;
+	while ($tries < 1000) {
+	    $tries++;
+	    $ret = $me->Get_Queue();
+	}
+	$ret = undef;
+    } else {
+	$ret = {
+	    queue_table => $table,
+	    queue_id  => $id,
+	    genome_id => $genome_id,
+	};
+    }
+    return ($ret);
 }
-
-
-
-
 
 sub Input {
     my $me = shift;
@@ -315,6 +331,8 @@ sub Num_Bootfolds {
     my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
     my $return = {};
     my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? and start = ? and seqlength = ? and mfe_method = ?/;
+    print "Testing Boot num: $statement
+genome_id: $genome_id    start: $start   seqlength: $seqlength  mfe: $mfe_method\n";
     my $count = $me->MySelect(statement => $statement, vars => [$genome_id, $start, $seqlength, $mfe_method], type =>'single');
     return ($count);
 }

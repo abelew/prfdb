@@ -137,7 +137,7 @@ sub new {
     $me->{pbs_shell} = '/bin/bash' if (!defined($me->{pbs_shell}));
     $me->{pbs_template} = 'pbs_template' if (!defined($me->{pbs_template}));
     $me->{POST_CHOMP} = 1 if (!defined($me->{POST_CHOMP}));
-    $me->{process_import_queue} = 0 if (!defined($me->{process_import_queue}));
+    $me->{process_import_queue} = 1 if (!defined($me->{process_import_queue}));
     $me->{queue_table} = 'queue' if (!defined($me->{queue_table}));
     $me->{randomize_id} = 0 if (!defined($me->{randomize_id}));
     $me->{seqlength} = [100,75,50] if (!defined($me->{seqlength}));
@@ -201,6 +201,7 @@ sub new {
         'create_tables' => \$conf{create_tables},
         'dbexec:s' => \$conf{dbexec},
         'dbselect:s' => \$conf{dbselect},
+	'drop_accession:s' => \$conf{drop_accession},
         'fasta_style:s' => \$conf{fasta_style},
         'fillqueue' => \$conf{fillqueue},
         'genome' => \$conf{genome},
@@ -337,12 +338,18 @@ and go check..\n";
     if (defined($me->{mysql_backup})) {
         my $host = $me->{database_host}->[0];
         my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-        my $suffix = "mysqldump_${min}${hour}${mon}${wday}${year}.txt.gz";
-        my $dump_command = qq"nice mysqldump -u $me->{database_user} --password=$me->{database_pass}";
-        my $commandline = qq"cd $ENV{PRFDB_HOME}/backup && $dump_command $me->{database_name} | gzip > $me->{database_name}_$suffix && rm `ls -t $me->{database_name}_* | tail \-1` 2>$ENV{PRFDB_HOME}/backup/mysqldump.out 1>&2";
+        my $suffix = "mysqldump_${min}${hour}${mon}${wday}${year}.txt.xz";
+        my $dump_command = qq"nice mysqldump -h $host -u $me->{database_user} --password=$me->{database_pass} --lock-tables=false";
+        my $commandline = qq"cd $ENV{PRFDB_HOME}/backup && $dump_command $me->{database_name} | xz > $me->{database_name}_$suffix && rm \$(ls -t $me->{database_name}_* | tac | head \-1) 2>$ENV{PRFDB_HOME}/backup/mysqldump.out 1>&2";
         print "Going to run: $commandline\n";
         system($commandline);
         exit(0);
+    }
+
+    if (defined($me->{drop_accession})) {
+	my $db = new PRFdb(config => $me);
+	$db->Drop_Accession($me->{drop_accession});
+	exit(0);
     }
 
     if (defined($me->{shell})) {

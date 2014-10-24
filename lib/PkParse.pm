@@ -145,6 +145,8 @@ my $times_in_stem = 0;
 ## How many times Have I been in the current stem?
 my $num_loops = 0;
 ## How many times has Unwind been called? if too many, error out
+my $leftG = '(';
+my $rightG = ')';
 
 sub Unzip {
     my $me = shift;
@@ -533,12 +535,14 @@ sub ZIPHELIX {
 
 sub SETDEFAULTBRACKETS {
     my $me = shift;
-    $me->set(leftG => '(', rightG => ')');
+    $leftG = '(';
+    $rightG = ')';
 }
 
 sub SETALTERNATIVEBRACKETS {
     my $me = shift;
-    $me->set(leftG => '{', rightG => '}');
+    $leftG = '{';
+    $rightG = '}';
 }
 
 sub ReOrder_Stems {
