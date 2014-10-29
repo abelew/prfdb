@@ -62,7 +62,6 @@ sub Parse {
     }
     $me->set(empty => $number_empty, output => \@out, input => $input, stem => 1);
     
-    print "TESTME: @out\n";
     my $scanned_array;
     while ($me->{empty} > 0) {
 	$scanned_array = $me->Scan();
@@ -145,6 +144,8 @@ my $times_in_stem = 0;
 ## How many times Have I been in the current stem?
 my $num_loops = 0;
 ## How many times has Unwind been called? if too many, error out
+my $leftG = '(';
+my $rightG = ')';
 
 sub Unzip {
     my $me = shift;
@@ -533,12 +534,14 @@ sub ZIPHELIX {
 
 sub SETDEFAULTBRACKETS {
     my $me = shift;
-    $me->set(leftG => '(', rightG => ')');
+    $leftG = '(';
+    $rightG = ')';
 }
 
 sub SETALTERNATIVEBRACKETS {
     my $me = shift;
-    $me->set(leftG => '{', rightG => '}');
+    $leftG = '{';
+    $rightG = '}';
 }
 
 sub ReOrder_Stems {
@@ -769,7 +772,6 @@ sub Parsed_to_Barcode2 {
     my $string  = '';
     foreach my $char (@{$knotref}) { $string = $string . $char if (defined($char)); }
     $string =~ tr/0-9//s;
-#  print "TEST: $string\n";
     my @almost = split(//, $string);
     my $finished = '';
 #  print "How many times does @almost have $almost[0]?\n";

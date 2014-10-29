@@ -6,7 +6,6 @@ use SeqMisc;
 use Math::Stat;
 use PRFConfig qw / PRF_Out /;
 use vars qw($VERSION);
-use Data::Dumper;
 $VERSION='20111119';
 
 sub new {
@@ -127,7 +126,6 @@ sub Go {
                 }
                 
                 if (defined($mfe->{mfe})) {
-#                    print "TESTME: $mfe->{mfe}, incrementing iterations: $ret->{iterations}\n";
                     push(@stats_mfe, $mfe->{mfe});
                     $ret->{iterations}++;
                     $ret->{mfe_values} .= "$mfe->{mfe} ";
@@ -144,7 +142,6 @@ sub Go {
             $ret->{pairs_mean} = sprintf("%.2f", $pairs_stat->average());
             $ret->{pairs_sd} = sprintf("%.2f", $pairs_stat->stddev());
             
-#            print "TESTME: Is ret->{iterations} still good?: $ret->{iterations}\n";
             if (!$ret->{iterations}) {
                 $ret->{mfe_se} = undef;
                 $ret->{pairs_se} = undef;

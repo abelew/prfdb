@@ -174,8 +174,7 @@ sub Disconnect {
             my $rc = $handle->disconnect();
             Callstack() unless ($rc);
         }
-    }
-    else {
+    } else {
         if (defined($PRFdb::handles)) {
             my @handles = @{$PRFdb::handles};
         }
@@ -228,11 +227,9 @@ sub MySelect {
         $vars = $input->{vars};
         $type = $input->{type};
         $descriptor = $input->{descriptor};
-    }
-    elsif (!defined($_[1])) {
+    } elsif (!defined($_[1])) {
         $statement = $_[0];
-    }
-    else {
+    } else {
         %args = @_;
         $statement = $args{statement};
         $vars = $args{vars};
@@ -255,8 +252,7 @@ sub MySelect {
     my $rv;
     if (defined($vars)) {
         $rv = $sth->execute(@{$vars});
-    }
-    else {
+    } else {
         $rv = $sth->execute();
     }
     
@@ -273,20 +269,17 @@ with: error $DBI::errstr\n");
     if (defined($type) and defined($descriptor)) {
         $return = $sth->fetchall_hashref($descriptor);
         $selecttype = 'selectall_hashref';
-    }
-    elsif (defined($type) and $type eq 'row') {
+    } elsif (defined($type) and $type eq 'row') {
         ## If $type is defined, AND if you ask for a row, do a selectrow_arrayref
         $return = $sth->fetchrow_arrayref();
         $selecttype = 'selectrow_arrayref';
-    }
-
-    ## A flat select is one in which the returned elements are returned as a single flat arrayref
-    ## If you ask for multiple columns, then it will return a 2d array ref with the first d being the cols
-    elsif (defined($type) and $type eq 'single') {
+    } elsif (defined($type) and $type eq 'single') {
+	## A flat select is one in which the returned elements are returned as a single flat arrayref
+	## If you ask for multiple columns, then it will return a 2d array
+	## ref with the first d being the cols
         my $tmp = $sth->fetchrow_arrayref();
         $return = $tmp->[0];
-    }
-    elsif (defined($type) and $type eq 'flat') {
+    } elsif (defined($type) and $type eq 'flat') {
         my $selecttype = 'flat';
         my @ret = ();
         my $data = $sth->fetchall_arrayref();
@@ -297,8 +290,7 @@ with: error $DBI::errstr\n");
             foreach my $c (0 .. $#$data) {
                 push(@ret, $data->[$c]->[0]);
             }
-        }
-        else {
+        } else {
             foreach my $c (0 .. $#$data) {
                 my @elems = @{$data->[$c]};
                 foreach my $d (0 .. $#elems) {
@@ -308,17 +300,14 @@ with: error $DBI::errstr\n");
         }
         $return = \@ret;
         ## Endif flat
-    } 
-    elsif (defined($type) and $type eq 'list_of_hashes') { 
+    } elsif (defined($type) and $type eq 'list_of_hashes') { 
         $return = $sth->fetchall_arrayref({});
         $selecttype = 'selectall_arrayref({})';     
-    }
-    elsif (defined($type)) {    ## Usually defined as 'hash'
+    } elsif (defined($type)) {    ## Usually defined as 'hash'
         ## If only $type is defined, do a selectrow_hashref
         $return = $sth->fetchrow_hashref();
         $selecttype = 'selectrow_hashref';
-    }
-    else {
+    } else {
         ## The default is to do a selectall_arrayref
         $return = $sth->fetchall_arrayref();
         $selecttype = 'selectall_arrayref';
@@ -357,11 +346,9 @@ sub MyExecute {
         $input = $_[0];
         $vars = $input->{vars};
         $statement = $input->{statement};
-    }
-    elsif (!defined($_[1])) {
+    } elsif (!defined($_[1])) {
         $statement = $_[0];
-    }
-    else {
+    } else {
         %args = @_;
         $statement = $args{statement};
         $vars = $args{vars};
@@ -378,8 +365,7 @@ sub MyExecute {
     }
     if (scalar(@vars) > 0) {
         $rv = $sth->execute(@{$input->{vars}}) or Callstack();
-    }
-    else {
+    } else {
         $rv = $sth->execute() or Callstack();
     }
     ## Added as a test 6/7/2012
@@ -394,8 +380,7 @@ with: error $DBI::errstr\n");
         $me->{errors}->{statement} = $statement;
         $me->{errors}->{errstr} = $DBI::errstr;
         return(undef);
-    }
-    else {
+    } else {
         $rows = $dbh->rows();
     }
     return($rows);
@@ -438,8 +423,7 @@ sub MyGet {
             $criteria_count++;
             if ($vars->{$criterion} =~ /\s+/) {
                 $final_statement .= "$criterion $vars->{$criterion} AND ";
-            }
-            else {
+            } else {
                 $final_statement .= "$criterion = '$vars->{$criterion}' AND ";
             }
         }
@@ -454,16 +438,6 @@ sub MyGet {
     
     my $dbh = $me->MyConnect($final_statement);
     my $stuff = $me->MySelect(statement => $final_statement,);
-    
-    print "Column order: @select_columns\n";
-    my $c = 1;
-    foreach my $datum (@{$stuff}) {
-        print "$c\n";
-        $c++;
-        foreach my $c (0 .. $#select_columns) {
-            print "  ${select_columns[$c]}: $datum->[$c]\n";
-        }
-    }
     return($final_statement);
 }
 
@@ -509,8 +483,7 @@ sub MyConnect {
         if (defined($alt_user)) {
             $user = $alt_user;
             $pass = $alt_pass;
-        }
-        else {
+        } else {
             $user = $config->{database_user};
             $pass = $config->{database_pass};
         }
@@ -584,28 +557,23 @@ sub Bootlace_Check {
             my $connector_id = $me->MySelect(statement => $stmt, vars => [$boot->{accession}, $boot->{start}, $boot->{seqlength}, $boot->{mfe_method}],);
             my @connector = @{$connector_id};
             if (scalar(@connector) > 1) {
-                print "PROBLEM, more than 1 connector.\n";
                 my $count = 0;
                 foreach my $conn (@connector) {
                     if ($prune) {
                         $count_modified++;
                         $me->MyExecute("DELETE FROM $mt WHERE id = '$connector[$count]->[0]'") unless($count == 0);
                     }
-                    print "Tell me the mfe_id: $conn->[0] and genome_id: $conn->[1]\n";
                     $count++;
                 }
-            } 
-            else {
+            } else {
                 my ($id, $mgid) = ($connector[0]->[0], $connector[0]->[1]);
                 if (!defined($mgid) or !defined($id)) {
                     print "There was an undefined element! $boot->{id} datum should be deleted.\n";
                     $count_modified++;
                     $me->MyExecute("DELETE FROM $bt WHERE id = '$boot->{id}'");
-                }
-                elsif ($id eq $boot->{mfe_id}) {
+                } elsif ($id eq $boot->{mfe_id}) {
                     next;
-                }
-                else {
+                } else {
                     print "To Connect $species id:$boot->{id} bgid:$boot->{genome_id} mgid:$mgid, the mfe_id:$boot->{mfe_id}  must become:$id\n";
                     $count_modified++;
                     $me->MyExecute("UPDATE $bt set mfe_id = '$id' WHERE id = '$boot->{id}'");
@@ -707,6 +675,40 @@ sub Mfeid_to_Seq {
     return($final_filename);
 }
 
+sub Drop_Accession {
+    my $me = shift;
+    my $accession = shift;
+    print "Dropping accession: $accession\n";
+    my $ids = $me->MySelect(statement => "SELECT genome_id, species FROM gene_info WHERE accession = ?", vars => [$accession]);
+    foreach my $id (@{$ids}) {
+	my $genome_id = $id->[0];
+	my $species = $id->[1];
+	print "Found genome id: $genome_id, species: $species\n";
+	print "Deleting entry from genome table\n";
+	$me->MyExecute("DELETE FROM genome WHERE id = '$genome_id'");
+	print "Deleting entry from gene_info\n";
+	$me->MyExecute("DELETE FROM gene_info WHERE genome_id = '$genome_id'");
+	my $mfe_table = qq"mfe_${species}";
+	print "Deleting entry from $mfe_table\n";
+	$me->MyExecute("DELETE FROM $mfe_table WHERE genome_id = '$genome_id'");	
+	my $landscape_table = qq"landscape_${species}";
+	print "Deleting entry from $landscape_table\n";
+	$me->MyExecute("DELETE FROM $landscape_table WHERE genome_id = '$genome_id'");
+	my $boot_table = qq"boot_${species}";
+	print "Deleting entry from $boot_table\n";
+	$me->MyExecute("DELETE FROM $boot_table WHERE genome_id = '$genome_id'");
+	print "Deleting entry from agree\n";
+	$me->MyExecute("DELETE FROM agree WHERE accession = '$accession'");
+	print "Deleting entry from overlap\n";
+	$me->MyExecute("DELETE FROM overlap WHERE genome_id = '$genome_id'");
+	print "Deleting entry from numslipsite\n";
+	$me->MyExecute("DELETE FROM numslipsite WHERE accession = '$accession'");
+    }
+
+
+
+}
+
 =head2 Make_CT
 
  Title   : Make_CT
@@ -724,17 +726,14 @@ sub Make_CT {
     if (!defined($output_file)) {
         $fh = PRFdb::MakeTempfile(SUFFIX => '.ct');
         $output_file = $fh->filename;
-    }
-    elsif (ref($output_file) eq 'GLOB') {
+    } elsif (ref($output_file) eq 'GLOB') {
         $fh = $output_file;
-    }
-    else {
+    } else {
         $fh = \*OUT;
         open($fh, ">$output_file");
     }
 
     my $bases = scalar(@seq_array);
-    print STDERR "HERE WITH CT $output_file\n";
     my $output_string = "$bases  $output_file\n";
     foreach my $c (0 .. $#seq_array) {
         my $position = $c + 1;
@@ -752,6 +751,7 @@ sub Make_CT {
         }
     }
     print $fh $output_string;
+    close($fh);
     return($output_file);
 }
 
@@ -771,11 +771,9 @@ sub Make_Bpseq {
     if (!defined($output_file)) {
         $fh = PRFdb::MakeTempfile(SUFFIX => '.bpseq');
         $output_file = $fh->filename;
-    }
-    elsif (ref($output_file) eq 'GLOB') {
+    } elsif (ref($output_file) eq 'GLOB') {
         $fh = $output_file;
-    }
-    else {
+    } else {
         $fh = \*OUT;
         open($fh, ">$output_file");
     }
@@ -794,6 +792,7 @@ sub Make_Bpseq {
         }
     }
     print $fh $output;
+    close($fh);
     return($output_file);
 }
 
@@ -985,12 +984,9 @@ sub RemoveFile {
         }
         $config->{open_files} = \@new_open_files;
         return($num_deleted);
-    }
-    
-    elsif (ref($file) eq 'ARRAY') {
+    } elsif (ref($file) eq 'ARRAY') {
         @comp = @{$file};
-    }
-    else {
+    } else {
         push(@comp, $file);
     }
     
@@ -1169,13 +1165,11 @@ sub Grab_Queue {
         $queue = $me->Get_Queue('webqueue');
         if (defined($queue)) {
             return ($queue);
-        }
-        else {
+        } else {
             $queue = $me->Get_Queue();
             return ($queue);
         }
-        ## End check webqueue
-    } 
+    } ## End check webqueue
     else {
         $queue = $me->Get_Queue();
         if (!defined($queue)) {
@@ -1221,8 +1215,7 @@ sub Import_Fasta {
     my $linenum = 0;
     if (defined($config->{species})) {
         print "Species is defined as $config->{species}\n";
-    }
-    else {
+    } else {
         Callstack(die => 1, message => "Species must be defined.");
     }
     while (my $line = <IN>) {
@@ -1233,19 +1226,16 @@ sub Import_Fasta {
             if ($linenum > 1) {
                 if (defined($config->{startpos})) {
                     $datum{orf_start} = $config->{startpos};
-                }
-                else {
+                } else {
                     $datum{orf_start} = 1;
                 }
                 if (defined($config->{endpos})) {
                     if ($config->{endpos} > 0) {
                         $datum{orf_stop} = $config->{end_pos};
-                    }
-                    else {  ## A negative offset
+                    } else {  ## A negative offset
                         $datum{orf_stop} = length($datum{mrna_seq}) - $config->{endpos};
                     }
-                }
-                else {
+                } else {
                     $datum{orf_stop} = length($datum{mrna_seq});
                 }
                 ## Insert the entry here and add the queue entry
@@ -1260,7 +1250,6 @@ sub Import_Fasta {
                 my $genome_id = $me->Put_Genome_Entry(\%datum);
 #  This is repeated at the end of this function, I need to make sure that is kosher
                 if (defined($genome_id)) {
-                    print "1: Added $genome_id\n";
                     push(@return_array, $genome_id);
                 }
             }  ## End if linenum == 1
@@ -1290,8 +1279,7 @@ sub Import_Fasta {
                         $datum{version} = 1;
                     }
                     ## End if the style is sgd
-                } 
-                elsif ($style eq 'celegans') {
+                } elsif ($style eq 'celegans') {
                     %datum = (accession => undef,
                               genename => undef,
                               version => undef,
@@ -1319,8 +1307,7 @@ sub Import_Fasta {
                     my ($accession, $version);
                     if ($accession_version =~ m/\./) {
                         ($accession, $version) = split(/\./, $accession_version);
-                    }
-                    else {
+                    } else {
                         $accession = $accession_version;
                         $version   = '0';
                     }
@@ -1335,8 +1322,7 @@ sub Import_Fasta {
                     $datum{direction} = 'forward';
                     $datum{defline} = $line;
                     ## End if the style is from the mammalian gene collection
-                }
-                elsif ($style eq 'misc') {
+                } elsif ($style eq 'misc') {
                     %datum = (accession => undef,
                               genename => undef,
                               version => undef,
@@ -1360,13 +1346,11 @@ sub Import_Fasta {
                     $datum{species} = $config->{species};
                     ## End if the style is misc
                 }
-            }
-            else {
+            } else {
                 print "Style is not defined.\n";
             }
             ## End if you are on a > line
-        }
-        else {
+        } else {
             $line =~ s/\s//g;
             $line =~ s/\d//g;
             $datum{mrna_seq} .= $line;

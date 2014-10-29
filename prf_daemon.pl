@@ -4,6 +4,8 @@ use warnings;
 use lib "$ENV{PRFDB_HOME}/lib";
 use local::lib "$ENV{PRFDB_HOME}/usr/perl";
 use vars qw"$db $config";
+use Devel::Trace;
+$Devel::Trace::TRACE = 1;   # Enable
 die("Could not load PRFConfig.\n$@\n") unless (eval "use PRFConfig; 1");
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
 die("Could not load PRFdb.\n$@\n") unless (eval "use PRFdb qw'AddOpen RemoveFile Callstack Cleanup'; 1");
@@ -79,8 +81,7 @@ MAINLOOP: until (defined($state->{time_to_die})) {
 	    if (defined($import) and $import !~ m/Error/) {
 		if ($import == 0) {
 		    print "Did not import $import_accession, it has no coding sequence defined.\n";
-		}
-		else {
+		} else {
 		    print "Imported $import_accession added $import bases.\n";
 		}
 	    }
@@ -93,8 +94,7 @@ MAINLOOP: until (defined($state->{time_to_die})) {
     if (defined($state->{genome_id})) {
 	Gather(state => $state);
 	## End if have an entry in the queue
-    }
-    else {
+    } else {
 	sleep(60);
 	$state->{done_count}++;
     } ## no longer have $state->{genome_id}
@@ -172,6 +172,8 @@ sub Gather {
     my $ref = $db->Id_to_AccessionSpecies($state->{genome_id});
     $state->{accession} = $ref->{accession};
     $state->{species} = $ref->{species};
+    ## I recently deleted many entries and caused a bunch of these calls to come up undefined.
+    return(undef) if (!defined($ref->{species}));
     $db->Create_Landscape("landscape_$state->{species}") unless($db->Tablep("landscape_$state->{species}"));
     $db->Create_Boot("boot_$state->{species}") unless($db->Tablep("boot_$state->{species}")); 
     unless ($state->{species} =~ /^virus/) {
@@ -189,6 +191,8 @@ sub Gather {
     foreach my $len (@{$config->{seqlength}}) {
         $state->{seqlength} = $len;
         PRF_Gatherer(state => $state, length => $len, startpos => $startpos);
+	print "Finished a PRF Gather, this is a good time to CTRL-C this thing.\n";
+	sleep(5);
     }
 }
 ## End Gather
@@ -302,6 +306,7 @@ sub PRF_Gatherer {
       if ($config->{do_hotknots}) {
 	  $hotknots_mfe_id = Check_Folds(type => 'hotknots', fold_search => $fold_search, slipstart => $slipsite_start);
       }
+      print "Looking at the comparison search\n" if ($config->{debug});
       if ($config->{do_comparison}) {
 	  my $pknots_mfe_info = $fold_search->Pknots(pseudo => 'nopseudo');
 	  my $nupack_mfe_info = $fold_search->Nupack_NOPAIRS(pseudo => 'nopseudo');
@@ -357,7 +362,7 @@ UNION
 						   genome_id =>$state->{genome_id},
 						   start => $slipsite_start,
 						   seqlength => $state->{seqlength},
-						   method => $method,);
+						   mfe_method => $method,);
               print "$current has $boot_folds randomizations for method: $method\n" if ($config->{debug});
               if (!defined($boot_folds) or $boot_folds == 0) {
                   my $bootlaces = $boot->Go($method);
@@ -378,7 +383,7 @@ UNION
       } ## End check to do an overlap
       ## Clean up after yourself!
       PRFdb::RemoveFile($state->{fasta_file});
-  }    ### End foreach slipsite_start
+    }    ### End foreach slipsite_start
     $db->Put_Numslipsite($state->{accession}, $num_slipsites) if (!defined($noslipsite->[0]));
     Clean_Up();
     ## Clean out state
@@ -437,7 +442,7 @@ $sequence_string
 	    $state->{nupack_mfe_id} = $nupack_mfe_id;
 	}
 	if ($pknots_foldedp == 0) {
-	    $pknots_info = $fold_search->Pknots('nopseudo');
+	    $pknots_info = $fold_search->Pknots(pseudo => 'nopseudo');
 	    $pknots_mfe_id = $db->Put_Pknots($pknots_info, $landscape_table);
 	    $state->{pknots_mfe_id} = $pknots_mfe_id;
 	}
@@ -609,13 +614,12 @@ sub Check_Folds {
     my $mfe_varname = qq"${type}_mfe_id";
     my $folds = $db->Get_Num_RNAfolds($type, $state->{genome_id}, $slipsite_start, $state->{seqlength});
     if ($folds > 0) { ### If there ARE existing folds...
-	print "$state->{genome_id} has $folds > 0 pknots_folds at position $slipsite_start\n" if ($config->{debug});
+	print "$state->{genome_id} has $folds > 0 $type at position $slipsite_start\n" if ($config->{debug});
 	$state->{$mfe_varname} = $db->Get_MFE_ID($state->{genome_id}, $slipsite_start,
 						 $state->{seqlength}, $type);
 	$mfe_id = $state->{$mfe_varname};
 	print "Check_Folds $type - already done: state: $mfe_id\n" if ($config->{debug});
-    }
-    else { ### If there are NO existing folds...
+    } else { ### If there are NO existing folds...
 	print "$state->{genome_id} has only $folds <= 0 $type at position $slipsite_start\n" if ($config->{debug});
 	my ($info, $mfe_id);
 	if ($type eq 'pknots') {
@@ -623,23 +627,21 @@ sub Check_Folds {
 	    $mfe_id = $db->Put_Pknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Pknots and returned $mfe_id\n" if ($config->{debug});
-	}
-	elsif ($type eq 'nupack') {
+	} elsif ($type eq 'nupack') {
 	    $info = $fold_search->Nupack_NOPAIRS();
 	    $mfe_id = $db->Put_Nupack($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Nupack and returned $mfe_id\n" if ($config->{debug});
-	}
-	elsif ($type eq 'hotknots') {
+	} elsif ($type eq 'hotknots') {
 	    $info = $fold_search->Hotknots();
 	    $mfe_id = $db->Put_Hotknots($info);
 	    $state->{$mfe_varname} = $mfe_id;
 	    print "Performed Put_Hotknots and returned $mfe_id\n" if ($config->{debug});
-	}
-	else {
+	} else {
 	    Callstack(die => 1, message => "Non existing type in Check_Folds");
 	}
-    }    ### Done checking for pknots folds
+    } ## Done checking for folds
+    print "Finished checking for folds.\n" if ($config->{debug});
     return ($mfe_id);
 }
 ## End Check_Folds
@@ -666,8 +668,7 @@ sub Check_Sequence_Length {
 	chomp $line;
 	if ($line =~ /^\>/) {
 	    $output .= $line;
-	}
-	else {
+	} else {
 	    my @tmp = split(//, $line);
 	    push(@out, @tmp);
 	}
@@ -678,17 +679,13 @@ sub Check_Sequence_Length {
     $sequence = uc($sequence);
     if (!defined($sequence) or $sequence eq '') {
 	return ('null');
-    }
-    elsif ($sequence_length > $wanted_sequence_length) {
+    } elsif ($sequence_length > $wanted_sequence_length) {
 	return ('longer than wanted');
-    }
-    elsif ($sequence_length == $wanted_sequence_length) {
+    } elsif ($sequence_length == $wanted_sequence_length) {
 	return ('equal');
-    }
-    elsif ($sequence_length < $wanted_sequence_length) {
+    } elsif ($sequence_length < $wanted_sequence_length) {
 	return ('shorter than wanted');
-    }
-    else {
+    } else {
 	return ('unknown');
     }
 }
@@ -743,7 +740,7 @@ sub Zscore {
 	    $mfe = 0 if (!defined($mfe));
 	    $mfe_mean = 0 if (!defined($mfe_mean));
 	    my $zscore = sprintf("%.3f", ($mfe - $mfe_mean) / $mfe_sd);
-	    my $update_stmt = qq(UPDATE $table SET zscore = '$zscore' WHERE id = '$id');
+	    my $update_stmt = qq"UPDATE $table SET zscore = '$zscore' WHERE id = '$id'";
 	    $db->MyExecute($update_stmt);
 	}
     }
@@ -753,13 +750,11 @@ sub Zscore {
 
 sub Optimize {
     my $tables = $db->MySelect("show tables");
-    unless ($config->{maintenance_skip_optimize}) {
-	foreach my $t (@{$tables}) {
-            print "Performing OPTIMIZE TABLE $t->[0]\n";
-	    $db->MyExecute("OPTIMIZE TABLE $t->[0]");
-            print "Performing ANALYZE TABLE $t->[0]\n";
-	    $db->MyExecute("ANALYZE TABLE $t->[0]");
-	}
+    foreach my $t (@{$tables}) {
+	print "Performing OPTIMIZE TABLE $t->[0]\n";
+	$db->MyExecute("OPTIMIZE TABLE $t->[0]");
+	print "Performing ANALYZE TABLE $t->[0]\n";
+	$db->MyExecute("ANALYZE TABLE $t->[0]");
     }
 }
 
@@ -811,16 +806,16 @@ sub Maintenance {
 	  print "Filling index_stats for $species\n";
 	  next if ($species =~ /^virus-/);
 	  $mt = "mfe_$species";
-	  $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM gene_info WHERE species = ?", type=>'single', vars =>[$species,]);
-	  $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM $mt", type=>'single');
-	  $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM $mt WHERE knotp = '1'", type=>'single',);
+	  $num_genome = $db->MySelect(statement => qq"SELECT COUNT(id) FROM gene_info WHERE species = ?", type => 'single', vars => [$species,]);
+	  $num_mfe_entries = $db->MySelect(statement => qq"SELECT COUNT(id) FROM $mt", type => 'single');
+	  $num_mfe_knotted = $db->MySelect(statement => qq"SELECT COUNT(DISTINCT(accession)) FROM $mt WHERE knotp = '1'", type => 'single',);
 	  my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = ?", vars => [$species],);
 	  $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('',?,?,?,?)", vars => [$species, $num_genome, $num_mfe_entries, $num_mfe_knotted],);
       }  ## End foreach species...
 	my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = 'virus'");
-	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM gene_info WHERE species like 'virus-%'", type=>'single');
-	$num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe_virus", type=>'single');
-	$num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe_virus WHERE knotp = '1'", type=>'single');
+	$num_genome = $db->MySelect(statement => qq"SELECT COUNT(id) FROM genome WHERE species like 'virus-%'", type => 'single');
+	$num_mfe_entries = $db->MySelect(statement => qq"SELECT COUNT(id) FROM mfe_virus", type => 'single');
+	$num_mfe_knotted = $db->MySelect(statement => qq"SELECT COUNT(DISTINCT(accession)) FROM mfe_virus WHERE knotp = '1'", type => 'single');
 	$rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('', 'virus',?,?,?)", vars => [$num_genome, $num_mfe_entries, $num_mfe_knotted],);
 	## End index_stats
     }
@@ -846,11 +841,9 @@ sub Maintenance {
 			      $suffix .= "-pknot";
 			      $pknots_only = 1;
 			  }
-
 			  if ($slip eq 'all') {
 			      $suffix .= "-all";
-			  }
-			  else {
+			  } else {
 			      $suffix .= "-${slip}";
 			  }
 			  $suffix .= "-${seqlength}";
@@ -867,7 +860,6 @@ sub Maintenance {
 			  if (!-f $cloud_output_filename) {
 			      $points_stmt = qq"SELECT SQL_BUFFER_RESULT $mt.mfe, $boot_table.zscore, $mt.accession, $mt.knotp, $mt.slipsite, $mt.start, genome.genename FROM $mt, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND ";
 			      $averages_stmt = qq"SELECT SQL_BUFFER_RESULT avg($mt.mfe), avg($boot_table.zscore), stddev($mt.mfe), stddev($boot_table.zscore) FROM $mt, $boot_table WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND ";
-			      
 			      if ($pk eq 'yes') {
 				  $points_stmt .= "$mt.knotp = '1' AND ";
 				  $averages_stmt .= "$mt.knotp = '1' AND ";
@@ -889,8 +881,7 @@ sub Maintenance {
 				      pknot => 1,
 				      slipsites => $slip,
 				      );
-			      }
-			      else {
+			      } else {
 				  %args = (
 				      seqlength => $seqlength,
 				      species => $species,
@@ -903,7 +894,6 @@ sub Maintenance {
 			      }
 			      $cloud_data = $cloud->Make_Cloud(%args);
 			  }
-			  
 			  my $map_file = $cloud_output_filename . '.map';
 			  my $extension_percent_filename = $cloud->Picture_Filename(type => 'extension_percent',
 										    species => $species,);
@@ -921,7 +911,7 @@ sub Maintenance {
 		      }
 		  } ## Foreach slipsite
 	      } ## foreach species
-	    }  ## if pknotted
+	    } ## if pknotted
 	}
     } ## seqlengths
     ## End generating all clouds
@@ -944,8 +934,8 @@ sub Import_Genbank_Flatfile {
     die("Could not load Bio::Index::GenBank.\n $@\n") unless (eval "use Bio::Index::GenBank; 1");
     
     my $uni = new Bio::DB::Universal();
-    my $in  = Bio::SeqIO->new(-file => $import_genbank,
-			      -format => 'genbank');
+    my $in = Bio::SeqIO->new(-file => $import_genbank,
+			     -format => 'genbank');
     while (my $seq = $in->next_seq()) {
 	#my $seq = $uni->get_Seq_by_id($accession);
 	my @cds = grep {$_->primary_tag eq 'CDS'} $seq->get_SeqFeatures();
@@ -971,12 +961,11 @@ sub Import_Genbank_Flatfile {
 	my @mrna_seq = split(//, $mrna_sequence);
 	my $counter = 0;
 	my $num_cds = scalar(@cds);
-	
 	my %datum_orig = (
-			  accession => $accession,
-			  species => $full_species,
-			  defline => $defline,
-			  );
+	    accession => $accession,
+	    species => $full_species,
+	    defline => $defline,
+	    );
 	foreach my $feature (@cds) {
 	    $counter++;
 	    my $primary_tag = $feature->primary_tag();
@@ -988,13 +977,11 @@ sub Import_Genbank_Flatfile {
 		$direction = 'undefined';
 		$start = $orf_start;
 		$stop = $orf_stop;
-	    }
-	    elsif ($feature->{_location}{_strand} == 1) {
+	    } elsif ($feature->{_location}{_strand} == 1) {
 		$direction = 'forward';
 		$start = $orf_start;
 		$stop = $orf_stop;
-	    }
-	    elsif ($feature->{_location}{_strand} == -1) {
+	    } elsif ($feature->{_location}{_strand} == -1) {
 		$direction = 'reverse';
 		$start = $orf_stop;
 		$stop = $orf_start;
@@ -1081,7 +1068,7 @@ sub Make_Queue_Jobs {
     my @arches = split(/ /, $config->{pbs_arches});
     foreach my $arch (@arches) {
 	system("mkdir -p jobs/$arch") unless (-d "jobs/$arch");
-	my $archchar = substr($arch,0,3);
+	my $archchar = substr($arch, 0, 3);
 	foreach my $daemon ("01" .. $template_config->{pbs_num_daemons}) {
 	    my $output_file = "jobs/$arch/$daemon";
 	    ## First delete the existing job file in case a change has been made to the

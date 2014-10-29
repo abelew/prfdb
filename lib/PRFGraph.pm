@@ -506,7 +506,7 @@ sub Make_Extension {
 		     x_label => 'Percent ORF',
 		     y2_min_value => 0,
 		     line_width => 3,
-		     y2_max_value => 80,
+		     y2_max_value => 100,  ## I got a weird error 'Maximum for y2 too small'  this is the only place I can guess for it.
 		     default_type => 'lines',
 		     types => [qw(lines lines)],
 		     y1_min_value => 0,
@@ -2458,7 +2458,7 @@ sub jViz {
 	$output_filename = $me->Picture_Filename(type => $args{jviz_type}, accession => $me->{accession});
     }
 
-    print STDERR "THe output filename is: $output_filename\n" if ($args{debug});
+    print STDERR "The output filename is: $output_filename\n" if ($args{debug});
     unless (-r $output_filename) {
 	my $db = new PRFdb(config => $config);
 	my $species = $me->{species};
