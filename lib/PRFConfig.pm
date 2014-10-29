@@ -337,9 +337,10 @@ and go check..\n";
     if (defined($me->{mysql_backup})) {
         my $host = $me->{database_host}->[0];
         my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-        my $suffix = "mysqldump_${min}${hour}${mon}${wday}${year}.txt.gz";
+        my $suffix = "mysqldump_${min}${hour}${mon}${wday}${year}.txt.xz";
         my $dump_command = qq"nice mysqldump -u $me->{database_user} --password=$me->{database_pass}";
-        my $commandline = qq"cd $ENV{PRFDB_HOME}/backup && $dump_command $me->{database_name} | gzip > $me->{database_name}_$suffix && rm `ls -t $me->{database_name}_* | tail \-1` 2>$ENV{PRFDB_HOME}/backup/mysqldump.out 1>&2";
+        ##my $commandline = qq"cd $ENV{PRFDB_HOME}/backup && $dump_command $me->{database_name} | xz > $me->{database_name}_$suffix && rm $(ls -t $me->{database_name}_* | tail \-1) 2>$ENV{PRFDB_HOME}/backup/mysqldump.out 1>&2";
+        my $commandline = qq"cd $ENV{PRFDB_HOME}/backup && $dump_command $me->{database_name} | xz > $me->{database_name}_$suffix && rm \$(ls -t $me->{database_name}_* | tac | head \-1) 2>$ENV{PRFDB_HOME}/backup/mysqldump.out 1>&2";
         print "Going to run: $commandline\n";
         system($commandline);
         exit(0);

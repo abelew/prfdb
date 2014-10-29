@@ -728,7 +728,7 @@ sub Zscore {
 	next unless ($table =~ /^boot_/);
 	my $species = $table;
 	$species =~ s/^boot_//g;
-	my $all_boot_stmt = qq"SELECT id, mfe_id, mfe_mean, mfe_sd, FROM $table WHERE zscore is NULL";
+	my $all_boot_stmt = qq"SELECT id, mfe_id, mfe_mean, mfe_sd FROM $table WHERE zscore is NULL";
 	$mt = qq"mfe_$species";
 	my $all_boot = $db->MySelect($all_boot_stmt);
 	foreach my $boot (@{$all_boot}) {
@@ -811,16 +811,16 @@ sub Maintenance {
 	  print "Filling index_stats for $species\n";
 	  next if ($species =~ /^virus-/);
 	  $mt = "mfe_$species";
-	  $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species = ?", type=>'single', vars =>[$species,]);
-	  $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM $mt WHERE species = ?",type=>'single', vars => [$species,]);
-	  $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM $mt WHERE knotp = '1' and species = ?",type=>'single', vars => [$species],);
+	  $num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM gene_info WHERE species = ?", type=>'single', vars =>[$species,]);
+	  $num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM $mt", type=>'single');
+	  $num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM $mt WHERE knotp = '1'", type=>'single',);
 	  my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = ?", vars => [$species],);
 	  $rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('',?,?,?,?)", vars => [$species, $num_genome, $num_mfe_entries, $num_mfe_knotted],);
       }  ## End foreach species...
 	my $rc = $db->MyExecute(statement => qq"DELETE FROM index_stats WHERE species = 'virus'");
-	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM genome WHERE species like 'virus-%'", type=>'single');
-	$num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe_virus",type=>'single');
-	$num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe_virus WHERE knotp = '1'",type=>'single');
+	$num_genome = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM gene_info WHERE species like 'virus-%'", type=>'single');
+	$num_mfe_entries = $db->MySelect(statement=>qq"SELECT COUNT(id) FROM mfe_virus", type=>'single');
+	$num_mfe_knotted = $db->MySelect(statement=>qq"SELECT COUNT(DISTINCT(accession)) FROM mfe_virus WHERE knotp = '1'", type=>'single');
 	$rc = $db->MyExecute(statement => qq"INSERT INTO index_stats VALUES('', 'virus',?,?,?)", vars => [$num_genome, $num_mfe_entries, $num_mfe_knotted],);
 	## End index_stats
     }
@@ -865,7 +865,7 @@ sub Maintenance {
 			  $cloud_url = $ENV{PRFDB_HOME} . '/' . $cloud_url;
 			  my ($points_stmt, $averages_stmt, $points, $averages);
 			  if (!-f $cloud_output_filename) {
-			      $points_stmt = qq"SELECT SQL_BUFFER_RESULT $mt.mfe, $boot_table.zscore, $mt.accession, $mt.knotp, $mt.slipsite, $mt.start, genome.genename FROM $mt, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.species = ? AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND ";
+			      $points_stmt = qq"SELECT SQL_BUFFER_RESULT $mt.mfe, $boot_table.zscore, $mt.accession, $mt.knotp, $mt.slipsite, $mt.start, genome.genename FROM $mt, $boot_table, genome WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND ";
 			      $averages_stmt = qq"SELECT SQL_BUFFER_RESULT avg($mt.mfe), avg($boot_table.zscore), stddev($mt.mfe), stddev($boot_table.zscore) FROM $mt, $boot_table WHERE $boot_table.zscore IS NOT NULL AND $mt.mfe > -80 AND $mt.mfe < 5 AND $boot_table.zscore > -10 AND $boot_table.zscore < 10 AND $mt.seqlength = $seqlength AND $mt.id = $boot_table.mfe_id AND ";
 			      
 			      if ($pk eq 'yes') {
@@ -874,8 +874,8 @@ sub Maintenance {
 			      }
 			      $points_stmt .= " $mt.genome_id = genome.id";
 			      $averages_stmt =~ s/AND $//g;
-			      $points = $db->MySelect(statement => $points_stmt, vars => [$species]);
-			      $averages = $db->MySelect(statement => $averages_stmt, vars => [$species], type => 'row',);
+			      $points = $db->MySelect(statement => $points_stmt);
+			      $averages = $db->MySelect(statement => $averages_stmt, type => 'row',);
 			      my $cloud_data;
 			      my %args;
 			      if ($pk eq 'yes') {
