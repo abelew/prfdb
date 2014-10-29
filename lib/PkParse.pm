@@ -62,7 +62,6 @@ sub Parse {
     }
     $me->set(empty => $number_empty, output => \@out, input => $input, stem => 1);
     
-    print "TESTME: @out\n";
     my $scanned_array;
     while ($me->{empty} > 0) {
 	$scanned_array = $me->Scan();
@@ -773,7 +772,6 @@ sub Parsed_to_Barcode2 {
     my $string  = '';
     foreach my $char (@{$knotref}) { $string = $string . $char if (defined($char)); }
     $string =~ tr/0-9//s;
-#  print "TEST: $string\n";
     my @almost = split(//, $string);
     my $finished = '';
 #  print "How many times does @almost have $almost[0]?\n";

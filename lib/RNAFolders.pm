@@ -59,8 +59,6 @@ sub Make_bpseq {
 
     my $output_string = '';
 
-#    print STDERR "BPSEQ DEBUG: @seq_array\n@in_array\n" if ($args{debug});
-
     foreach my $c (0 .. $#seq_array) {
         if (!defined($in_array[$c])) {
             $output_string .= "$c $seq_array[$c] 0\n";
@@ -277,7 +275,6 @@ Return: $nupack_return\n");
 #    chdir($ENV{PRFDB_HOME});
     if (!defined($ret->{sequence})) {
 #	Callstack();
-#	print STDERR "The full output from nupack was: $nupack_output\n";
 	Callstack(message => "Sequence is not defined for accession: $accession start: $start in RNAFolders");
 	$ret->{sequence} = $me->{sequence};
     }
@@ -326,7 +323,6 @@ sub ILM {
     my $barcode = PkParse::Condense($new_struc);
     my $parens = PkParse::MAKEBRACKETS(\@ilmout);
     my $mfe = $me->Compute_Energy(sequence => $ret->{sequence}, parens => $parens);
-#    print "DEBUG: $barcode\n$parens\n$mfe\n" if ($config->{debug});
     $ret->{mfe} = $mfe;
     $ret->{parens} = $parens;
     $ret->{barcode} = $barcode;
@@ -613,8 +609,6 @@ command: $command\n" if ($config->{debug});
     close(VI);
     RemoveFile($errorfile);
     my @data = split(//, $ret->{parens});
-##    print "TESTME: @data
-##$ret->{parens}\n";
     my $pairs = 0;
     foreach my $char (@data) {
 	if ($char ne '.') {
@@ -680,9 +674,7 @@ sub Parens_to_Output {
     my $finished = 0;
   LOOP: while ($finished == 0) {
       my $fivep = 0;
-#	print "@par\n@output";
       foreach my $c (0 .. $#par) {
-#	    print STDERR "TESTME: $c $par[$c]\n";
           if ($par[$c] eq '(') {
               $fivep = $c;
           } 
@@ -735,10 +727,6 @@ sub Pknots {
     } else {
         $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} -k $inputfile $output_file 2>$errorfile";
     }
-##    print STDERR "PKNOTS: infile: $inputfile accession: $accession start: $start command:
-##$command\n";
-#    open(PK, "$command |") or Callstack(message => "RNAFolders::Pknots, Could not run pknots: $command");
-#    print STDERR "WTF IS THE COMMAND: $command\n";
     open(PK, "$command |");
     my $pk_stdout;
     while (my $line = <PK>) {
@@ -793,7 +781,6 @@ sub Pknots {
 	    $output_string .= "$new_num ";
 	}
     }
-    print "TESTME: $output_string\n";
     $ret->{output} = $output_string;
     if (defined($config->{max_spaces})) {
         my $max_spaces = $config->{max_spaces};
@@ -803,27 +790,19 @@ sub Pknots {
         $parser = new PkParse(debug => $config->{debug});
     }
 
-#    print STDERR "MFE? $ret->{mfe}\n";
     my @struct_array = split(/\s+/, $output_string);
     my $out = $parser->Unzip(\@struct_array);
-#    print STDERR "@struct_array 
-#$out\n";
     my $new_struct = PkParse::ReBarcoder($out);
     my $barcode = PkParse::Condense($new_struct);
     my $parsed = '';
     foreach my $char (@{$out}) {
         $parsed .= $char . ' ';
     }
-#    print STDERR "PARSED? $parsed\n";
     $parsed = PkParse::ReOrder_Stems($parsed);
-#    print STDERR "REORDERPARSED? $parsed\n";
     $ret->{parsed} = $parsed;
     $ret->{barcode} = $barcode;
-#    print STDERR "STRUCT ARRAY @struct_array\n";
-#    my $pp = PkParse::MAKEBRACKETS(\@struct_array);
     my $pp = $parser->SimpleParens(pkout => $string);
     $ret->{parens} = $pp;
-#    print STDERR "PP $pp\n";
     if ($parser->{pseudoknot} == 0) {
         $ret->{knotp} = 0;
     }
@@ -836,8 +815,6 @@ sub Pknots {
         Callstack(message => "Sequence is not defined in RNAFolders");
     }
     $ret->{sequence} = Sequence_T_U($ret->{sequence});
-    use Data::Dumper;
-    print Dumper $ret;
     return($ret);
 }
 
@@ -918,7 +895,6 @@ sub Pknots_Boot {
     };
 #    chdir($config->{workdir});
     my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_pknots} $inputfile /dev/stdout 2>$errorfile";
-#    print "TESTME: Running $command\n";
     open(PK, "$command |") or Callstack(message => "RNAFolders::Pknots_Boot, Failed to run pknots: $command");
     ## OPEN PK in Pknots_Boot
     my $counter = 0;
@@ -1029,6 +1005,10 @@ sub Hotknots {
     AddOpen($errorfile);
     my $slipsite = Get_Slipsite_From_Input($inputfile);
     my $seq = Get_Sequence_From_Input($inputfile);
+    if ($seq =~ /N/) {
+	## I just discovered that a few sequences have N's in them, and that hotknots cannot handle that.
+	return(undef);
+    }
     my $ret = {
         start => $start,
         slipsite => $slipsite,
@@ -1060,14 +1040,8 @@ sub Hotknots {
     } else {
 	$command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b";
     }
-#    print STDERR "HotKnots: infile: $inputfile accession: $accession start: $start
-#command: $command\n" if ($config->{debug});
-##    print STDERR "HotKnots: infile: $inputfile accession: $accession start: $start CWD: $ENV{PWD}
-##command: $command\n";
-
     open(HK, "$command |") or Callstack(message => "Problem with $command.");
     while(my $line = <HK>) {
-#	print $line;
         $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
@@ -1186,12 +1160,7 @@ sub Hotknots_Boot {
     open(IN, ">$config->{workdir}/${seqname}.seq");
     print IN $seq;
     close(IN);
-    print "Finished writing $seq into ${seqname}.seq\n";
-    sleep(10);
-#    my $command = qq"cd $config->{workdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b 2>$errorfile";
     my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqname -noPS -b 2>$errorfile";
-    print "Hotknots boot: infile: $seqname accession: $accession start: $start
-command: $command\n" if ($config->{debug});
     open(HK, "$command |");
     while(my $line = <HK>) {
         $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
@@ -1210,7 +1179,6 @@ command: $command\n" if ($config->{debug});
     my $found_bp = 0;
     my $found_ct = 0;
   BPLOOP: foreach my $bpseqfile (@bpseqfiles) {
-      print "Checking for $bpseqfile\n";
       if (-r $bpseqfile) {
 	  $found_bp = 1;
 	  AddOpen($bpseqfile);
@@ -1281,7 +1249,6 @@ command: $command\n" if ($config->{debug});
     else {
 	$ret->{knotp} = 1;
     }
-#    chdir($ENV{PRFDB_HOME});
     $ret->{sequence} = Sequence_T_U($ret->{sequence});
     return($ret);
 }

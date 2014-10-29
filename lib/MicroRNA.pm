@@ -40,7 +40,6 @@ sub RNAHybrid {
 #    my $command = qq"$ENV{PRFDB_HOME}/work/RNAhybrid -u $max_bulge -v $max_internal -e $max_mfe -d -s 3utr_human -q $ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta -t $filename";
     my $command = qq"$ENV{PRFDB_HOME}/bin/RNAhybrid -u $max_bulge -v $max_internal -d -s 3utr_human -q $ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta -t $filename";
     ## rnahybrid setfaults mysteriously if you attempt to impose an MFE constraint
-#    print STDERR "TESTME Running $command\n";
     open(MIR, "$command |") or print STDERR "Could not run $command $!";
     my ($key, $junk, $inner_hash, $miRNA, $mfe, $target_mismatch, $target_match, $miRNA_mismatch, $miRNA_match);
 ##  Each result from rnahybrid is 11 lines of text with some blanks.
@@ -55,7 +54,6 @@ sub RNAHybrid {
 	next if ($line =~ /^target:/);
 	next if ($line =~ /^length/);
 	if ($line =~ /^p-value/) {
-#	    print STDERR "TESTME: $line\n";
 	    next;
 	}
 	$line =~ s/^mfe:\s+//g;
@@ -109,7 +107,6 @@ sub Miranda {
     my $filename = $me->{db}->Sequence_to_Fasta($data);
     my $command = qq"$ENV{PRFDB_HOME}/bin/miranda \"$ENV{PRFDB_HOME}/data/homo_sapiens_microrna.fasta\" $filename -en $me->{energy_cutoff} -sc 100 -quiet";
     print "<pre>\n";
-#    print "TESTME: $command<br>\n";
     open(MIR, "$command |") or print STDERR "Could not run $command $!";
     my $line_num = 0;
     my $miranda_data = {};
@@ -160,7 +157,6 @@ sub Miranda {
 	if ($alignment == 2) {  ## Get the alignment string, strip annoying leading spaces
 	    $align_string = $line;
 	    $align_string =~ s/^\s{16}//g;
-#	    print "TESTME: $align_string<br>\n";
 	}
 	if ($alignment == 1) {  ## Grab the bottom match string
 	    my ($more_spaces, $ref, $fivep, $bottom_align_seq, $threep) = split(/\s+/, $line);
@@ -328,10 +324,6 @@ sub Micro_Import_Fasta {
 	my $stmt = qq"INSERT INTO microrna (species, micro_name, hairpin_accession, hairpin, mature_accession, mature, star_accession, mature_star, fivep_accession, mature_5p, threep_accession, mature_3p) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)";
 	my $db = new PRFdb(config => new PRFConfig);
 	$db->MyExecute(statement => $stmt, vars => [$data{$entry}{species}, $entry, $data{$entry}{hairpin_accession}, $data{$entry}{hairpin_sequence}, $data{$entry}{mature_accession}, $data{$entry}{mature}, $data{$entry}{star_accession}, $data{$entry}{mature_star}, $data{$entry}{fivep_accession}, $data{$entry}{mature_5p}, $data{$entry}{threep_accession}, $data{$entry}{mature_3p}]);
-#	foreach my $column (keys %tmp) {
-#	    print "TESTME: $column VAL: $tmp{$column}\n";
-#	}
-#	print "\n\n";
     }
 }
 

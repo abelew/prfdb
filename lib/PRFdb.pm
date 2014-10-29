@@ -438,16 +438,6 @@ sub MyGet {
     
     my $dbh = $me->MyConnect($final_statement);
     my $stuff = $me->MySelect(statement => $final_statement,);
-    
-    print "Column order: @select_columns\n";
-    my $c = 1;
-    foreach my $datum (@{$stuff}) {
-        print "$c\n";
-        $c++;
-        foreach my $c (0 .. $#select_columns) {
-            print "  ${select_columns[$c]}: $datum->[$c]\n";
-        }
-    }
     return($final_statement);
 }
 
@@ -567,14 +557,12 @@ sub Bootlace_Check {
             my $connector_id = $me->MySelect(statement => $stmt, vars => [$boot->{accession}, $boot->{start}, $boot->{seqlength}, $boot->{mfe_method}],);
             my @connector = @{$connector_id};
             if (scalar(@connector) > 1) {
-                print "PROBLEM, more than 1 connector.\n";
                 my $count = 0;
                 foreach my $conn (@connector) {
                     if ($prune) {
                         $count_modified++;
                         $me->MyExecute("DELETE FROM $mt WHERE id = '$connector[$count]->[0]'") unless($count == 0);
                     }
-                    print "Tell me the mfe_id: $conn->[0] and genome_id: $conn->[1]\n";
                     $count++;
                 }
             } else {
@@ -1262,7 +1250,6 @@ sub Import_Fasta {
                 my $genome_id = $me->Put_Genome_Entry(\%datum);
 #  This is repeated at the end of this function, I need to make sure that is kosher
                 if (defined($genome_id)) {
-                    print "1: Added $genome_id\n";
                     push(@return_array, $genome_id);
                 }
             }  ## End if linenum == 1

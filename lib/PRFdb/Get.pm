@@ -80,11 +80,9 @@ sub Queue {
     if ($config->{randomize_id}) {
 	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out IS NULL OR checked_out = '0' ORDER BY RAND() LIMIT 1";
     } else {
-	print "TESTME: $table\n";
 	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out = '0' LIMIT 1";
     }
     my $ids = $me->MySelect(statement => $single_id, type => 'row');
-    print "TESTME: AFTER IF $ids $ids->[0] genome_id: $ids->[1]\n";
     my $id = $ids->[0];
     my $genome_id = $ids->[1];
     ##if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
@@ -98,18 +96,15 @@ sub Queue {
     ##$id = $ids->[0];
     ##$genome_id = $ids->[1];
     if (!defined($id) or $id eq '' or !defined($genome_id) or $genome_id eq '') {
-	print "TESTME: $id or $genome_id was undefined!\n";
 	return(undef);
     }
     ##}
-    print "Updating $table setting checked out for $id\n";
     my $update = qq"UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?";
     $me->MyExecute(statement => $update, vars=> [$id]);
     $me->MyExecute(statement => "UNLOCK TABLES");
     ## Check and make sure the ID still exists (I pruned a bunch out)
     my $exists = $me->MySelect(statement => qq"SELECT count(genome_id) FROM gene_info WHERE genome_id=?", vars => [$genome_id], type => 'single');
     my $ret;
-    print "TESTME: $exists select count(genome_id) from gene_info where genome_id = $genome_id\n";
     if ($exists == 0) {
 	$me->MyExecute(statement => qq"UPDATE $table SET done='1' WHERE id=?", vars => [$id],);
 	my $tries = 0;
@@ -313,7 +308,6 @@ sub Num_RNAfolds {
     my $statement = qq"SELECT count(id) FROM $table WHERE genome_id = '$genome_id' AND mfe_method = '$mfe_method' AND start = '$slipsite_start' AND seqlength = '$seqlength'";
 #    my $count = $me->MySelect(statement =>$statement, vars => [$genome_id, $mfe_method, $slipsite_start, $seqlength], type => 'single');
     my $count = $me->MySelect(statement =>$statement, type => 'single');
-#    print "TESTME: $statement\n$count\n";
     if (!defined($count) or $count eq '') {
 	$count = 0;
     }
@@ -331,8 +325,6 @@ sub Num_Bootfolds {
     my $table = ($species =~ /virus/ ? "boot_virus" : "boot_$species");
     my $return = {};
     my $statement = qq/SELECT count(id) FROM $table WHERE genome_id = ? and start = ? and seqlength = ? and mfe_method = ?/;
-    print "Testing Boot num: $statement
-genome_id: $genome_id    start: $start   seqlength: $seqlength  mfe: $mfe_method\n";
     my $count = $me->MySelect(statement => $statement, vars => [$genome_id, $start, $seqlength, $mfe_method], type =>'single');
     return ($count);
 }

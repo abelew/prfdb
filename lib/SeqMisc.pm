@@ -652,7 +652,6 @@ sub Codon_Distribution {
     my $dist = 0;
     LOOP: while (@seq) {
 	my $current = shift(@seq);
-#	print "TESTME: $current\n";
 	foreach my $res (@{$residues}) {
 	    if ($current eq $res) {
 		$dist_array = $me->Add_One($dist, $dist_array);

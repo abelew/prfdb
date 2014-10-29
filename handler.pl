@@ -3,7 +3,6 @@ use vars qw($session $dbh $db $ah $req $config);
 use local::lib "$ENV{PRFDB_HOME}/usr/perl";
 use Apache2::Request;
 use Apache2::Upload;
-use Data::Dumper;
 use Apache::DBI;
 use File::Temp qw/ tmpnam /;
 use lib qq"$ENV{PRFDB_HOME}/lib";

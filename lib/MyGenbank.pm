@@ -3,7 +3,6 @@ use strict;
 use Bio::Seq;
 use Bio::SeqIO;
 use Bio::DB::Universal;
-use Data::Dumper;
 use vars qw($VERSION);
 $VERSION='20111119';
 
@@ -12,8 +11,6 @@ sub new {
     my $me = bless {
 	seq => $arg{seq},
     }, $class;
-#    $Data::Dumper::Indent = 1;
-#    print Dumper($me->{seq});
 
     $me->Gather();
 
@@ -144,8 +141,6 @@ sub Gather {
 	    #foreach my $k (keys %{$feature}) {
 	#	print "MRNA!KEY: $k VAL: $feature->{$k}\n";
 	    #}
-	    #print Dumper $gsf_seq;
-	    #print Dumper $location;
 	} elsif ($tag eq 'gene') {
 	    my $gsf = $feature->{_gsf_tag_hash};
 	    $me->{gene_xrefs} = $gsf->{db_xref};
@@ -158,8 +153,6 @@ sub Gather {
 	    #foreach my $k (keys %{$feature}) {
 	    #print "KEY: $k VAL: $feature->{$k}\n";
 	    #}
-	    #print Dumper $gsf;
- 	    #print Dumper $gsf_seq;
 	    push(@{$me->{cds_products}}, $gsf->{product});
 	    push(@{$me->{cds_xrefs}}, $gsf->{xref});
 	    push(@{$me->{cds_protein_ids}}, $gsf->{protein_id});
