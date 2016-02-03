@@ -1,5 +1,5 @@
 package PRFdb;
-## Time-stamp: <Wed May 23 13:31:08 2012 Ashton Trey Belew (abelew@wesleyan.edu)>
+## Time-stamp: <Wed Feb  3 16:07:43 2016 Ashton Trey Belew (abelew@gmail.com)>
 use strict;
 use DBI;
 use PRFConfig;
@@ -1146,11 +1146,11 @@ sub Reset_Queue {
             $table = 'queue';
         }
     }
-    
+
     my $statement = '';
     if (defined($complete)) {
         $statement = "UPDATE $table SET checked_out = '0', done = '0'";
-    } 
+    }
     else {
         $statement = "UPDATE $table SET checked_out = '0' where done = '0' and checked_out = '1'";
     }
@@ -1161,6 +1161,7 @@ sub Grab_Queue {
     my $me = shift;
     my $queue = undef;
     if ($config->{check_webqueue} == 1) {
+        print "Getting from queue 'webqueue'\n";
         ### Then first see if anything is in the webqueue
         $queue = $me->Get_Queue('webqueue');
         if (defined($queue)) {

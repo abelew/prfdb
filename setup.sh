@@ -9,7 +9,7 @@ echo "6.  libgd (for graphing routines)"
 echo "7.  java (for jViz)"
 echo "8.  Appropriate headers for c, c++"
 echo "9.  Apache (if you wish to run a webserver"
-sleep 10
+sleep 1
 
 if [ ! -n "$PRFDB_HOME" ]; then
   echo "The environment variable PRFDB_HOME is not set."
@@ -179,14 +179,14 @@ fi
 if [ -r $PRFDB_HOME/bin/RNAhybrid ]; then
   echo "RNAhybrid is already installed."
 else
-  echo "Installing RNAHybrid."
-  cd $PRFDB_HOME/src/RNAHybrid-2.1
+  echo "Installing RNAhybrid."
+  cd $PRFDB_HOME/src/RNAhybrid-2.1
   $CONFIGURE_CMD
   make ; make install
   RET=$?
   if [ -n $RET ]; then
     cd $PRFDB_HOME/src
-    rm -rf $PRFDB_HOME/src/RNAHybrid-2.1
+    rm -rf $PRFDB_HOME/src/RNAhybrid-2.1
   fi
 fi
 
@@ -205,7 +205,7 @@ fi
 #  fi
 #fi
 
-if [ -r $PRFDB_HOME/bin/unafold ]; then
+if [ -r $PRFDB_HOME/bin/UNAFold.pl ]; then
   echo "unafold is already installed."
 else
   echo "Installing Unafold."
