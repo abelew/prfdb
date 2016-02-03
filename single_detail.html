@@ -105,6 +105,15 @@
 
       </tr>
 
+% if (!$information->{mfe_turner}) {
+%   my $fold = new RNAFolders;
+%   my $turner = $fold->Compute_Energy(sequence => $sequence, parens => $parens);
+%   $information->{mfe_turner} = $turner;
+%   my $mt = "mfe_$information->{species}";
+%   print "RAN COMPUTE ENERGY!! got $turner\n";
+%   $mt = "mfe_virus" if ($mt =~ /virus/);
+%   $db->MyExecute("UPDATE $mt SET mfe_turner = '$turner' WHERE id = '$information->{id}'");
+% }
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
 	  <div align="right"><a href="/help/detail.html#mfe"><strong>MFE: </strong></a></div>
@@ -179,7 +188,7 @@
 %    } ## End foreach element of @snp_info
 %    if ($hit) {
 %     $hit--;
-%    } else {    
+%    } else {
 %     $snp_string .= '.';
 %    }
 %   } ## End for from the start region to end region
