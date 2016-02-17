@@ -1131,7 +1131,7 @@ sub Check_Args {
     }
 
     if (defined($config->{resync})) {
-	$db->ReSync();
+	$db->ReSync($config->{resync});
 	exit(0);
     }
 

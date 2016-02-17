@@ -140,6 +140,7 @@ sub new {
     $me->{process_import_queue} = 1 if (!defined($me->{process_import_queue}));
     $me->{queue_table} = 'queue' if (!defined($me->{queue_table}));
     $me->{randomize_id} = 0 if (!defined($me->{randomize_id}));
+##    $me->{resync} = 'slave' if (!defined($me->{resync}));
     $me->{seqlength} = [100,75,50] if (!defined($me->{seqlength}));
     $me->{slip_site_1} = '^n\{3\}$' if (!defined($me->{slip_site_1}));
     $me->{slip_site_2} = '^w\{3\}$' if (!defined($me->{slip_site_2}));
@@ -244,7 +245,7 @@ sub new {
         'utr:i' => \$conf{do_utr},
         'workdir:s' => \$conf{workdir},
         'zscore' => \$conf{zscore},
-        'resync' => \$conf{resync},
+        'resync:s' => \$conf{resync},
         );
     ## This makes both of the above groups command-line changeable
     foreach my $name (keys %conf_specification_temp) {

@@ -1210,7 +1210,8 @@ sub Hotknots_Boot {
       }
   } ## End looking for the bpseq file.
     unless ($found_bp) {
-	die("Never found the bpseq file.");
+	#carp("Never found the bpseq file.");
+	return(undef);
     }
     
   CTLOOP: foreach my $ctfile (@ctfiles) {
