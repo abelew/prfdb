@@ -13,7 +13,7 @@ $VERSION='20111119';
 =head1 NAME
 
     MyConfig - A configuration system for the PRFdb
-   
+
 =head1 SYNOPSIS
 
     use MyConfig;
@@ -40,7 +40,7 @@ sub new {
     foreach my $key (keys %arg) {
         $me->{$key} = $arg{$key} if (defined($arg{$key}));
     }
-    
+
     $me->{appconfig} = AppConfig->new({
         CASE => 1,
         CREATE => 1,
@@ -53,7 +53,7 @@ sub new {
             DEFAULT => "<unset>",
             ARGCOUNT => 1,
         },});
-    
+
     ## First fill out a set of default configuration values
     ## The following for loop will include all of these in conf_specification_temp
     ## which will in turn be passed to GetOpts
@@ -137,7 +137,7 @@ sub new {
     $me->{pbs_shell} = '/bin/bash' if (!defined($me->{pbs_shell}));
     $me->{pbs_template} = 'pbs_template' if (!defined($me->{pbs_template}));
     $me->{POST_CHOMP} = 1 if (!defined($me->{POST_CHOMP}));
-    $me->{process_import_queue} = 1 if (!defined($me->{process_import_queue}));
+    $me->{process_import_queue} = 0 if (!defined($me->{process_import_queue}));
     $me->{queue_table} = 'queue' if (!defined($me->{queue_table}));
     $me->{randomize_id} = 0 if (!defined($me->{randomize_id}));
 ##    $me->{resync} = 'slave' if (!defined($me->{resync}));

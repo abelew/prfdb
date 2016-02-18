@@ -74,7 +74,7 @@ MAINLOOP: until (defined($state->{time_to_die})) {
     else {
 	$state->{seqlength} = 100;
     }
-    if (defined($config->{process_import_queue})) {
+    if ($config->{process_import_queue}) {
 	my $import_accession = $db->Get_Import_Queue();
 	if (defined($import_accession)) {
 	    my $import = $db->Import_CDS($import_accession);
@@ -165,7 +165,7 @@ sub Read_Accessions {
 
 ## Start Gather
 sub Gather {
-    my %args = @_;    
+    my %args = @_;
     my $state = $args{state};
     my $startpos = $args{startpos} if ($args{startpos});
 
@@ -175,14 +175,14 @@ sub Gather {
     ## I recently deleted many entries and caused a bunch of these calls to come up undefined.
     return(undef) if (!defined($ref->{species}));
     $db->Create_Landscape("landscape_$state->{species}") unless($db->Tablep("landscape_$state->{species}"));
-    $db->Create_Boot("boot_$state->{species}") unless($db->Tablep("boot_$state->{species}")); 
+    $db->Create_Boot("boot_$state->{species}") unless($db->Tablep("boot_$state->{species}"));
     unless ($state->{species} =~ /^virus/) {
 	$db->Create_MFE("mfe_$state->{species}") unless($db->Tablep("mfe_$state->{species}"));
     }
     my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
     my $message = "${hour}:${min}.${sec} $mon/$mday id:$state->{queue_id} gid:$state->{genome_id} sp:$state->{species} acc:$state->{accession}\n";
     print $message;
-    
+
     my %pre_landscape_state = %{$state};
     my $landscape_state = \%pre_landscape_state;
     if ($config->{do_landscape}) {
@@ -223,7 +223,7 @@ sub PRF_Gatherer {
     $ac = $state->{accession} if (defined($state->{accession}));
     my $current = "sp:$sp acc:$ac st:$orf_start l:$len";
     print "PRF_Gather: about to run $current\n" if ($config->{debug});
-    
+
     if (defined($startpos)) {
 #      $startpos = $startpos - $orf_start;
 	my $inf = PRFdb::MakeFasta($state->{genome_information}->{sequence},
@@ -263,16 +263,16 @@ sub PRF_Gatherer {
 	      next STARTSITE;
 	  }
       }  ## End of if do_utr
-      
+
       my ($nupack_mfe_id, $pknots_mfe_id, $hotknots_mfe_id);
       $state->{fasta_file} = $rnamotif_information->{$slipsite_start}{filename};
       $state->{sequence} = $rnamotif_information->{$slipsite_start}{sequence};
-      
+
       if (!defined($state->{fasta_file} or $state->{fasta_file} eq '' or !-r $state->{fasta_file})) {
 	  print "The fasta file for: $state->{accession} $slipsite_start does not exist.\n";
 	  print "You may expect this script to die momentarily.\n";
       }
-      
+
       my $check_seq = Check_Sequence_Length();
       if ($check_seq eq 'shorter than wanted') {
 	  print "The sequence is: $check_seq and will be skipped.\n" if ($config->{debug});
@@ -289,14 +289,14 @@ sub PRF_Gatherer {
 	  PRFdb::RemoveFile($state->{fasta_file});
 	  next STARTSITE;
       }
-      
+
       my $fold_search = new RNAFolders(file => $state->{fasta_file},
 				       genome_id => $state->{genome_id},
 				       species => $state->{species},
 				       accession => $state->{accession},
 				       config => $config,
 				       start => $slipsite_start,);
-      
+
       if ($config->{do_nupack}) { ### Do we run a nupack fold?
 	  $nupack_mfe_id = Check_Folds(type => 'nupack', fold_search => $fold_search, slipstart => $slipsite_start);
       }
@@ -430,7 +430,8 @@ $sequence_string
 						   $config->{landscape_seqlength}, $landscape_table);
 	my ($nupack_info, $nupack_mfe_id, $pknots_info, $pknots_mfe_id, $vienna_info, $vienna_mfe_id);
 	if ($nupack_foldedp == 0) {
-	    $nupack_info = $fold_search->Nupack_NOPAIRS(pseudo => 'nopseudo');
+            ## $nupack_info = $fold_search->Nupack_NOPAIRS(pseudo => 'nopseudo');
+            $nupack_info = $fold_search->Nupack_NOPAIRS();
 	    $nupack_mfe_id = $db->Put_Nupack($nupack_info, $landscape_table);
 	    ## Try to stop these random seeming errors with nupack
 	    if (!defined($nupack_mfe_id)) {
@@ -469,7 +470,7 @@ sub Check_Environment {
     die("Database host not defined") if ($config->{database_host} eq 'prfconfigdefault_host');
     die("Database user not defined") if ($config->{database_user} eq 'prfconfigdefault_user');
     die("Database pass not defined") if ($config->{database_pass} eq 'prfconfigdefault_pass');
-    
+
     unless (-r $config->{exe_rnamotif_descriptor}) {
 	RNAMotif::Descriptor(config=>$config);
 	  unless (-r $config->{exe_rnamotif_descriptor}) {
@@ -1101,7 +1102,7 @@ sub Check_Args {
     if (defined($config->{make_jobs})) {
 	Make_Queue_Jobs();
 	exit(0);
-    }    
+    }
 
     if (defined($config->{dbexec})) {
 	$db->MyExecute(statement => "$config->{dbexec}");

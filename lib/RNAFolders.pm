@@ -254,7 +254,7 @@ Return: $nupack_return\n");
     if (!defined($ret->{pairs})) {
         Callstack(message => "Pairs is not defined for accession: $accession start: $start in RNAFolders");
     }
-    
+
     my $parser;
     if (defined($config->{max_spaces})) {
         my $max_spaces = $config->{max_spaces};
@@ -388,7 +388,7 @@ sub Unafold {
         }
         RemoveFile($output_filename);
     } ## End foreach output file
-    
+
     ## Lets start by just figuring out the various command lines that unafold actually calls in the distribution unafold.pl
     # hybrid-ss with (--suffix DAT, --tmin mintemp, --tmax maxtemp, --NA sodium, --magnesium mag, --polymer, --allpairs, --circular, --nodangle, --simple, --traceback max)
     # hybrid-ss-min -- same options but --mfold=$p,$w,$max which default to 5,-1,undef
@@ -457,7 +457,7 @@ sub CT_to_Output {
 
 sub BPSeq_to_Out {
     my $me = shift;
-    
+
 }
 
 sub Vienna {
@@ -677,7 +677,7 @@ sub Parens_to_Output {
       foreach my $c (0 .. $#par) {
           if ($par[$c] eq '(') {
               $fivep = $c;
-          } 
+          }
           elsif ($par[$c] eq ')') {
               $output[$fivep] = $c;
               $output[$c] = $fivep;
@@ -1045,18 +1045,19 @@ sub Hotknots {
         $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
-    
     ## Check for output files.
     ## Something changed in the most recent hotknots release which makes the output files from hotknots
     ## appear in $PRFDB_HOME/work/TestSeq/RivasEddy -- I am not quite sure why at this point.
     my @bpseqfiles = (qq"$config->{workdir}/${seqfilename}0_RE.bpseq",
+                      qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0_RE.bpseq",
+                      qq"/tmp/bob",
 		      qq"$config->{workdir}/folds/${seqfilename}0.bpseq",
-		      qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}.ct",
-		      qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0.bpseq",
+                      qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0.bpseq",
 	);
     my @ctfiles = (qq"$config->{workdir}/${seqfilename}_RE.ct",
 		   qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct",
 		   qq"$ENV{PRFDB_HOME}/folds/${seqfilename}.ct",
+                   qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct",
 		   qq"$config->{workdir}/folds/${seqfilename}_RE.ct",);
     my $found_bp = 0;
     my $found_ct = 0;
@@ -1166,8 +1167,8 @@ sub Hotknots_Boot {
         $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
-    
     my @bpseqfiles = (qq"$config->{workdir}/${seqname}0_RE.bpseq",
+                      qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0_RE.bpseq",
 		      qq"$config->{workdir}/folds/${seqname}0.bpseq",
 		      qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}.ct",
 		      qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0.bpseq",
@@ -1210,10 +1211,9 @@ sub Hotknots_Boot {
       }
   } ## End looking for the bpseq file.
     unless ($found_bp) {
-	#carp("Never found the bpseq file.");
-	return(undef);
+	die("Never found the bpseq file. @bpseqfiles");
     }
-    
+
   CTLOOP: foreach my $ctfile (@ctfiles) {
       if (-r $ctfile) {
 	  $found_ct = 1;
