@@ -76,7 +76,7 @@ sub Queue {
     }
     ## This id is the same id which uniquely identifies a sequence in the genome database
     my $single_id;
-    my $first = $me->MyExecute(statement => "LOCK TABLES $table WRITE");
+    #my $first = $me->MyExecute(statement => "LOCK TABLES $table WRITE");
     if ($config->{randomize_id}) {
 	$single_id = qq"SELECT id, genome_id FROM $table WHERE checked_out IS NULL OR checked_out = '0' ORDER BY RAND() LIMIT 1";
     } else {
@@ -101,7 +101,7 @@ sub Queue {
     ##}
     my $update = qq"UPDATE $table SET checked_out='1', checked_out_time=current_timestamp() WHERE id=?";
     $me->MyExecute(statement => $update, vars=> [$id]);
-    $me->MyExecute(statement => "UNLOCK TABLES");
+    #$me->MyExecute(statement => "UNLOCK TABLES");
     ## Check and make sure the ID still exists (I pruned a bunch out)
     my $exists = $me->MySelect(statement => qq"SELECT count(genome_id) FROM gene_info WHERE genome_id=?", vars => [$genome_id], type => 'single');
     my $ret;

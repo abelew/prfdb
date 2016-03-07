@@ -58,14 +58,15 @@ if ($config->{checks}) {
 my $args_check = Check_Args();
 
 MAINLOOP: until (defined($state->{time_to_die})) {
-    my $wait = $db->MySelect(statement => "SELECT wait from wait", type => 'single');
-    if ($wait == 2) {
-	exit(0);
-    }
-    while ($wait == 1) {
-	sleep(300);
-	next MAINLOOP;
-    }
+##    my $wait = $db->MySelect(statement => "SELECT wait from wait", type => 'single');
+##    if ($wait == 2) {
+##	exit(0);
+##    }
+##    while ($wait == 1) {
+##	sleep(300);
+##	next MAINLOOP;
+##    }
+    sleep 10;
     ### You can set a configuration variable 'master' so that it will not die
     if ($state->{done_count} > 60 and !defined($config->{master})) {$state->{time_to_die} = 1}
     if (defined($config->{seqlength})) {
