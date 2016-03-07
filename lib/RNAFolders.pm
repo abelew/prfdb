@@ -1213,7 +1213,7 @@ sub Hotknots_Boot {
     unless ($found_bp) {
 	die("Never found the bpseq file. @bpseqfiles");
     }
-    
+
   CTLOOP: foreach my $ctfile (@ctfiles) {
       if (-r $ctfile) {
 	  $found_ct = 1;
