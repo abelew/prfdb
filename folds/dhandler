@@ -1,0 +1,50 @@
+% $num_refreshes++;
+% my $url = $m->dhandler_arg;
+% $url = $url . "?num_refreshes=$num_refreshes";
+Your file does not yet exist.  Please be patient, it should appear momentarily.  This is refresh <% $num_refreshes %>
+The filename is: <% $m->dhandler_arg %>
+
+<script language="JavaScript">
+var sURL = "<% $url %>";
+
+%#  The 20*1000 is a little silly I know, but that makes it clear(ish) that I want 20 seconds.
+
+function doLoad()
+{
+    setTimeout( "refresh()", 20*1000 );
+}
+
+function refresh()
+{
+    //  This version of the refresh function will cause a new
+    //  entry in the visitor's history.  It is provided for
+    //  those browsers that only support JavaScript 1.0.
+    //
+    window.location.href = sURL;
+}
+//-->
+</script>
+
+<script language="JavaScript1.1">
+<!--
+function refresh()
+{
+    //  This version does NOT cause an entry in the browser's
+    //  page view history.  Most browsers will always retrieve
+    //  the document from the web-server whether it is already
+    //  in the browsers page-cache or not.
+    //  
+    window.location.replace( sURL );
+}
+//-->
+</script>
+<script>  
+  function load() {  
+  }  
+  window.onload = doLoad;  
+</script>
+
+
+<%args>
+  $num_refreshes => 0
+</%args>

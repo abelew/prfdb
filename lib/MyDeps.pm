@@ -48,6 +48,7 @@ our @use_deps = (
     'PRFBlast',
     'RNAFolders',
     'PRFsnp',
+    'Proc::Forkfunc',
     'RNAMotif',
     'SeqMisc',
     'Statistics::Basic',

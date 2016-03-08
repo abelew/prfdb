@@ -1,5 +1,5 @@
 package PRFdb;
-## Time-stamp: <Wed May 23 13:31:08 2012 Ashton Trey Belew (abelew@wesleyan.edu)>
+## Time-stamp: <Wed Feb  3 16:07:43 2016 Ashton Trey Belew (abelew@gmail.com)>
 use strict;
 use DBI;
 use PRFConfig;
@@ -1145,11 +1145,11 @@ sub Reset_Queue {
             $table = 'queue';
         }
     }
-    
+
     my $statement = '';
     if (defined($complete)) {
         $statement = "UPDATE $table SET checked_out = '0', done = '0'";
-    } 
+    }
     else {
         $statement = "UPDATE $table SET checked_out = '0' where done = '0' and checked_out = '1'";
     }
@@ -1160,6 +1160,7 @@ sub Grab_Queue {
     my $me = shift;
     my $queue = undef;
     if ($config->{check_webqueue} == 1) {
+        print "Getting from queue 'webqueue'\n";
         ### Then first see if anything is in the webqueue
         $queue = $me->Get_Queue('webqueue');
         if (defined($queue)) {
@@ -1717,12 +1718,13 @@ sub StartSlave {
 
 =cut
 sub ReSync {
-   my ($me,@slave) = @_;
+   my ($me, $type) = @_;
    unless($me->{rpw}) {
        die("This requires root access to the database.");
    }
    my $other_dbd = qq"dbi:$config->{database_type}:database=mysql;host=$config->{database_otherhost}";
    my $local_dbd = qq"dbi:$config->{database_type}:database=mysql;host=localhost";
+   print "TESTME: $other_dbd and $local_dbd\n";
    my $statement = "SHOW MASTER STATUS";
    my $other_dbh_num = $me->MyConnect($statement, $other_dbd, 'root', $me->{rpw}) or
        Callstack(message => "Could not connect to $other_dbd.", die => 1);
@@ -1739,7 +1741,7 @@ sub ReSync {
 	Callstack(message => "Could not execute $pre_statement on $local_dbd", die => 1);
    ## If an argument is passed to this, synchronize it as a slave.
    my $ret;
-    if (@slave) {
+   if ($type eq 'slave') {
         my $o_sth = $other_dbh->prepare($statement);
         my $o_rv = $o_sth->execute();
         my $o_return = $o_sth->fetchrow_arrayref();
@@ -1754,7 +1756,7 @@ sub ReSync {
         $l_sth = $local_dbh->prepare($l_reset);
         $l_rv = $l_sth->execute();
         $ret = [$l_rv, $o_rv];
-    } else {
+   } elsif ($type eq 'master') {
         my $l_sth = $local_dbh->prepare($statement);
         my $l_rv = $l_sth->execute();
         my $l_return = $l_sth->fetchrow_arrayref();
@@ -1769,7 +1771,9 @@ sub ReSync {
         $o_sth = $other_dbh->prepare($o_reset);
         $o_rv = $o_sth->execute();
         $ret = [$l_rv, $o_rv];
-    }
+   } else {
+	Callstack(message => "Unknown replication type requested: $type", die => 1);
+   }
    return($ret);
 }
 
