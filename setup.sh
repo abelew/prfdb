@@ -9,7 +9,7 @@ echo "6.  libgd (for graphing routines)"
 echo "7.  java (for jViz)"
 echo "8.  Appropriate headers for c, c++"
 echo "9.  Apache (if you wish to run a webserver"
-sleep 10
+sleep 1
 
 if [ ! -n "$PRFDB_HOME" ]; then
   echo "The environment variable PRFDB_HOME is not set."

@@ -13,6 +13,7 @@ use PRFGraph;
 use SeqMisc;
 use PRFBlast;
 use HTMLMisc;
+require "$ENV{PRFDB_HOME}/lib/MyDeps.pm";
 BEGIN {
     if (!defined($ENV{PRFDB_HOME})) {
 	Callstack(die => 1, message => "PRFDB_HOME is not set.  Either set it in your apache env vars or shell profile.");

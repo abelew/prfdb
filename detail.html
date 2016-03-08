@@ -35,6 +35,62 @@ foreach my $entry_count (0 .. $#$info) {
     $information->{parsed} =~ s/\s+//g;
     my @in = split(//, $information->{sequence});
     my @par = split(//, $information->{parsed});
+    my @parens = split(//, $information->{parens});
+    ## Added 2016-02 for better PARENS
+ sub open_close {
+  my $in = shift;
+  if ($in eq "(" or $in eq "[" or $in eq "<" or $in eq "{") {
+    return("open");
+  } elsif ($in eq ")" or $in eq "]" or $in eq ">" or $in eq "}") {
+    return("close");
+  } else {
+    return("unkown");
+  }
+ } # End open_close
+if (!$information->{new_parens}) {
+    my $paren_string = "";
+    ## print "No new parens!\n";
+    PLOOP: for my $c (0 .. $#par) {
+        my $old_paren = $parens[$c];
+        my $stem_num = $par[$c];
+        if ($stem_num eq ".") {
+            $paren_string .= ".";
+            next PLOOP;
+        }
+        my $stem_type = open_close($old_paren);
+        my $stem_mod = $stem_num % 4;
+        if ($stem_type eq "open") {
+            if ($stem_mod == 0) {
+                $paren_string .= '<';
+            } elsif ($stem_mod == 1) {
+                $paren_string .= '(';
+            } elsif ($stem_mod == 2) {
+                $paren_string .= '{';
+            } elsif ($stem_mod == 3) {
+                $paren_string .= '[';
+            } else {
+                $paren_string .= '/';
+            }
+        } elsif ($stem_type eq "close") {
+            if ($stem_mod == 0) {
+                $paren_string .= '>';
+            } elsif ($stem_mod == 1) {
+                $paren_string .= ')';
+            } elsif ($stem_mod == 2) {
+                $paren_string .= '}';
+            } elsif ($stem_mod == 3) {
+                $paren_string .= ']';
+            } else {
+                $paren_string .= '|';
+            }
+        } else {
+            $paren_string .= "?";
+        }
+    }
+    $information->{parens} = $paren_string;
+  } else {
+    $information->{parens} = $information->{new_parens};
+ }
     my $misc = new SeqMisc(sequence => \@in);
     $information->{gc_content} = $misc->{gc_content};
     $information->{gc_stems} = $misc->Get_GC(\@in, \@par);
@@ -74,7 +130,9 @@ $information->{sequence}
 			     seqlength => $information->{seqlength},
 			     iterations => $config->{boot_iterations},
 			     boot_mfe_methods => $config->{boot_mfe_methods},
-			     randomizers => $config->{boot_randomizers},);
+                             randomizers => $config->{boot_randomizers},);
+        use Data::Dumper;
+        print Dumper $boot_info; 
 	$boot_info = $boot->Go();
 	$db->Put_Boot($boot_info);
 	chdir($ENV{PRFDB_HOME});
@@ -96,6 +154,7 @@ $information->{sequence}
     $information->{feynman_width} = $feynman_dimensions->{width};
 
     ## Revisiting the Boot and making the graph for it
+    print "TESTME: $boot_info\n";
     if (defined($boot_info)) {
 	my $mfe_values = $boot_info->[0];
 	$mfe_values =~ s/^\s+//g;

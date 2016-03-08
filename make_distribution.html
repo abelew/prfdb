@@ -42,7 +42,6 @@ if (!-f $cloud_output_filename) {
   }
   $points_stmt .= " $mt.genome_id = genome.id";
   $averages_stmt =~ s/AND $//g;
-  print "TESTME: $points_stmt<br>\n";
   $points = $db->MySelect(statement => $points_stmt, vars => [$species]);
   $averages = $db->MySelect(statement => $averages_stmt, vars => [$species], type => 'row',);
   #    }

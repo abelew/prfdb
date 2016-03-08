@@ -110,6 +110,7 @@ sub Go {
             my @stats_pairs;
             my $iteration_count = 1;
             while ($iteration_count <= $me->{iterations}) {
+		print STDERR "${iteration_count} ";
                 $iteration_count++;
                 my $boot_mfe_method = $me->{boot_mfe_methods}->{$boot_mfe_method_name};
                 
@@ -131,7 +132,7 @@ sub Go {
                     $ret->{mfe_values} .= "$mfe->{mfe} ";
                 }
                 push(@stats_pairs, $mfe->{pairs}) if (defined($mfe->{pairs}));
-                
+                print STDERR " MFE $mfe->{mfe} ";
             }    ## Foreach repetition
             ## Now have collected every repetition, so we can calculate the means
             my $mfe_stat = new Math::Stat(\@stats_mfe, {AutoClean => 1});

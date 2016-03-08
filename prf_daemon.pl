@@ -4,8 +4,8 @@ use warnings;
 use lib "$ENV{PRFDB_HOME}/lib";
 use local::lib "$ENV{PRFDB_HOME}/usr/perl";
 use vars qw"$db $config";
-use Devel::Trace;
-$Devel::Trace::TRACE = 1;   # Enable
+##use Devel::Trace;
+##$Devel::Trace::TRACE = 1;   # Enable
 die("Could not load PRFConfig.\n$@\n") unless (eval "use PRFConfig; 1");
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
 die("Could not load PRFdb.\n$@\n") unless (eval "use PRFdb qw'AddOpen RemoveFile Callstack Cleanup'; 1");

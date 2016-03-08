@@ -65,7 +65,6 @@ All tables which are used in the PRFdb may be found in PRFdb::Create,
 Functions which perform common selects from the database are in
 PRFdb::Get and those which perform common inserts are in
 PRFdb::Put; these are most commonly accessed via AUTOLOAD.
-Describe the interface here
 
 =head1 AUTHOR - Ashton Trey Belew
 

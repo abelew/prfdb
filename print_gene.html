@@ -14,7 +14,6 @@
  </tr>
 </table>
 % my $sp = $db->MySelect(statement => "SELECT species FROM gene_info WHERE accession = ?", vars => [$accession], type => 'single');
-%# print "TESTME: $sp<br>\n";
 % my $in = $db->MySelect(statement => "SELECT orf_start, orf_stop, mrna_seq, direction, id FROM genome WHERE accession = ?", vars =>[$accession], type => 'row');
 % my $mt = "mfe_$sp";
 % $mt = "mfe_virus" if ($mt =~ /virus/);

@@ -1,3 +1,4 @@
 ## This assumes you set apache's home directory to the location of the prfdb
 ## You will likely need to edit crontab.sh too
 0 0    * * 6 $HOME/crontab.sh 2>/dev/null 1>&2
+## help?

@@ -24,6 +24,7 @@ our @use_deps = (
     'Bootlace',
     'Chart::Clicker',
     'DBI',
+    'Devel::Trace',
     'Error',
     'Fcntl',
     'File::Temp',
@@ -73,8 +74,13 @@ sub Test {
 }
 
 sub Res {
+    use local::lib "$ENV{PRFDB_HOME}/usr/perl";
+    my @lst = @_;
+    unless (@lst) {
+	@lst = @use_deps;
+    }
     $ENV{FTP_PASSIVE} = 1;
-    foreach my $module (@use_deps) {
+    foreach my $module (@lst) {
         print "Loading $module\n";
         my $load_return = eval("use $module; 1");
         if (defined($module)) {
