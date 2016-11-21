@@ -4,8 +4,8 @@ use warnings;
 use lib "$ENV{PRFDB_HOME}/lib";
 use local::lib "$ENV{PRFDB_HOME}/usr/perl";
 use vars qw"$db $config";
-use Devel::Trace;
-$Devel::Trace::TRACE = 1;   # Enable
+##use Devel::Trace;
+##$Devel::Trace::TRACE = 1;   # Enable
 die("Could not load PRFConfig.\n$@\n") unless (eval "use PRFConfig; 1");
 $config = new PRFConfig(config_file => "$ENV{PRFDB_HOME}/prfdb.conf");
 die("Could not load PRFdb.\n$@\n") unless (eval "use PRFdb qw'AddOpen RemoveFile Callstack Cleanup'; 1");
@@ -58,14 +58,15 @@ if ($config->{checks}) {
 my $args_check = Check_Args();
 
 MAINLOOP: until (defined($state->{time_to_die})) {
-    my $wait = $db->MySelect(statement => "SELECT wait from wait", type => 'single');
-    if ($wait == 2) {
-	exit(0);
-    }
-    while ($wait == 1) {
-	sleep(300);
-	next MAINLOOP;
-    }
+##    my $wait = $db->MySelect(statement => "SELECT wait from wait", type => 'single');
+##    if ($wait == 2) {
+##	exit(0);
+##    }
+##    while ($wait == 1) {
+##	sleep(300);
+##	next MAINLOOP;
+##    }
+    sleep 10;
     ### You can set a configuration variable 'master' so that it will not die
     if ($state->{done_count} > 60 and !defined($config->{master})) {$state->{time_to_die} = 1}
     if (defined($config->{seqlength})) {

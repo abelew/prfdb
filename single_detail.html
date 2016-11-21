@@ -107,13 +107,12 @@
 
 % if (!$information->{mfe_turner}) {
 %   my $fold = new RNAFolders;
-%   my $turner = $fold->Compute_Energy(sequence => $sequence, parens => $parens);
+%   my $turner = $fold->Compute_Energy(sequence => $information->{sequence}, parens => $information->{parens});
 %   $information->{mfe_turner} = $turner;
 %   my $mt = "mfe_$information->{species}";
-%   print "RAN COMPUTE ENERGY!! got $turner\n";
 %   $mt = "mfe_virus" if ($mt =~ /virus/);
-%   $db->MyExecute("UPDATE $mt SET mfe_turner = '$turner' WHERE id = '$information->{id}'");
-% }
+%##   $db->MyExecute("UPDATE $mt SET mfe_turner = '$turner' WHERE id = '$information->{id}'");
+% } 
       <tr valign="top" bgcolor="#E9EBF7">
 	<td>
 	  <div align="right"><a href="/help/detail.html#mfe"><strong>MFE: </strong></a></div>
@@ -206,8 +205,8 @@
       <tr>
 	<td text-align="right"><span style="whitespace: nowrap">
 <!---	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{minus_stop} %></font></b>  --->
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{color_minus} %></font></b>
-	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;<b>-1&nbsp;Frame&nbsp;stop&nbsp;codons</b>
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono" size="1"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{color_minus} %></code></font></b>
+	  <font face="Courier New, Courier, mono" size="-3">&nbsp;&nbsp;&nbsp;<b>-1&nbsp;Frame&nbsp;stop&nbsp;codons</b>
           </font></div>
         </span>
         </td>
@@ -215,8 +214,8 @@
 
       <tr>
 	<td text-align="right"><span style="whitespace: nowrap">
-	  <div class="fixedfont"><font face="Courier New, Courier, mono"><% $information->{numbers} %></font>
-	  <font face="Courier New, Courier, mono" size="-3"><a href="/search_blast.html?location=local&accession=<% $information->{accession} %>&start=<% $information->{slipstart} %>">&nbsp;Blast&nbsp;subsequence</a>
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono" size="1"><code><% $information->{numbers} %></code></font></b>
+	  <font face="Courier New, Courier, mono" size="-3"><a href="/search_blast.html?location=local&accession=<% $information->{accession} %>&start=<% $information->{slipstart} %>">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Blast&nbsp;subsequence</a>
           </font></div>
          </span>
         </td>
@@ -224,7 +223,7 @@
 
       <tr>
 	<td text-align="right"><span style="whitespace: nowrap">
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono"><u><% $information->{slipsite} %></u><% $information->{pk_input_colored} %></font></b>
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono" size="1"><code><u><% $information->{slipsite} %></u><% $information->{pk_input_colored} %></code></font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
 	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download/subseq.html?species=<% $information->{species} %>&mfeid=<% $information->{id} %>">Download&nbsp;subsequence</a>
 	  </font></div>
@@ -234,7 +233,7 @@
 
       <tr>
 	<td text-align="right"><span style="whitespace: nowrap">
-	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{brackets_colored} %></font></b>
+	  <div class="fixedfont"><b><font face="Courier New, Courier, mono" size="1"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{brackets_colored} %></code></font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
 	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download/parens.html?species=<% $information->{species} %>&mfeid=<% $information->{id} %>">Download&nbsp;brackets</a>
 	  </font></div>
@@ -244,7 +243,7 @@
 
       <tr>
         <td text-align="right"><span style="whitespace: nowrap">
-    	  <div class="fixedfont"><b><font face="Courier New, Courier, mono">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{parsed_colored} %></font></b>
+    	  <div class="fixedfont"><b><font face="Courier New, Courier, mono" size="1"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<% $information->{parsed_colored} %></code></font></b>
 	  <font face="Courier New, Courier, mono" size="-3">
 	    &nbsp;&nbsp;&nbsp;&nbsp;<a href="/download/parsed.html?species=<% $information->{species} %>&mfeid=<% $information->{id} %>">Download&nbsp;parsed</a>
 	  </font></div>

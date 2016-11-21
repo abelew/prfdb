@@ -5,7 +5,6 @@ my $tempfile_fh = new File::Temp(SUFFIX => ".fasta", DIR => "$ENV{PRFDB_HOME}/fo
 my $new_filename = $tempfile_fh->filename();
 use File::Basename;
 my $short_filename = basename($new_filename);
-#print "TESTME: $short_filename<br>\n";
 my $contents;
 if ($input_fasta) {
  use Apache2::Upload;
@@ -66,11 +65,6 @@ sub tmp_fold {
     $mfe_info = $fold->Multiple(['hotknots','nupack','pknots']);
   }
 
-#  print STDERR "TESTME: GOT HERE?\n";
-#  foreach my $k (keys %{$mfe_info}) {
-#    print STDERR "TESTME: $k $mfe_info->{$k}<br>\n";
-#  }
-
   my $mfe = $mfe_info->{mfe};
   my $parsed = $mfe_info->{parsed};
   my $barcode = $mfe_info->{barcode};
@@ -109,7 +103,6 @@ sub tmp_fold {
 #  my $mangle = $jviz_pic_input;
 #  $mangle =~ s/\.fasta/\.fasta-classic_structure\.png/g;
 #  my $cmd = qq"cp $jviz_output->{filename} $mangle";
-#  print STDERR "TESTME: $cmd\n";
 #  system($cmd);
   my $url_file = basename($jviz_pic_output);
   $jviz_url_string .= "<center><img src=\"$url_file\"><br>\n";

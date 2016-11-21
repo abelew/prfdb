@@ -107,7 +107,7 @@ sub Compute_Energy {
     my ($me, %args) = @_;
     my $seq = $args{sequence};
     my $par = $args{parens};
-    Callstack(die => 1, message => "Sequence ($seq) or parens ($par) undefined in Compute_Energy.") unless ($seq and $par);
+    Callstack(die => 0, message => "Sequence ($seq) or parens ($par) undefined in Compute_Energy.") unless ($seq and $par);
     my $config = $me->{config};
     my $seqlen = length($seq);
     my $parlen = length($par);
@@ -122,10 +122,10 @@ sub Compute_Energy {
     $seq =~ s/\s+//g;
     $par =~ s/\s+//g;
     my $command_line = qq"cd $ENV{PRFDB_HOME}/bin && $ENV{PRFDB_HOME}/bin/computeEnergy -d $seq \"$par\"";
-    print "Compute_Energy:
-$command_line\n" if ($config->{debug});
+    print STDERR "Compute_Energy:
+$command_line\n";
     open(EVAL, "$command_line |") or Callstack(message => qq"computeEnergy failed: $!");
-    my $value;
+    my $value = "undefined";
     while (my $line = <EVAL>) {
         chomp $line;
         next unless ($line =~ /^Energy1/);
@@ -133,6 +133,7 @@ $command_line\n" if ($config->{debug});
         $value = sprintf("%.1f", $fun);
     }
     close(EVAL);
+    print STDERR "The computeEnergy returned: $value\n";
     return($value);
 }
 
@@ -499,7 +500,7 @@ ${missing_slipsite}${missing_sequence}
         mfe => undef,
     };
 #    chdir($config->{workdir});
-    my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_rnafold} -noLP -noconv -noPS < $inputfile";
+    my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_rnafold} --noLP --noconv --noPS < $inputfile";
     print "Vienna: infile: $inputfile accession: $accession start: $start
 command: $command\n" if ($config->{debug});
     open(VI, "$command |") or Callstack(message => "RNAFolders::Vienna, Could not run RNAfold: $command $!");
@@ -956,9 +957,9 @@ sub Nupack_Boot_NOPAIRS {
     Callstack(die => 1, message => qq"$config->{workdir}/dataS_G.rna is missing.") unless (-r "$config->{workdir}/dataS_G.rna");
     Callstack(die => 1, message => qq"$nupack_boot is missing.") unless (-r $nupack_boot);
     warn("The nupack executable does not have 'nopairs' in its name") unless ($config->{exe_nupack} =~ /nopairs/);
-    my $command = qq"$nupack_boot $inputfile 2>$errorfile";
+    my $command = qq"cd $config->{workdir} && ${nupack_boot} ${inputfile} 2>$errorfile";
     my @nupack_output;
-    open(NU, "$command |") or Callstack(message => "RNAFolders::Nupack_Boot_NOPAIRS, Failed to run nupack:  $command");
+    open(NU, "${command} |") or Callstack(die => 0, message => "RNAFolders::Nupack_Boot_NOPAIRS, Failed to run nupack:  $command");
     ## OPEN NU in Nupack_Boot_NOPAIRS
     my $counter = 0;
     my $pairs = 0;
@@ -984,7 +985,7 @@ sub Nupack_Boot_NOPAIRS {
         Callstack(die => 1, message => "Nupack file permission error on out.pair/out.ene");
     }
     unless ($nupack_return eq '0' or $nupack_return eq '256') {
-        Callstack(die => 1,message => "Nupack Error running $command: $!", $accession);
+        Callstack(die => 0, message => "Nupack Error running $command: $!", $accession);
     }
     RemoveFile($errorfile);
     $ret->{pairs} = $pairs;
@@ -1036,9 +1037,9 @@ sub Hotknots {
     close(IN);
     my $command;
     if ($args{chdir}) {
-	$command = qq"cd $args{chdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b";
+	$command = qq"cd $config->{workdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b";
     } else {
-	$command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b";
+	$command = qq"cd $config->{workdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqfilename -noPS -b";
     }
     open(HK, "$command |") or Callstack(message => "Problem with $command.");
     while(my $line = <HK>) {
@@ -1048,21 +1049,26 @@ sub Hotknots {
     ## Check for output files.
     ## Something changed in the most recent hotknots release which makes the output files from hotknots
     ## appear in $PRFDB_HOME/work/TestSeq/RivasEddy -- I am not quite sure why at this point.
-    my @bpseqfiles = (qq"$config->{workdir}/${seqfilename}0_RE.bpseq",
-                      qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0_RE.bpseq",
-                      qq"/tmp/bob",
-		      qq"$config->{workdir}/folds/${seqfilename}0.bpseq",
-                      qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0.bpseq",
+    ## Ok, so the new version of hotknots changed this to workdir/outputs/${seqfilename}0_DP.bpseq
+    ## and ${seqfilename}_DP.ct
+    my @bpseqfiles = (
+	qq"$config->{workdir}/output/${seqfilename}0_DP.bpseq",
+	qq"$config->{workdir}/${seqfilename}0_RE.bpseq",
+	qq"$config->{workdir}/folds/${seqfilename}0.bpseq",
+	qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}.ct",
+	qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}0.bpseq",
 	);
-    my @ctfiles = (qq"$config->{workdir}/${seqfilename}_RE.ct",
-		   qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct",
-		   qq"$ENV{PRFDB_HOME}/folds/${seqfilename}.ct",
-                   qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct",
-		   qq"$config->{workdir}/folds/${seqfilename}_RE.ct",);
+    my @ctfiles = (
+	qq"$config->{workdir}/output/${seqfilename}_DP.ct",
+	qq"$config->{workdir}/${seqfilename}_RE.ct",
+	qq"$config->{workdir}/TestSeq/RivasEddy/${seqfilename}_RE.ct",
+	qq"$ENV{PRFDB_HOME}/folds/${seqfilename}.ct",
+	qq"$config->{workdir}/folds/${seqfilename}_RE.ct",);
     my $found_bp = 0;
     my $found_ct = 0;
   BPLOOP: foreach my $bpseqfile (@bpseqfiles) {
       if (-r $bpseqfile) {
+	  print STDERR "FOUND FILE: ${bpseqfile}\n";
 	  $found_bp = 1;
 	  AddOpen($bpseqfile);
 	  open(BPSEQ, "<$bpseqfile");
@@ -1161,22 +1167,26 @@ sub Hotknots_Boot {
     open(IN, ">$config->{workdir}/${seqname}.seq");
     print IN $seq;
     close(IN);
-    my $command = qq"$ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqname -noPS -b 2>$errorfile";
+    my $command = qq"cd $config->{workdir} && $ENV{PRFDB_HOME}/bin/$config->{exe_hotknots} -I $seqname -noPS -b 2>$errorfile";
+    print STDERR "hotknots boot: $command\n";
     open(HK, "$command |");
     while(my $line = <HK>) {
         $ret->{num_hotspots} = $line if ($line =~ /number of hotspots/);
     }
     close(HK);
-    my @bpseqfiles = (qq"$config->{workdir}/${seqname}0_RE.bpseq",
-                      qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0_RE.bpseq",
-		      qq"$config->{workdir}/folds/${seqname}0.bpseq",
-		      qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}.ct",
-		      qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0.bpseq",
+    my @bpseqfiles = (
+	qq"$config->{workdir}/output/${seqname}0_DP.bpseq",
+	qq"$config->{workdir}/${seqname}0_RE.bpseq",
+	qq"$config->{workdir}/folds/${seqname}0.bpseq",
+	qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}.ct",
+	qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}0.bpseq",
 	);
-    my @ctfiles = (qq"$config->{workdir}/${seqname}_RE.ct",
-		   qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}_RE.ct",
-		   qq"$ENV{PRFDB_HOME}/folds/${seqname}.ct",
-		   qq"$config->{workdir}/folds/${seqname}_RE.ct",);
+    my @ctfiles = (
+	qq"$config->{workdir}/output/${seqname}_DP.ct",
+	qq"$config->{workdir}/${seqname}_RE.ct",
+	qq"$config->{workdir}/TestSeq/RivasEddy/${seqname}_RE.ct",
+	qq"$ENV{PRFDB_HOME}/folds/${seqname}.ct",
+	qq"$config->{workdir}/folds/${seqname}_RE.ct",);
     my $found_bp = 0;
     my $found_ct = 0;
   BPLOOP: foreach my $bpseqfile (@bpseqfiles) {
@@ -1211,7 +1221,7 @@ sub Hotknots_Boot {
       }
   } ## End looking for the bpseq file.
     unless ($found_bp) {
-	die("Never found the bpseq file. @bpseqfiles");
+	die("Never found the bpseq file @bpseqfiles.");
     }
 
   CTLOOP: foreach my $ctfile (@ctfiles) {

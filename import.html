@@ -13,9 +13,9 @@ This must be in the NCBI NR database.<br>
 %  }
 %  my $import = $db->Import_CDS($accession);
 <p>Imported <% $import %> bases into the PRFdb under the accession <a href="/search.html?accession=<% $accession %>"><% $accession %></a></p>'
-%#  my $cmd = qq"nice -n 20 $ENV{PRFDB_HOME}/prf_daemon --accession $accession 2>>$ENV{PRFDB_HOME}/import.out 1>&2 &";
-%#  print "Attempting to run: $cmd<br>\n";
-%#  system($cmd);
+%  my $cmd = qq"nice -n 20 $ENV{PRFDB_HOME}/prf_daemon --accession $accession 2>>$ENV{PRFDB_HOME}/import.out 1>&2 &";
+%  print "Attempting to run: $cmd<br>\n";
+%  system($cmd);
 % }
 
 <%args>

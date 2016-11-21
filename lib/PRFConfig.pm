@@ -92,7 +92,7 @@ sub new {
     $me->{do_utr} = 0 if (!defined($me->{do_utr}));
     $me->{ENV_LIBRARY_PATH} = $ENV{LD_LIBRARY_PATH} if (!defined($me->{ENV_LIBRARY_PATH}));
     $me->{EVAL_PERL} = 0 if (!defined($me->{EVAL_PERL}));
-    $me->{exe_hotknots} = 'HotKnot' if (!defined($me->{exe_hotknots}));
+    $me->{exe_hotknots} = 'HotKnots' if (!defined($me->{exe_hotknots}));
     $me->{exe_nupack} = 'Fold.out.nopairs' if (!defined($me->{exe_nupack}));
     $me->{exe_nupack_boot} = 'Fold.out.boot.nopairs' if (!defined($me->{exe_nupack_boot}));
     $me->{exe_pknots} = 'pknots' if (!defined($me->{exe_pknots}));

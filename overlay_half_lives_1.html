@@ -13,7 +13,6 @@
 %     $query_statement =~ s/OR $/\)/g;
 %     last LOOP;
 %   } else {
-%#    print "TESTME: $query<br>\n";
 %     my ($gene, $half_life, $r2) = split(/\t/, $line);
 %     $query = $gene;
 %     $new_accession = $db->MySelect({statement => qq/SELECT accession FROM gene_info WHERE species = 'saccharomyces_cerevisiae' AND (accession regexp '$query' or genename regexp '$query' or comment regexp '$query')/, type => 'single'});

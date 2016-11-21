@@ -58,7 +58,6 @@ sub tmp_cloud {
   }
   $points_stmt .= " $mt.genome_id = genome.id";
   $averages_stmt =~ s/AND $//g;
-  print STDERR "TESTME: $points_stmt<br>\n";
   my $points = $db->MySelect(statement => $points_stmt,);
   my $averages = $db->MySelect(statement => $averages_stmt, type => 'row');
   my %args;
