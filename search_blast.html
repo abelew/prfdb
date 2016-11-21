@@ -41,7 +41,7 @@ Name: <% $local_info->{hits}->[$c]->{hit_name} %><br>
 % if ($location eq 'local') {
 Accession: <a href="/search.html?short=1&accession=<% $local_info->{hits}->[$c]->{accession} %>">
 % } else {
-Accession: <a href="http://www.ncbi.nlm.nih.gov/nuccore/<% $accession %>" rel="external" target="_blank" title="Link to the NCBI entry."><% $accession %></a>, or Import <a href="/import.html?accession=<% $local_info->{hits}->[$c]->{accession} %>" title="Import <% $local_info->{hits}->[$c]->{accession} %> into the PRFdb"> 
+Accession: <a href="http://www.ncbi.nlm.nih.gov/nuccore/<% $accession %>" rel="external" target="_blank" title="Link to the NCBI entry."><% $accession %></a>, or Import <a href="/import.html?accession=<% $local_info->{hits}->[$c]->{accession} %>" title="Import <% $local_info->{hits}->[$c]->{accession} %> into the PRFdb">
 % }
 % my @description_array = split(/ /, $local_info->{hits}->[$c]->{description});
   <% $local_info->{hits}->[$c]->{accession} %></a><br>
@@ -96,5 +96,5 @@ Evalue: <% $local_info->{hits}->[$c]->{hsps}->[$d]->{evalue} %>
   $accession => undef
   $search_string => undef
   $location => undef
-  $blast_type => 'blastn'  
+  $blast_type => 'blastn'
 </%args>

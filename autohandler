@@ -20,7 +20,7 @@
   <script type="text/javascript" language="javascript" src="/js/canvastext.js"></script>
 -->
 
-  <body bgcolor="white" text="black" link="#009933" vlink="#009900"> 
+  <body bgcolor="white" text="black" link="#009933" vlink="#009900">
   <table width="100%" border="0" cellspacing="0" cellpadding="0">
     <tr>
       <td align = "center"><a href="./" target="_top">
@@ -35,7 +35,7 @@
 % my $column = 1; while ($column <= $columns) {
      <col width="11%">
 % $column++;
-% }    
+% }
 <tr>
 <td align="center" valign="top" bgcolor="<% ($r->uri eq "$path/index.html") ? "#366e6d" : "white" %>">
  <b><a title="Main page" href="/"><% ($r->uri eq "$path/index.html") ? qq(<font color="white">) : "" %>Home</font></a></b></td>
@@ -78,7 +78,6 @@
   my $columns = 9;
   my $col_width = 11;
 </%init>
-
 
 <%args>
    $document_title => "index"

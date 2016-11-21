@@ -23,7 +23,7 @@ $suffix .= "-${seqlength}";
 my $cloud_output_filename = $cloud->Picture_Filename(type => 'cloud', species => $species, suffix => $suffix,);
 my $cloud_url = $cloud->Picture_Filename(type => 'cloud', species => $species, url => 'url', suffix => $suffix,);
 $cloud_url = $ENV{PRFDB_HOME} . '/' . $cloud_url;
-my ($points, $averages);    
+my ($points, $averages);
 my $mt = "mfe_$species";
 if (!-f $cloud_output_filename) {
   $points = $db->Collect_Cloud(species => $species, seqlength => $seqlength, filters => \@filters);
@@ -71,11 +71,11 @@ if (!-f $cloud_output_filename) {
 	    );
   }
   $cloud_data = $cloud->Make_Cloud(%args);
-}    
+}
 if ($slipsites ne 'all') {
   $vars->{slipsites} = $slipsites;
 }
-$vars->{map_url} = "$vars->{cloud_url}" . '.map'; 
+$vars->{map_url} = "$vars->{cloud_url}" . '.map';
 $vars->{map_file} = "$vars->{cloud_file}" . '.map';
 
 my $extension_percent_filename = $cloud->Picture_Filename(type => 'extension_percent', species => $species,);

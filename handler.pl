@@ -4,6 +4,7 @@ use local::lib "$ENV{PRFDB_HOME}/usr/perl";
 use Apache2::Request;
 use Apache2::Upload;
 use Apache::DBI;
+use Log::Log4perl;
 use File::Temp qw/ tmpnam /;
 use lib qq"$ENV{PRFDB_HOME}/lib";
 use PRFConfig;
